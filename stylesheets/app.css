@@ -1,0 +1,73 @@
+/* Foundation v2.1.4 http://foundation.zurb.com */
+/* Artfully masterminded by ZURB  */
+
+/* -------------------------------------------------- 
+   Table of Contents
+-----------------------------------------------------
+:: Shared Styles
+:: Page Name 1
+:: Page Name 2
+*/
+
+
+/* -----------------------------------------
+   Shared Styles
+----------------------------------------- */
+/*  */
+.container{
+  border-top: 3px solid black; /*#30A63A;*/
+}
+
+/* NIce green buttons */
+.green.button			{ background-color: #30A63A}
+.nice.green.button		{ border: 1px solid #26732C;  }
+.green.button:hover, .green.button:focus		{ background-color: #328038; 	}
+
+/* NIce brown buttons */
+.brown.button			{ background-color: #634204}
+.nice.brown.button		{ border: 1px solid #593C0C;  }
+.brown.button:hover, .brown.button:focus		{ background-color: #523706; 	}
+
+/* Nice tabs are green! */
+.nice.tabs dd a.active { border-top: 3px solid #30A63A; }
+
+/* Image caption links are bold white */
+.orbit-caption a{
+  color: #fff;
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+/* Blockquotes for top bar */
+blockquote {
+  border: 1px solid #ddd;
+  border-top: 0;
+  background: url(../images/quotes.png) no-repeat -3px -8px;
+}
+blockquote p{
+  font-style: italic;
+  margin-left: 40px;
+}
+blockquote p.author{
+  text-align: right;
+  font-style: normal;
+}
+hr.spacer{
+  visibility: hidden;
+}
+/* Titles */
+h4 { font-weight: normal; font-size: 1.2em; margin-bottom: 6px; }
+h5 { font-weight: bold; font-size: 1em }
+
+/* -----------------------------------------
+   Page Name 1
+----------------------------------------- */
+
+
+
+
+/* -----------------------------------------
+   Page Name 2
+----------------------------------------- */
+
+

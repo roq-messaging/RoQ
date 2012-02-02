@@ -1,0 +1,206 @@
+﻿<!DOCTYPE html>
+
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js lt-ie9" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html lang="en"> <!--<![endif]-->
+<head>
+	<meta charset="utf-8" />
+
+	<!-- Set the viewport width to device width for mobile -->
+	<meta name="viewport" content="width=device-width" />
+
+	<title>RoQ - Elastic Queue Service for the Cloud</title>
+  
+	<!-- Included CSS Files -->
+	<link rel="stylesheet" href="stylesheets/foundation.css">
+	<link rel="stylesheet" href="stylesheets/app.css">
+
+	<!--[if lt IE 9]>
+		<link rel="stylesheet" href="stylesheets/ie.css">
+	<![endif]-->
+
+
+	<!-- IE Fix for HTML5 Tags -->
+	<!--[if lt IE 9]>
+		<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+</head>
+<body>
+
+	<!-- container -->
+	<div class="container">
+
+		<div class="row">
+			<div class="four columns">
+				<img src="images/logo.png" alt="RoQ logo" />
+			</div>			
+			<div class="five columns">
+				<h2>RoQ</h2>
+        <h3>Rock solid, yet elastic!</h3>
+			</div>
+      <div class="three columns">
+			</div>
+    </div>
+		<div class="row">
+			<div class="eight columns">
+				<div class="row">
+          <div id="features"> 
+             <img src="images/BannerEQS.png" alt="Discover EQS" data-caption="#discoverEQSCaption" />
+             <img src="images/BannerTemplate.png" alt="Distributed architecture" />
+             <img src="images/BannerTemplate.png" alt="High performance" />
+          </div>
+          <!-- Captions for Orbit -->
+          <span class="orbit-caption" id="discoverEQSCaption">Download the <a href="docs/EQS_review4.pdf">original EQS article</a></span>
+        </div>
+        <div class="row">
+					<div class="twelve columns">
+            <dl class="nice contained tabs">
+              <dd><a href="#home" class="active">RoQ Home</a></dd>
+              <dd><a href="#documentation">Learn</a></dd>
+              <dd><a href="#code">Download</a></dd>
+              <dd><a href="#contribution">Contribute</a></dd>
+            </dl>
+
+            <ul class="nice tabs-content contained">
+              <li class="active" id="homeTab">
+                <h3>Welcome to RoQ</h3>
+                <p class="lead">RoQ (pronounce /rɒkˈjuː/, as in "Rock You") is the first implementation of <abbr title="Elastic Queue Service">EQS</abbr>, a new architecture designed for efficient messaging in the cloud.</p>
+                <h4>A new way to transmit messages in the cloud</h4>
+                <h5>Elastic scalability</h5>
+                  <p>
+                  <i>Content: Trade off traditional MOM solutions. ToDo Nam.</i>  
+                  </p>
+                <h5>Open Source</h5>
+                  <p>
+                  <i>ToDo Quentin. Content: Licence, community, usual bullshit</i>
+                  </p>
+                <h5>Cloud Ready</h5>
+                  <p>
+                  <i>Content: Distributed Architecture, cloud deployable, hosted version in the pipe. Amazon SQS concurrent (only better).</i>
+                  </p>
+                <h4>Seems cool...</h4>
+                <p>Interested? You have several options to go further:</p>
+                <div class="row">
+                  <div class="six columns">
+                    <a href="#documentation" class="small nice green button call2tab">Learn more about RoQ concepts</a>
+                  </div>
+                  <div class="six columns">
+                    <a href="#code" class="small nice brown button call2tab">Download RoQ and start playing</a>
+                  </div>
+                </div>
+                <hr class="spacer" />
+                <div class="row">
+                  <div class="six columns">
+                    <a href="#contribution" class="small nice brown button call2tab">Discover how to join the fun</a>
+                  </div>
+                  <div class="six columns">
+                    <a href="#" class="small nice green button" data-reveal-id="MLSub">Join the discussion on the mailing list</a>
+                  </div>
+                </div>
+              </li>
+              <li id="documentationTab">
+                <h3>Introducing RoQ</h3>
+                <p class="lead">RoQ is a message oriented middleware (<abbr title="Message Oriented Middleware">MOM</abbr>), built from the start with elastic scalability in mind.</p>
+                <h4>Introduction</h4>
+                <p>
+                  <i>Introduce elastic scalability (Todo Nam), Explain why other products don't scale well (Todo Nam)</i>
+                </p>
+                <h4>Architecture</h4>
+                <p>
+                  <i>Figure (Mix of fig 3/4 of EQS paper). Todo QDU, Architecture description (max 5 lines) Todo Nam.</i>
+                </p>
+                <h4>Performance</h4>
+                <p>
+                  <i>Performance strategy (scale out instead of scale up), plus hint that the network speed is becoming the bottleneck, not the servers. + Latence stay minimal?</i>
+                </p>
+                <h4>Want to go further?</h4>
+                <p>The complete, technical documentation of RoQ is hosted on our github wiki.</p>
+                <p><a href="https://github.com/roq-messaging/RoQ/wiki" class="nice radius large green button">To the RoQ wiki!</a></p>
+              </li>
+              <li id="codeTab">
+                <h3>Want to test it?</h3>
+                <p class="lead">RoQ is Open Source. It is distributed under the Apache Licence</p>
+                <p>Download introduction. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce eu mi at libero fringilla rhoncus sed placerat sapien. Nunc fermentum pulvinar odio, ...</p>
+                <p><a href="https://github.com/roq-messaging/RoQ" class="nice radius large green button">Get the code on github...</a></p>
+              </li>
+              <li id="contributionTab">
+                <h3>How to become a contributor?</h3>
+                <p class="lead">RoQ is in its first phase of development. Contributions are welcome and if you feel you've got what it takes, dive in!</p>
+                <h4>Open contributors</h4>
+                <p>Contributor process introduction. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce eu mi at libero fringilla rhoncus sed placerat sapien. Nunc fermentum pulvinar odio, ...</p>
+                <h4>Core contributors</h4>
+                <p>Contributor process introduction. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce eu mi at libero fringilla rhoncus sed placerat sapien. Nunc fermentum pulvinar odio, ...</p>
+                <h4>Not a coder?</h4>
+                <p>There's other way you might help with the project. The first step in your involvment?</p>
+                <p><a href="http://groups.google.com/group/roq-messaging" class="nice radius large green button">Make yourself known on the mailing list</a></p>
+              </li>
+            </ul>
+					</div>
+				</div>
+			</div>
+      <div class="four columns">
+        <div class="row">
+          <div class="panel">
+            <h4>EQS</h4>
+            <p>An EQS is a distributed message queue designed for clouds and that enables a linear scalability when new nodes are added to the cluster. As a result, the number of publishers-subscribers and the message load are not a limit anymore !</p>
+            <p>EQS was first presented at the <a href="http://2011.cloudcom.org/">IEEE 2011 CloudCom conference</a>.</p>
+            <p><a href="docs/EQS_review4.pdf" class="nice radius medium white button">Learn more about EQS...</a></p>
+           </div>
+        </div>
+        <div class="panel">
+          <h4>Looking for support?</h4>
+          <p>The community can exchange through a mailing list hosted on google group.</p>
+          <p>Anyone is free to join the discussion! Find help or involve yourself in the community...</p>
+          <p><a href="#" class="nice radius medium white button" data-reveal-id="MLSub">Learn more...</a></p>
+        </div>
+      </div>
+      </div>
+      <div class="row ">
+        <div class="twelve columns">
+          <hr />
+        </div>
+      </div>
+      <div class="row footer">
+        <div class="four columns">
+            <h5>About</h5>
+            <p>RoQ is an Open Source project backed up by <a href="http://euranova.eu">Euranova</a>.</p>
+        </div>
+        <div class="four columns">
+            <h5>Licence</h5>
+            <p>RoQ is Open Source and is available under the Apache licence.</p>
+        </div>
+        <div class="four columns">
+            <h5>Stay in touch</h5>
+            <p>There are many ways to stay in touch with RoQ developments:</p>
+            <ul>
+              <li>Twitter</li>
+              <li>Google group</li>
+              <li><a href="https://github.com/roq-messaging/RoQ" title="RoQ on GitHub" target="_blank"></a>Github</li>
+            </ul>
+        </div>
+      </div>
+		</div>
+    
+    <div id="MLSub" class="reveal-modal">
+      <h2>Want to join the discussion?</h2>
+      <p class="lead">Two possibilities:</p>
+      <p><a href="http://groups.google.com/group/roq-messaging" class="nice radius large white button">Go to the google group page</a></p>
+      <p>or</p>
+      <form class="nice" action="http://groups.google.com/group/roq-messaging/boxsubscribe" target="_blank">
+        <input type="text" name="email" placeholder="Enter Your Email" class="small input-text">
+        <input type="submit" name="sub" value="Subscribe directly" class="nice radius large white button">
+      </form>
+      <a class="close-reveal-modal">&#215;</a>
+    </div>
+
+	<!-- Included JS Files -->
+	<script src="javascripts/foundation.js"></script>
+	<script src="javascripts/app.js"></script>
+
+</body>
+</html>
+
+
