@@ -2,14 +2,17 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   
-  <groupId>org.roqmessaging</groupId>
+  <groupId>org.roqmessaging.core</groupId>
   <artifactId>roq-core</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  
   <name>RoQ core</name>
   <packaging>jar</packaging>
-  
-  <url>http://maven.apache.org</url>
+  <url>https://github.com/roq-messaging/RoQ</url>
+
+  <parent>
+  	<groupId>org.roqmessaging</groupId>
+  	<artifactId>roq-parent</artifactId>
+  	<version>1.0-SNAPSHOT</version>
+  </parent>
   
   <dependencies>
   </dependencies>

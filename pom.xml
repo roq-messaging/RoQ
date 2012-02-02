@@ -9,7 +9,7 @@
   <name>RoQ modules POM</name>
   <packaging>pom</packaging>
   
-  <url>http://maven.apache.org</url>
+  <url>https://github.com/roq-messaging/RoQ</url>
     
   <modules>
       <module>roq-parent</module>
