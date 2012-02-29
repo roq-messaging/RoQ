@@ -8,7 +8,7 @@ import java.util.UUID;
 
 import org.zeromq.ZMQ;
 
-public class ZPubClient implements Runnable {
+public class PubClientLib implements Runnable {
 	private ZMQ.Context context;
 	private ZMQ.Socket exchPub;
 	private String s_ID;
@@ -31,7 +31,7 @@ public class ZPubClient implements Runnable {
 	private boolean running;
 	private boolean tstmp;
 
-	public ZPubClient(String monitor, int rate, int minutes, int payload,
+	public PubClientLib(String monitor, int rate, int minutes, int payload,
 			boolean tstmp) {
 		this.context = ZMQ.context(1);
 		this.monitorSub = context.socket(ZMQ.SUB);
@@ -190,7 +190,7 @@ public class ZPubClient implements Runnable {
 	}
 
 	public static void main(String[] args){
-		ZPubClient pubClient = new ZPubClient(args[0],Integer.parseInt(args[1]),Integer.parseInt(args[2]),Integer.parseInt(args[3]), Boolean.parseBoolean(args[4])); //monitor, msg/min, duration, payload
+		PubClientLib pubClient = new PubClientLib(args[0],Integer.parseInt(args[1]),Integer.parseInt(args[2]),Integer.parseInt(args[3]), Boolean.parseBoolean(args[4])); //monitor, msg/min, duration, payload
 		Thread t = new Thread(pubClient);
 		t.start();
 	}

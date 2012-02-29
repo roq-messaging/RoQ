@@ -2,7 +2,7 @@
 
 package org.roqmessaging.loaders;
 
-import org.roqmessaging.core.ZPubClient;
+import org.roqmessaging.core.PubClientLib;
 
 public class ZLoadPub {
 
@@ -28,7 +28,7 @@ public class ZLoadPub {
 
 		for (int i = 0; i < max; i++) {
 			System.out.println("Starting producer "+ (i+1) +"/" +max);
-			ZPubClient tempPub = new ZPubClient(args[2],
+			PubClientLib tempPub = new PubClientLib(args[2],
 					Integer.parseInt(args[3]), Integer.parseInt(args[4]),
 					Integer.parseInt(args[5]), Boolean.parseBoolean(args[7]));
 			Thread t = new Thread(tempPub);

@@ -8,7 +8,7 @@ import java.util.TimerTask;
 
 import org.zeromq.ZMQ;
 
-public class ZSubClient implements Runnable {
+public class SubClientLib implements Runnable {
 	private ZMQ.Context context;
 	private String s_monitor;
 	private ZMQ.Poller items;
@@ -33,7 +33,7 @@ public class ZSubClient implements Runnable {
 	private int latenced;
 	private boolean tstmp;
 
-	public ZSubClient(String monitor, String subKey, int ID, boolean tstmp) {
+	public SubClientLib(String monitor, String subKey, int ID, boolean tstmp) {
 		this.context = ZMQ.context(1);
 		this.s_monitor = "tcp://" + monitor;
 		this.key = subKey.getBytes();
@@ -117,6 +117,7 @@ public class ZSubClient implements Runnable {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private byte[] getTimestamp() {
 		tstmpReq.send("".getBytes(), 0);
 		return tstmpReq.recv(0);
@@ -178,7 +179,7 @@ public class ZSubClient implements Runnable {
 	}
 
 	public static void main(String[] args) {
-		ZSubClient SubClient = new ZSubClient(args[0], "manche", 0,
+		SubClientLib SubClient = new SubClientLib(args[0], "manche", 0,
 				Boolean.parseBoolean(args[1]));
 		Thread t = new Thread(SubClient);
 		t.start();
