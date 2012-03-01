@@ -25,7 +25,7 @@
               <addClasspath>true</addClasspath>
             </manifest>
             <manifestEntries>
-            	<Class-Path>/usr/local/share/java/</Class-Path>
+            	<Class-Path>/usr/local/share/java</Class-Path>
             </manifestEntries>
           </archive>
         </configuration>
@@ -34,5 +34,14 @@
   </build>
   
   <dependencies>
+  <dependency>
+  	<groupId>junit</groupId>
+  	<artifactId>junit</artifactId>
+  	<version>4.10</version>
+  </dependency>
   </dependencies>
+  <organization>
+  	<name>EURA NOVA</name>
+  	<url>http://euranova.eu</url>
+  </organization>
 </project>
