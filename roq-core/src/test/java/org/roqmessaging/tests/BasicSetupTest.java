@@ -14,7 +14,7 @@
  */
 package org.roqmessaging.tests;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 
@@ -22,25 +22,34 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.roqmessaging.core.Exchange;
+import org.roqmessaging.core.PubClientLib;
+import org.roqmessaging.core.SubClientLib;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
 /**
  * Class BasicSetupTests
- * <p> Description: This Test case test the basic setup of the Exchange with few listeners and providers.
+ * <p>
+ * Description: This Test case test the basic setup of the Exchange with few
+ * listeners and providers.
  * 
  * @author Sabri Skhiri
  */
 public class BasicSetupTest {
-	 private Exchange xChange = null;
+	private Exchange xChange = null;
+	private Thread threadPub = null;
+	private Thread threadSub = null;
 
 	/**
 	 * Create the Exchange.
+	 * 
 	 * @throws java.lang.Exception
 	 */
 	@Before
 	public void setUp() throws Exception {
 		startExchange();
+		startPublisherClient();
+		startSubscriberClient();
 	}
 
 	/**
@@ -49,18 +58,20 @@ public class BasicSetupTest {
 	@After
 	public void tearDown() throws Exception {
 		this.xChange.cleanShutDown();
+		// TODO implementing a clean shutdown methd
+		this.threadPub.stop();
+		this.threadSub.stop();
 	}
 
 	@Test
 	public void test() {
 		assertNotNull(this.xChange);
 	}
-	
+
 	/**
-	 *  Start an Exchange with Hardcoded value.
-	 *  Monitor host = "localhost"
-	 *  A potential evolution would be a configuration file from which the 
-	 *  parameter are loaded.
+	 * Start an Exchange with Hardcoded value. Monitor host = "localhost" A
+	 * potential evolution would be a configuration file from which the
+	 * parameter are loaded.
 	 */
 	private void startExchange() {
 		final String monitorHost = "localhost";
@@ -93,11 +104,42 @@ public class BasicSetupTest {
 			}
 		});
 
-		this.xChange =  new Exchange("5559", "5560", monitorHost);
+		this.xChange = new Exchange("5559", "5560", monitorHost);
 		Thread t = new Thread(this.xChange);
 		t.start();
-	
+	}
 
+	/**
+	 * Initiate a thread publisher
+	 */
+	private void startPublisherClient() {
+		// Init parameters
+		String monitor = "localhost";
+		int rate = 5;
+		int minutes = 1;
+		int payload = 25;
+		boolean tstmp = true;
+
+		// Launching the pub client
+		PubClientLib pubClient = new PubClientLib(monitor, rate, minutes, payload, tstmp); // monitor,
+																							// msg/min,
+																							// duration,
+																							// payload
+		this.threadPub = new Thread(pubClient);
+		this.threadPub.start();
+	}
+
+	/**
+	 * Initiate a thread subscriber
+	 */
+	private void startSubscriberClient() {
+		String monitor = "localhost";
+		String subKey = "manche";
+		int ID = 0;
+		boolean tstmp = true;
+		SubClientLib SubClient = new SubClientLib(monitor, subKey, ID, tstmp);
+		this.threadSub= new Thread(SubClient);
+		this.threadSub.start();
 	}
 
 }
