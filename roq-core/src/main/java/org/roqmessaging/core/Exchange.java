@@ -16,14 +16,12 @@
 
 package org.roqmessaging.core;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Timer;
 
 import org.roqmessaging.core.data.StatData;
-import org.roqmessaging.core.timer.Heartbeat;
 import org.roqmessaging.core.timer.ExchangeStatTimer;
-import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.core.timer.Heartbeat;
 import org.zeromq.ZMQ;
 
 
@@ -166,47 +164,6 @@ public class Exchange implements Runnable {
 			this.statistic.setProcessed(this.statistic.getProcessed()+1);
 		}
 	}
-
-	public static void main(String[] args) throws InterruptedException {
-		final String monitorHost = args[0];
-		final ZMQ.Context shutDownContext;
-		final ZMQ.Socket shutDownSocket;
-		shutDownContext = ZMQ.context(1);
-		shutDownSocket = shutDownContext.socket(ZMQ.PUB);
-		shutDownSocket.connect("tcp://" + monitorHost + ":5571");
-		shutDownSocket.setLinger(3500);
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run() // TODO ensure it waits few seconds in normal
-								// functioning before closing everything
-								// This section may need to be rewritten more
-								// elegantly
-			{
-				try {
-					Runtime.getRuntime().exec("date");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-				System.out.println("Shutting Down!");
-				shutDownSocket.send(("6," + RoQUtils.getInstance().getLocalIP()).getBytes(), 0);
-				try {
-					Thread.sleep(1);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		});
-
-		Exchange exchange = new Exchange("5559", "5560", args[0]);
-		Thread t = new Thread(exchange);
-		t.start();
-	}
-
-
-
 
 
 	/**

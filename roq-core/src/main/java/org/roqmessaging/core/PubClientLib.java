@@ -109,7 +109,6 @@ public class PubClientLib implements Runnable {
 			try {
 				Thread.sleep(2500);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			System.out.println("Retrying connection...");
@@ -187,12 +186,6 @@ public class PubClientLib implements Runnable {
 				}
 			}
 		}
-	}
-
-	public static void main(String[] args){
-		PubClientLib pubClient = new PubClientLib(args[0],Integer.parseInt(args[1]),Integer.parseInt(args[2]),Integer.parseInt(args[3]), Boolean.parseBoolean(args[4])); //monitor, msg/min, duration, payload
-		Thread t = new Thread(pubClient);
-		t.start();
 	}
 
 }

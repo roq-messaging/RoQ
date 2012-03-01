@@ -1,47 +1,53 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  
-  <groupId>org.roqmessaging.core</groupId>
-  <artifactId>roq-core</artifactId>
-  <name>RoQ core</name>
-  <packaging>jar</packaging>
-  <url>https://github.com/roq-messaging/RoQ</url>
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
 
-  <parent>
-  	<groupId>org.roqmessaging</groupId>
-  	<artifactId>roq-parent</artifactId>
-  	<version>1.0-SNAPSHOT</version>
-  </parent>
-  
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifest>
-              <addClasspath>true</addClasspath>
-            </manifest>
-            <manifestEntries>
-            	<Class-Path>/usr/local/share/java</Class-Path>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-  
-  <dependencies>
-  <dependency>
-  	<groupId>junit</groupId>
-  	<artifactId>junit</artifactId>
-  	<version>4.10</version>
-  </dependency>
-  </dependencies>
-  <organization>
-  	<name>EURA NOVA</name>
-  	<url>http://euranova.eu</url>
-  </organization>
+	<groupId>org.roqmessaging.core</groupId>
+	<artifactId>roq-core</artifactId>
+	<name>RoQ core</name>
+	<packaging>jar</packaging>
+	<url>https://github.com/roq-messaging/RoQ</url>
+
+	<parent>
+		<groupId>org.roqmessaging</groupId>
+		<artifactId>roq-parent</artifactId>
+		<version>1.0-SNAPSHOT</version>
+	</parent>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <forkMode>once</forkMode>
+                    <workingDirectory>target</workingDirectory>
+                    <argLine>-Djava.library.path=/usr/local/lib</argLine> 
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.10</version>
+		</dependency>
+		<dependency>
+			<groupId>org.zeromq</groupId>
+			<artifactId>zeromq</artifactId>
+			<version>2.1.11</version>
+			<scope>system</scope>
+			<systemPath>/usr/local/share/java/zmq.jar</systemPath>
+		</dependency>
+	</dependencies>
+	<organization>
+		<name>EURA NOVA</name>
+		<url>http://euranova.eu</url>
+	</organization>
 </project>
