@@ -14,5 +14,6 @@
   <modules>
       <module>roq-parent</module>
       <module>roq-core</module>
+      <module>roq-simulation</module>
   </modules>
 </project>

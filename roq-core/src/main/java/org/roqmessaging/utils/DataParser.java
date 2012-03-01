@@ -5,9 +5,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.util.ArrayList;
-
-import sun.java2d.loops.ProcessPath;
 
 public class DataParser {
 	

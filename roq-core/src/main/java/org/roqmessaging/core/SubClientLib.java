@@ -178,10 +178,4 @@ public class SubClientLib implements Runnable {
 		}
 	}
 
-	public static void main(String[] args) {
-		SubClientLib SubClient = new SubClientLib(args[0], "manche", 0,
-				Boolean.parseBoolean(args[1]));
-		Thread t = new Thread(SubClient);
-		t.start();
-	}
 }
