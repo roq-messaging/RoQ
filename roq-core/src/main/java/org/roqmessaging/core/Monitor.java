@@ -17,6 +17,7 @@ package org.roqmessaging.core;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -42,6 +43,8 @@ public class Monitor implements Runnable {
 	private long maxThroughput;
 	private ZMQ.Context context;
 	private boolean active = true;
+	private boolean useFile = false;
+	
 
 	private BufferedWriter bufferedOutput;
 
@@ -72,12 +75,15 @@ public class Monitor implements Runnable {
 		statSub.bind("tcp://*:5800");
 		statSub.subscribe("".getBytes());
 
-		try {
-			FileWriter output = new FileWriter(("output" + RoQUtils.getInstance().getFileStamp()), true);
-			bufferedOutput = new BufferedWriter(output);
-
-		} catch (IOException e) {
-			logger.error("Error when openning file", e);
+		if(useFile){
+			try {
+				FileWriter output = new FileWriter(("output" + RoQUtils.getInstance().getFileStamp()), true);
+				bufferedOutput = new BufferedWriter(output);
+			} catch (IOException e) {
+				logger.error("Error when openning file", e);
+			}
+		}else{
+			bufferedOutput = new BufferedWriter(new OutputStreamWriter(System.out));
 		}
 	}
 
