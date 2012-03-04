@@ -18,10 +18,13 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.roqmessaging.core.Exchange;
+import org.roqmessaging.core.Monitor;
 import org.roqmessaging.core.PubClientLib;
 import org.roqmessaging.core.SubClientLib;
 import org.roqmessaging.core.utils.RoQUtils;
@@ -37,8 +40,10 @@ import org.zeromq.ZMQ;
  */
 public class BasicSetupTest {
 	private Exchange xChange = null;
+	private Monitor monitor = null;
 	private Thread threadPub = null;
 	private Thread threadSub = null;
+	private Logger logger = Logger.getLogger(BasicSetupTest.class);
 
 	/**
 	 * Create the Exchange.
@@ -47,10 +52,13 @@ public class BasicSetupTest {
 	 */
 	@Before
 	public void setUp() throws Exception {
+		logger.log(Level.INFO, "Basic Setup before test");
 		startExchange();
+		startMonitor();
 		startPublisherClient();
-		startSubscriberClient();
+		startSubscriberClient(); 
 	}
+
 
 	/**
 	 * @throws java.lang.Exception
@@ -61,11 +69,14 @@ public class BasicSetupTest {
 		// TODO implementing a clean shutdown methd
 		this.threadPub.stop();
 		this.threadSub.stop();
+		this.monitor.cleanShutDown();
 	}
 
 	@Test
 	public void test() {
+		logger.log(Level.INFO, "Start Test");
 		assertNotNull(this.xChange);
+		assertNotNull(this.monitor);
 	}
 
 	/**
@@ -140,6 +151,16 @@ public class BasicSetupTest {
 		SubClientLib SubClient = new SubClientLib(monitor, subKey, ID, tstmp);
 		this.threadSub= new Thread(SubClient);
 		this.threadSub.start();
+	}
+	
+	/**
+	 * Start the monitor thread. We need one monitor per logical queue.
+	 */
+	private void startMonitor() {
+		this.monitor = new Monitor();
+		Thread t = new Thread(this.monitor);
+		t.start();
+		
 	}
 
 }

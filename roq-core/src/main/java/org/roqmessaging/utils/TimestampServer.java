@@ -12,6 +12,7 @@ public class TimestampServer {
 		socket.bind("tcp://*:5900");
 		
 		while(true){
+			@SuppressWarnings("unused")
 			byte[] request;
 			request=socket.recv(0);
 			byte[] tstmp = (Long.toString(System.currentTimeMillis())+"0").getBytes();
@@ -21,6 +22,7 @@ public class TimestampServer {
 	}
 	
 	public static void main(String[] args){
+		@SuppressWarnings("unused")
 		TimestampServer server = new TimestampServer();
 	}
 

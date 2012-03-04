@@ -17,7 +17,11 @@ package org.roqmessaging.core.utils;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Enumeration;
+import java.util.TimeZone;
 
 /**
  * Class RoQUtils
@@ -56,11 +60,10 @@ public class RoQUtils {
 	 *         case.
 	 * @since 0.1.0
 	 */
-	public  String getLocalIP() {
+	public String getLocalIP() {
 		String ipOnly = "";
 		try {
-			Enumeration<NetworkInterface> nifs = NetworkInterface
-					.getNetworkInterfaces();
+			Enumeration<NetworkInterface> nifs = NetworkInterface.getNetworkInterfaces();
 			if (nifs == null)
 				return "";
 			while (nifs.hasMoreElements()) {
@@ -71,10 +74,8 @@ public class RoQUtils {
 					Enumeration<InetAddress> adrs = nif.getInetAddresses();
 					while (adrs.hasMoreElements()) {
 						InetAddress adr = adrs.nextElement();
-						if (adr != null
-								&& !adr.isLoopbackAddress()
-								&& (nif.isPointToPoint() || !adr
-										.isLinkLocalAddress())) {
+						if (adr != null && !adr.isLoopbackAddress()
+								&& (nif.isPointToPoint() || !adr.isLinkLocalAddress())) {
 							String adrIP = adr.getHostAddress();
 							String adrName;
 							if (nif.isPointToPoint()) // Performance issues
@@ -97,6 +98,12 @@ public class RoQUtils {
 		} catch (SocketException ex) {
 			return "";
 		}
+	}
+
+	public  String getFileStamp() {
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd_hh:mm:ss");
+		df.setTimeZone(TimeZone.getTimeZone("GMT+2:00"));
+		return df.format(new Date());
 	}
 
 }

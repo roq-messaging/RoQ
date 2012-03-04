@@ -6,9 +6,12 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.apache.log4j.Logger;
 import org.zeromq.ZMQ;
 
 public class SubClientLib implements Runnable {
+	private Logger logger = Logger.getLogger(SubClientLib.class);
+
 	private ZMQ.Context context;
 	private String s_monitor;
 	private ZMQ.Poller items;
@@ -52,9 +55,11 @@ public class SubClientLib implements Runnable {
 		this.latency = 0;
 		this.latenced = 0;
 
-		this.tstmpReq = context.socket(ZMQ.REQ);
-		this.tstmpReq.connect("tcp://" + monitor + ":5900");
 		this.tstmp = tstmp;
+		if (tstmp) {
+			this.tstmpReq = context.socket(ZMQ.REQ);
+			this.tstmpReq.connect("tcp://" + monitor + ":5900");
+		}
 	}
 
 	class Stats extends TimerTask {
@@ -74,12 +79,11 @@ public class SubClientLib implements Runnable {
 			} else {
 				meanLat = Math.round(latency / latenced);
 			}
-			System.out.println("Total latency: " + latency + " Received: "
-					+ received + " Latenced: " + latenced + " Mean: " + meanLat
-					+ " " + "milliseconds");
+			logger.info("Total latency: " + latency + " Received: " + received + " Latenced: " + latenced + " Mean: "
+					+ meanLat + " " + "milliseconds");
 
-			statsPub.send(("31," + minute + "," + totalReceived + ","
-					+ received + "," + ID + "," + meanLat).getBytes(), 0);
+			statsPub.send(
+					("31," + minute + "," + totalReceived + "," + received + "," + ID + "," + meanLat).getBytes(), 0);
 			minute++;
 			received = 0;
 			latency = 0;
@@ -87,9 +91,16 @@ public class SubClientLib implements Runnable {
 		}
 	}
 
+	/**
+	 * <br>
+	 * 1. send an hello msg to the monitor <br>
+	 * 2. receives the list of broker (Exchanges) to subscribe
+	 * 
+	 * @return 0 if it connects to exchanges
+	 */
 	private int init() {
-		System.out.println("Init sequence");
-		initReq.send("1,Hello".getBytes(), 0);
+		logger.info("Init sequence");
+		initReq.send((RoQConstant.CHANNEL_INIT + ",Hello").getBytes(), 0);
 		String response = new String(initReq.recv(0));
 		if (!response.equals("")) {
 			String[] brokerList = response.split(",");
@@ -98,11 +109,11 @@ public class SubClientLib implements Runnable {
 			for (int i = 0; i < brokerList.length; i++) {
 				exchSub.connect("tcp://" + brokerList[i] + ":5560");
 				knownHosts.add(brokerList[i]);
-				System.out.println("connected to " + brokerList[i]);
+				logger.info("connected to " + brokerList[i]);
 			}
 			return 0;
 		} else {
-			System.out.println("No exchange available");
+			logger.info("No exchange available");
 			return 1;
 		}
 	}
@@ -113,7 +124,7 @@ public class SubClientLib implements Runnable {
 		latency = latency + (nowi - recLat);
 		latenced++;
 		if (nowi - recLat < 0) {
-			System.out.println("ERROR: now = " + nowi + " ,recLat = " + recLat);
+			logger.info("ERROR: now = " + nowi + " ,recLat = " + recLat);
 		}
 	}
 
@@ -132,7 +143,7 @@ public class SubClientLib implements Runnable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			System.out.println("Retrying connection...");
+			logger.info("Retrying connection...");
 		}
 
 		this.items = context.poller();
@@ -142,7 +153,7 @@ public class SubClientLib implements Runnable {
 		Timer timer = new Timer();
 		timer.schedule(new Stats(), 0, 60000);
 
-		System.out.println("Worker connected");
+		logger.info("Worker connected");
 
 		while (true) {
 			items.poll(10);
@@ -153,7 +164,7 @@ public class SubClientLib implements Runnable {
 
 				if (infoCode == 1 && !info[1].equals("")) { // new Exchange
 															// available message
-					System.out.println("listening to " + info[1]);
+					logger.info("listening to " + info[1]);
 					if (!knownHosts.contains(info[1])) {
 						exchSub.connect("tcp://" + info[1] + ":5560");
 						knownHosts.add(info[1]);
@@ -169,8 +180,7 @@ public class SubClientLib implements Runnable {
 					request = exchSub.recv(0);
 					part++;
 					if (part == 4 && this.tstmp) {
-						computeLatency(Long.parseLong(new String(request, 0,
-								request.length - 1)));
+						computeLatency(Long.parseLong(new String(request, 0, request.length - 1)));
 					}
 				}
 				received++;

@@ -14,23 +14,23 @@
  */
 package org.roq.simulation;
 
-import org.roqmessaging.core.PubClientLib;
+import org.roqmessaging.core.Monitor;
+import org.roqmessaging.core.utils.RoQUtils;
 
 /**
- * Class PublisherLauncher
- * <p> Description: Launch a publisher according to command lines arguments.
+ * Class MonitorLauncher
+ * <p>
+ * Description: Launches the monitor thread. We need 1 monitor instance per
+ * logical queue.
  * 
  * @author sskhiri
  */
-public class PublisherLauncher {
+public class MonitorLauncher {
 
-	/**
-	 * String monitor, int rate, int minutes, int payload,
-			boolean tstmp
-	 */
-	public static void main(String[] args){
-		PubClientLib pubClient = new PubClientLib(args[0],Integer.parseInt(args[1]),Integer.parseInt(args[2]),Integer.parseInt(args[3]), Boolean.parseBoolean(args[4])); //monitor, msg/min, duration, payload
-		Thread t = new Thread(pubClient);
+	public static void main(String[] args) {
+		System.out.println(RoQUtils.getInstance().getFileStamp());
+		Monitor monitor = new Monitor();
+		Thread t = new Thread(monitor);
 		t.start();
 	}
 
