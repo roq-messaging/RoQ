@@ -16,6 +16,7 @@ package org.roqmessaging.core.timer;
 
 import java.util.TimerTask;
 
+import org.apache.log4j.Logger;
 import org.roqmessaging.core.Exchange;
 import org.roqmessaging.core.data.StatData;
 import org.roqmessaging.core.utils.RoQUtils;
@@ -29,6 +30,7 @@ import org.zeromq.ZMQ;
  * @author sskhiri
  */
 public 	class ExchangeStatTimer extends TimerTask {
+	private Logger logger = Logger.getLogger(ExchangeStatTimer.class);
 	private ZMQ.Context timercontext;
 	private ZMQ.Socket timersocket;
 	private ZMQ.Socket statsPub;
@@ -53,10 +55,10 @@ public 	class ExchangeStatTimer extends TimerTask {
 		timersocket.send(("4," + RoQUtils.getInstance().getLocalIP() + "," + this.xchange.getMostProducer()
 				+ "," + this.statistic.getThroughput() + "," + this.statistic.getMax_bw() + "," + this.xchange.getKnownProd().size())
 				.getBytes(), 0);
-		System.out.println(RoQUtils.getInstance().getLocalIP() + " : minute " + minute + " : "
+		logger.info(RoQUtils.getInstance().getLocalIP() + " : minute " + minute + " : "
 				+ this.statistic.getThroughput() + " bytes/min, " + this.xchange.getKnownProd().size()
 				+ " producers connected");
-		System.out.println(RoQUtils.getInstance().getLocalIP() + " : minute " + minute + " : "
+		logger.info(RoQUtils.getInstance().getLocalIP() + " : minute " + minute + " : "
 				+ this.xchange.getMostProducer());
        this.statistic.setTotalProcessed(this.statistic.getTotalProcessed()+this.statistic.getProcessed());
 		statsPub.send(("21," + minute + "," + this.statistic.getTotalProcessed() + ","

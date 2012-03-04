@@ -12,26 +12,33 @@
  * limitations under the License.
  * 
  */
-package org.roq.simulation;
-
-import org.roqmessaging.core.PubClientLib;
+package org.roqmessaging.core;
 
 /**
- * Class PublisherLauncher
- * <p> Description: Launch a publisher according to command lines arguments.
+ * Interface RoQConstant
+ * <p> Description: TODO
  * 
  * @author sskhiri
  */
-public class PublisherLauncher {
-
+public interface RoQConstant {
+	
+	//Constants used at monitor level to communicate with elements
+	
 	/**
-	 * String monitor, int rate, int minutes, int payload,
-			boolean tstmp
+	 * Statistic channels on which the  stat are sent
 	 */
-	public static void main(String[] args){
-		PubClientLib pubClient = new PubClientLib(args[0],Integer.parseInt(args[1]),Integer.parseInt(args[2]),Integer.parseInt(args[3]), Boolean.parseBoolean(args[4])); //monitor, msg/min, duration, payload
-		Thread t = new Thread(pubClient);
-		t.start();
-	}
+	public static int CHANNEL_STAT =0;
+	
+	/**
+	 * Communication channel between the exchange and the monitor
+	 */
+	public static int CHANNEL_EXCHANGE=1;
+	
+	/**
+	 * Channel to configure the initalisation of elements
+	 */
+	public static int CHANNEL_INIT =2;
+	
+	
 
 }

@@ -6,9 +6,12 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 
+import org.apache.log4j.Logger;
 import org.zeromq.ZMQ;
 
 public class PubClientLib implements Runnable {
+	private Logger logger = Logger.getLogger(PubClientLib.class);
+
 	private ZMQ.Context context;
 	private ZMQ.Socket exchPub;
 	private String s_ID;
@@ -31,18 +34,19 @@ public class PubClientLib implements Runnable {
 	private boolean running;
 	private boolean tstmp;
 
-	public PubClientLib(String monitor, int rate, int minutes, int payload,
-			boolean tstmp) {
+	public PubClientLib(String monitor, int rate, int minutes, int payload, boolean tstmp) {
+		this.tstmp = tstmp;
 		this.context = ZMQ.context(1);
 		this.monitorSub = context.socket(ZMQ.SUB);
 		monitorSub.connect("tcp://" + monitor + ":5573");
 		this.s_ID = UUID.randomUUID().toString();
-		System.out.println("I am " + s_ID);
+		logger.info("I am " + s_ID);
 		monitorSub.subscribe("".getBytes());
 		this.rate = rate;
 		this.s_MonitorHostname = monitor;
 		this.initReq = context.socket(ZMQ.REQ);
 		this.initReq.connect("tcp://" + monitor + ":5572");
+		logger.info(" Connected to monitor : tcp://" + monitor + ":5572");
 
 		this.sending = true;
 		this.sent = 0;
@@ -52,13 +56,13 @@ public class PubClientLib implements Runnable {
 		this.totalSent = 0;
 		this.payloadSize = payload;
 
-		// Init of timestamp socket. Only for benchmarking purposes
-		this.tstmpReq = context.socket(ZMQ.REQ);
-		this.tstmpReq.connect("tcp://" + monitor + ":5900");
-
+		if (tstmp) {
+			// Init of timestamp socket. Only for benchmarking purposes
+			this.tstmpReq = context.socket(ZMQ.REQ);
+			this.tstmpReq.connect("tcp://" + monitor + ":5900");
+		}
 		this.running = true;
-		this.tstmp = tstmp;
-
+		logger.info(" Publisher " + this.s_ID + " is running");
 	}
 
 	class RateLimiter extends TimerTask {
@@ -71,9 +75,8 @@ public class PubClientLib implements Runnable {
 
 		public void run() {
 			sending = true;
-			System.out.println("Sent " + sent + " messages previous minute.");
-			statsPub.send(
-					("12," + s_ID + "," + minutes + "," + sent).getBytes(), 0);
+			logger.info("Sent " + sent + " messages previous minute.");
+			statsPub.send(("12," + s_ID + "," + minutes + "," + sent).getBytes(), 0);
 			totalSent += sent;
 			minutes++;
 			sent = 0;
@@ -91,11 +94,11 @@ public class PubClientLib implements Runnable {
 		if (!exchg.equals("")) {
 			this.exchPub = this.context.socket(ZMQ.PUB);
 			this.exchPub.connect("tcp://" + exchg + ":5559");
-			System.out.println("Connected to " + exchg);
+			logger.info("Connected to " + exchg);
 			this.s_currentExchange = exchg;
 			return 0;
 		} else {
-			System.out.println("no exchange available");
+			logger.info("no exchange available");
 			return 1;
 		}
 	}
@@ -103,15 +106,16 @@ public class PubClientLib implements Runnable {
 	private byte[] getTimestamp() {
 		return (Long.toString(System.currentTimeMillis()) + " ").getBytes();
 	}
-	
+
 	public void run() {
+		logger.debug("Starting the publisher "+this.s_ID);
 		while (init(2) != 0) {
 			try {
 				Thread.sleep(2500);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			System.out.println("Retrying connection...");
+			logger.info("Retrying connection...");
 		}
 
 		byte[] key = "manche".getBytes();
@@ -122,8 +126,8 @@ public class PubClientLib implements Runnable {
 		ZMQ.Poller items = context.poller(2);
 		items.register(monitorSub);
 		Timer timer = new Timer();
-		timer.schedule(new RateLimiter(), 60000, 60000);
-		System.out.println("Producer online");
+		timer.schedule(new RateLimiter(), 3000, 60000);
+		logger.info("Producer online");
 		while (running) {
 			items.poll(1);
 			if (items.pollin(0)) { // Info from Monitor
@@ -138,19 +142,17 @@ public class PubClientLib implements Runnable {
 						exchPub = context.socket(ZMQ.PUB);
 						exchPub.connect("tcp://" + info[2] + ":5559");
 						s_currentExchange = info[2];
-						System.out.println("I'm caught! Moving to " + info[2]);
+						logger.info("I'm caught! Moving to " + info[2]);
 					}
 					break;
 				case 2:
 					// Panic
 					if (info[1].equals(s_currentExchange)) {
-						System.out.println("Panic, my exchange is lost! "
-								+ info[1]);
+						logger.warn("Panic, my exchange is lost! " + info[1]);
 
 						exchPub.close();
 						while (init(3) != 0) {
-							System.out
-									.println("Exchange lost. Waiting for reallocation.");
+							logger.warn("Exchange lost. Waiting for reallocation.");
 							try {
 								Thread.sleep(1500);
 							} catch (InterruptedException e) {

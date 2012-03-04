@@ -19,6 +19,7 @@ package org.roqmessaging.core;
 import java.util.ArrayList;
 import java.util.Timer;
 
+import org.apache.log4j.Logger;
 import org.roqmessaging.core.data.StatData;
 import org.roqmessaging.core.timer.ExchangeStatTimer;
 import org.roqmessaging.core.timer.Heartbeat;
@@ -33,6 +34,8 @@ import org.zeromq.ZMQ;
  * @author sskhiri
  */
 public class Exchange implements Runnable {
+	
+	private Logger logger = Logger.getLogger(Exchange.class);
 
 	private ArrayList<ProducerState> knownProd;
 	private ZMQ.Context context;
@@ -61,8 +64,8 @@ public class Exchange implements Runnable {
 		this.backendPub = context.socket(ZMQ.PUB);
 		// Caution, the following method as well as setSwap must be invoked before binding
 		// Use these to (double) check if the settings were correctly set  
-		// System.out.println(this.backend.getHWM());
-		// System.out.println(this.backend.getSwap());
+		// logger.info(this.backend.getHWM());
+		// logger.info(this.backend.getSwap());
 		this.backendPub.setHWM(3400);  
 
 		this.frontendSub.bind(s_frontend);
@@ -102,7 +105,7 @@ public class Exchange implements Runnable {
 		knownProd.add(new ProducerState(prodID));
 		knownProd.get(knownProd.size() - 1).addBytesSent(msgsize);
 		knownProd.get(knownProd.size() - 1).addMsgSent();
-		System.out.println("A new challenger has come: "+prodID);
+		logger.info("A new challenger has come: "+prodID);
 
 	}
 
@@ -127,13 +130,13 @@ public class Exchange implements Runnable {
 	}
 
 	public void cleanShutDown() {
-		System.out.println("Inititating shutdown sequence");
+		logger.info("Inititating shutdown sequence");
 		this.active = false;
 		this.monitorPub.send("6,shutdown".getBytes(), 0);
 	}
 
 	public void run() {
-		System.out.println("Exchange Started");
+		logger.info("Exchange Started");
 		Timer timer = new Timer();
 		timer.schedule(new Heartbeat(this.s_monitor), 0, 5000);
 		timer.schedule(new ExchangeStatTimer(this, this.statistic, this.context), 10, 60000);
