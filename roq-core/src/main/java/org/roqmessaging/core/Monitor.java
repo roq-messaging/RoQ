@@ -175,20 +175,10 @@ public class Monitor implements Runnable {
 	private String relocateProd(String exchg_addr, String bytesSent) {
 		if (knownHosts.size() > 0 && hostLookup(exchg_addr) != -1) {
 			int exch_index = hostLookup(exchg_addr);
-			if (knownHosts.get(exch_index).getThroughput() > (java.lang.Math.round(maxThroughput * 1.10))) { // TODO
-																												// externalize
-																												// 1.10,
-																												// 0.90
-																												// and
-																												// 0.20
-																												// tolerance
-																												// values
-				if (knownHosts.get(exch_index).getNbProd() == 1) { // Limit
-																	// case:
-																	// exchange
-																	// saturated
-																	// with only
-																	// one prod
+			//TODO externalize 1.0, 0.90, and 0.20 tolerance values
+			if (knownHosts.get(exch_index).getThroughput() > (java.lang.Math.round(maxThroughput * 1.10))) { 
+				//Limit case: exchange saturated with only one producer TODO raised alarm
+				if (knownHosts.get(exch_index).getNbProd() == 1) { 
 					return "";
 				} else {
 					int candidate_index = getFreeHost_index(exch_index);

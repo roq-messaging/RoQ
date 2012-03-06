@@ -19,10 +19,8 @@ public class ZLoadPub {
 		try {
 			Thread.sleep(Integer.parseInt(args[6]) * 1000 * 60);
 		} catch (NumberFormatException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		} catch (InterruptedException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 
@@ -37,7 +35,6 @@ public class ZLoadPub {
 			try {
 				Thread.sleep(rate * 1000);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
