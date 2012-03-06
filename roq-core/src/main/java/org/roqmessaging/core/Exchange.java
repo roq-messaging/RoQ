@@ -27,11 +27,11 @@ import org.zeromq.ZMQ;
 
 
 /**
- * Class ZExchange
+ * Class Exchange
  * <p> Description: The main component of the logical queue. All messages must 
  * go through this element.
  * 
- * @author sskhiri
+ * @author Nam-Luc Tran, Sabri Skhiri
  */
 public class Exchange implements Runnable {
 	
@@ -175,10 +175,6 @@ public class Exchange implements Runnable {
 	public String getS_monitor() {
 		return s_monitor;
 	}
-
-
-
-
 
 	/**
 	 * @param s_monitor the s_monitor to set

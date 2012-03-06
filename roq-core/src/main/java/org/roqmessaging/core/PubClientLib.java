@@ -60,6 +60,7 @@ public class PubClientLib implements Runnable {
 			// Init of timestamp socket. Only for benchmarking purposes
 			this.tstmpReq = context.socket(ZMQ.REQ);
 			this.tstmpReq.connect("tcp://" + monitor + ":5900");
+			this.logger.debug("using time stamp server: "+ tstmp);
 		}
 		this.running = true;
 		logger.info(" Publisher " + this.s_ID + " is running");
@@ -87,9 +88,16 @@ public class PubClientLib implements Runnable {
 		}
 	}
 
+	/**
+	 * Initialize the connection to the exchange the publisher must send the message. It as asks the monitoring
+	 * the list of available exchanges.
+	 * @param code the code that must sent to the monitor 2 for the first connection and 3 in panic mode
+	 * @return 1 if the list of exchanges received is empty, 1 otherwise
+	 */
 	private int init(int code) {
 		// Code must be 2(first connection) or 3(panic procedure)!
 		initReq.send((Integer.toString(code) + "," + s_ID).getBytes(), 0);
+		//The answer must be the concatenated list of exchange
 		String exchg = new String(initReq.recv(0));
 		if (!exchg.equals("")) {
 			this.exchPub = this.context.socket(ZMQ.PUB);
@@ -109,22 +117,25 @@ public class PubClientLib implements Runnable {
 
 	public void run() {
 		logger.debug("Starting the publisher "+this.s_ID);
+		//0 means that the list of exchange has been received 
 		while (init(2) != 0) {
 			try {
+				logger.info("Retrying connection...");
 				Thread.sleep(2500);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			logger.info("Retrying connection...");
 		}
 
 		byte[] key = "manche".getBytes();
 
+		//TODO why msg = 0 ?
 		byte[] msg = new byte[payloadSize - 8];
 		msg[msg.length - 1] = 0;
 
 		ZMQ.Poller items = context.poller(2);
 		items.register(monitorSub);
+		
 		Timer timer = new Timer();
 		timer.schedule(new RateLimiter(), 3000, 60000);
 		logger.info("Producer online");
@@ -137,6 +148,7 @@ public class PubClientLib implements Runnable {
 				switch (infoCode) {
 				case 1:
 					// Relocation notice
+					// Because the message is broadcasting to all publishers we need to filter on ID
 					if (info[1].equals(s_ID)) {
 						exchPub.close();
 						exchPub = context.socket(ZMQ.PUB);
@@ -149,21 +161,21 @@ public class PubClientLib implements Runnable {
 					// Panic
 					if (info[1].equals(s_currentExchange)) {
 						logger.warn("Panic, my exchange is lost! " + info[1]);
-
 						exchPub.close();
+						//Try to reconnect to new exchange - asking to monitor for reallocation
 						while (init(3) != 0) {
-							logger.warn("Exchange lost. Waiting for reallocation.");
+							logger.warn("Exchange lost. Waiting for reallocation...");
 							try {
 								Thread.sleep(1500);
 							} catch (InterruptedException e) {
-
-								e.printStackTrace();
+								logger.error("Error when thread sleeping (re-allocation phase", e);
 							}
 						}
 					}
 					break;
 				}
 			} else {
+				//In this case the pollin index does not come from the monitor
 				if (sending) {
 					exchPub.send(key, ZMQ.SNDMORE);
 					exchPub.send(s_ID.getBytes(), ZMQ.SNDMORE);
@@ -171,16 +183,14 @@ public class PubClientLib implements Runnable {
 					if (this.tstmp) {
 						exchPub.send(msg, ZMQ.SNDMORE);
 						exchPub.send(getTimestamp(), 0);
-					}
-
-					else {
+					}else {
 						exchPub.send(msg, 0);
 					}
 
 					try {
 						Thread.sleep(0, 100);
 					} catch (InterruptedException e) {
-						e.printStackTrace();
+						logger.error("Error when thread sleeping (sending phase)", e);
 					}
 					sent++;
 					if (sent == rate)

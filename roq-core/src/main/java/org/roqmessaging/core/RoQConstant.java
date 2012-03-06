@@ -16,9 +16,9 @@ package org.roqmessaging.core;
 
 /**
  * Interface RoQConstant
- * <p> Description: TODO
+ * <p> Description: This interface defines the different message types that are exchanges between RoQ elements.
  * 
- * @author sskhiri
+ * @author Sabri Skhiri
  */
 public interface RoQConstant {
 	

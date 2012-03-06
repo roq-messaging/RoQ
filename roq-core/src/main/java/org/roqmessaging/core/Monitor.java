@@ -30,10 +30,10 @@ import org.zeromq.ZMQ;
  * Class Monitor
  * <p> Description: 
  * <br>1. Maintain the state of the exchanges in place and their states. 
- * <br>2. manage the aut scaling
+ * <br>2. manage the auto scaling
  * <br>3. the publisher re-allocation
  * 
- * @author Sabri Skhiri
+ *  @author Nam-Luc Tran, Sabri Skhiri
  */
 public class Monitor implements Runnable {
 
@@ -172,23 +172,26 @@ public class Monitor implements Runnable {
 		}
 	}
 
+	/**
+	 * Evaluates the load on the exchange and select the less overloaded exchange if required.
+	 * The relocation method does:
+	 * 1. Get the host index in the exchange host list<br>
+	 * 2. Check the max throughput value<br>
+	 * 3. Check the limit case (1 publisher)<br>
+	 * 4. Get a candidate: exchange that is still under the max throughput limit and that has the lower throughput<br>
+	 * 5. Update the config state of the exchange candidate <br>
+	 * 6. Send the relocate message to the publisher<br>
+	 * @param exchg_addr the address of the current exchange
+	 * @param bytesSent the bytesent per cycle sent through the exchange
+	 * @return an empty string is there is nothing to do or the address of the new exchange if we need a re-location
+	 */
 	private String relocateProd(String exchg_addr, String bytesSent) {
 		if (knownHosts.size() > 0 && hostLookup(exchg_addr) != -1) {
 			int exch_index = hostLookup(exchg_addr);
-			if (knownHosts.get(exch_index).getThroughput() > (java.lang.Math.round(maxThroughput * 1.10))) { // TODO
-																												// externalize
-																												// 1.10,
-																												// 0.90
-																												// and
-																												// 0.20
-																												// tolerance
-																												// values
-				if (knownHosts.get(exch_index).getNbProd() == 1) { // Limit
-																	// case:
-																	// exchange
-																	// saturated
-																	// with only
-																	// one prod
+			//TODO externalize 1.0, 0.90, and 0.20 tolerance values
+			if (knownHosts.get(exch_index).getThroughput() > (java.lang.Math.round(maxThroughput * 1.10))) { 
+				//Limit case: exchange saturated with only one producer TODO raised alarm
+				if (knownHosts.get(exch_index).getNbProd() == 1) { 
 					return "";
 				} else {
 					int candidate_index = getFreeHost_index(exch_index);
@@ -196,16 +199,16 @@ public class Monitor implements Runnable {
 						String candidate = knownHosts.get(candidate_index).getAddress();
 						if (knownHosts.get(candidate_index).getThroughput() + Long.parseLong(bytesSent) < (java.lang.Math
 								.round(maxThroughput * 0.90))) {
+							
 							knownHosts.get(candidate_index).addThroughput(Long.parseLong(bytesSent));
 							knownHosts.get(candidate_index).addNbProd();
 							return candidate;
-						}
-
-						else if (knownHosts.get(candidate_index).getThroughput() + Long.parseLong(bytesSent) < knownHosts
+						}else if (knownHosts.get(candidate_index).getThroughput() + Long.parseLong(bytesSent) < knownHosts
 								.get(hostLookup(exchg_addr)).getThroughput()
-								&& (knownHosts.get(hostLookup(exchg_addr)).getThroughput() - knownHosts.get(
-										candidate_index).getThroughput()) > (java.lang.Math.round(knownHosts.get(
-										hostLookup(exchg_addr)).getThroughput() * 0.20))) {
+								&& 
+								(knownHosts.get(hostLookup(exchg_addr)).getThroughput() - knownHosts.get(candidate_index).getThroughput())
+								> (java.lang.Math.round(knownHosts.get(	hostLookup(exchg_addr)).getThroughput() * 0.20))) {
+							
 							knownHosts.get(candidate_index).addThroughput(Long.parseLong(bytesSent));
 							knownHosts.get(candidate_index).addNbProd();
 							logger.info("Relocating for load optimization");
@@ -256,6 +259,7 @@ public class Monitor implements Runnable {
 				String info[] = new String(statSub.recv(0)).split(",");
 				infoCode = Integer.parseInt(info[0]);
 
+				logger.debug("Start analysing info code, the use fils ="+this.useFile);
 				switch (infoCode) {
 				case 11:
 					logger.info("1 producer finished, sent " + info[2] + " messages.");
@@ -265,8 +269,7 @@ public class Monitor implements Runnable {
 						bufferedOutput.newLine();
 						bufferedOutput.flush();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						logger.error("Error when writing the report in the output stream", e);
 					}
 					break;
 				case 12:
@@ -277,7 +280,7 @@ public class Monitor implements Runnable {
 						bufferedOutput.flush();
 
 					} catch (IOException e) {
-						e.printStackTrace();
+						logger.error("Error when writing the report in the output stream", e);
 					}
 					break;
 				case 21:
@@ -287,7 +290,7 @@ public class Monitor implements Runnable {
 						bufferedOutput.newLine();
 						bufferedOutput.flush();
 					} catch (IOException e) {
-						e.printStackTrace();
+						logger.error("Error when writing the report in the output stream", e);
 					}
 					break;
 				case 31:
@@ -297,8 +300,7 @@ public class Monitor implements Runnable {
 						bufferedOutput.newLine();
 						bufferedOutput.flush();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						logger.error("Error when writing the report in the output stream", e);
 					}
 					break;
 				}
@@ -319,8 +321,7 @@ public class Monitor implements Runnable {
 					if (!info[1].equals("x")) {
 						String relocation = relocateProd(info[1], info[3]); // ip,bytessent
 						if (!relocation.equals("")) {
-							// logger.info("relocating " + info[2] +
-							// " on " + relocation);
+							 logger.debug("relocating " + info[2] + " on " + relocation);
 							producersPub.send(("1," + info[2] + "," + relocation).getBytes(), 0);
 						}
 					}
@@ -352,17 +353,16 @@ public class Monitor implements Runnable {
 
 				switch (infoCode) {
 				case 1:
-					// logger.info("Received init request from listener");
+					logger.debug("Received init request from listener");
 					initRep.send(bcastExchg().getBytes(), 0);
 					break;
 				case 2:
-					// logger.info("Received init request from producer. Assigned on "
-					// + getFreeHost());
+					 logger.debug("Received init request from producer. Assigned on "+ getFreeHost());
 					initRep.send(getFreeHost().getBytes(), 0);
 					break;
 
 				case 3:
-					// logger.info("Received panic init from producer");
+					logger.debug("Received panic init from producer");
 					initRep.send(getFreeHost().getBytes(), 0);// TODO: round
 																// robin return
 																// knownHosts.
