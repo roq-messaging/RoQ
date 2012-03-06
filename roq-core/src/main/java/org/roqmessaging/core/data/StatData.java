@@ -88,7 +88,5 @@ public class StatData {
 	public void setProcessed(int processed) {
 		this.processed = processed;
 	}
-	
-	
 
 }

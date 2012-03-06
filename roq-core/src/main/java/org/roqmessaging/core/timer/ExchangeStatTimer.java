@@ -42,6 +42,7 @@ public 	class ExchangeStatTimer extends TimerTask {
 	public ExchangeStatTimer(Exchange xChangeRef,  StatData stat,  ZMQ.Context context ) {
 		this.xchange = xChangeRef;
 		this.timercontext = ZMQ.context(1);
+		//TODO TImersocket  == ? statsPub?
 		this.timersocket = timercontext.socket(ZMQ.PUB);
 		this.statistic=stat;
 		timersocket.connect(this.xchange.getS_monitor());

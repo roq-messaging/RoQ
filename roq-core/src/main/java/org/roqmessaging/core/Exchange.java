@@ -176,10 +176,6 @@ public class Exchange implements Runnable {
 		return s_monitor;
 	}
 
-
-
-
-
 	/**
 	 * @param s_monitor the s_monitor to set
 	 */
