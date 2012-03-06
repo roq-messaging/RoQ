@@ -33,7 +33,7 @@ import org.zeromq.ZMQ;
  * <br>2. manage the auto scaling
  * <br>3. the publisher re-allocation
  * 
- * @author Sabri Skhiri
+ *  @author Nam-Luc Tran, Sabri Skhiri
  */
 public class Monitor implements Runnable {
 
@@ -308,8 +308,7 @@ public class Monitor implements Runnable {
 					if (!info[1].equals("x")) {
 						String relocation = relocateProd(info[1], info[3]); // ip,bytessent
 						if (!relocation.equals("")) {
-							// logger.info("relocating " + info[2] +
-							// " on " + relocation);
+							 logger.debug("relocating " + info[2] + " on " + relocation);
 							producersPub.send(("1," + info[2] + "," + relocation).getBytes(), 0);
 						}
 					}

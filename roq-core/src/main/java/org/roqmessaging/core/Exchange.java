@@ -31,7 +31,7 @@ import org.zeromq.ZMQ;
  * <p> Description: The main component of the logical queue. All messages must 
  * go through this element.
  * 
- * @author sskhiri
+ * @author Nam-Luc Tran, Sabri Skhiri
  */
 public class Exchange implements Runnable {
 	
