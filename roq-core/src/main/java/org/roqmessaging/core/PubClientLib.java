@@ -156,8 +156,7 @@ public class PubClientLib implements Runnable {
 							try {
 								Thread.sleep(1500);
 							} catch (InterruptedException e) {
-
-								e.printStackTrace();
+								logger.error("Error when thread sleeping (re-allocation phase", e);
 							}
 						}
 					}
@@ -171,16 +170,14 @@ public class PubClientLib implements Runnable {
 					if (this.tstmp) {
 						exchPub.send(msg, ZMQ.SNDMORE);
 						exchPub.send(getTimestamp(), 0);
-					}
-
-					else {
+					}else {
 						exchPub.send(msg, 0);
 					}
 
 					try {
 						Thread.sleep(0, 100);
 					} catch (InterruptedException e) {
-						e.printStackTrace();
+						logger.error("Error when thread sleeping (sending phase)", e);
 					}
 					sent++;
 					if (sent == rate)

@@ -140,8 +140,7 @@ public class SubClientLib implements Runnable {
 			try {
 				Thread.sleep(2500);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				logger.error("Error when thread sleeping (init phase)", e);
 			}
 			logger.info("Retrying connection...");
 		}

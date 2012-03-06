@@ -30,7 +30,7 @@ import org.zeromq.ZMQ;
  * Class Monitor
  * <p> Description: 
  * <br>1. Maintain the state of the exchanges in place and their states. 
- * <br>2. manage the aut scaling
+ * <br>2. manage the auto scaling
  * <br>3. the publisher re-allocation
  * 
  * @author Sabri Skhiri
@@ -256,6 +256,7 @@ public class Monitor implements Runnable {
 				String info[] = new String(statSub.recv(0)).split(",");
 				infoCode = Integer.parseInt(info[0]);
 
+				logger.debug("Start analysing info code, the use fils ="+this.useFile);
 				switch (infoCode) {
 				case 11:
 					logger.info("1 producer finished, sent " + info[2] + " messages.");
@@ -265,8 +266,7 @@ public class Monitor implements Runnable {
 						bufferedOutput.newLine();
 						bufferedOutput.flush();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						logger.error("Error when writing the report in the output stream", e);
 					}
 					break;
 				case 12:
@@ -277,7 +277,7 @@ public class Monitor implements Runnable {
 						bufferedOutput.flush();
 
 					} catch (IOException e) {
-						e.printStackTrace();
+						logger.error("Error when writing the report in the output stream", e);
 					}
 					break;
 				case 21:
@@ -287,7 +287,7 @@ public class Monitor implements Runnable {
 						bufferedOutput.newLine();
 						bufferedOutput.flush();
 					} catch (IOException e) {
-						e.printStackTrace();
+						logger.error("Error when writing the report in the output stream", e);
 					}
 					break;
 				case 31:
@@ -297,8 +297,7 @@ public class Monitor implements Runnable {
 						bufferedOutput.newLine();
 						bufferedOutput.flush();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						logger.error("Error when writing the report in the output stream", e);
 					}
 					break;
 				}
@@ -352,17 +351,16 @@ public class Monitor implements Runnable {
 
 				switch (infoCode) {
 				case 1:
-					// logger.info("Received init request from listener");
+					logger.debug("Received init request from listener");
 					initRep.send(bcastExchg().getBytes(), 0);
 					break;
 				case 2:
-					// logger.info("Received init request from producer. Assigned on "
-					// + getFreeHost());
+					 logger.debug("Received init request from producer. Assigned on "+ getFreeHost());
 					initRep.send(getFreeHost().getBytes(), 0);
 					break;
 
 				case 3:
-					// logger.info("Received panic init from producer");
+					logger.debug("Received panic init from producer");
 					initRep.send(getFreeHost().getBytes(), 0);// TODO: round
 																// robin return
 																// knownHosts.

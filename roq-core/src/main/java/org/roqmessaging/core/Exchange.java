@@ -27,7 +27,7 @@ import org.zeromq.ZMQ;
 
 
 /**
- * Class ZExchange
+ * Class Exchange
  * <p> Description: The main component of the logical queue. All messages must 
  * go through this element.
  * 
