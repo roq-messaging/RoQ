@@ -172,6 +172,19 @@ public class Monitor implements Runnable {
 		}
 	}
 
+	/**
+	 * Evaluates the load on the exchange and select the less overloaded exchange if required.
+	 * The relocation method does:
+	 * 1. Get the host index in the exchange host list<br>
+	 * 2. Check the max throughput value<br>
+	 * 3. Check the limit case (1 publisher)<br>
+	 * 4. Get a candidate: exchange that is still under the max throughput limit and that has the lower throughput<br>
+	 * 5. Update the config state of the exchange candidate <br>
+	 * 6. Send the relocate message to the publisher<br>
+	 * @param exchg_addr the address of the current exchange
+	 * @param bytesSent the bytesent per cycle sent through the exchange
+	 * @return an empty string is there is nothing to do or the address of the new exchange if we need a re-location
+	 */
 	private String relocateProd(String exchg_addr, String bytesSent) {
 		if (knownHosts.size() > 0 && hostLookup(exchg_addr) != -1) {
 			int exch_index = hostLookup(exchg_addr);
@@ -186,16 +199,16 @@ public class Monitor implements Runnable {
 						String candidate = knownHosts.get(candidate_index).getAddress();
 						if (knownHosts.get(candidate_index).getThroughput() + Long.parseLong(bytesSent) < (java.lang.Math
 								.round(maxThroughput * 0.90))) {
+							
 							knownHosts.get(candidate_index).addThroughput(Long.parseLong(bytesSent));
 							knownHosts.get(candidate_index).addNbProd();
 							return candidate;
-						}
-
-						else if (knownHosts.get(candidate_index).getThroughput() + Long.parseLong(bytesSent) < knownHosts
+						}else if (knownHosts.get(candidate_index).getThroughput() + Long.parseLong(bytesSent) < knownHosts
 								.get(hostLookup(exchg_addr)).getThroughput()
-								&& (knownHosts.get(hostLookup(exchg_addr)).getThroughput() - knownHosts.get(
-										candidate_index).getThroughput()) > (java.lang.Math.round(knownHosts.get(
-										hostLookup(exchg_addr)).getThroughput() * 0.20))) {
+								&& 
+								(knownHosts.get(hostLookup(exchg_addr)).getThroughput() - knownHosts.get(candidate_index).getThroughput())
+								> (java.lang.Math.round(knownHosts.get(	hostLookup(exchg_addr)).getThroughput() * 0.20))) {
+							
 							knownHosts.get(candidate_index).addThroughput(Long.parseLong(bytesSent));
 							knownHosts.get(candidate_index).addNbProd();
 							logger.info("Relocating for load optimization");
