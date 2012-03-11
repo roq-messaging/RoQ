@@ -12,7 +12,7 @@
  * limitations under the License.
  * 
  */
-package org.roqmessaging.core;
+package org.roqmessaging.state;
 
 /**
  * Class ProducerState

@@ -12,7 +12,9 @@
  * limitations under the License.
  * 
  */
-package org.roqmessaging.core;
+package org.roqmessaging.state;
+
+import org.roqmessaging.core.Monitor;
 
 /**
  * Class ExchangeState

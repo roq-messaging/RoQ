@@ -16,19 +16,16 @@ package org.roqmessaging.tests;
 
 import static org.junit.Assert.assertNotNull;
 
-import java.io.IOException;
-
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.roqmessaging.client.RoQPublisher;
 import org.roqmessaging.core.Exchange;
 import org.roqmessaging.core.Monitor;
-import org.roqmessaging.core.PubClientLib;
+import org.roqmessaging.core.PublisherClient;
 import org.roqmessaging.core.SubClientLib;
-import org.roqmessaging.core.utils.RoQUtils;
-import org.zeromq.ZMQ;
 
 /**
  * Class BasicSetupTests
@@ -41,8 +38,8 @@ import org.zeromq.ZMQ;
 public class BasicSetupTest {
 	private Exchange xChange = null;
 	private Monitor monitor = null;
-	private Thread threadPub = null;
 	private Thread threadSub = null;
+	private RoQPublisher publisher = null;
 	private Logger logger = Logger.getLogger(BasicSetupTest.class);
 
 	/**
@@ -67,16 +64,27 @@ public class BasicSetupTest {
 	public void tearDown() throws Exception {
 		this.xChange.cleanShutDown();
 		// TODO implementing a clean shutdown methd
-		this.threadPub.stop();
 		this.threadSub.stop();
 		this.monitor.cleanShutDown();
 	}
 
 	@Test
 	public void test() {
+		int attemp = 0;
 		logger.log(Level.INFO, "Start Test");
 		assertNotNull(this.xChange);
 		assertNotNull(this.monitor);
+		try {
+			//Need to wait at least 10 second to make the echange and listener configure porperly.
+			while(	!this.publisher.sendMessage("sabri".getBytes(), "hello".getBytes()) && attemp<6){
+				Thread.sleep(3000);
+				logger.info("Re -try sending message");
+				attemp++;
+			}
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -86,58 +94,28 @@ public class BasicSetupTest {
 	 */
 	private void startExchange() {
 		final String monitorHost = "localhost";
-		final ZMQ.Context shutDownContext;
-		final ZMQ.Socket shutDownSocket;
-		shutDownContext = ZMQ.context(1);
-		shutDownSocket = shutDownContext.socket(ZMQ.PUB);
-		shutDownSocket.connect("tcp://" + monitorHost + ":5571");
-		shutDownSocket.setLinger(3500);
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run() // TODO ensure it waits few seconds in normal
-								// functioning before closing everything
-								// This section may need to be rewritten more
-								// elegantly
-			{
-				try {
-					Runtime.getRuntime().exec("date");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-
-				System.out.println("Shutting Down!");
-				shutDownSocket.send(("6," + RoQUtils.getInstance().getLocalIP()).getBytes(), 0);
-				try {
-					Thread.sleep(1);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-		});
-
 		this.xChange = new Exchange("5559", "5560", monitorHost);
 		Thread t = new Thread(this.xChange);
 		t.start();
+		
+		try {
+			Thread.sleep(1);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
 	 * Initiate a thread publisher
 	 */
 	private void startPublisherClient() {
-		// Init parameters
-		String monitor = "localhost";
-		int rate = 5;
-		int minutes = 1;
-		int payload = 25;
-		boolean tstmp = true;
-
 		// Launching the pub client
-		PubClientLib pubClient = new PubClientLib(monitor, rate, minutes, payload, tstmp); // monitor,
-																							// msg/min,
-																							// duration,
-																							// payload
-		this.threadPub = new Thread(pubClient);
-		this.threadPub.start();
+	   this.publisher = new PublisherClient();
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**

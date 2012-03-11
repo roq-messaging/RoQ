@@ -24,6 +24,7 @@ import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.state.ExchangeState;
 import org.zeromq.ZMQ;
 
 /**
@@ -259,7 +260,7 @@ public class Monitor implements Runnable {
 				String info[] = new String(statSub.recv(0)).split(",");
 				infoCode = Integer.parseInt(info[0]);
 
-				logger.debug("Start analysing info code, the use fils ="+this.useFile);
+				logger.debug("Start analysing info code, the use files ="+this.useFile);
 				switch (infoCode) {
 				case 11:
 					logger.info("1 producer finished, sent " + info[2] + " messages.");
