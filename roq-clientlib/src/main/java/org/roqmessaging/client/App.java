@@ -1,4 +1,4 @@
-package org.roqmessaging.clientlib;
+package org.roqmessaging.client;
 
 /**
  * Hello world!

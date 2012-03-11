@@ -200,6 +200,7 @@ public class SubClientLib implements Runnable {
 						computeLatency(Long.parseLong(new String(request, 0, request.length - 1)));
 					}
 				}
+				logger.debug("Recieving message " +  new String(request,0,request.length));
 				received++;
 			}
 		}

@@ -12,26 +12,22 @@
  * limitations under the License.
  * 
  */
-package org.roq.simulation;
-
-import org.roq.simulation.clientLib.PubClientLib;
+package org.roqmessaging.client;
 
 /**
- * Class PublisherLauncher
- * <p> Description: Launch a publisher according to command lines arguments.
+ * Interface RoQPublisher
+ * <p> Description: Client API that client must know to send a message. 
  * 
  * @author sskhiri
  */
-public class PublisherLauncher {
-
+public interface RoQPublisher {
+	
 	/**
-	 * String monitor, int rate, int minutes, int payload,
-			boolean tstmp
+	 * @param key the message key
+	 * @param msg the message to send
+	 * @throws IllegalStateException thrown if the configuration state is not valid when sending the message.
+	 * @return true if the configuration is valid
 	 */
-	public static void main(String[] args){
-		PubClientLib pubClient = new PubClientLib(args[0],Integer.parseInt(args[1]),Integer.parseInt(args[2]),Integer.parseInt(args[3]), Boolean.parseBoolean(args[4])); //monitor, msg/min, duration, payload
-		Thread t = new Thread(pubClient);
-		t.start();
-	}
+	public boolean sendMessage(byte[] key , byte[] msg ) throws IllegalStateException;
 
 }

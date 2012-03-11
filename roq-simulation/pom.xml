@@ -1,30 +1,34 @@
 <?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <artifactId>roq-parent</artifactId>
-    <groupId>org.roqmessaging</groupId>
-    <version>1.0-SNAPSHOT</version>
-  </parent>
-  <groupId>org.roqmessaging.simulation</groupId>
-  <artifactId>roq-simulation</artifactId>
-  <name>roq-simulation</name>
-  <url>https://github.com/roq-messaging/RoQ/</url>
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-    	<groupId>org.roqmessaging.core</groupId>
-    	<artifactId>roq-core</artifactId>
-    	<version>1.0-SNAPSHOT</version>
-    </dependency>
-  </dependencies>
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<modelVersion>4.0.0</modelVersion>
+
+	<artifactId>roq-simulation</artifactId>
+	<name>roq-simulation</name>
+	<packaging>jar</packaging>
+	<url>https://github.com/roq-messaging/RoQ/</url>
+
+	<parent>
+		<groupId>org.roqmessaging</groupId>
+		<artifactId>roq-parent</artifactId>
+		<version>1.0-SNAPSHOT</version>
+	</parent>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>3.8.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.roqmessaging.core</groupId>
+			<artifactId>roq-core</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+	</dependencies>
 </project>

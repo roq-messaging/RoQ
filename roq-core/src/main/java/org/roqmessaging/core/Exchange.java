@@ -23,6 +23,7 @@ import org.apache.log4j.Logger;
 import org.roqmessaging.core.data.StatData;
 import org.roqmessaging.core.timer.ExchangeStatTimer;
 import org.roqmessaging.core.timer.Heartbeat;
+import org.roqmessaging.state.ProducerState;
 import org.zeromq.ZMQ;
 
 
@@ -80,10 +81,6 @@ public class Exchange implements Runnable {
 
 		this.active = true;
 	}
-
-
-
-
 
 	/**
 	 * Log the size of the message in the producer state.
