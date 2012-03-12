@@ -15,7 +15,7 @@
 package org.roqmessaging.core;
 
 import org.apache.log4j.Logger;
-import org.roqmessaging.client.RoQPublisher;
+import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.state.PublisherConfigState;
 import org.zeromq.ZMQ;
 
@@ -27,7 +27,7 @@ import org.zeromq.ZMQ;
  * 
  * @author sskhiri
  */
-public class PublisherClient implements RoQPublisher {
+public class PublisherClient implements IRoQPublisher {
 	//The Thread that manages the publisher configuration
 	private PubConfigThread configThread = null;
 	//Logger
@@ -53,7 +53,7 @@ public class PublisherClient implements RoQPublisher {
 	}
 
 	/**
-	 * @see org.roqmessaging.client.RoQPublisher#sendMessage(byte[], byte[])
+	 * @see org.roqmessaging.client.IRoQPublisher#sendMessage(byte[], byte[])
 	 */
 	public boolean sendMessage(byte[] key, byte[] msg) throws IllegalStateException {
 		//1. Get the configuration state

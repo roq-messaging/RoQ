@@ -12,22 +12,23 @@
  * limitations under the License.
  * 
  */
-package org.roqmessaging.client;
+package org.roqmessaging.clientlib.factory;
+
+import org.roqmessaging.client.IRoQConnection;
 
 /**
- * Interface RoQPublisher
- * <p> Description: Client API that client must know to send a message. 
+ * Interface  IRoQConnectionFactory
+ * <p> Description: factory that create the RoQConnection.
  * 
  * @author sskhiri
  */
-public interface RoQPublisher {
+public interface IRoQConnectionFactory {
 	
 	/**
-	 * @param key the message key
-	 * @param msg the message to send
-	 * @throws IllegalStateException thrown if the configuration state is not valid when sending the message.
-	 * @return true if the configuration is valid
+	 * Instantiates a connection. Notice that the connection will need to connect to an active Exchange. At startup this 
+	 * could take few seconds before beeing ready.
+	 * @return a connection that can be used to send messages.
 	 */
-	public boolean sendMessage(byte[] key , byte[] msg ) throws IllegalStateException;
+	public IRoQConnection createRoQConnection();
 
 }
