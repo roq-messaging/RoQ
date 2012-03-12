@@ -21,11 +21,13 @@ import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQPublisher;
+import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.core.Exchange;
 import org.roqmessaging.core.Monitor;
-import org.roqmessaging.core.PublisherClient;
 import org.roqmessaging.core.SubClientLib;
+import org.roqmessaging.core.factory.RoQConnectionFactory;
 
 /**
  * Class BasicSetupTests
@@ -40,6 +42,8 @@ public class BasicSetupTest {
 	private Monitor monitor = null;
 	private Thread threadSub = null;
 	private IRoQPublisher publisher = null;
+	private IRoQConnection connection = null;
+	private IRoQConnectionFactory factory = null;
 	private Logger logger = Logger.getLogger(BasicSetupTest.class);
 
 	/**
@@ -62,10 +66,12 @@ public class BasicSetupTest {
 	 */
 	@After
 	public void tearDown() throws Exception {
+		this.connection.close();
 		this.xChange.cleanShutDown();
 		// TODO implementing a clean shutdown methd
 		this.threadSub.stop();
 		this.monitor.cleanShutDown();
+		
 	}
 
 	@Test
@@ -76,11 +82,13 @@ public class BasicSetupTest {
 		assertNotNull(this.monitor);
 		try {
 			//Need to wait at least 10 second to make the echange and listener configure porperly.
-			while(	!this.publisher.sendMessage("sabri".getBytes(), "hello".getBytes()) && attemp<6){
+			while(	!this.connection.isReady()&& attemp<6){
 				Thread.sleep(3000);
-				logger.info("Re -try sending message");
+				logger.info("Waiting for connection ready..." + attemp*3 +" sec");
 				attemp++;
 			}
+			if(this.connection.isReady())	this.publisher.sendMessage("sabri".getBytes(), "hello".getBytes());
+			else throw new IllegalStateException("Connection is not ready after 15 sec");
 			Thread.sleep(2000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -109,8 +117,11 @@ public class BasicSetupTest {
 	 * Initiate a thread publisher
 	 */
 	private void startPublisherClient() {
-		// Launching the pub client
-	   this.publisher = new PublisherClient();
+		//1. Creating the connection
+		this.factory = new RoQConnectionFactory();
+		this.connection = this.factory.createRoQConnection();
+		this.connection.open();
+		this.publisher = this.connection.createPublisher();
 		try {
 			Thread.sleep(2000);
 		} catch (InterruptedException e) {

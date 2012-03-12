@@ -35,11 +35,11 @@ public interface IRoQConnection {
 	/**
 	 * @return a publisher using the current connection to send messages.
 	 */
-	public IRoQPublisher  createPublisher();
+	public IRoQPublisher  createPublisher() throws IllegalStateException;
 	
 	/**
 	 * @return true if the connection is ready
 	 */
-	public boolean isReady();
+	public boolean isReady() throws IllegalStateException ;
 
 }

@@ -29,27 +29,15 @@ import org.zeromq.ZMQ;
  */
 public class PublisherClient implements IRoQPublisher {
 	//The Thread that manages the publisher configuration
-	private PubConfigThread configThread = null;
+	private PublisherConnectionManager connectionManager = null;
 	//Logger
 	private Logger logger = Logger.getLogger(PublisherClient.class);
 	
 	/**
 	 * Initiatilisation of the class
 	 */
-	public PublisherClient() {
-		startConfigThread();
-	
-	}
-
-	/**
-	 * Start the configuration thread
-	 */
-	private void startConfigThread() {
-		//TODO Hard coded configuration, this should be in a java.property file
-		this.configThread = new PubConfigThread("localhost", false);
-		Thread mainThread = new Thread(configThread);
-		mainThread.start();
-	
+	public PublisherClient(PublisherConnectionManager connectionManager) {
+		this.connectionManager = connectionManager;
 	}
 
 	/**
@@ -57,7 +45,7 @@ public class PublisherClient implements IRoQPublisher {
 	 */
 	public boolean sendMessage(byte[] key, byte[] msg) throws IllegalStateException {
 		//1. Get the configuration state
-		PublisherConfigState configState = this.configThread.getConfiguration();
+		PublisherConfigState configState = this.connectionManager.getConfiguration();
 		if(configState.isValid()){
 			//2. If OK send the message
 			configState.getExchPub().send(key, ZMQ.SNDMORE);
