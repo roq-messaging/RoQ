@@ -21,7 +21,7 @@ import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.roqmessaging.client.RoQPublisher;
+import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.core.Exchange;
 import org.roqmessaging.core.Monitor;
 import org.roqmessaging.core.PublisherClient;
@@ -39,7 +39,7 @@ public class BasicSetupTest {
 	private Exchange xChange = null;
 	private Monitor monitor = null;
 	private Thread threadSub = null;
-	private RoQPublisher publisher = null;
+	private IRoQPublisher publisher = null;
 	private Logger logger = Logger.getLogger(BasicSetupTest.class);
 
 	/**
