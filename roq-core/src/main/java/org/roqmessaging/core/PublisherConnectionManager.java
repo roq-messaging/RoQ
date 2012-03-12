@@ -8,8 +8,8 @@ import org.apache.log4j.Logger;
 import org.roqmessaging.state.PublisherConfigState;
 import org.zeromq.ZMQ;
 
-public class PubConfigThread implements Runnable {
-	private Logger logger = Logger.getLogger(PubConfigThread.class);
+public class PublisherConnectionManager implements Runnable {
+	private Logger logger = Logger.getLogger(PublisherConnectionManager.class);
 
 	private ZMQ.Context context;
 	private String s_ID;
@@ -27,7 +27,7 @@ public class PubConfigThread implements Runnable {
 	private PublisherConfigState configState = null;
 	
 
-	public PubConfigThread(String monitor, boolean tstmp) {
+	public PublisherConnectionManager(String monitor, boolean tstmp) {
 		this.context = ZMQ.context(1);
 		this.monitorSub = context.socket(ZMQ.SUB);
 		monitorSub.connect("tcp://" + monitor + ":5573");
@@ -168,6 +168,14 @@ public class PubConfigThread implements Runnable {
 	 */
 	public PublisherConfigState getConfiguration(){
 		return this.configState;
+	}
+	
+	/**
+	 * Stop the connection manager.
+	 */
+	public void shutDown(){
+		this.running=false;
+		this.closeConnection();
 	}
 
 }
