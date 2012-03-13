@@ -12,26 +12,22 @@
  * limitations under the License.
  * 
  */
-package org.roq.simulation;
+package org.roqmessaging.clientlib.factory;
 
-import org.roqmessaging.core.SubscriberConnectionManager;
+import org.roqmessaging.client.IRoQSubscriberConnection;
 
 /**
- * Class SubScriberLauncher
- * <p>
- * Description: Launches subscriber thread according to cmd lines args.
+ * Class IRoQConnectionSubscriberFactory
+ * <p> Description: Factory to create Connection offered to Subscriber.
  * 
  * @author sskhiri
  */
-public class SubScriberLauncher {
-
+public interface IRoQSubscriberConnectionFactory {
 	/**
-	 * @param args
+	 * Instantiates a connection. Notice that the connection will need to connect to an active Exchange. At startup this 
+	 * could take few seconds before being ready.
+	 * @param the filtering key
+	 * @return a connection that can be used to receive  messages.
 	 */
-	public static void main(String[] args) {
-		SubscriberConnectionManager SubClient = new SubscriberConnectionManager(args[0], "manche", 0, Boolean.parseBoolean(args[1]));
-		Thread t = new Thread(SubClient);
-		t.start();
-	}
-
+	public IRoQSubscriberConnection createRoQConnection(String key);
 }

@@ -15,10 +15,12 @@
 package org.roqmessaging.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
+import org.roqmessaging.client.IRoQSubscriber;
 import org.zeromq.ZMQ;
 
 /**
@@ -27,13 +29,13 @@ import org.zeromq.ZMQ;
  * 
  * @author Nam-Luc Tran
  */
-public class SubClientLib implements Runnable {
-	private Logger logger = Logger.getLogger(SubClientLib.class);
+public class SubscriberConnectionManager implements Runnable {
+	private Logger logger = Logger.getLogger(SubscriberConnectionManager.class);
 
 	private ZMQ.Context context;
 	private String s_monitor;
 	private ZMQ.Poller items;
-	private byte[] key;
+	private byte[] subkey;
 
 	private ZMQ.Socket initReq;
 
@@ -44,24 +46,35 @@ public class SubClientLib implements Runnable {
 
 	private ZMQ.Socket tstmpReq;
 
-	private int received;
-	private int totalReceived;
-	private int minute;
+	private int received=0;
+	private int totalReceived=0;
+	private int minute=0;
 
-	private int ID;
+	private int subsriberID=0;
 
 	private long latency;
 	private int latenced;
 	private boolean tstmp;
-
-	public SubClientLib(String monitor, String subKey, int ID, boolean tstmp) {
+	
+	//Define when the thread must stop
+	private volatile boolean running = true;
+	//Ssubscriber to deliver the message
+	private IRoQSubscriber subscriber = null;
+	
+	/**
+	 * @param monitor the monitor address to bind
+	 * @param subKey the subscriber must filter on that key
+	 * @param ID the subscriber ID
+	 * @param tstmp true if we use a timestamp server
+	 */
+	public SubscriberConnectionManager(String monitor, String subKey, int ID, boolean tstmp) {
 		this.context = ZMQ.context(1);
 		this.s_monitor = "tcp://" + monitor;
-		this.key = subKey.getBytes();
+		this.subkey = subKey.getBytes();
 
 		this.monitorSub = context.socket(ZMQ.SUB);
 		monitorSub.connect(s_monitor + ":5574");
-		monitorSub.subscribe(key);
+		monitorSub.subscribe(subkey);
 
 		this.initReq = this.context.socket(ZMQ.REQ);
 		this.initReq.connect("tcp://" + monitor + ":5572");
@@ -69,7 +82,7 @@ public class SubClientLib implements Runnable {
 		this.received = 0;
 		this.totalReceived = 0;
 		this.minute = 0;
-		this.ID = ID;
+		this.subsriberID = ID;
 		this.latency = 0;
 		this.latenced = 0;
 
@@ -101,7 +114,7 @@ public class SubClientLib implements Runnable {
 					+ meanLat + " " + "milliseconds");
 
 			statsPub.send(
-					("31," + minute + "," + totalReceived + "," + received + "," + ID + "," + meanLat).getBytes(), 0);
+					("31," + minute + "," + totalReceived + "," + received + "," + subsriberID + "," + meanLat).getBytes(), 0);
 			minute++;
 			received = 0;
 			latency = 0;
@@ -151,6 +164,28 @@ public class SubClientLib implements Runnable {
 		tstmpReq.send("".getBytes(), 0);
 		return tstmpReq.recv(0);
 	}
+	
+	/**
+	 * @return the running
+	 */
+	public boolean isRunning() {
+		return running;
+	}
+
+	/**
+	 * @param running the running to set
+	 */
+	public void shutdown(){
+		this.running = false;
+	}
+	
+	/**
+	 * @param listener the subscriber to register.
+	 */
+	public void setMessageListener(IRoQSubscriber listener){
+		this.subscriber = listener;
+	}
+	
 
 	public void run() {
 		knownHosts = new ArrayList<String>();
@@ -172,7 +207,7 @@ public class SubClientLib implements Runnable {
 
 		logger.info("Worker connected");
 
-		while (true) {
+		while (running) {
 			items.poll(10);
 			if (items.pollin(0)) { // Info from Monitor
 
@@ -189,10 +224,11 @@ public class SubClientLib implements Runnable {
 				}
 			}
 
-			if (items.pollin(1)) {
+			if (items.pollin(1)) {//From Exchange
 				byte[] request;
 				request = exchSub.recv(0);
 				int part = 1;
+				byte[] key = request;
 				while (exchSub.hasReceiveMore()) {
 					request = exchSub.recv(0);
 					part++;
@@ -200,10 +236,17 @@ public class SubClientLib implements Runnable {
 						computeLatency(Long.parseLong(new String(request, 0, request.length - 1)));
 					}
 				}
-				logger.debug("Recieving message " +  new String(request,0,request.length));
+				logger.debug("Recieving message " +  new String(request,0,request.length) + " key : "+ new String(request,0,request.length));
+				//delivering to the message listener
+				if(Arrays.equals(subkey, key)){
+					this.subscriber.onEvent(request);
+				}
 				received++;
 			}
 		}
+		knownHosts.clear();
+		this.exchSub.close();
+		this.initReq.close();
 	}
 
 }

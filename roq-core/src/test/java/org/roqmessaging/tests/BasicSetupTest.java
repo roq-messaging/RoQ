@@ -23,11 +23,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQPublisher;
+import org.roqmessaging.client.IRoQSubscriber;
+import org.roqmessaging.client.IRoQSubscriberConnection;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
+import org.roqmessaging.clientlib.factory.IRoQSubscriberConnectionFactory;
 import org.roqmessaging.core.Exchange;
 import org.roqmessaging.core.Monitor;
-import org.roqmessaging.core.SubClientLib;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
+import org.roqmessaging.core.factory.RoQSubscriberConnectionFactory;
 
 /**
  * Class BasicSetupTests
@@ -40,10 +43,11 @@ import org.roqmessaging.core.factory.RoQConnectionFactory;
 public class BasicSetupTest {
 	private Exchange xChange = null;
 	private Monitor monitor = null;
-	private Thread threadSub = null;
 	private IRoQPublisher publisher = null;
 	private IRoQConnection connection = null;
 	private IRoQConnectionFactory factory = null;
+	private IRoQSubscriberConnectionFactory subFactory = null;
+	private IRoQSubscriberConnection subConnection = null;
 	private Logger logger = Logger.getLogger(BasicSetupTest.class);
 
 	/**
@@ -67,11 +71,8 @@ public class BasicSetupTest {
 	@After
 	public void tearDown() throws Exception {
 		this.connection.close();
+		this.subConnection.close();
 		this.xChange.cleanShutDown();
-		// TODO implementing a clean shutdown methd
-		this.threadSub.stop();
-		this.monitor.cleanShutDown();
-		
 	}
 
 	@Test
@@ -133,13 +134,16 @@ public class BasicSetupTest {
 	 * Initiate a thread subscriber
 	 */
 	private void startSubscriberClient() {
-		String monitor = "localhost";
-		String subKey = "manche";
-		int ID = 0;
-		boolean tstmp = true;
-		SubClientLib SubClient = new SubClientLib(monitor, subKey, ID, tstmp);
-		this.threadSub= new Thread(SubClient);
-		this.threadSub.start();
+		this.subFactory = new RoQSubscriberConnectionFactory();
+		this.subConnection = this.subFactory.createRoQConnection("sabri");
+		this.subConnection.open();
+		this.subConnection.setMessageSubscriber(new IRoQSubscriber() {
+			public void onEvent(byte[] msg) {
+				String content= new String(msg,0,msg.length) ;
+				assert content.equals("hello");
+				logger.info("In message lIstener recieveing :"+ content);
+			}
+		});
 	}
 	
 	/**

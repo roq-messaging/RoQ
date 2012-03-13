@@ -12,26 +12,19 @@
  * limitations under the License.
  * 
  */
-package org.roq.simulation;
-
-import org.roqmessaging.core.SubscriberConnectionManager;
+package org.roqmessaging.client;
 
 /**
- * Class SubScriberLauncher
- * <p>
- * Description: Launches subscriber thread according to cmd lines args.
+ * Interface  IRoQSubscriber
+ * <p> Description: The interface that represents a RoQ subscriber.
  * 
  * @author sskhiri
  */
-public class SubScriberLauncher {
-
+public interface IRoQSubscriber {
+	
 	/**
-	 * @param args
+	 * @param msg the msq sent throug the queue
 	 */
-	public static void main(String[] args) {
-		SubscriberConnectionManager SubClient = new SubscriberConnectionManager(args[0], "manche", 0, Boolean.parseBoolean(args[1]));
-		Thread t = new Thread(SubClient);
-		t.start();
-	}
+	public void onEvent(byte [] msg);
 
 }
