@@ -53,6 +53,8 @@ public class SubscriberConnectionManager implements Runnable {
 	private long latency;
 	private int latenced;
 	private boolean tstmp;
+	
+	private volatile boolean running = true;
 
 	/**
 	 * @param monitor the monitor address to bind
@@ -157,6 +159,8 @@ public class SubscriberConnectionManager implements Runnable {
 		tstmpReq.send("".getBytes(), 0);
 		return tstmpReq.recv(0);
 	}
+	
+	
 
 	public void run() {
 		knownHosts = new ArrayList<String>();
@@ -178,7 +182,7 @@ public class SubscriberConnectionManager implements Runnable {
 
 		logger.info("Worker connected");
 
-		while (true) {
+		while (running) {
 			items.poll(10);
 			if (items.pollin(0)) { // Info from Monitor
 
@@ -210,6 +214,20 @@ public class SubscriberConnectionManager implements Runnable {
 				received++;
 			}
 		}
+	}
+
+	/**
+	 * @return the running
+	 */
+	public boolean isRunning() {
+		return running;
+	}
+
+	/**
+	 * @param running the running to set
+	 */
+	public void shutdown(){
+		this.running = running;
 	}
 
 }
