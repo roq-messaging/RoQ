@@ -32,18 +32,13 @@ public interface IRoQSubscriberConnection {
 	/**
 	 * Close the connection by stopping the connection management thread.
 	 */
-	public void close();
+	public void close() throws IllegalStateException;
 	
 	/**
 	 * Add a subscriber to the internal list.
 	 * @param subscriber the message subscriber.
 	 */
-	public void registerSubscriber(IRoQSubscriber subscriber);
+	public void setMessageSubscriber(IRoQSubscriber subscriber) throws IllegalStateException;
 	
-	/**
-	 * @param subscriber the subscriber to remove.
-	 * @return true if the subscriber has been removed properly.
-	 */
-	public boolean removeSubscriber(IRoQSubscriber subscriber);
 
 }

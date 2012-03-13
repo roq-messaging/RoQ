@@ -33,6 +33,7 @@ public class RoQSubscriberConnection implements IRoQSubscriberConnection {
 	
 	/**
 	 * @param key the filtering key.
+	 * @param subscriberID the listener ID for uniquely identifying subscriber
 	 */
 	public RoQSubscriberConnection(String key, int subscriberID) {
 		this.key = key;
@@ -53,25 +54,18 @@ public class RoQSubscriberConnection implements IRoQSubscriberConnection {
 	 * Close the connection and shutdown the main connection thread.
 	 * @see org.roqmessaging.client.IRoQSubscriberConnection#close()
 	 */
-	public void close() {
+	public void close() throws IllegalStateException{
+		if (this.connectionManager== null) throw new IllegalStateException("The connection is not open");
 		this.connectionManager.shutdown();
 
 	}
-
-	/* (non-Javadoc)
-	 * @see org.roqmessaging.client.IRoQSubscriberConnection#registerSubscriber(org.roqmessaging.client.IRoQSubscriber)
+	/**
+	 * Set the listener that will receive the message.
+	 * @see org.roqmessaging.client.IRoQSubscriberConnection#setMessageSubscriber(org.roqmessaging.client.IRoQSubscriber)
 	 */
-	public void registerSubscriber(IRoQSubscriber subscriber) {
-		// TODO Auto-generated method stub
-
-	}
-
-	/* (non-Javadoc)
-	 * @see org.roqmessaging.client.IRoQSubscriberConnection#removeSubscriber(org.roqmessaging.client.IRoQSubscriber)
-	 */
-	public boolean removeSubscriber(IRoQSubscriber subscriber) {
-		// TODO Auto-generated method stub
-		return false;
+	public void setMessageSubscriber(IRoQSubscriber subscriber) throws IllegalStateException {
+		if (this.connectionManager== null) throw new IllegalStateException("The connection is not open");
+		this.connectionManager.setMessageListener(subscriber);
 	}
 
 }

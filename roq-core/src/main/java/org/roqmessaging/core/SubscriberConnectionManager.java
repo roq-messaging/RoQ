@@ -15,10 +15,12 @@
 package org.roqmessaging.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
+import org.roqmessaging.client.IRoQSubscriber;
 import org.zeromq.ZMQ;
 
 /**
@@ -33,7 +35,7 @@ public class SubscriberConnectionManager implements Runnable {
 	private ZMQ.Context context;
 	private String s_monitor;
 	private ZMQ.Poller items;
-	private byte[] key;
+	private byte[] subkey;
 
 	private ZMQ.Socket initReq;
 
@@ -54,8 +56,11 @@ public class SubscriberConnectionManager implements Runnable {
 	private int latenced;
 	private boolean tstmp;
 	
+	//Define when the thread must stop
 	private volatile boolean running = true;
-
+	//Ssubscriber to deliver the message
+	private IRoQSubscriber subscriber = null;
+	
 	/**
 	 * @param monitor the monitor address to bind
 	 * @param subKey the subscriber must filter on that key
@@ -65,11 +70,11 @@ public class SubscriberConnectionManager implements Runnable {
 	public SubscriberConnectionManager(String monitor, String subKey, int ID, boolean tstmp) {
 		this.context = ZMQ.context(1);
 		this.s_monitor = "tcp://" + monitor;
-		this.key = subKey.getBytes();
+		this.subkey = subKey.getBytes();
 
 		this.monitorSub = context.socket(ZMQ.SUB);
 		monitorSub.connect(s_monitor + ":5574");
-		monitorSub.subscribe(key);
+		monitorSub.subscribe(subkey);
 
 		this.initReq = this.context.socket(ZMQ.REQ);
 		this.initReq.connect("tcp://" + monitor + ":5572");
@@ -160,6 +165,26 @@ public class SubscriberConnectionManager implements Runnable {
 		return tstmpReq.recv(0);
 	}
 	
+	/**
+	 * @return the running
+	 */
+	public boolean isRunning() {
+		return running;
+	}
+
+	/**
+	 * @param running the running to set
+	 */
+	public void shutdown(){
+		this.running = false;
+	}
+	
+	/**
+	 * @param listener the subscriber to register.
+	 */
+	public void setMessageListener(IRoQSubscriber listener){
+		this.subscriber = listener;
+	}
 	
 
 	public void run() {
@@ -203,6 +228,7 @@ public class SubscriberConnectionManager implements Runnable {
 				byte[] request;
 				request = exchSub.recv(0);
 				int part = 1;
+				byte[] key = request;
 				while (exchSub.hasReceiveMore()) {
 					request = exchSub.recv(0);
 					part++;
@@ -210,24 +236,17 @@ public class SubscriberConnectionManager implements Runnable {
 						computeLatency(Long.parseLong(new String(request, 0, request.length - 1)));
 					}
 				}
-				logger.debug("Recieving message " +  new String(request,0,request.length));
+				logger.debug("Recieving message " +  new String(request,0,request.length) + " key : "+ new String(request,0,request.length));
+				//delivering to the message listener
+				if(Arrays.equals(subkey, key)){
+					this.subscriber.onEvent(request);
+				}
 				received++;
 			}
 		}
-	}
-
-	/**
-	 * @return the running
-	 */
-	public boolean isRunning() {
-		return running;
-	}
-
-	/**
-	 * @param running the running to set
-	 */
-	public void shutdown(){
-		this.running = running;
+		knownHosts.clear();
+		this.exchSub.close();
+		this.initReq.close();
 	}
 
 }

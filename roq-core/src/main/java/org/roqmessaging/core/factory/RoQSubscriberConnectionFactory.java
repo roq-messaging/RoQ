@@ -12,22 +12,26 @@
  * limitations under the License.
  * 
  */
-package org.roqmessaging.clientlib.factory;
+package org.roqmessaging.core.factory;
 
 import org.roqmessaging.client.IRoQSubscriberConnection;
+import org.roqmessaging.clientlib.factory.IRoQSubscriberConnectionFactory;
+import org.roqmessaging.core.RoQSubscriberConnection;
 
 /**
- * Class IRoQConnectionSubscriberFactory
- * <p> Description: Factory to create Connection offered to Subscriber.
+ * Class RoQSubscriberConnectionFactory
+ * <p> Description: implementation of the factory. Create and instanciate an subscriber connection.
  * 
  * @author sskhiri
  */
-public interface IRoQSubscriberConnectionFactory {
+public class RoQSubscriberConnectionFactory implements IRoQSubscriberConnectionFactory {
+
 	/**
-	 * Instantiates a connection. Notice that the connection will need to connect to an active Exchange. At startup this 
-	 * could take few seconds before being ready.
-	 * @param the filtering key
-	 * @return a connection that can be used to receive  messages.
+	 * Create the Subscriber connection with the key
+	 * @see org.roqmessaging.clientlib.factory.IRoQSubscriberConnectionFactory#createRoQConnection()
 	 */
-	public IRoQSubscriberConnection createRoQConnection(String key);
+	public IRoQSubscriberConnection createRoQConnection(String key) {
+		return new RoQSubscriberConnection(key, 0);
+	}
+
 }

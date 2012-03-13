@@ -129,6 +129,8 @@ public class PublisherConnectionManager implements Runnable {
 				}
 			}
 		}
+		this.monitorSub.close();
+		this.initReq.close();
 	}
 
 	/**
