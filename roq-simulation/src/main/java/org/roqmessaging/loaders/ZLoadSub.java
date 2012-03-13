@@ -2,7 +2,7 @@
 
 package org.roqmessaging.loaders;
 
-import org.roqmessaging.core.SubClientLib;
+import org.roqmessaging.core.SubscriberConnectionManager;
 
 public class ZLoadSub {
 
@@ -13,7 +13,7 @@ public class ZLoadSub {
 		int IDs = 0;
 		for (int i = 0; i < max; i++) {
 			System.out.println("Starting listener "+ (i+1) +"/" +max);
-			SubClientLib tempSub = new SubClientLib(args[1], "manche", IDs, false);
+			SubscriberConnectionManager tempSub = new SubscriberConnectionManager(args[1], "manche", IDs, false);
 			Thread t = new Thread(tempSub);
 			subThreads[i] = t;
 			subThreads[i].start();

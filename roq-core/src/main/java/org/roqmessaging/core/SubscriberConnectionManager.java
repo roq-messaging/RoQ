@@ -27,8 +27,8 @@ import org.zeromq.ZMQ;
  * 
  * @author Nam-Luc Tran
  */
-public class SubClientLib implements Runnable {
-	private Logger logger = Logger.getLogger(SubClientLib.class);
+public class SubscriberConnectionManager implements Runnable {
+	private Logger logger = Logger.getLogger(SubscriberConnectionManager.class);
 
 	private ZMQ.Context context;
 	private String s_monitor;
@@ -44,17 +44,23 @@ public class SubClientLib implements Runnable {
 
 	private ZMQ.Socket tstmpReq;
 
-	private int received;
-	private int totalReceived;
-	private int minute;
+	private int received=0;
+	private int totalReceived=0;
+	private int minute=0;
 
-	private int ID;
+	private int subsriberID=0;
 
 	private long latency;
 	private int latenced;
 	private boolean tstmp;
 
-	public SubClientLib(String monitor, String subKey, int ID, boolean tstmp) {
+	/**
+	 * @param monitor the monitor address to bind
+	 * @param subKey the subscriber must filter on that key
+	 * @param ID the subscriber ID
+	 * @param tstmp true if we use a timestamp server
+	 */
+	public SubscriberConnectionManager(String monitor, String subKey, int ID, boolean tstmp) {
 		this.context = ZMQ.context(1);
 		this.s_monitor = "tcp://" + monitor;
 		this.key = subKey.getBytes();
@@ -69,7 +75,7 @@ public class SubClientLib implements Runnable {
 		this.received = 0;
 		this.totalReceived = 0;
 		this.minute = 0;
-		this.ID = ID;
+		this.subsriberID = ID;
 		this.latency = 0;
 		this.latenced = 0;
 
@@ -101,7 +107,7 @@ public class SubClientLib implements Runnable {
 					+ meanLat + " " + "milliseconds");
 
 			statsPub.send(
-					("31," + minute + "," + totalReceived + "," + received + "," + ID + "," + meanLat).getBytes(), 0);
+					("31," + minute + "," + totalReceived + "," + received + "," + subsriberID + "," + meanLat).getBytes(), 0);
 			minute++;
 			received = 0;
 			latency = 0;
@@ -189,7 +195,7 @@ public class SubClientLib implements Runnable {
 				}
 			}
 
-			if (items.pollin(1)) {
+			if (items.pollin(1)) {//From Exchange
 				byte[] request;
 				request = exchSub.recv(0);
 				int part = 1;

@@ -26,7 +26,7 @@ import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.core.Exchange;
 import org.roqmessaging.core.Monitor;
-import org.roqmessaging.core.SubClientLib;
+import org.roqmessaging.core.SubscriberConnectionManager;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 
 /**
@@ -137,7 +137,7 @@ public class BasicSetupTest {
 		String subKey = "manche";
 		int ID = 0;
 		boolean tstmp = true;
-		SubClientLib SubClient = new SubClientLib(monitor, subKey, ID, tstmp);
+		SubscriberConnectionManager SubClient = new SubscriberConnectionManager(monitor, subKey, ID, tstmp);
 		this.threadSub= new Thread(SubClient);
 		this.threadSub.start();
 	}
