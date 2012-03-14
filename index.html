@@ -49,12 +49,15 @@
 				<div class="row">
           <div id="features"> 
              <img src="images/BannerEQS.png" alt="Discover EQS" data-caption="#discoverEQSCaption" />
+             <!--
              <img src="images/BannerTemplate.png" alt="Distributed architecture" />
              <img src="images/BannerTemplate.png" alt="High performance" />
+             -->
           </div>
           <!-- Captions for Orbit -->
           <span class="orbit-caption" id="discoverEQSCaption">Download the <a href="docs/EQS_review4.pdf">original EQS article</a></span>
         </div>
+        <hr class="spacer" />
         <div class="row">
 					<div class="twelve columns">
             <dl class="nice contained tabs">
@@ -71,15 +74,26 @@
                 <h4>A new way to transmit messages in the cloud</h4>
                 <h5>Elastic scalability</h5>
                   <p>
-                  <i>Content: Trade off traditional MOM solutions. ToDo Nam.</i>  
+                    Traditionally, <abbr title="Message Oriented Middleware">MOM</abbr>s are not designed to support elastic scaling. This means that in a cloud context, they may very quickly become a bottleneck in terms of performance.
                   </p>
+                  <p>
+                    RoQ has been designed from day 1 to answer this problem. It's architecture is <em>elastically scalable</em>. This includes three properties:
+                  </p>
+                  <ul>
+                      <li>When required, the capacity of the system will be increased automatically</li>
+                      <li>This capacity increase has no impact on the global performance</li>
+                      <li>When the load decrease, the system will scale down to avoid using unnecessary ressources</li>
+                  </ul>
                 <h5>Open Source</h5>
                   <p>
-                  RoQ started as a research project with EURA NOVA (http://euranova.eu) and as since then evolved into an open source project under the Apache Licence Version 2. This means that anyone can check the code, see how it works, contribute or even fork the code to build upon RoQ.
+                  RoQ started as a research project within EURA NOVA (<a href="http://euranova.eu" title="EURA NOVA">http://euranova.eu</a>) and as since then evolved into an open source project. This means that anyone can download the code, see how it works, contribute or even fork the code to build upon RoQ.
                   </p>
                 <h5>Cloud Ready</h5>
                   <p>
-                  <i>Content: Distributed Architecture, cloud deployable, hosted version in the pipe. Amazon SQS concurrent (only better).</i>
+                    As already explained, RoQ, with its distributed architecture and it's ability to be quickly deployed on a cloud is designed to ease the usage of <abbr title="Message Oriented Middleware">MOM</abbr> in a cloud context.
+                  </p>
+                  <p>
+                    Currently, the major competitor of RoQ is Amazon SQS. However, a benchmarking article by the Cloud Computing Center (see <a href="http://db.tt/5Xbm7Gtg">the complete article</a> to learn more) points out the inability for SQS to scale properly. RoQ is there to solve this problem!
                   </p>
                 <h4>Seems cool...</h4>
                 <p>Interested? You have several options to go further:</p>
@@ -108,33 +122,54 @@
                 <p>
                   <i>Introduce elastic scalability (Todo Nam), Explain why other products don't scale well (Todo Nam)</i>
                 </p>
+                <p>Other message oriented middlewars tend to scale poorly.</p>
                 <h4>Architecture</h4>
                 <p>
-                  <i>Figure (Mix of fig 3/4 of EQS paper). Todo QDU, Architecture description (max 5 lines) Todo Nam.</i>
+                  <i>Architecture description (max 5 lines) Todo Nam.</i>
                 </p>
+                <img src="images/RoQArch.png" alt="RoQ Architecture" />
                 <h4>Performance</h4>
                 <p>
                   <i>Performance strategy (scale out instead of scale up), plus hint that the network speed is becoming the bottleneck, not the servers. + Latence stay minimal?</i>
                 </p>
                 <h4>Want to go further?</h4>
                 <p>The complete, technical documentation of RoQ is hosted on our github wiki.</p>
-                <p><a href="https://github.com/roq-messaging/RoQ/wiki" class="nice radius large green button">To the RoQ wiki!</a></p>
+                <p><a href="https://github.com/roq-messaging/RoQ/wiki/Documentation" class="nice radius large green button">To the RoQ documentation!</a></p>
               </li>
               <li id="codeTab">
                 <h3>Want to test it?</h3>
-                <p class="lead">RoQ is Open Source. It is distributed under the Apache Licence, Version 2</p>
-                <p>Download introduction. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce eu mi at libero fringilla rhoncus sed placerat sapien. Nunc fermentum pulvinar odio, ...</p>
-                <p><a href="https://github.com/roq-messaging/RoQ" class="nice radius large green button">Get the code on github...</a></p>
+                <p class="lead">RoQ is Open Source. It is distributed under the Apache License, Version 2</p>
+                <p>To test RoQ, you can grab the <a href="https://github.com/roq-messaging/RoQ" title="RoQ code">RoQ code on GitHub</a>.</p>
+                <p>Detailled instructions to start testing quickly are available on the <a href="https://github.com/roq-messaging/RoQ/wiki/Run-the-code" title="Run RoQ">"Run The Code" page of the RoQ wiki</a>.</p>
+                <p><a href="https://github.com/roq-messaging/RoQ" class="nice radius large green button">Get RoQ on github...</a></p>
               </li>
               <li id="contributionTab">
                 <h3>How to become a contributor?</h3>
                 <p class="lead">RoQ is in its first phase of development. Contributions are welcome and if you feel you've got what it takes, dive in!</p>
-                <h4>Open contributors</h4>
-                <p>Contributor process introduction. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce eu mi at libero fringilla rhoncus sed placerat sapien. Nunc fermentum pulvinar odio, ...</p>
-                <h4>Core contributors</h4>
-                <p>Contributor process introduction. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce eu mi at libero fringilla rhoncus sed placerat sapien. Nunc fermentum pulvinar odio, ...</p>
-                <h4>Not a coder?</h4>
-                <p>There's other way you might help with the project. The first step in your involvment?</p>
+                <p>There are several levels of contribution possible in the RoQ community:</p>
+                <ul>
+                  <li>RoQ Reader</li>
+                  <li>RoQ Rookie</li>
+                  <li>RoQ Committer</li>
+                  <li>RoQ Board</li>
+                </ul>
+                Let's detail them!
+                <h4>RoQ Reader</h4>
+                <p><em>RoQ readers</em> are people interested in RoQ that have ideas to improve it. They mainly interact with the RoQ community through the mailing list and github.</p>
+                <p>The main contributions from RoQ readers is feedback on the code, the usage they have of RoQ or even small code fixes sent by mail or GitHub pull requests.</p>
+                <p>Anyone can be a RoQ Reader.</p>
+                <h4>RoQ Rookie</h4>
+                <p><em>RoQ rookies</em> are people that have gained some knowledge on the RoQ code and wish to contribute code improvements, bug fixes, ...</p>
+                <p>They help other users on the mailing list and send patches by mail or GitHub pull requests. The code contribution is then reviewed by one of the RoQ committers and added to the codebase if deemed relevant.</p>
+                <p>Anyone can be a RoQ Rookie.</p>
+                <h4>RoQ Committer</h4>
+                <p><em>RoQ commiters</em> are trusted RoQ developpers. They have commit access to the repository. They review pull requests, right code and patches and assist the community through the mailing list.</p>
+                <p>You can request to become a RoQ committer if you have a proven track record of fruitfull interactions with the RoQ community. Basic KPIs are the number of submitted patch, the volume and quality of activity on the mailing list, ...</p>
+                <p>RoQ committer role attribution is subject to approval by the RoQ Board. The decision and its motivation is published on the mailing list.</p>
+                <h4>RoQ Board</h4>
+                <p>The <em>RoQ board</em> is the leading body of the RoQ project. Its members are elected by and amongst RoQ committers. The initial board is composed of the initial project contributors. Board election is done once a year.</p>
+                <h3>Not a coder?</h3>
+                <p>There are other ways you might help with the project. The first step in your involvment?</p>
                 <p><a href="http://groups.google.com/group/roq-messaging" class="nice radius large green button">Make yourself known on the mailing list</a></p>
               </li>
             </ul>
@@ -166,19 +201,18 @@
       <div class="row footer">
         <div class="four columns">
             <h5>About</h5>
-            <p>RoQ is an Open Source project backed up by <a href="http://euranova.eu">Euranova</a>.</p>
+            <p>RoQ is an Open Source project backed up by <a href="http://euranova.eu">EURA NOVA</a>.</p>
         </div>
         <div class="four columns">
-            <h5>Licence</h5>
-            <p>RoQ is Open Source and is available under the Apache licence.</p>
+            <h5>License</h5>
+            <p>RoQ is Open Source and is available under the Apache License, version 2. See <a href="http://www.apache.org/licenses/LICENSE-2.0.txt">the full Apache License, Version 2</a> on the Apache foundation website.</p>
         </div>
         <div class="four columns">
-            <h5>Stay in touch</h5>
-            <p>There are many ways to stay in touch with RoQ developments:</p>
-            <ul>
-              <li>Twitter</li>
-              <li>Google group</li>
-              <li><a href="https://github.com/roq-messaging/RoQ" title="RoQ on GitHub" target="_blank"></a>Github</li>
+            <h5>Stay in touch with RoQ</h5>
+            <ul class="social">
+              <li><a href="https://plus.google.com/u/0/107822721548041905097" title="RoQ on Google +" id="googleplus">RoQ on Google +</a></li>
+              <li><a href="https://groups.google.com/forum/#!forum/roq-messaging" title="RoQ mailing list" id="googlegroup">RoQ mailing list</a></li>
+              <li><a href="https://github.com/roq-messaging/RoQ" title="RoQ on GitHub" id="github">Roq on GitHub</a></li>
             </ul>
         </div>
       </div>

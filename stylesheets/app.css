@@ -18,12 +18,12 @@
   border-top: 3px solid black; /*#30A63A;*/
 }
 
-/* NIce green buttons */
+/* Nice green buttons */
 .green.button			{ background-color: #30A63A}
 .nice.green.button		{ border: 1px solid #26732C;  }
 .green.button:hover, .green.button:focus		{ background-color: #328038; 	}
 
-/* NIce brown buttons */
+/* Nice brown buttons */
 .brown.button			{ background-color: #634204}
 .nice.brown.button		{ border: 1px solid #593C0C;  }
 .brown.button:hover, .brown.button:focus		{ background-color: #523706; 	}
@@ -58,6 +58,32 @@ hr.spacer{
 /* Titles */
 h4 { font-weight: normal; font-size: 1.2em; margin-bottom: 6px; }
 h5 { font-weight: bold; font-size: 1em }
+
+ul.tabs-content ul{
+  list-style-type: square;
+  margin-left: 1em;
+}
+/* Social icons */
+ul.social li{
+}
+ul.social li a{
+  display: block;
+  float: left;
+  width: 48px;
+  height: 48px;
+  text-indent: -9999px;
+  margin-bottom: 1em;
+  margin-right: 1em;
+}
+ul.social li a#googleplus{
+  background: url(../images/googleplus.png) top left no-repeat;
+}
+ul.social li a#googlegroup{
+  background: url(../images/googlegroup.png) top left no-repeat;
+}
+ul.social li a#github{
+  background: url(../images/github.png) top left no-repeat;
+}
 
 /* -----------------------------------------
    Page Name 1
