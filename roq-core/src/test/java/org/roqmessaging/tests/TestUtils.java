@@ -14,9 +14,6 @@
  */
 package org.roqmessaging.tests;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.roqmessaging.core.utils.RoQUtils;
