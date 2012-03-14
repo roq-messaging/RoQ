@@ -310,7 +310,7 @@ public class Monitor implements Runnable {
 			if (items.pollin(RoQConstant.CHANNEL_EXCHANGE)) { // Info from Exchange
 				String info[] = new String(brokerSub.recv(0)).split(",");
 				infoCode = Integer.parseInt(info[0]);
-
+				logger.debug("Recieving message from Exhange:"+infoCode  +" info array "+ info.length);
 				switch (infoCode) {
 				case 3:
 					// Broker debug code
