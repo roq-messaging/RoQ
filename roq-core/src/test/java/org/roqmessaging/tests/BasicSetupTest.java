@@ -58,8 +58,8 @@ public class BasicSetupTest {
 	@Before
 	public void setUp() throws Exception {
 		logger.log(Level.INFO, "Basic Setup before test");
-		startExchange();
 		startMonitor();
+		startExchange();
 		startPublisherClient();
 		startSubscriberClient(); 
 	}

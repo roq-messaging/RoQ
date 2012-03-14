@@ -12,33 +12,29 @@
  * limitations under the License.
  * 
  */
-package org.roqmessaging.core.timer;
+package org.roqmessaging.tests;
 
-import java.util.TimerTask;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import org.apache.log4j.Logger;
+import org.junit.Test;
 import org.roqmessaging.core.utils.RoQUtils;
-import org.zeromq.ZMQ;
 
 /**
- * Class Heartbit
- * <p> Description: The heartbeat function. This timer send the code "5" to his s_monitor.
+ * Class TestUtils
+ * <p> Description: TODO
  * 
  * @author sskhiri
  */
-public class Heartbeat extends TimerTask {
-	private Logger logger = Logger.getLogger(Heartbeat.class);
-	private ZMQ.Context hbcontext;
-	private ZMQ.Socket hbsocket;
+public class TestUtils {
+	private Logger logger = Logger.getLogger(TestUtils.class);
 
-	public Heartbeat(String  s_monitor) {
-		this.hbcontext = ZMQ.context(1);
-		this.hbsocket = hbcontext.socket(ZMQ.PUB);
-		this.hbsocket.connect(s_monitor);
-	}
-	public void run() {
+	@Test
+	public void testIP() {
 		String address = RoQUtils.getInstance().getLocalIP();
 		logger.debug("Local address to send with heart bit "+ address);
-		hbsocket.send(("5," +address ).getBytes(), 0);
+		assert address.length()>0;
 	}
+
 }
