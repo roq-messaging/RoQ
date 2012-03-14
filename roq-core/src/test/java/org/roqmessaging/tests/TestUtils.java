@@ -20,7 +20,7 @@ import org.roqmessaging.core.utils.RoQUtils;
 
 /**
  * Class TestUtils
- * <p> Description: TODO
+ * <p> Description: Test the basic features of the utility classes.
  * 
  * @author sskhiri
  */
