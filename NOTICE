@@ -1,0 +1,23 @@
+=========================================================================
+== NOTICE file for RoQ - See the Apache License, Version 2.0
+== for more information on this file
+=========================================================================
+
+RoQ
+Copyright 2011-2012 EURANOVA
+
+This product includes software developed at
+EURANOVA (http://www.euranova.eu/).
+
+Initial code was developed by Nam Luc Tran. Open Source project was started by
+Jehan Bruggeman
+Quentin Dugauthier
+Cyrille Duverne
+Sabri Skhiri
+Nam Luc Tran
+and founded by EURANOVA
+
+Portions of this software were developed in collaboration with
+the "Université Libre de Bruxelles" (ULB) in Brussels, Belgium.
+
+This software builds upon the ZeroMQ library, developped a.o. by Pieter Hintjens
