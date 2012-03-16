@@ -17,6 +17,7 @@ package org.roqmessaging.core.utils;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -61,8 +62,8 @@ public class RoQUtils {
 	 * @since 0.1.0
 	 */
 	public String getLocalIP() {
-		String ipOnly = "";
 		try {
+		String ipOnly = InetAddress.getLocalHost().getHostAddress().toString();
 			Enumeration<NetworkInterface> nifs = NetworkInterface.getNetworkInterfaces();
 			if (nifs == null)
 				return "";
@@ -96,7 +97,9 @@ public class RoQUtils {
 			}
 			return ipOnly;
 		} catch (SocketException ex) {
-			return "";
+			return "127.0.0.1";
+		} catch (UnknownHostException e) {
+			return "127.0.0.1";
 		}
 	}
 
