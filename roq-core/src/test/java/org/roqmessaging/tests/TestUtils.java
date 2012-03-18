@@ -31,7 +31,7 @@ public class TestUtils {
 	public void testIP() {
 		String address = RoQUtils.getInstance().getLocalIP();
 		logger.debug("Local address to send with heart bit "+ address);
-		assert address.length()>0;
+		assert address.length()>1;
 	}
 
 }
