@@ -17,7 +17,7 @@ package org.roqmessaging.management.config;
 /**
  * Interface IRoQGlobalConfig
  * <p> Description: This configuration manager keeps the track of all queue configuration among the cluster. It tracks
- *  for each queue: the monitor address and the list of exchanges address.
+ *  for each queue: the monitor address.
  * 
  * @author sskhiri
  */
