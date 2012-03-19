@@ -29,6 +29,7 @@ import org.zeromq.ZMQ;
  * Class HostConfigManager
  * <p> Description: Responsible for the local management of the queue elements. For each host it will track the list 
  * of monitors and exchanges.
+ * Notice that the host config manager implement a server pattern that exposes services to the monitor management.
  * 
  * @author sskhiri
  */
