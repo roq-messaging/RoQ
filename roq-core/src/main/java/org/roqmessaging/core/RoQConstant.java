@@ -39,6 +39,11 @@ public interface RoQConstant {
 	 */
 	public static int CHANNEL_INIT =2;
 	
+	/**
+	 * Send an init request code.
+	 */
+	public static int INIT_REQ =2;
+	
 	
 
 }
