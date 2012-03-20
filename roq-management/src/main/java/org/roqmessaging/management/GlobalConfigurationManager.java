@@ -48,6 +48,7 @@ public class GlobalConfigurationManager implements Runnable {
 	public GlobalConfigurationManager() {
 		this.hostManagerAddresses = new ArrayList<String>();
 		this.hostManagerAddresses.add(RoQUtils.getInstance().getLocalIP());
+		this.logger.info("Started global config Runnable");
 	}
 
 
@@ -56,6 +57,7 @@ public class GlobalConfigurationManager implements Runnable {
 	 * @see java.lang.Runnable#run()
 	 */
 	public void run() {
+		this.running = true;
 		//ZMQ init
 		ZMQ.Poller items = context.poller(3);
 		items.register(this.clientReqSocket);
@@ -106,6 +108,7 @@ public class GlobalConfigurationManager implements Runnable {
 	 */
 	public void  shutDown(){
 		this.running = false;
+		this.logger.info("Shutting down config server");
 	}
 
 }

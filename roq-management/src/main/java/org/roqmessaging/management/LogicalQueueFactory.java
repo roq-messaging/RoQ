@@ -38,6 +38,7 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 	//Config
 	private String configServer = null;
 	private String factoryID = null;
+	private boolean initialized = false;
 
 	/**
 	 * Initialise the socket to the config server.
@@ -48,11 +49,6 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 		context = ZMQ.context(1);
 		globalConfigReq = context.socket(ZMQ.REQ);
 		globalConfigReq.connect("tcp://"+this.configServer+":5000");
-		//Load the topology config
-		globalConfigReq.send((Integer.toString(RoQConstant.INIT_REQ)+","+this.factoryID).getBytes(), 0);
-		//The configuration should load all information about the Local host managers = system topology
-		byte[] configuration = globalConfigReq.recv(0);
-		ArrayList<String> hostManagers = deserializeQuotes(configuration);
 	}
 
 	/* (non-Javadoc)
@@ -76,19 +72,24 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 		return false;
 	}
 
-	/* (non-Javadoc)
+	/**
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#refreshTopology()
 	 */
 	public void refreshTopology() {
-		//Reload the topoglogy list from the configuration.
-
+		// Load the topology config
+		globalConfigReq.send((Integer.toString(RoQConstant.INIT_REQ) + "," + this.factoryID).getBytes(), 0);
+		// The configuration should load all information about the Local host
+		// managers = system topology
+		byte[] configuration = globalConfigReq.recv(0);
+		ArrayList<String> hostManagers = deserializeArray(configuration);
+		this.initialized = true;
 	}
 	
 	/**
 	 * @param serialised the array of byte
 	 * @return the array list from the byte array
 	 */
-	public ArrayList<String> deserializeQuotes(byte[] serialised) {
+	public ArrayList<String> deserializeArray(byte[] serialised) {
 		try {
 			// Deserialize from a byte array
 			ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(serialised));
@@ -101,5 +102,5 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 		}
 		return null;
 	}
-
+	
 }
