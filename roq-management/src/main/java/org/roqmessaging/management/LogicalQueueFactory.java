@@ -16,6 +16,7 @@ package org.roqmessaging.management;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
+import java.nio.channels.IllegalSelectorException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -61,7 +62,14 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#createQueue(java.lang.String, java.lang.String)
 	 */
 	public void createQueue(String queueName, String targetAddress) throws IllegalStateException {
+		if(!this.initialized) this.refreshTopology();
 		//1. Check if the name already exist in the topology
+		if(this.queueMonitorMap.containsKey(queueName)){
+			// the queue already exist
+			throw new IllegalStateException("The queue name already exists");
+		}
+		//The does not exist yet
+		
 		//2. Create the entry in the global config
 		//3. Sends the create event to the hostConfig manager thread
 		//4. If the answer is not confirmed, we should remove back the entry in the global config and throwing an exception
