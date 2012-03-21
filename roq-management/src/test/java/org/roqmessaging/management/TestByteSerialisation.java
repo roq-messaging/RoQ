@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.management;
 
+import java.beans.DesignMode;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -48,6 +49,23 @@ public class TestByteSerialisation {
 		logger.info("position 1 " + arrayTest.get(0));
 		logger.info("position 2 " + arrayTest.get(1));
 	}
+	
+	@Test
+	public void testGenerics() {
+		logger.info("Test generics");
+		ArrayList<String> array = new ArrayList<String>();
+		array.add("127.0.0.1");
+		array.add("127.0.0.2");
+		array.add("127.0.0.3");
+		byte[] serialised = serialiseObject(array);
+		ArrayList<String> arrayTest = deserializeObject(serialised);
+		assert arrayTest.get(0).equals(array.get(0));
+		assert arrayTest.get(1).equals(array.get(1));
+		logger.info("position 1 " + arrayTest.get(0));
+		logger.info("position 2 " + arrayTest.get(1));
+		
+		
+	}
 
 	/**
 	 * @param array
@@ -75,6 +93,45 @@ public class TestByteSerialisation {
 			ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(serialised));
 			@SuppressWarnings("unchecked")
 			ArrayList<String> unserialised = (ArrayList<String>) in.readObject();
+			in.close();
+			return unserialised;
+		} catch (Exception e) {
+			logger.error("Error when unserialiasing the array", e);
+		}
+		return null;
+	}
+	
+	/**
+	 * @param array
+	 *            the array to serialise
+	 * @return the serialized version
+	 */
+	private<T> byte[] serialiseObject(T object) {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutput out;
+		try {
+			out = new ObjectOutputStream(bos);
+			out.writeObject(object);
+			out.close();
+			return bos.toByteArray();
+		} catch (IOException e) {
+			logger.error("Error when openning the IO", e);
+		}
+
+		return null;
+	}
+
+	
+	/**
+	 * @param serialised the array of byte
+	 * @return the array list from the byte array
+	 */
+	public <T> T deserializeObject(byte[] serialised) {
+		try {
+			// Deserialize from a byte array
+			ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(serialised));
+			@SuppressWarnings("unchecked")
+			T unserialised = (T) in.readObject();
 			in.close();
 			return unserialised;
 		} catch (Exception e) {

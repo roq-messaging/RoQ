@@ -18,7 +18,6 @@ import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
 import org.roqmessaging.core.utils.RoQUtils;
 
 /**
@@ -35,31 +34,32 @@ public class TestQueueFactory {
 	 * 
 	 */
 	@Before
-	private void setup() {
+	public void setUp() throws Exception {
 		//1. Start the configuration
 		this.logger.info("Start global config thread");
-		GlobalConfigurationManager configurationManager = new GlobalConfigurationManager();
+		configurationManager = new GlobalConfigurationManager();
 		Thread configThread = new Thread(configurationManager);
 		configThread.start();
-		//Let 1 sec to init the thread
-		try {
-			this.wait(1000);
-		} catch (InterruptedException e) {
-			logger.error("Error while waiting", e);
-		}
 	}
 
 	@Test
 	public void testQueueTopologyRequest() {
-		IRoQLogicalQueueFactory factory = new LogicalQueueFactory(RoQUtils.getInstance().getLocalIP().toString());
-		
+		logger.info("Start the main test");
+		//Let 1 sec to init the thread
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			logger.error("Error while waiting", e);
+		}
+		LogicalQueueFactory factory = new LogicalQueueFactory(RoQUtils.getInstance().getLocalIP().toString());
+		factory.refreshTopology();
 	}
 	
 	/**
 	 * 
 	 */
 	@After
-	private void tearDown() {
+	public void tearDown() throws Exception {
 		this.configurationManager.shutDown();
 
 	}

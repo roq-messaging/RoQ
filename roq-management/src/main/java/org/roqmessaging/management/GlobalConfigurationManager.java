@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
@@ -40,6 +41,9 @@ public class GlobalConfigurationManager implements Runnable {
 	
 	//Configuration data: list of host manager (1 per RoQ Host)
 	private ArrayList<String> hostManagerAddresses = null;
+	//Define the location of the monitor of each queue
+	private HashMap<String, String> queueLocations=null;
+	
 	private Logger logger = Logger.getLogger(GlobalConfigurationManager.class);
 	
 	/**
@@ -49,6 +53,11 @@ public class GlobalConfigurationManager implements Runnable {
 		this.hostManagerAddresses = new ArrayList<String>();
 		this.hostManagerAddresses.add(RoQUtils.getInstance().getLocalIP());
 		this.logger.info("Started global config Runnable");
+		this.queueLocations = new HashMap<String, String>();
+		this.context = ZMQ.context(1);
+		this.clientReqSocket = context.socket(ZMQ.REP);
+		this.clientReqSocket.bind("tcp://*:5000");
+		this.running = true;
 	}
 
 
@@ -65,6 +74,7 @@ public class GlobalConfigurationManager implements Runnable {
 		while (this.running) {
 			items.poll(2000);
 			if (items.pollin(0)){ //Comes from a client
+				logger.debug("Receiving request...");
 				String  info[] = new String(clientReqSocket.recv(0)).split(",");
 				int infoCode = Integer.parseInt(info[0]);
 				logger.debug("Start analysing info code = "+ infoCode);
@@ -72,9 +82,10 @@ public class GlobalConfigurationManager implements Runnable {
 				case RoQConstant.INIT_REQ:
 					//A client is asking fof the topology of all local host manager
 					logger.debug("Recieveing init request from a client ");
-					byte[] serialised = serialise(this.hostManagerAddresses);
+					byte[] serialised = serialiseObject(this.hostManagerAddresses);
 					logger.debug("Sending back the topology - list of local host");
-					this.clientReqSocket.send(serialised, 0);
+					this.clientReqSocket.send(serialised, ZMQ.SNDMORE);
+					this.clientReqSocket.send(serialiseObject(this.queueLocations), 0);
 				}
 			}
 		}
@@ -87,12 +98,12 @@ public class GlobalConfigurationManager implements Runnable {
 	 *            the array to serialise
 	 * @return the serialized version
 	 */
-	private byte[] serialise(ArrayList<String> array) {
+	private<T> byte[] serialiseObject(T object) {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		ObjectOutput out;
 		try {
 			out = new ObjectOutputStream(bos);
-			out.writeObject(array);
+			out.writeObject(object);
 			out.close();
 			return bos.toByteArray();
 		} catch (IOException e) {
@@ -101,6 +112,7 @@ public class GlobalConfigurationManager implements Runnable {
 
 		return null;
 	}
+
 
 
 	/**
