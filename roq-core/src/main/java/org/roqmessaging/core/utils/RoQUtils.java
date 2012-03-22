@@ -14,6 +14,12 @@
  */
 package org.roqmessaging.core.utils;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -23,6 +29,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.TimeZone;
+
+import org.apache.log4j.Logger;
 
 /**
  * Class RoQUtils
@@ -34,6 +42,7 @@ import java.util.TimeZone;
 public class RoQUtils {
 
 	private static RoQUtils instance = null;
+	private Logger logger = Logger.getLogger(RoQUtils.class);
 
 	/**
 	 * @return The singleton instance.
@@ -108,5 +117,46 @@ public class RoQUtils {
 		df.setTimeZone(TimeZone.getTimeZone("GMT+2:00"));
 		return df.format(new Date());
 	}
+	
+	/**
+	 * @param array
+	 *            the array to serialise
+	 * @return the serialized version
+	 */
+	public synchronized<T> byte[] serialiseObject( T object) {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutput out;
+		try {
+			out = new ObjectOutputStream(bos);
+			out.writeObject(object);
+			out.close();
+			return bos.toByteArray();
+		} catch (IOException e) {
+			logger.error("Error when openning the IO", e);
+		}
+
+		return null;
+	}
+	
+
+
+	/**
+	 * @param serialised the array of byte
+	 * @return the array list from the byte array
+	 */
+	public synchronized <T> T deserializeObject(byte[] serialised) {
+		try {
+			// Deserialize from a byte array
+			ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(serialised));
+			@SuppressWarnings("unchecked")
+			T unserialised = (T) in.readObject();
+			in.close();
+			return unserialised;
+		} catch (Exception e) {
+			logger.error("Error when unserialiasing the array", e);
+		}
+		return null;
+	}
+
 
 }

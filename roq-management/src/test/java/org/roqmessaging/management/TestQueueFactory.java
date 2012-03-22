@@ -18,6 +18,7 @@ import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
 import org.roqmessaging.core.utils.RoQUtils;
 
 /**
@@ -53,6 +54,27 @@ public class TestQueueFactory {
 		}
 		LogicalQueueFactory factory = new LogicalQueueFactory(RoQUtils.getInstance().getLocalIP().toString());
 		factory.refreshTopology();
+	}
+	@Test
+	public void testCreateQueueRequest() {
+		logger.info("Start create queue test");
+		//Let 1 sec to init the thread
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			logger.error("Error while waiting", e);
+		}
+		//1. Add new host
+		String host = "10.20.5.10";
+		this.configurationManager.addHostManager(host);
+		//2. Create the factory
+		IRoQLogicalQueueFactory factory = new LogicalQueueFactory(RoQUtils.getInstance().getLocalIP().toString());
+		try{
+			factory.createQueue("Sabri", host);
+		}catch (IllegalStateException e) {
+			logger.error("Error while waiting", e);
+		}
+		
 	}
 	
 	/**
