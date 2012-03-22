@@ -18,72 +18,71 @@ import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
 import org.roqmessaging.core.utils.RoQUtils;
 
 /**
- * Class TestQueueFactory
- * <p> Description: TODO
+ * Class TestLogicalQueue
+ * <p>
+ * Description: TODO
  * 
  * @author sskhiri
  */
-public class TestQueueFactory {
-	private Logger logger = Logger.getLogger(TestQueueFactory.class);
-	private 	GlobalConfigurationManager configurationManager =null;
-	
+public class TestLogicalQueue {
+	private Logger logger = Logger.getLogger(TestLogicalQueue.class);
+	private GlobalConfigurationManager configurationManager = null;
+	private LogicalQueueFactory factory = null;
+
 	/**
-	 * 
+	 * @throws java.lang.Exception
 	 */
 	@Before
 	public void setUp() throws Exception {
-		//1. Start the configuration
-		this.logger.info("Start global config thread");
+		// 1. Start the configuration
+		this.logger.info("Initial setup Start global config thread");
 		configurationManager = new GlobalConfigurationManager();
 		Thread configThread = new Thread(configurationManager);
 		configThread.start();
+		factory = new LogicalQueueFactory(RoQUtils.getInstance().getLocalIP().toString());
+	}
+
+	/**
+	 * @throws java.lang.Exception
+	 */
+	@After
+	public void tearDown() throws Exception {
+		this.configurationManager.shutDown();
 	}
 
 	@Test
 	public void testQueueTopologyRequest() {
 		logger.info("Start the main test");
-		//Let 1 sec to init the thread
+		// Let 1 sec to init the thread
 		try {
 			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			logger.error("Error while waiting", e);
 		}
-		LogicalQueueFactory factory = new LogicalQueueFactory(RoQUtils.getInstance().getLocalIP().toString());
 		factory.refreshTopology();
 	}
+
 	@Test
 	public void testCreateQueueRequest() {
 		logger.info("Start create queue test");
-		//Let 1 sec to init the thread
+		// Let 1 sec to init the thread
 		try {
 			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			logger.error("Error while waiting", e);
 		}
-		//1. Add new host
+		// 1. Add new host
 		String host = "10.20.5.10";
 		this.configurationManager.addHostManager(host);
-		//2. Create the factory
-		IRoQLogicalQueueFactory factory = new LogicalQueueFactory(RoQUtils.getInstance().getLocalIP().toString());
-		try{
+		// 2. Create the factory
+		try {
 			factory.createQueue("Sabri", host);
-		}catch (IllegalStateException e) {
+		} catch (IllegalStateException e) {
 			logger.error("Error while waiting", e);
 		}
-		
-	}
-	
-	/**
-	 * 
-	 */
-	@After
-	public void tearDown() throws Exception {
-		this.configurationManager.shutDown();
-
 	}
 
 }

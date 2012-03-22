@@ -14,7 +14,6 @@
  */
 package org.roqmessaging.management;
 
-import java.beans.DesignMode;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
