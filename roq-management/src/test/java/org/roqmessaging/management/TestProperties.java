@@ -32,15 +32,15 @@ public class TestProperties extends TestCase {
 	
 	@Test
 	public void testEntry() throws IOException{
-		Properties defaultProps = new Properties();
-		FileInputStream in = new FileInputStream("src/main/resources/config.properties");
-		defaultProps.load(in);
-		in.close();
-		String configArray=defaultProps.getProperty("config.managers");
-		String[] manager = configArray.split(",");
-		for (int i = 0; i < manager.length; i++) {
-			System.out.println(manager[i]);
-		}
+//		Properties defaultProps = new Properties();
+//		FileInputStream in = new FileInputStream("src/main/resources/config.properties");
+//		defaultProps.load(in);
+//		in.close();
+//		String configArray=defaultProps.getProperty("config.managers");
+//		String[] manager = configArray.split(",");
+//		for (int i = 0; i < manager.length; i++) {
+//			System.out.println(manager[i]);
+//		}
 	}
 
 }

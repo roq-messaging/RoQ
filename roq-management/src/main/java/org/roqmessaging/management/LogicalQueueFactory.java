@@ -14,13 +14,13 @@
  */
 package org.roqmessaging.management;
 
-import java.io.ByteArrayInputStream;
-import java.io.ObjectInputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
 /**
@@ -39,6 +39,11 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 	private String configServer = null;
 	private String factoryID = null;
 	private boolean initialized = false;
+	
+	//Config to hold
+	private ArrayList<String> hostManagers = null;
+	//Name, monitor location
+	private HashMap<String, String> queueMonitorMap=null;
 
 	/**
 	 * Initialise the socket to the config server.
@@ -51,14 +56,30 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 		globalConfigReq.connect("tcp://"+this.configServer+":5000");
 	}
 
-	/* (non-Javadoc)
+	/**
+	 * 1. Check if the name already exist in the topology <br>
+	 * 2. Create the entry in the global config <br>
+	 * 3.  Sends the create event to the hostConfig manager thread
+	 * 4. If the answer is not confirmed, we remove back the entry in the global config and throw an exception
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#createQueue(java.lang.String, java.lang.String)
 	 */
 	public void createQueue(String queueName, String targetAddress) throws IllegalStateException {
+		if(!this.initialized) this.refreshTopology();
 		//1. Check if the name already exist in the topology
+		if(this.queueMonitorMap.containsKey(queueName)){
+			// the queue already exist
+			throw new IllegalStateException("The queue name "+ queueName+" already exists");
+		}
+		//The name does not exist yet
 		//2. Create the entry in the global config
+		globalConfigReq.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName+","+targetAddress).getBytes(), 0);
+		String result= new String(globalConfigReq.recv(0));
+		if(Integer.parseInt(result) != RoQConstant.CONFIG_CREATE_QUEUE_OK){
+			throw new IllegalStateException("The queue creation for  "+ queueName+" failed on the global configuration server");
+		}
 		//3. Sends the create event to the hostConfig manager thread
-		//4. If the answer is not confirmed, we should remove back the entry in the global config and throwing an exception
+		//TODO  Sends the create event to the hostConfig manager thread
+		//4. If the answer is not confirmed, we should remove back the entry in the global config and throw an exception
 
 	}
 
@@ -80,27 +101,15 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 		globalConfigReq.send((Integer.toString(RoQConstant.INIT_REQ) + "," + this.factoryID).getBytes(), 0);
 		// The configuration should load all information about the Local host
 		// managers = system topology
+		logger.debug("Sending topology global config request...");
 		byte[] configuration = globalConfigReq.recv(0);
-		ArrayList<String> hostManagers = deserializeArray(configuration);
+		hostManagers = RoQUtils.getInstance().deserializeObject(configuration);
+		if (globalConfigReq.hasReceiveMore()) {
+			//The logical queue config is sent int the part 2
+			byte[] qConfiguration = globalConfigReq.recv(0);
+			queueMonitorMap = RoQUtils.getInstance().deserializeObject(qConfiguration);
+			}
+		logger.info("Getting configuration with "+ hostManagers.size() +" Host managers and "+ queueMonitorMap.size()+" queues");
 		this.initialized = true;
 	}
-	
-	/**
-	 * @param serialised the array of byte
-	 * @return the array list from the byte array
-	 */
-	public ArrayList<String> deserializeArray(byte[] serialised) {
-		try {
-			// Deserialize from a byte array
-			ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(serialised));
-			@SuppressWarnings("unchecked")
-			ArrayList<String> unserialised = (ArrayList<String>) in.readObject();
-			in.close();
-			return unserialised;
-		} catch (Exception e) {
-			logger.error("Error when unserialiasing the array", e);
-		}
-		return null;
-	}
-	
 }

@@ -14,11 +14,8 @@
  */
 package org.roqmessaging.management;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
@@ -40,6 +37,9 @@ public class GlobalConfigurationManager implements Runnable {
 	
 	//Configuration data: list of host manager (1 per RoQ Host)
 	private ArrayList<String> hostManagerAddresses = null;
+	//Define the location of the monitor of each queue (Name, monitor address)
+	private HashMap<String, String> queueLocations=null;
+	
 	private Logger logger = Logger.getLogger(GlobalConfigurationManager.class);
 	
 	/**
@@ -49,6 +49,11 @@ public class GlobalConfigurationManager implements Runnable {
 		this.hostManagerAddresses = new ArrayList<String>();
 		this.hostManagerAddresses.add(RoQUtils.getInstance().getLocalIP());
 		this.logger.info("Started global config Runnable");
+		this.queueLocations = new HashMap<String, String>();
+		this.context = ZMQ.context(1);
+		this.clientReqSocket = context.socket(ZMQ.REP);
+		this.clientReqSocket.bind("tcp://*:5000");
+		this.running = true;
 	}
 
 
@@ -65,17 +70,45 @@ public class GlobalConfigurationManager implements Runnable {
 		while (this.running) {
 			items.poll(2000);
 			if (items.pollin(0)){ //Comes from a client
+				logger.debug("Receiving request...");
 				String  info[] = new String(clientReqSocket.recv(0)).split(",");
 				int infoCode = Integer.parseInt(info[0]);
 				logger.debug("Start analysing info code = "+ infoCode);
 				switch (infoCode) {
 				case RoQConstant.INIT_REQ:
-					//A client is asking fof the topology of all local host manager
+					// A client is asking fof the topology of all local host
+					// manager
 					logger.debug("Recieveing init request from a client ");
-					byte[] serialised = serialise(this.hostManagerAddresses);
+					byte[] serialised = RoQUtils.getInstance().serialiseObject(this.hostManagerAddresses);
 					logger.debug("Sending back the topology - list of local host");
-					this.clientReqSocket.send(serialised, 0);
+					this.clientReqSocket.send(serialised, ZMQ.SNDMORE);
+					this.clientReqSocket.send(RoQUtils.getInstance().serialiseObject(this.queueLocations), 0);
+					break;
+				case RoQConstant.CONFIG_CREATE_QUEUE:
+					logger.debug("Recieveing create Q request from a client ");
+					if (info.length == 3) {
+						logger.debug("The request format is valid ");
+						// The logical queue config is sent int the part 2
+						String qName = info[1];
+						String monitorHost = info[2];
+						// 1. Check of the host is in the list
+						if (!hostManagerAddresses.contains(monitorHost)) {
+							logger.error("The monitor host "+monitorHost+"  is not registred as active RoQ host");
+							this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL).getBytes(), 0);
+						}else{
+							// 2. register the queue
+							this.queueLocations.put(qName, monitorHost);
+							this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK).getBytes(), 0);
+							logger.debug("Created queue "+ qName +" @"+ monitorHost +" in global configuration");
+						}
+					}else{
+							logger.error("The create queue request sent does not contain 3 part: ID, quName, Monitor host");
+							this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL).getBytes(), 0);
+						}
+					break;
+					
 				}
+				
 			}
 		}
 		this.clientReqSocket.close();
@@ -83,32 +116,21 @@ public class GlobalConfigurationManager implements Runnable {
 	
 	
 	/**
-	 * @param array
-	 *            the array to serialise
-	 * @return the serialized version
-	 */
-	private byte[] serialise(ArrayList<String> array) {
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		ObjectOutput out;
-		try {
-			out = new ObjectOutputStream(bos);
-			out.writeObject(array);
-			out.close();
-			return bos.toByteArray();
-		} catch (IOException e) {
-			logger.error("Error when openning the IO", e);
-		}
-
-		return null;
-	}
-
-
-	/**
 	 * Stop the active thread
 	 */
 	public void  shutDown(){
 		this.running = false;
 		this.logger.info("Shutting down config server");
+	}
+	
+	/**
+	 * Add a host manager address to the array.
+	 * @param host the host to add (ip address)
+	 */
+	public void addHostManager(String host){
+		if (!hostManagerAddresses.contains(host)){
+			hostManagerAddresses.add(host);
+		}
 	}
 
 }

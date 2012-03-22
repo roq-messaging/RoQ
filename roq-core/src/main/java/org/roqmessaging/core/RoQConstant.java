@@ -43,7 +43,21 @@ public interface RoQConstant {
 	 * Send an init request code.
 	 */
 	public static int INIT_REQ =2;
+
+	/**
+	 * GLobal Configuration request to create a queue
+	 */
+	public static int CONFIG_CREATE_QUEUE = 1002;
 	
+	/**
+	 * GLobal Configuration request to create a queue 
+	 */
+	public static int CONFIG_CREATE_QUEUE_OK = 1003;
+	
+	/**
+	 * GLobal Configuration request to create a queue 
+	 */
+	public static int CONFIG_CREATE_QUEUE_FAIL = 1004;
 	
 
 }
