@@ -16,6 +16,7 @@ package org.roqmessaging.management;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
@@ -25,7 +26,8 @@ import org.zeromq.ZMQ;
 
 /**
  * Class LogicalQueueFactory
- * <p> Description: Responsible of the logical queue Life cycle management.
+ * <p> Description: Responsible of the logical queue Life cycle management. Binds config server on port
+ *  5000 and config server on 5100
  * 
  * @author sskhiri
  */
@@ -41,7 +43,8 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 	private boolean initialized = false;
 	
 	//Config to hold
-	private ArrayList<String> hostManagers = null;
+	//[Host manager address, socket>
+	private HashMap<String, ZMQ.Socket>hostManagerMap	;
 	//Name, monitor location
 	private HashMap<String, String> queueMonitorMap=null;
 
@@ -54,6 +57,7 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 		context = ZMQ.context(1);
 		globalConfigReq = context.socket(ZMQ.REQ);
 		globalConfigReq.connect("tcp://"+this.configServer+":5000");
+		this.hostManagerMap = new HashMap<String, ZMQ.Socket>();
 	}
 
 	/**
@@ -70,6 +74,11 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 			// the queue already exist
 			throw new IllegalStateException("The queue name "+ queueName+" already exists");
 		}
+		if(this.hostManagerMap.containsKey(targetAddress)){
+			// the target address is not registered as node of the cluster (no Host manager running)
+			throw new IllegalStateException("the target address "+ targetAddress+" is not registered as a " +
+								"node of the cluster (no Host manager running)");
+		}
 		//The name does not exist yet
 		//2. Create the entry in the global config
 		globalConfigReq.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName+","+targetAddress).getBytes(), 0);
@@ -78,7 +87,10 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 			throw new IllegalStateException("The queue creation for  "+ queueName+" failed on the global configuration server");
 		}
 		//3. Sends the create event to the hostConfig manager thread
+		ZMQ.Socket hostSocket = this.hostManagerMap.get(targetAddress);
+		
 		//TODO  Sends the create event to the hostConfig manager thread
+		
 		//4. If the answer is not confirmed, we should remove back the entry in the global config and throw an exception
 
 	}
@@ -103,13 +115,75 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 		// managers = system topology
 		logger.debug("Sending topology global config request...");
 		byte[] configuration = globalConfigReq.recv(0);
-		hostManagers = RoQUtils.getInstance().deserializeObject(configuration);
+		List<String> hostManagers = RoQUtils.getInstance().deserializeObject(configuration);
 		if (globalConfigReq.hasReceiveMore()) {
-			//The logical queue config is sent int the part 2
+			//The logical queue config is sent in the part 2
 			byte[] qConfiguration = globalConfigReq.recv(0);
 			queueMonitorMap = RoQUtils.getInstance().deserializeObject(qConfiguration);
 			}
 		logger.info("Getting configuration with "+ hostManagers.size() +" Host managers and "+ queueMonitorMap.size()+" queues");
 		this.initialized = true;
+		updateLocalConfiguration(hostManagers);
+	}
+
+	/**
+	 * Update the local configuration according to the refreshed list of host managers.
+	 * According to the delta it removes or adds new sockets.
+	 * <p>
+	 * This method connects directly all the host managers. If really to many host 
+	 * we can imagine to connect the host only when we need, a kind a lazy loading, but it 
+	 * is not yet implemented.
+	 * 
+	 * @param hostManagers the new list of host manager
+	 */
+	private void updateLocalConfiguration(List<String> hostManagers) {
+		// Create the socket for all host manager that are new or remove the old
+		// ones
+		logger.debug("Updating new local configuration");
+		List<String> toRemove = new ArrayList<String>();
+		List<String> toAdd = new ArrayList<String>();
+		// 1. Remove the old one
+		for (String existingHost : hostManagerMap.keySet()) {
+			if (!hostManagers.contains(existingHost)) {
+				// must be removed
+				toRemove.add(existingHost);
+			}
+		}
+		for (String hostToRemove : toRemove) {
+			logger.debug("Removing to "+ hostToRemove);
+			ZMQ.Socket socket = this.hostManagerMap.remove(hostToRemove);
+			socket.close();
+		}
+		// 2. To add
+		for (String hostAddress : hostManagers) {
+			if (!this.hostManagerMap.containsKey(hostManagers)) {
+				// Must create one
+				toAdd.add(hostAddress);
+			}
+		}
+		for (String hostToadd : toAdd) {
+			try {
+			ZMQ.Socket socket = context.socket(ZMQ.REQ);
+			String address= "tcp://"+hostToadd+":5100";
+			logger.debug("Connect to "+ address);
+			socket.connect(address);
+			this.hostManagerMap.put(hostToadd, socket);
+			logger.debug("Added host "+ hostToadd +" in the local configuration");
+			} catch (Exception e) {
+				logger.error("Error when connecting to host "+ hostToadd, e);
+			}
+		}
+	}
+
+	/**
+	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#clean()
+	 */
+	public void clean() {
+		logger.info("Cleaning the local cache");
+		for(String host: this.hostManagerMap.keySet()){
+			ZMQ.Socket socket = this.hostManagerMap.get(host);
+			socket.close();
+		}
+		this.hostManagerMap.clear();
 	}
 }

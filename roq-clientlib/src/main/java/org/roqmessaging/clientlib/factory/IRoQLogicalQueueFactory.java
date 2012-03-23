@@ -43,5 +43,10 @@ public interface IRoQLogicalQueueFactory {
 	 * As the queue factory will keep a local cache of the topology, we enable to refresh the cache.
 	 */
 	public void refreshTopology();
+	
+	/**
+	 * Must be called by the client to clean the local connection and local data cache.
+	 */
+	public void clean();
 
 }

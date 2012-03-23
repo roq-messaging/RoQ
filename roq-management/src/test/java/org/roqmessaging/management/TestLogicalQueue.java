@@ -23,7 +23,7 @@ import org.roqmessaging.core.utils.RoQUtils;
 /**
  * Class TestLogicalQueue
  * <p>
- * Description: TODO
+ * Description: Test the logical queue factory methods.
  * 
  * @author sskhiri
  */
@@ -39,10 +39,12 @@ public class TestLogicalQueue {
 	public void setUp() throws Exception {
 		// 1. Start the configuration
 		this.logger.info("Initial setup Start global config thread");
-		configurationManager = new GlobalConfigurationManager();
-		Thread configThread = new Thread(configurationManager);
-		configThread.start();
-		factory = new LogicalQueueFactory(RoQUtils.getInstance().getLocalIP().toString());
+		if(configurationManager==null){
+			configurationManager = new GlobalConfigurationManager();
+			Thread configThread = new Thread(configurationManager);
+			configThread.start();
+		}
+		if(factory ==null)	factory = new LogicalQueueFactory(RoQUtils.getInstance().getLocalIP().toString());
 	}
 
 	/**
@@ -51,6 +53,7 @@ public class TestLogicalQueue {
 	@After
 	public void tearDown() throws Exception {
 		this.configurationManager.shutDown();
+		this.factory.clean();
 	}
 
 	@Test
