@@ -23,7 +23,7 @@ import org.roqmessaging.core.utils.RoQUtils;
 /**
  * Class TestLogicalQueue
  * <p>
- * Description: TODO
+ * Description: Test the logical queue factory methods.
  * 
  * @author sskhiri
  */
@@ -31,6 +31,7 @@ public class TestLogicalQueue {
 	private Logger logger = Logger.getLogger(TestLogicalQueue.class);
 	private GlobalConfigurationManager configurationManager = null;
 	private LogicalQueueFactory factory = null;
+	private HostConfigManager hostConfigManager = null;
 
 	/**
 	 * @throws java.lang.Exception
@@ -39,10 +40,20 @@ public class TestLogicalQueue {
 	public void setUp() throws Exception {
 		// 1. Start the configuration
 		this.logger.info("Initial setup Start global config thread");
-		configurationManager = new GlobalConfigurationManager();
-		Thread configThread = new Thread(configurationManager);
-		configThread.start();
-		factory = new LogicalQueueFactory(RoQUtils.getInstance().getLocalIP().toString());
+		this.logger.info("Start global config...");
+		if(configurationManager==null){
+			configurationManager = new GlobalConfigurationManager();
+			Thread configThread = new Thread(configurationManager);
+			configThread.start();
+		}
+		this.logger.info("Start host config...");
+		if(hostConfigManager==null){
+			hostConfigManager = new HostConfigManager();
+			Thread hostThread = new Thread(hostConfigManager);
+			hostThread.start();
+		}
+		this.logger.info("Start factory config...");
+		if(factory ==null)	factory = new LogicalQueueFactory(RoQUtils.getInstance().getLocalIP().toString());
 	}
 
 	/**
@@ -51,6 +62,8 @@ public class TestLogicalQueue {
 	@After
 	public void tearDown() throws Exception {
 		this.configurationManager.shutDown();
+		this.hostConfigManager.shutDown();
+		this.factory.clean();
 	}
 
 	@Test
@@ -75,7 +88,7 @@ public class TestLogicalQueue {
 			logger.error("Error while waiting", e);
 		}
 		// 1. Add new host
-		String host = "10.20.5.10";
+		String host = RoQUtils.getInstance().getLocalIP();
 		this.configurationManager.addHostManager(host);
 		// 2. Create the factory
 		try {
@@ -84,5 +97,5 @@ public class TestLogicalQueue {
 			logger.error("Error while waiting", e);
 		}
 	}
-
+	
 }
