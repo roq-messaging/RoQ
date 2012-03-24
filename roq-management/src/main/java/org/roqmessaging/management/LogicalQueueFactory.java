@@ -45,7 +45,7 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 	//Config to hold
 	//[Host manager address, socket>
 	private HashMap<String, ZMQ.Socket>hostManagerMap	;
-	//Name, monitor location
+	//QName, monitor location
 	private HashMap<String, String> queueMonitorMap=null;
 
 	/**
@@ -74,7 +74,7 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 			// the queue already exist
 			throw new IllegalStateException("The queue name "+ queueName+" already exists");
 		}
-		if(this.hostManagerMap.containsKey(targetAddress)){
+		if(!this.hostManagerMap.containsKey(targetAddress)){
 			// the target address is not registered as node of the cluster (no Host manager running)
 			throw new IllegalStateException("the target address "+ targetAddress+" is not registered as a " +
 								"node of the cluster (no Host manager running)");
@@ -88,20 +88,48 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 		}
 		//3. Sends the create event to the hostConfig manager thread
 		ZMQ.Socket hostSocket = this.hostManagerMap.get(targetAddress);
-		
-		//TODO  Sends the create event to the hostConfig manager thread
-		
-		//4. If the answer is not confirmed, we should remove back the entry in the global config and throw an exception
-
+		hostSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName).getBytes(), 0);
+		String resultHost= new String(hostSocket.recv(0));
+		if(Integer.parseInt(resultHost) != RoQConstant.CONFIG_CREATE_QUEUE_OK){
+			//4. Roll back
+			//If the answer is not confirmed, we should remove back
+			//the entry in the global config and throw an exception
+			removeQFromGlobalConfig(queueName);
+			throw new IllegalStateException("The queue creation for  "+ queueName+" failed on the local host server");
+		}else{
+			logger.info("Created queue "+ queueName +" on local host "+targetAddress);
+		}
 	}
 
-	/* (non-Javadoc)
+	/**
+	 * Remove the configuration from the configuration:
+	 * <br>
+	 * 1. Remove from local cache - clean socket<br>
+	 * 2. Remove the configuration from global configuration
+	 * @param queueName the name of the queue to remove.
+	 * @return the monitor host to send the remove request
+	 */
+	private String removeQFromGlobalConfig(String queueName) {
+		//1. Clean local cache
+		String monitorHost = this.queueMonitorMap.remove(queueName);
+		//2. Ask the global configuration to remove the queue
+		globalConfigReq.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName).getBytes(), 0);
+		String result= new String(globalConfigReq.recv(0));
+		if(Integer.parseInt(result) != RoQConstant.CONFIG_CREATE_QUEUE_OK){
+			logger.error("Error when removing the queue "+queueName + " from global config", 
+					new IllegalStateException("The queue creation for  "+ queueName+" failed on the global configuration server"));
+		}
+		return monitorHost;
+	}
+
+	/**
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#removeQueue(java.lang.String)
 	 */
 	public boolean removeQueue(String queueName) {
-		//1. Get the monitor address
-		//2. Remove the entry in the global configuration
-		//3. Send the remove message to the monitor
+		//1. Get the monitor address &  Remove the entry in the global configuration
+		String host = removeQFromGlobalConfig(queueName);
+		//2. Send the remove message to the monitor
+		//TODO Send the remove message to the monitor
 		return false;
 	}
 
@@ -185,5 +213,6 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 			socket.close();
 		}
 		this.hostManagerMap.clear();
+		this.queueMonitorMap.clear();
 	}
 }

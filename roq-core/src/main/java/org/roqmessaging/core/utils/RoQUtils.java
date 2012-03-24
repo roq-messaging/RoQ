@@ -94,7 +94,7 @@ public class RoQUtils {
 														// sticks
 								adrName = adrIP;
 							else
-								adrName = adr.getCanonicalHostName();
+								adrName = InetAddress.getLocalHost().getCanonicalHostName();
 
 							if (!adrName.equals(adrIP))
 								return adrIP;

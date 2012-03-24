@@ -14,14 +14,8 @@
  */
 package org.roqmessaging.management;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Properties;
-
 import org.apache.log4j.Logger;
+import org.roqmessaging.core.RoQConstant;
 import org.zeromq.ZMQ;
 
 
@@ -35,86 +29,70 @@ import org.zeromq.ZMQ;
  */
 public class HostConfigManager implements Runnable {
 	
-	//ZMQ elements
-	private ZMQ.Socket[] globalMonitorSub, globalMonitorPub;
+	//ZMQ config
+	private ZMQ.Socket clientReqSocket = null;
 	private ZMQ.Context context;
 	//Logger
 	private Logger logger = Logger.getLogger(HostConfigManager.class);
-	//Global manager config
-	private String globalManagerAddress = null;
-	//The properties with global manager location
-	private String managerLocations[] = null;
+	//Host manager config
+	private volatile boolean running = false;
 	
 	/**
 	 * Constructor
-	 * @param propertyFilePath the path for the property file to load.
 	 */
-	public HostConfigManager(String propertyFilePath){
-		//load properties
-		try {
-			loadProperties(propertyFilePath);
-		} catch (UnknownHostException e) {
-			logger.error("Error while reading property file in "+ propertyFilePath, e);
-		}
-		assert this.managerLocations!=null;
-		
+	public HostConfigManager(){
 		// ZMQ Init
-		context = ZMQ.context(1);
-		configureSocketArray();
+		this.context = ZMQ.context(1);
+		this.clientReqSocket = context.socket(ZMQ.REP);
+		this.clientReqSocket.bind("tcp://*:5100");
+		this.running = true;
 	}
 	
 	/**
-	 * Create socket configuration according to the number of Global managers
-	 */
-	private void configureSocketArray() {
-		globalMonitorPub = new ZMQ.Socket[managerLocations.length];
-		globalMonitorPub = new ZMQ.Socket[managerLocations.length];
-		for (int i = 0; i < this.managerLocations.length; i++) {
-			String globalManager_i = this.managerLocations[i];
-			globalMonitorPub[i] = context.socket(ZMQ.PUB);
-			globalMonitorPub[i].bind("tcp://"+globalManager_i+":5573");
-
-			globalMonitorSub[i] = context.socket(ZMQ.SUB);
-			globalMonitorSub[i].bind("tcp://"+globalManager_i+":5571");
-			globalMonitorSub[i].subscribe("".getBytes());
-		}
-		
-	}
-
-	/**
-	 * Load the manager location from the property file.
-	 * @param propertyFilePath the path to the property file.
-	 * @throws UnknownHostException 
-	 * @throws IOException 
-	 */
-	private void loadProperties(String propertyFilePath) throws UnknownHostException {
-		Properties defaultProps = new Properties();
-		try {
-			FileInputStream in = new FileInputStream("src/main/resources/config.properties");
-			defaultProps.load(in);
-			in.close();
-		} catch (FileNotFoundException e) {
-			logger.warn("No property file in "+ propertyFilePath);
-			this.managerLocations = new String[]{InetAddress.getLocalHost().getAddress().toString()};
-			return;
-		} catch (IOException e) {
-			logger.error("Error while reading property file in "+ propertyFilePath, e);
-		}
-		String configArray=defaultProps.getProperty("config.managers");
-		this.managerLocations = configArray.split(",");
-		if (this.managerLocations.length ==0) {
-			this.managerLocations = new String[]{InetAddress.getLocalHost().getAddress().toString()};
-			logger.warn("No config manager property file setting to local address");
-		}
-		
-	}
-
-	/* (non-Javadoc)
 	 * @see java.lang.Runnable#run()
 	 */
 	public void run() {
-		// TODO Auto-generated method stub
+		this.running = true;
+		//ZMQ init
+		ZMQ.Poller items = context.poller(1);
+		items.register(this.clientReqSocket);
+		
+		//2. Start the main run of the monitor
+		while (this.running) {
+			items.poll(2000);
+			if (items.pollin(0)){ //Comes from a client
+				logger.debug("Receiving Incoming request @host...");
+				String[]  info = new String(clientReqSocket.recv(0)).split(",");
+				int infoCode = Integer.parseInt(info[0]);
+				logger.debug("Start analysing info code = "+ infoCode);
+				switch (infoCode) {
+				
+				//Receive a create queue request on the local host manager
+				case RoQConstant.CONFIG_CREATE_QUEUE:
+					logger.debug("Recieveing create Q request from a client ");
+					if (info.length == 2) {
+						String qName = info[1];
+						logger.debug("The request format is valid with 2 parts, Q to create:  "+qName);
+						//TODO Launch a monitor
+						//TODO Launch an exchange if possible not in the same JVM
+						//if OK send OK
+						this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK).getBytes(), 0);
+					}else{
+							logger.error("The create queue request sent does not contain 3 part: ID, quName, Monitor host");
+							this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL).getBytes(), 0);
+						}
+					break;
+				}
+			}
+		}
+		this.clientReqSocket.close();
+	}
 
+	/**
+	 * 
+	 */
+	public void shutDown() {
+		this.running=false;
 	}
 
 }

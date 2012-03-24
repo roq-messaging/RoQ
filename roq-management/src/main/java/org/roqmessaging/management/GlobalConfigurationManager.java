@@ -47,7 +47,6 @@ public class GlobalConfigurationManager implements Runnable {
 	 */
 	public GlobalConfigurationManager() {
 		this.hostManagerAddresses = new ArrayList<String>();
-		this.hostManagerAddresses.add(RoQUtils.getInstance().getLocalIP());
 		this.logger.info("Started global config Runnable");
 		this.queueLocations = new HashMap<String, String>();
 		this.context = ZMQ.context(1);
@@ -75,6 +74,8 @@ public class GlobalConfigurationManager implements Runnable {
 				int infoCode = Integer.parseInt(info[0]);
 				logger.debug("Start analysing info code = "+ infoCode);
 				switch (infoCode) {
+				
+				//init request from client that want to receive a local cache of configuration
 				case RoQConstant.INIT_REQ:
 					// A client is asking fof the topology of all local host
 					// manager
@@ -84,6 +85,8 @@ public class GlobalConfigurationManager implements Runnable {
 					this.clientReqSocket.send(serialised, ZMQ.SNDMORE);
 					this.clientReqSocket.send(RoQUtils.getInstance().serialiseObject(this.queueLocations), 0);
 					break;
+					
+				//A create queue request
 				case RoQConstant.CONFIG_CREATE_QUEUE:
 					logger.debug("Recieveing create Q request from a client ");
 					if (info.length == 3) {
