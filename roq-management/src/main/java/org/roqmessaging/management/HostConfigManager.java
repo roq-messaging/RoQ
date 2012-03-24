@@ -74,9 +74,15 @@ public class HostConfigManager implements Runnable {
 						String qName = info[1];
 						logger.debug("The request format is valid with 2 parts, Q to create:  "+qName);
 						//TODO Launch a monitor
+						boolean monitorOK = startNewMonitorProcess(qName);
 						//TODO Launch an exchange if possible not in the same JVM
+						boolean xChangeOK = startNewExchangeProcess(qName);
 						//if OK send OK
-						this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK).getBytes(), 0);
+						if(monitorOK& xChangeOK) this.clientReqSocket.send(
+								Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK).getBytes(), 0);
+						else
+							logger.error("The create queue request has failed at the monitor host,check logs");
+						this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL).getBytes(), 0);
 					}else{
 							logger.error("The create queue request sent does not contain 3 part: ID, quName, Monitor host");
 							this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL).getBytes(), 0);
@@ -86,6 +92,33 @@ public class HostConfigManager implements Runnable {
 			}
 		}
 		this.clientReqSocket.close();
+	}
+
+	/**
+	 * Start a new exchange process
+	 * <p>
+	 * 1. Check the number of local xChange present in the host
+	 * 2. Start a new xChange with port config + nchange
+	 * @param qName the name of the queue to create
+	 * @return true if the creation process worked well
+	 */
+	private boolean startNewExchangeProcess(String qName) {
+		// TODO Auto-generated method stub
+		return true;
+	}
+
+
+	/**
+	 * Start a new Monitor process
+	 * <p>
+	 * 1. Check the number of local monitor present in the host
+	 * 2. Start a new monitor with port config + nMonitor
+	 * @param qName the name of the queue to create
+	 * @return true if the creation process worked well
+	 */
+	private boolean startNewMonitorProcess(String qName) {
+		// TODO Auto-generated method stub
+		return true;
 	}
 
 	/**
