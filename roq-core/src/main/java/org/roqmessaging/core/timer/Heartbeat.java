@@ -30,15 +30,18 @@ public class Heartbeat extends TimerTask {
 	private Logger logger = Logger.getLogger(Heartbeat.class);
 	private ZMQ.Context hbcontext;
 	private ZMQ.Socket hbsocket;
+	private int fwPort=0, bkPort=0;
 
-	public Heartbeat(String  s_monitor) {
+	public Heartbeat(String  s_monitor, int frontPort, int backPort) {
 		this.hbcontext = ZMQ.context(1);
 		this.hbsocket = hbcontext.socket(ZMQ.PUB);
 		this.hbsocket.connect(s_monitor);
+		this.fwPort=frontPort;
+		this.bkPort= backPort;
 	}
 	public void run() {
 		String address = RoQUtils.getInstance().getLocalIP();
-		logger.debug("Local address to send with heart bit "+ address);
-		hbsocket.send(("5," +address ).getBytes(), 0);
+		logger.debug("Local address to send with heart bit "+  address+","+fwPort+","+ bkPort);
+		hbsocket.send(("5," +address+","+fwPort+","+ bkPort ).getBytes(), 0);
 	}
 }

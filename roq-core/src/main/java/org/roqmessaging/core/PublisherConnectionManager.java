@@ -73,7 +73,7 @@ public class PublisherConnectionManager implements Runnable {
 			try {
 				this.configState.getLock().lock();
 				this.configState.setExchPub(this.context.socket(ZMQ.PUB));
-				this.configState.getExchPub().connect("tcp://" + exchg + ":5559");
+				this.configState.getExchPub().connect("tcp://" + exchg);
 				this.configState.setValid(true);
 			}finally{
 				this.configState.getLock().unlock();
@@ -163,7 +163,7 @@ public class PublisherConnectionManager implements Runnable {
 			this.configState.getLock().lock();
 			this.configState.getExchPub().close();
 			this.configState.setExchPub(context.socket(ZMQ.PUB));
-			this.configState.getExchPub().connect("tcp://" + exchange + ":5559");
+			this.configState.getExchPub().connect("tcp://" + exchange);
 			this.configState.setValid(true);
 			s_currentExchange = exchange;
 			logger.info("Re-allocation order -  Moving to " + exchange);

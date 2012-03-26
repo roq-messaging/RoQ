@@ -48,6 +48,7 @@ public class Exchange implements Runnable {
 	private String s_monitor;
 	private boolean active;
 	private StatData statistic=null;
+	private int frontEnd, backEnd;
 
 	/**
 	 * @param frontend
@@ -83,7 +84,8 @@ public class Exchange implements Runnable {
 		this.monitorPub = context.socket(ZMQ.PUB);
 
 		this.monitorPub.connect(s_monitor);
-
+		this.frontEnd=frontend;
+		this.backEnd= backend;
 		this.active = true;
 	}
 
@@ -140,7 +142,7 @@ public class Exchange implements Runnable {
 	public void run() {
 		logger.info("Exchange Started");
 		Timer timer = new Timer();
-		timer.schedule(new Heartbeat(this.s_monitor), 0, 5000);
+		timer.schedule(new Heartbeat(this.s_monitor, this.frontEnd, this.backEnd ), 0, 5000);
 		timer.schedule(new ExchangeStatTimer(this, this.statistic, this.context), 10, 60000);
 		int part;
 		String prodID = "";

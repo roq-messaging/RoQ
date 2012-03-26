@@ -131,14 +131,14 @@ public class SubscriberConnectionManager implements Runnable {
 	 */
 	private int init() {
 		logger.info("Init sequence");
-		initReq.send((RoQConstant.CHANNEL_INIT + ",Hello").getBytes(), 0);
+		initReq.send((RoQConstant.CHANNEL_INIT_SUBSCRIBER + ",Hello").getBytes(), 0);
 		String response = new String(initReq.recv(0));
 		if (!response.equals("")) {
 			String[] brokerList = response.split(",");
 			this.exchSub = context.socket(ZMQ.SUB);
 			this.exchSub.subscribe("".getBytes());
 			for (int i = 0; i < brokerList.length; i++) {
-				exchSub.connect("tcp://" + brokerList[i] + ":5560");
+				exchSub.connect("tcp://" + brokerList[i] );
 				knownHosts.add(brokerList[i]);
 				logger.info("connected to " + brokerList[i]);
 			}
@@ -218,7 +218,7 @@ public class SubscriberConnectionManager implements Runnable {
 															// available message
 					logger.info("listening to " + info[1]);
 					if (!knownHosts.contains(info[1])) {
-						exchSub.connect("tcp://" + info[1] + ":5560");
+						exchSub.connect("tcp://" + info[1] );
 						knownHosts.add(info[1]);
 					}
 				}

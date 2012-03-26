@@ -90,7 +90,10 @@ public class BasicSetupTest {
 				logger.info("Waiting for connection ready..." + attemp*3 +" sec");
 				attemp++;
 			}
-			if(this.connection.isReady())	this.publisher.sendMessage("sabri".getBytes(), "hello".getBytes());
+			logger.info("Sending message to subscriber ...");
+			if(this.connection.isReady()){
+				this.publisher.sendMessage("sabri".getBytes(), "hello".getBytes());
+			}
 			else throw new IllegalStateException("Connection is not ready after 15 sec");
 			Thread.sleep(2000);
 		} catch (InterruptedException e) {
@@ -104,12 +107,12 @@ public class BasicSetupTest {
 	 * parameter are loaded.
 	 */
 	private void startExchange(String monitorHost, String statHost) {
-		this.xChange = new Exchange(5559, 5560, monitorHost,statHost );
+		this.xChange = new Exchange(5561, 5562, monitorHost,statHost );
 		Thread t = new Thread(this.xChange);
 		t.start();
 		
 		try {
-			Thread.sleep(1);
+			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -125,7 +128,7 @@ public class BasicSetupTest {
 		this.connection.open();
 		this.publisher = this.connection.createPublisher();
 		try {
-			Thread.sleep(2000);
+			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -138,6 +141,11 @@ public class BasicSetupTest {
 		this.subFactory = new RoQSubscriberConnectionFactory();
 		this.subConnection = this.subFactory.createRoQConnection("sabri");
 		this.subConnection.open();
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		this.subConnection.setMessageSubscriber(new IRoQSubscriber() {
 			public void onEvent(byte[] msg) {
 				String content= new String(msg,0,msg.length) ;
