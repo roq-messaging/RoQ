@@ -27,19 +27,24 @@ public class PublisherConnectionManager implements Runnable {
 	private PublisherConfigState configState = null;
 	
 
-	public PublisherConnectionManager(String monitor, boolean tstmp) {
+	/**
+	 * @param monitor the monitor host address
+	 * @param basePort the base port on which the monitor has been started
+	 * @param tstmp true if using a time stamp server
+	 */
+	public PublisherConnectionManager(String monitor, int basePort, boolean tstmp) {
 		this.context = ZMQ.context(1);
 		this.monitorSub = context.socket(ZMQ.SUB);
-		monitorSub.connect("tcp://" + monitor + ":5573");
+		monitorSub.connect("tcp://" + monitor + ":"+(basePort+2));
 		this.s_ID = UUID.randomUUID().toString();
 		monitorSub.subscribe("".getBytes());
 		this.initReq = context.socket(ZMQ.REQ);
-		this.initReq.connect("tcp://" + monitor + ":5572");
+		this.initReq.connect("tcp://" + monitor + ":"+(basePort+1));
 		this.configState = new PublisherConfigState();
 		this.configState.setMonitor(monitor);
 		this.configState.setTimeStampServer(tstmp);
 		this.configState.setPublisherID(this.s_ID);
-		logger.info("Publisher client thread " + s_ID+" Connected to monitor : tcp://" + monitor + ":5572");
+		logger.info("Publisher client thread " + s_ID+" Connected to monitor :tcp://" + monitor + ":"+(basePort+1));
 
 		if (tstmp) {
 			// Init of timestamp socket. Only for benchmarking purposes
