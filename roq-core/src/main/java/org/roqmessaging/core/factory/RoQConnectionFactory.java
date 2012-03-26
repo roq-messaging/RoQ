@@ -29,8 +29,8 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	/**
 	 * @see org.roqmessaging.clientlib.factory.IRoQConnectionFactory#createRoQConnection()
 	 */
-	public IRoQConnection createRoQConnection() {
-		return new RoQPublisherConnection();
+	public IRoQConnection createRoQConnection(String monitorHost, int basePort) {
+		return new RoQPublisherConnection(monitorHost, basePort);
 	}
 
 }

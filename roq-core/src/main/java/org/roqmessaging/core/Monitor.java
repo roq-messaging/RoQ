@@ -46,12 +46,15 @@ public class Monitor implements Runnable {
 	private boolean active = true;
 	private boolean useFile = false;
 	
-
 	private BufferedWriter bufferedOutput;
-
 	private ZMQ.Socket producersPub, brokerSub, initRep, listenersPub, statSub;
 
-	public Monitor() {
+	
+	/**
+	 * @param basePort default value must be 5571
+	 * @param statPort default port for stat socket 5800
+	 */
+	public Monitor(int basePort, int statPort){
 		knownHosts = new ArrayList<ExchangeState>();
 		hostsToRemove = new ArrayList<Integer>();
 		maxThroughput = 75000000L; // Maximum throughput per exchange, in
@@ -60,20 +63,23 @@ public class Monitor implements Runnable {
 		context = ZMQ.context(1);
 
 		producersPub = context.socket(ZMQ.PUB);
-		producersPub.bind("tcp://*:5573");
+		producersPub.bind("tcp://*:"+(basePort+2));
+		logger.debug("Binding procuder to "+"tcp://*:"+(basePort+2));
 
 		brokerSub = context.socket(ZMQ.SUB);
-		brokerSub.bind("tcp://*:5571");
+		brokerSub.bind("tcp://*:"+(basePort));
+		logger.debug("Binding broker Sub  to "+"tcp://*:"+(basePort));
 		brokerSub.subscribe("".getBytes());
 
 		initRep = context.socket(ZMQ.REP);
-		initRep.bind("tcp://*:5572");
+		initRep.bind("tcp://*:"+(basePort+1));
+		logger.debug("Init request socket to "+"tcp://*:"+(basePort+1));
 
 		listenersPub = context.socket(ZMQ.PUB);
-		listenersPub.bind("tcp://*:5574");
+		listenersPub.bind("tcp://*:"+(basePort+3));
 
 		statSub = context.socket(ZMQ.SUB);
-		statSub.bind("tcp://*:5800");
+		statSub.bind("tcp://*:"+ statPort);
 		statSub.subscribe("".getBytes());
 
 		if(useFile){
@@ -86,8 +92,9 @@ public class Monitor implements Runnable {
 		}else{
 			bufferedOutput = new BufferedWriter(new OutputStreamWriter(System.out));
 		}
+	
 	}
-
+	
 	private int hostLookup(String address) {
 		for (int i = 0; i < knownHosts.size(); i++) {
 			if (knownHosts.get(i).getAddress().equals(address))
@@ -96,7 +103,10 @@ public class Monitor implements Runnable {
 		return -1;
 	}
 
-	private String getFreeHost() {
+	/**
+	 * @return a free host address + the front port. That must be only used for publisher
+	 */
+	private String getFreeHostForPublisher() {
 		String freeHostAddress = "";
 		if (!knownHosts.isEmpty()) {
 			long tempt = Long.MAX_VALUE;
@@ -107,7 +117,7 @@ public class Monitor implements Runnable {
 					index = i;
 				}
 			}
-			freeHostAddress = knownHosts.get(index).getAddress();
+			freeHostAddress = knownHosts.get(index).getAddress()+ ":"+ knownHosts.get(index).getFrontPort();
 		}
 		return freeHostAddress;
 	}
@@ -129,19 +139,26 @@ public class Monitor implements Runnable {
 		return index;
 	}
 
-	private int logHost(String address) {
+	/**
+	 * Register the host address of the exchange
+	 * @param address the host address
+	 * @param frontPort the front end port for publisher
+	 * @param backPort the back end port for subscriber
+	 * @return 1 if the host has been added otherwise it is hearbeat
+	 */
+	private int logHost(String address, String frontPort, String backPort) {
 		int i;
 		if (!knownHosts.isEmpty()) {
 			for (i = 0; i < knownHosts.size(); i++) {
 				if (address.equals(knownHosts.get(i).getAddress())) {
 					knownHosts.get(i).setAlive(true);
-					 logger.debug("Host "+address+" reported alive");
+					 logger.debug("Host "+address+": "+ frontPort+"->"+ backPort+"  reported alive");
 					return 0;
 				}
 			}
 		}
-		logger.info("Added new host: " + address);
-		knownHosts.add(new ExchangeState(address));
+		logger.info("Added new host: " + address+": "+ frontPort+"->"+ backPort);
+		knownHosts.add(new ExchangeState(address,frontPort, backPort ));
 		return 1;
 	}
 
@@ -152,7 +169,7 @@ public class Monitor implements Runnable {
 		String exchList = "";
 		if (!knownHosts.isEmpty()) {
 			for (int i = 0; i < knownHosts.size(); i++) {
-				exchList += knownHosts.get(i).getAddress();
+				exchList += knownHosts.get(i).getAddress()+":"+knownHosts.get(i).getBackPort();
 				if (i != knownHosts.size() - 1) {
 					exchList += ",";
 				}
@@ -243,7 +260,7 @@ public class Monitor implements Runnable {
 			if (System.currentTimeMillis() - lastPublish > 10000) { 
 				listenersPub.send(("2," + bcastExchg()).getBytes(), 0);
 				lastPublish = System.currentTimeMillis();
-				logger.info("Alive hosts: " + bcastExchg() + " , Free host: " + getFreeHost());
+				logger.info("Alive hosts: " + bcastExchg() + " , Free host: " + getFreeHostForPublisher());
 			}
 			while (!hostsToRemove.isEmpty()) {
 				producersPub.send(("2," + knownHosts.get(hostsToRemove.get(0)).getAddress()).getBytes(), 0);
@@ -328,10 +345,13 @@ public class Monitor implements Runnable {
 					}
 					break;
 				case 5:
-					// Broker heartbeat code
-					if (logHost(info[1]) == 1) {
-						listenersPub.send(("1," + info[1]).getBytes(), 0);
-					}
+					// Broker heartbeat code Registration
+					if (info.length==4){
+						if (logHost(info[1], info[2], info[3]) == 1) {
+							listenersPub.send(("1," + info[1]).getBytes(), 0);
+						}
+					}	else logger.error("The message recieved from the exchange heart beat" +
+							" does not contains 4 parts");
 					break;
 
 				case 6:
@@ -347,8 +367,8 @@ public class Monitor implements Runnable {
 				}
 			}
 
-			if (items.pollin(RoQConstant.CHANNEL_INIT)) { // Init socket
-
+			if (items.pollin(2)) { // Init socket
+				logger.debug("Received init request from either producer or listner");
 				String info[] = new String(initRep.recv(0)).split(",");
 				infoCode = Integer.parseInt(info[0]);
 
@@ -358,13 +378,13 @@ public class Monitor implements Runnable {
 					initRep.send(bcastExchg().getBytes(), 0);
 					break;
 				case 2:
-					 logger.debug("Received init request from producer. Assigned on "+ getFreeHost());
-					initRep.send(getFreeHost().getBytes(), 0);
+					 logger.debug("Received init request from producer. Assigned on "+ getFreeHostForPublisher());
+					initRep.send(getFreeHostForPublisher().getBytes(), 0);
 					break;
 
 				case 3:
 					logger.debug("Received panic init from producer");
-					initRep.send(getFreeHost().getBytes(), 0);// TODO: round
+					initRep.send(getFreeHostForPublisher().getBytes(), 0);// TODO: round
 																// robin return
 																// knownHosts.
 																// should be

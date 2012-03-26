@@ -21,24 +21,13 @@ package org.roqmessaging.core.data;
  * @author sskhiri
  */
 public class StatData {
-	private String s_monitorHostname =null;
+	private String statHost =null;
 	private long throughput = 0;
 	private long max_bw=0;
 	private int totalProcessed =0;
 	private int processed =0;
 	
-	/**
-	 * @return the s_monitorHostname
-	 */
-	public String getS_monitorHostname() {
-		return s_monitorHostname;
-	}
-	/**
-	 * @param s_monitorHostname the s_monitorHostname to set
-	 */
-	public void setS_monitorHostname(String s_monitorHostname) {
-		this.s_monitorHostname = s_monitorHostname;
-	}
+	
 	/**
 	 * @return the throughput
 	 */
@@ -87,6 +76,18 @@ public class StatData {
 	 */
 	public void setProcessed(int processed) {
 		this.processed = processed;
+	}
+	/**
+	 * @return the statHost
+	 */
+	public String getStatHost() {
+		return statHost;
+	}
+	/**
+	 * @param statHost the statHost to set
+	 */
+	public void setStatHost(String statHost) {
+		this.statHost = statHost;
 	}
 
 }

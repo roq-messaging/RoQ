@@ -58,9 +58,11 @@ public class BasicSetupTest {
 	@Before
 	public void setUp() throws Exception {
 		logger.log(Level.INFO, "Basic Setup before test");
-		startMonitor();
-		startExchange();
-		startPublisherClient();
+		int basePort = 5571;
+		int stat = 5800;
+		startMonitor(basePort, stat);
+		startExchange("tcp://localhost:"+basePort, "tcp://localhost:"+stat);
+		startPublisherClient("localhost", basePort);
 		startSubscriberClient(); 
 	}
 
@@ -88,7 +90,10 @@ public class BasicSetupTest {
 				logger.info("Waiting for connection ready..." + attemp*3 +" sec");
 				attemp++;
 			}
-			if(this.connection.isReady())	this.publisher.sendMessage("sabri".getBytes(), "hello".getBytes());
+			logger.info("Sending message to subscriber ...");
+			if(this.connection.isReady()){
+				this.publisher.sendMessage("sabri".getBytes(), "hello".getBytes());
+			}
 			else throw new IllegalStateException("Connection is not ready after 15 sec");
 			Thread.sleep(2000);
 		} catch (InterruptedException e) {
@@ -101,14 +106,13 @@ public class BasicSetupTest {
 	 * potential evolution would be a configuration file from which the
 	 * parameter are loaded.
 	 */
-	private void startExchange() {
-		final String monitorHost = "localhost";
-		this.xChange = new Exchange("5559", "5560", monitorHost);
+	private void startExchange(String monitorHost, String statHost) {
+		this.xChange = new Exchange(5561, 5562, monitorHost,statHost );
 		Thread t = new Thread(this.xChange);
 		t.start();
 		
 		try {
-			Thread.sleep(1);
+			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -117,14 +121,14 @@ public class BasicSetupTest {
 	/**
 	 * Initiate a thread publisher
 	 */
-	private void startPublisherClient() {
+	private void startPublisherClient(String monitorHost, int port) {
 		//1. Creating the connection
 		this.factory = new RoQConnectionFactory();
-		this.connection = this.factory.createRoQConnection();
+		this.connection = this.factory.createRoQConnection(monitorHost, port);
 		this.connection.open();
 		this.publisher = this.connection.createPublisher();
 		try {
-			Thread.sleep(2000);
+			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -137,6 +141,11 @@ public class BasicSetupTest {
 		this.subFactory = new RoQSubscriberConnectionFactory();
 		this.subConnection = this.subFactory.createRoQConnection("sabri");
 		this.subConnection.open();
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		this.subConnection.setMessageSubscriber(new IRoQSubscriber() {
 			public void onEvent(byte[] msg) {
 				String content= new String(msg,0,msg.length) ;
@@ -148,9 +157,10 @@ public class BasicSetupTest {
 	
 	/**
 	 * Start the monitor thread. We need one monitor per logical queue.
+	 * @param basePort the base port on which the monitor starts
 	 */
-	private void startMonitor() {
-		this.monitor = new Monitor();
+	private void startMonitor(int basePort, int statPort) {
+		this.monitor = new Monitor(basePort, statPort);
 		Thread t = new Thread(this.monitor);
 		t.start();
 		

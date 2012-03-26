@@ -29,7 +29,7 @@ public class MonitorLauncher {
 
 	public static void main(String[] args) {
 		System.out.println(RoQUtils.getInstance().getFileStamp());
-		Monitor monitor = new Monitor();
+		Monitor monitor = new Monitor(5700);
 		Thread t = new Thread(monitor);
 		t.start();
 	}

@@ -30,6 +30,8 @@ public class ExchangeState {
 		private boolean alive;
 		private int nbProd;
 		private int lost;
+		//Port
+		private int frontPort, backPort;
 
 		public int getNbProd() {
 			return nbProd;
@@ -64,12 +66,19 @@ public class ExchangeState {
 
 		}
 
-		public ExchangeState(String addr) {
+		/**
+		 * @param addr the host address of the exchange
+		 * @param frontPort the front port for the publisher
+		 * @param backPort the back port for the subscriber
+		 */
+		public ExchangeState(String addr, String frontPort,  String backPort) {
 			this.address = addr;
 			this.throughput = 0;
 			this.alive = true;
 			this.lost = 0;
 			this.nbProd = 0;
+			this.backPort=Integer.parseInt(backPort);
+			this.frontPort = Integer.parseInt(frontPort);
 		}
 
 		public String getAddress() {
@@ -90,6 +99,34 @@ public class ExchangeState {
 
 		public void addThroughput(long tr) {
 			this.throughput += tr;
+		}
+
+		/**
+		 * @return the frontPort
+		 */
+		public int getFrontPort() {
+			return frontPort;
+		}
+
+		/**
+		 * @param frontPort the frontPort to set
+		 */
+		public void setFrontPort(int frontPort) {
+			this.frontPort = frontPort;
+		}
+
+		/**
+		 * @return the backPort
+		 */
+		public int getBackPort() {
+			return backPort;
+		}
+
+		/**
+		 * @param backPort the backPort to set
+		 */
+		public void setBackPort(int backPort) {
+			this.backPort = backPort;
 		}
 
 }

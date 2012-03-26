@@ -37,7 +37,12 @@ public interface RoQConstant {
 	/**
 	 * Channel to configure the initalisation of elements
 	 */
-	public static int CHANNEL_INIT =2;
+	public static int CHANNEL_INIT_PRODUCER=2;
+	
+	/**
+	 * Channel to configure the initalisation of elements
+	 */
+	public static int CHANNEL_INIT_SUBSCRIBER=1;
 	
 	/**
 	 * Send an init request code.

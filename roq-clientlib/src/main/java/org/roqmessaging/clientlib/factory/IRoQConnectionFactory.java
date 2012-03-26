@@ -27,8 +27,10 @@ public interface IRoQConnectionFactory {
 	/**
 	 * Instantiates a connection. Notice that the connection will need to connect to an active Exchange. At startup this 
 	 * could take few seconds before beeing ready.
+	 * @param monitorHost the host in which the monitor is running
+	 * @param basePort the port on which the monitor has been started
 	 * @return a connection that can be used to send messages.
 	 */
-	public IRoQConnection createRoQConnection();
+	public IRoQConnection createRoQConnection(String monitorHost, int basePort);
 
 }
