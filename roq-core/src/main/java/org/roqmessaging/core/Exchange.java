@@ -49,16 +49,22 @@ public class Exchange implements Runnable {
 	private boolean active;
 	private StatData statistic=null;
 
-	public Exchange(String frontend, String backend, String monitor) {
+	/**
+	 * @param frontend
+	 * @param backend
+	 * @param monitorHost the address of the monitor to bind  tcp:// monitor:monitorPort;
+	 * @param statHost tcp://monitor:statport
+	 */
+	public Exchange(int frontend, int backend, String monitorHost, String statHost) {
 		knownProd = new ArrayList<ProducerState>();
 		this.statistic = new StatData();
 		this.statistic.setProcessed(0);
 		this.statistic.setThroughput(0);
-		this.statistic.setS_monitorHostname( monitor);
+		this.statistic.setStatHost(statHost);
 		this.statistic.setMax_bw( 5000); // bandwidth limit, in bytes/minute, per producer
 		this.s_frontend = "tcp://*:" + frontend;
 		this.s_backend = "tcp://*:" + backend;
-		this.s_monitor = "tcp://" + monitor + ":5571";
+		this.s_monitor = monitorHost;
 
 		this.context = ZMQ.context(1);
 		this.frontendSub = context.socket(ZMQ.SUB);
@@ -75,7 +81,6 @@ public class Exchange implements Runnable {
 		// this.backend.setSwap(500000000);
 		this.backendPub.bind(s_backend);
 		this.monitorPub = context.socket(ZMQ.PUB);
-
 
 		this.monitorPub.connect(s_monitor);
 

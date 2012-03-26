@@ -46,12 +46,15 @@ public class Monitor implements Runnable {
 	private boolean active = true;
 	private boolean useFile = false;
 	
-
 	private BufferedWriter bufferedOutput;
-
 	private ZMQ.Socket producersPub, brokerSub, initRep, listenersPub, statSub;
 
-	public Monitor() {
+	
+	/**
+	 * @param basePort default value must be 5571
+	 * @param statPort default port for stat socket 5800
+	 */
+	public Monitor(int basePort, int statPort){
 		knownHosts = new ArrayList<ExchangeState>();
 		hostsToRemove = new ArrayList<Integer>();
 		maxThroughput = 75000000L; // Maximum throughput per exchange, in
@@ -60,20 +63,23 @@ public class Monitor implements Runnable {
 		context = ZMQ.context(1);
 
 		producersPub = context.socket(ZMQ.PUB);
-		producersPub.bind("tcp://*:5573");
+		producersPub.bind("tcp://*:"+(basePort+2));
+		logger.debug("Binding procuder to "+"tcp://*:"+(basePort+2));
 
 		brokerSub = context.socket(ZMQ.SUB);
-		brokerSub.bind("tcp://*:5571");
+		brokerSub.bind("tcp://*:"+(basePort));
+		logger.debug("Binding broker Sub  to "+"tcp://*:"+(basePort));
 		brokerSub.subscribe("".getBytes());
 
 		initRep = context.socket(ZMQ.REP);
-		initRep.bind("tcp://*:5572");
+		initRep.bind("tcp://*:"+(basePort+1));
+		logger.debug("Init request socket to "+"tcp://*:"+(basePort+1));
 
 		listenersPub = context.socket(ZMQ.PUB);
-		listenersPub.bind("tcp://*:5574");
+		listenersPub.bind("tcp://*:"+(basePort+3));
 
 		statSub = context.socket(ZMQ.SUB);
-		statSub.bind("tcp://*:5800");
+		statSub.bind("tcp://*:"+ statPort);
 		statSub.subscribe("".getBytes());
 
 		if(useFile){
@@ -86,8 +92,9 @@ public class Monitor implements Runnable {
 		}else{
 			bufferedOutput = new BufferedWriter(new OutputStreamWriter(System.out));
 		}
+	
 	}
-
+	
 	private int hostLookup(String address) {
 		for (int i = 0; i < knownHosts.size(); i++) {
 			if (knownHosts.get(i).getAddress().equals(address))
@@ -348,7 +355,7 @@ public class Monitor implements Runnable {
 			}
 
 			if (items.pollin(RoQConstant.CHANNEL_INIT)) { // Init socket
-
+				logger.debug("Received init request from either producer or listner");
 				String info[] = new String(initRep.recv(0)).split(",");
 				infoCode = Integer.parseInt(info[0]);
 

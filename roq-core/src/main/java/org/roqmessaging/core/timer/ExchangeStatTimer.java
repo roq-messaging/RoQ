@@ -47,7 +47,8 @@ public 	class ExchangeStatTimer extends TimerTask {
 		this.statistic=stat;
 		timersocket.connect(this.xchange.getS_monitor());
 		this.statsPub = context.socket(ZMQ.PUB);
-		this.statsPub.connect("tcp://" + stat.getS_monitorHostname() + ":5800");
+		this.statsPub.connect(stat.getStatHost());
+		this.logger.debug("Connecting to "+ stat.getStatHost());
 		this.minute = 0;
 		this.totalThroughput = 0;
 	}

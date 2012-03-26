@@ -58,8 +58,10 @@ public class BasicSetupTest {
 	@Before
 	public void setUp() throws Exception {
 		logger.log(Level.INFO, "Basic Setup before test");
-		startMonitor();
-		startExchange();
+		int basePort = 5571;
+		int stat = 5800;
+		startMonitor(basePort, stat);
+		startExchange("tcp://localhost:"+basePort, "tcp://localhost:"+stat);
 		startPublisherClient();
 		startSubscriberClient(); 
 	}
@@ -101,9 +103,8 @@ public class BasicSetupTest {
 	 * potential evolution would be a configuration file from which the
 	 * parameter are loaded.
 	 */
-	private void startExchange() {
-		final String monitorHost = "localhost";
-		this.xChange = new Exchange("5559", "5560", monitorHost);
+	private void startExchange(String monitorHost, String statHost) {
+		this.xChange = new Exchange(5559, 5560, monitorHost,statHost );
 		Thread t = new Thread(this.xChange);
 		t.start();
 		
@@ -148,9 +149,10 @@ public class BasicSetupTest {
 	
 	/**
 	 * Start the monitor thread. We need one monitor per logical queue.
+	 * @param basePort the base port on which the monitor starts
 	 */
-	private void startMonitor() {
-		this.monitor = new Monitor();
+	private void startMonitor(int basePort, int statPort) {
+		this.monitor = new Monitor(basePort, statPort);
 		Thread t = new Thread(this.monitor);
 		t.start();
 		
