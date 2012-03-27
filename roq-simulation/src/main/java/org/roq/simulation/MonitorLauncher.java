@@ -14,6 +14,7 @@
  */
 package org.roq.simulation;
 
+import org.apache.log4j.Logger;
 import org.roqmessaging.core.Monitor;
 import org.roqmessaging.core.utils.RoQUtils;
 
@@ -27,9 +28,17 @@ import org.roqmessaging.core.utils.RoQUtils;
  */
 public class MonitorLauncher {
 
+	/**
+	 * @param args must be the base monitor port and the stat port, default value is 
+	 * 5570 5800
+	 */
 	public static void main(String[] args) {
+		Logger logger = Logger.getLogger(MonitorLauncher.class);
 		System.out.println(RoQUtils.getInstance().getFileStamp());
-		Monitor monitor = new Monitor(5700);
+		int basePort = Integer.parseInt(args[0]);
+		int statPort = Integer.parseInt(args[1]);
+		logger.info("Starting the monitor on base port "+basePort+ ", stat port" +statPort);
+		Monitor monitor = new Monitor(basePort, statPort);
 		Thread t = new Thread(monitor);
 		t.start();
 	}
