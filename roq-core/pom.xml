@@ -33,6 +33,7 @@
 					<archive>
 						<manifest>
 							<mainClass>org.roqmessaging.core.launcher.MonitorLauncher</mainClass>
+							<mainClass>org.roqmessaging.core.launcher.ExchangeLauncher</mainClass>
 						</manifest>
 					</archive>
 				</configuration>

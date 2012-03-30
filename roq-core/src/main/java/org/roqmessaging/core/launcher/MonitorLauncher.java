@@ -34,10 +34,14 @@ public class MonitorLauncher {
 	 */
 	public static void main(String[] args) {
 		final Logger logger = Logger.getLogger(MonitorLauncher.class);
-		System.out.println("Starting Monitor on base port "+ args[1] + ", "+args[2]);
+		if(args.length !=2){
+			System.out.println("The argument should be <int: base port> <int: stat port>");
+			return;
+		}
+		System.out.println("Starting Monitor on base port "+ args[0] + ", "+args[1]);
 		try {
-			int basePort = Integer.parseInt(args[1]);
-			int statPort = Integer.parseInt(args[2]);
+			int basePort = Integer.parseInt(args[0]);
+			int statPort = Integer.parseInt(args[1]);
 			final Monitor monitor = new Monitor(basePort, statPort);
 			Thread t = new Thread(monitor);
 			t.start();
