@@ -30,7 +30,7 @@ import org.roqmessaging.core.utils.RoQUtils;
 public class TestLogicalQueue {
 	private Logger logger = Logger.getLogger(TestLogicalQueue.class);
 	private GlobalConfigurationManager configurationManager = null;
-	private LogicalQueueFactory factory = null;
+	private LogicalQFactory factory = null;
 	private HostConfigManager hostConfigManager = null;
 
 	/**
@@ -53,7 +53,7 @@ public class TestLogicalQueue {
 			hostThread.start();
 		}
 		this.logger.info("Start factory config...");
-		if(factory ==null)	factory = new LogicalQueueFactory(RoQUtils.getInstance().getLocalIP().toString());
+		if(factory ==null)	factory = new LogicalQFactory(RoQUtils.getInstance().getLocalIP().toString());
 	}
 
 	/**
@@ -93,6 +93,7 @@ public class TestLogicalQueue {
 		// 2. Create the factory
 		try {
 			factory.createQueue("Sabri", host);
+			factory.createQueue("Sabri2", host);
 		} catch (IllegalStateException e) {
 			logger.error("Error while waiting", e);
 		}

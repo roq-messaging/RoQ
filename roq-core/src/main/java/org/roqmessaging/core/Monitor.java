@@ -48,6 +48,8 @@ public class Monitor implements Runnable {
 	
 	private BufferedWriter bufferedOutput;
 	private ZMQ.Socket producersPub, brokerSub, initRep, listenersPub, statSub;
+	//Monitor heart beat socket, client can check that monitor is alive
+	private ZMQ.Socket heartBeat = null;
 
 	
 	/**
@@ -77,11 +79,15 @@ public class Monitor implements Runnable {
 
 		listenersPub = context.socket(ZMQ.PUB);
 		listenersPub.bind("tcp://*:"+(basePort+3));
+		
+		heartBeat = context.socket(ZMQ.REP);
+		heartBeat.bind("tcp://*:"+(basePort+4));
+		logger.debug("Heart beat request socket to "+"tcp://*:"+(basePort+4));
 
 		statSub = context.socket(ZMQ.SUB);
 		statSub.bind("tcp://*:"+ statPort);
 		statSub.subscribe("".getBytes());
-
+		
 		if(useFile){
 			try {
 				FileWriter output = new FileWriter(("output" + RoQUtils.getInstance().getFileStamp()), true);

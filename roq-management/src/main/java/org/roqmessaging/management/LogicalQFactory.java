@@ -31,12 +31,12 @@ import org.zeromq.ZMQ;
  * 
  * @author sskhiri
  */
-public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
+public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	//ZMQ elements
 	private ZMQ.Socket globalConfigReq=null;
 	private ZMQ.Context context;
 	//Logger
-	private Logger logger = Logger.getLogger(LogicalQueueFactory.class);
+	private Logger logger = Logger.getLogger(LogicalQFactory.class);
 	//Config
 	private String configServer = null;
 	private String factoryID = null;
@@ -51,7 +51,7 @@ public class LogicalQueueFactory implements IRoQLogicalQueueFactory {
 	/**
 	 * Initialise the socket to the config server.
 	 */
-	public LogicalQueueFactory(String configServer) {
+	public LogicalQFactory(String configServer) {
 		this.configServer= configServer;
 		this.factoryID =String.valueOf(System.currentTimeMillis()) +"_queuefactory";
 		context = ZMQ.context(1);
