@@ -93,6 +93,7 @@ public class TestLogicalQueue {
 		// 2. Create the factory
 		try {
 			factory.createQueue("Sabri", host);
+			factory.createQueue("Sabri2", host);
 		} catch (IllegalStateException e) {
 			logger.error("Error while waiting", e);
 		}

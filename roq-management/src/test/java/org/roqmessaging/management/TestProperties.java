@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.management;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
@@ -24,23 +25,37 @@ import org.junit.Test;
 
 /**
  * Class TestProperties
- * <p> Description: Test the property file
+ * <p>
+ * Description: Test the property file
  * 
  * @author sskhiri
  */
 public class TestProperties extends TestCase {
-	
+	private String monitorScript = "/usr/bin/roq/startMonitor.sh";
+	private String exchangeScript = "/usr/bin/roq/startXchange.sh";
+
 	@Test
-	public void testEntry() throws IOException{
-//		Properties defaultProps = new Properties();
-//		FileInputStream in = new FileInputStream("src/main/resources/config.properties");
-//		defaultProps.load(in);
-//		in.close();
-//		String configArray=defaultProps.getProperty("config.managers");
-//		String[] manager = configArray.split(",");
-//		for (int i = 0; i < manager.length; i++) {
-//			System.out.println(manager[i]);
-//		}
+	public void testEntry() throws IOException {
+		// Properties defaultProps = new Properties();
+		// FileInputStream in = new
+		// FileInputStream("src/main/resources/config.properties");
+		// defaultProps.load(in);
+		// in.close();
+		// String configArray=defaultProps.getProperty("config.managers");
+		// String[] manager = configArray.split(",");
+		// for (int i = 0; i < manager.length; i++) {
+		// System.out.println(manager[i]);
+		// }
+	}
+
+	public void testFileSystem() throws Exception {
+		File script1 = new File(this.monitorScript);
+		if (!script1.exists())
+			System.out.println("False");
+		File script2 = new File(this.exchangeScript);
+		if (!script2.exists())
+			System.out.println("False");
+		System.out.println("True");
 	}
 
 }
