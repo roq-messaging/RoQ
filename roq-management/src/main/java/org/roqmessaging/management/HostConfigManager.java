@@ -99,21 +99,21 @@ public class HostConfigManager implements Runnable {
 						logger.debug("The request format is valid with 2 parts, Q to create:  " + qName);
 						if(!checkScriptInstall()){
 							logger.error("The create queue request has failed: the scripts for launching Xchange & monitor have not been found ");
-							this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL).getBytes(), 0);
+							this.clientReqSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL)+", ").getBytes(), 0);
 						}
-						boolean monitorOK = startNewMonitorProcess(qName);
+						String monitorAddress = startNewMonitorProcess(qName);
 						boolean xChangeOK = startNewExchangeProcess(qName);
 						// if OK send OK
-						if (monitorOK & xChangeOK)
-							this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK).getBytes(),
-									0);
-						else{
+						if (monitorAddress!=null & xChangeOK){
+							logger.info("Successfully created new Q for " + qName + "@"+monitorAddress);
+							this.clientReqSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK)+","+monitorAddress).getBytes(),	0);
+						}else{
 							logger.error("The create queue request has failed at the monitor host,check log (when starting launching scripts");
-							this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL).getBytes(), 0);
+							this.clientReqSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL)+","+monitorAddress).getBytes(), 0);
 						}
 					} else {
 						logger.error("The create queue request sent does not contain 3 part: ID, quName, Monitor host");
-						this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL).getBytes(), 0);
+						this.clientReqSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL)+", ").getBytes(), 0);
 					}
 					break;
 				}
@@ -185,9 +185,9 @@ public class HostConfigManager implements Runnable {
 	 * 
 	 * @param qName
 	 *            the name of the queue to create
-	 * @return true if the creation process worked well
+	 * @return the monitor address as tcp://IP:port of the newly created monitor
 	 */
-	private boolean startNewMonitorProcess(String qName) {
+	private String startNewMonitorProcess(String qName) {
 		// 1. Get the number of installed queues on this host
 		int number = this.qMonitorMap.size();
 		int frontPort = this.baseMonitortPort + (number * 4);
@@ -200,12 +200,13 @@ public class HostConfigManager implements Runnable {
 		ProcessBuilder pb = new ProcessBuilder(this.monitorScript, argument);
 		try {
 			pb.start();
-			this.qMonitorMap.put(qName, ("tcp://localhost:" + frontPort));
+			String monitorAddress = "tcp://"+ RoQUtils.getInstance().getLocalIP()+":" + frontPort;
+			this.qMonitorMap.put(qName, (monitorAddress));
+			return monitorAddress;
 		} catch (IOException e) {
 			logger.error("Error while executing script", e);
-			return false;
+			return null;
 		}
-		return true;
 	}
 
 	/**

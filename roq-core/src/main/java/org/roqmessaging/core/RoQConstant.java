@@ -63,6 +63,21 @@ public interface RoQConstant {
 	 * GLobal Configuration request to create a queue 
 	 */
 	public static int CONFIG_CREATE_QUEUE_FAIL = 1004;
+
+	/**
+	 * Global configuration request to create a new host manager configuration entry
+	 */
+	public static int CONFIG_ADD_HOST = 1005;
+	
+	/**
+	 * Global configuration request to remove a host manager configuration entry
+	 */
+	public static int CONFIG_REMOVE_HOST = 1006;
+	
+	/**
+	 * Global configuration request to remove a host manager configuration entry
+	 */
+	public static int CONFIG_GET_HOST_BY_QNAME = 1007;
 	
 
 }

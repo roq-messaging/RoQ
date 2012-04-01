@@ -32,16 +32,14 @@ public class RoQPublisherConnection implements IRoQConnection {
 	private Logger logger = Logger.getLogger(RoQPublisherConnection.class);
 	//The monitor responsible for redirecting the client
 	private String monitor = null;
-	private int basePort = 5571;
 	
 
 
 	/**
 	 * @param monitorHost the monitor queue to connect. Only the ip address.
 	 */
-	public RoQPublisherConnection(String monitorHost, int basePort) {
+	public RoQPublisherConnection(String monitorHost) {
 		this.monitor=monitorHost;
-		this.basePort=basePort;
 	}
 
 	/** 
@@ -50,7 +48,7 @@ public class RoQPublisherConnection implements IRoQConnection {
 	 */
 	public void open() {
 		//TODO Hard coded configuration, this should be in a java.property file
-		this.connectionManager = new PublisherConnectionManager(this.monitor, this.basePort, false);
+		this.connectionManager = new PublisherConnectionManager(this.monitor, false);
 		Thread mainThread = new Thread(connectionManager);
 		mainThread.start();
 

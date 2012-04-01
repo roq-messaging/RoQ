@@ -8,6 +8,14 @@ import org.apache.log4j.Logger;
 import org.roqmessaging.state.PublisherConfigState;
 import org.zeromq.ZMQ;
 
+/**
+ * Class PublisherConnectionManager
+ * <p> Description: responsible for managing the connection between the publisher and the exchange. This manager can be notified by the 
+ * monitor by any topology change.
+ * 
+ * @author sskhiri
+ * @author Nam-Luc tran
+ */
 public class PublisherConnectionManager implements Runnable {
 	private Logger logger = Logger.getLogger(PublisherConnectionManager.class);
 
@@ -28,18 +36,23 @@ public class PublisherConnectionManager implements Runnable {
 	
 
 	/**
-	 * @param monitor the monitor host address
-	 * @param basePort the base port on which the monitor has been started
+	 * @param monitor the monitor host address" tcp://<ip>:<port>"
 	 * @param tstmp true if using a time stamp server
 	 */
-	public PublisherConnectionManager(String monitor, int basePort, boolean tstmp) {
+	public PublisherConnectionManager(String monitor, boolean tstmp) {
 		this.context = ZMQ.context(1);
 		this.monitorSub = context.socket(ZMQ.SUB);
-		monitorSub.connect("tcp://" + monitor + ":"+(basePort+2));
+		//As we received the base port we need to increment the base port to get the sub
+		//and init request port
+		int basePort = extractBasePort(monitor);
+		String portOff = monitor.substring(0, monitor.length()-"xxxx".length());
+		monitorSub.connect(portOff+(basePort+2));
 		this.s_ID = UUID.randomUUID().toString();
 		monitorSub.subscribe("".getBytes());
 		this.initReq = context.socket(ZMQ.REQ);
-		this.initReq.connect("tcp://" + monitor + ":"+(basePort+1));
+		this.initReq.connect(portOff+(basePort+1));
+		
+		//Init the config state
 		this.configState = new PublisherConfigState();
 		this.configState.setMonitor(monitor);
 		this.configState.setTimeStampServer(tstmp);
@@ -54,6 +67,15 @@ public class PublisherConnectionManager implements Runnable {
 		}
 		this.running = true;
 		logger.info(" Publisher " + this.s_ID + " is running");
+	}
+
+	/**
+	 * @param monitor the host address: tcp://ip:port
+	 * @return the port as an int
+	 */
+	private int extractBasePort(String monitor) {
+		String segment = monitor.substring("tcp://".length());
+		return Integer.parseInt(segment.substring(segment.indexOf(":")+1));
 	}
 
 	/**

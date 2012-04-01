@@ -43,7 +43,7 @@ public class GlobalConfigurationManager implements Runnable {
 	private Logger logger = Logger.getLogger(GlobalConfigurationManager.class);
 	
 	/**
-	 * 
+	 * Constructor.
 	 */
 	public GlobalConfigurationManager() {
 		this.hostManagerAddresses = new ArrayList<String>();
@@ -94,22 +94,49 @@ public class GlobalConfigurationManager implements Runnable {
 						// The logical queue config is sent int the part 2
 						String qName = info[1];
 						String monitorHost = info[2];
-						// 1. Check of the host is in the list
-						if (!hostManagerAddresses.contains(monitorHost)) {
-							logger.error("The monitor host "+monitorHost+"  is not registred as active RoQ host");
-							this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL).getBytes(), 0);
-						}else{
-							// 2. register the queue
-							this.queueLocations.put(qName, monitorHost);
-							this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK).getBytes(), 0);
-							logger.debug("Created queue "+ qName +" @"+ monitorHost +" in global configuration");
-						}
+						// register the queue
+						addQueueName(qName, monitorHost);
+						this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK).getBytes(), 0);
 					}else{
 							logger.error("The create queue request sent does not contain 3 part: ID, quName, Monitor host");
 							this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL).getBytes(), 0);
 						}
 					break;
 					
+					//A add host request
+				case RoQConstant.CONFIG_ADD_HOST:
+					logger.debug("Recieveing ADD HOST request from a client ");
+					if (info.length == 2) {
+						logger.debug("The request format is valid ");
+						// The logical queue config is sent int the part 2
+						addHostManager(info[1]);
+					}
+					break;
+					
+					//A remove host request
+				case RoQConstant.CONFIG_REMOVE_HOST:
+					logger.debug("Recieveing REMOVE HOST request from a client ");
+					if (info.length == 2) {
+						logger.debug("The request format is valid ");
+						// The logical queue config is sent int the part 2
+						removeHostManager(info[1]);
+					}
+					break;
+					
+					//A remove host request
+				case RoQConstant.CONFIG_GET_HOST_BY_QNAME:
+					logger.debug("Recieveing GET HOST request from a client ");
+					if (info.length == 2) {
+						logger.debug("The request format is valid - Asking for translating  "+ info[1]);
+						if(this.queueLocations.containsKey(info[1])){
+							logger.debug("Answering back:"+ this.queueLocations.get(info[1]));
+							this.clientReqSocket.send((this.queueLocations.get(info[1])).getBytes(), 0);
+						}else{
+							logger.warn(" No logical queue as:"+info[1]);
+							this.clientReqSocket.send(("").getBytes(), 0);
+						}
+					}
+					break;
 				}
 				
 			}
@@ -118,6 +145,15 @@ public class GlobalConfigurationManager implements Runnable {
 	}
 	
 	
+	/**
+	 * @param hosr the ip address of the host to remove.
+	 */
+	public void removeHostManager(String host) {
+		if(this.hostManagerAddresses.remove(host)) logger.info("Removed host successfully "+ host);
+		else  logger.error("Removed host failed on the hashmap "+ host);
+	}
+
+
 	/**
 	 * Stop the active thread
 	 */
@@ -128,12 +164,23 @@ public class GlobalConfigurationManager implements Runnable {
 	
 	/**
 	 * Add a host manager address to the array.
-	 * @param host the host to add (ip address)
+	 * @param host the host to add (ip address), the port is defined by default as there is only 1 Host 
+	 * manager per host machine.
 	 */
 	public void addHostManager(String host){
+		this.logger.info("Adding new host manager reference : "+ host);
 		if (!hostManagerAddresses.contains(host)){
 			hostManagerAddresses.add(host);
 		}
+	}
+	
+	/**
+	 * @param qName the logical queue name
+	 * @param host as tcp://ip:port
+	 */
+	public void addQueueName(String qName, String host){
+		this.queueLocations.put(qName, host);
+		logger.debug("Created queue "+ qName +" @"+ host +" in global configuration");
 	}
 
 }
