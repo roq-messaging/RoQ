@@ -28,23 +28,26 @@ public class RoQSubscriberConnection implements IRoQSubscriberConnection {
 	private SubscriberConnectionManager connectionManager = null;
 	//The key
 	private String key = null;
+	private String monitorHost = null;
 	//The subscriber ID
 	private int subscriberID = 0;
 	
 	/**
 	 * @param key the filtering key.
 	 * @param subscriberID the listener ID for uniquely identifying subscriber
+	 * @param key the subscriber keyr to filter
 	 */
-	public RoQSubscriberConnection(String key, int subscriberID) {
-		this.key = key;
+	public RoQSubscriberConnection(String qName, int subscriberID, String key) {
+		this.monitorHost=qName;
 		this.subscriberID = subscriberID;
+		this.key= key;
 	}
 	/**
 	 * @see org.roqmessaging.client.IRoQSubscriberConnection#open()
 	 */
 	public void open() {
 		//TODO Hard coded configuration, this should be in a java.property file
-		this.connectionManager = new SubscriberConnectionManager("localhost", this.key, this.subscriberID, false);
+		this.connectionManager = new SubscriberConnectionManager(this.monitorHost, this.key, this.subscriberID, false);
 		Thread mainThread = new Thread(connectionManager);
 		mainThread.start();
 

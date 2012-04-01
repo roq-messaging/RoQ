@@ -16,9 +16,11 @@ package org.roqmessaging.core.factory;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQConnection;
+import org.roqmessaging.client.IRoQSubscriberConnection;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.RoQPublisherConnection;
+import org.roqmessaging.core.RoQSubscriberConnection;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Context;
 import org.zeromq.ZMQ.Socket;
@@ -52,6 +54,33 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	 * @see org.roqmessaging.clientlib.factory.IRoQConnectionFactory#createRoQConnection()
 	 */
 	public IRoQConnection createRoQConnection(String qName) throws IllegalStateException {
+		String monitorHost = translateToMonitorHost(qName);
+		if(monitorHost.isEmpty()){
+			//TODO do we create a new queue ?
+			throw  new IllegalStateException("The queue Name is not registred @ the global configuration");
+		}
+		logger.info("Creating a connection factory for "+qName+ " @ "+ monitorHost);
+		return new RoQPublisherConnection(monitorHost);
+	}
+	
+	/**
+	 * @see org.roqmessaging.clientlib.factory.IRoQConnectionFactory#createRoQSubscriberConnection(java.lang.String)
+	 */
+	public IRoQSubscriberConnection createRoQSubscriberConnection(String qName, String key) throws IllegalStateException {
+		String monitorHost = translateToMonitorHost(qName);
+		if(monitorHost.isEmpty()){
+			//TODO do we create a new queue ?
+			throw  new IllegalStateException("The queue Name is not registred @ the global configuration");
+		}
+		logger.info("Creating a subscriber connection factory for "+qName+ " @ "+ monitorHost);
+		return new RoQSubscriberConnection(monitorHost, 0, key);
+	}
+	
+	/**
+	 * @param qName the logical queue name
+	 * @return the monitor host address to contact
+	 */
+	public String translateToMonitorHost (String qName){
 		initSocketConnection();
 		logger.debug("Asking the the global configuration Manager to translate the qName in a monitor host ...");
 		//1.  Get the location of the monitor according to the logical name
@@ -60,13 +89,9 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 		// The configuration should load the information about the monitor corresponding to this queue
 		byte[] monitor = globalConfigReq.recv(0);
 		String monitorHost = new String(monitor);
-		if(monitorHost.isEmpty()){
-			//TODO do we create a new queue ?
-			throw  new IllegalStateException("The queue Name is not registred @ the global configuration");
-		}
 		logger.info("Creating a connection factory for "+qName+ " @ "+ monitorHost);
 		closeSocketConnection();
-		return new RoQPublisherConnection(monitorHost);
+		return monitorHost;
 	}
 
 	/**

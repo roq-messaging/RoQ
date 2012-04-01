@@ -30,7 +30,7 @@ public class RoQSubscriberConnectionFactory implements IRoQSubscriberConnectionF
 	 * Create the Subscriber connection with the key
 	 * @see org.roqmessaging.clientlib.factory.IRoQSubscriberConnectionFactory#createRoQConnection()
 	 */
-	public IRoQSubscriberConnection createRoQConnection(String key) {
+	public IRoQSubscriberConnection createRoQConnection(String qName) {
 		return new RoQSubscriberConnection(key, 0);
 	}
 

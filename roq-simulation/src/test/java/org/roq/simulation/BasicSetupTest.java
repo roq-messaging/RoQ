@@ -65,7 +65,7 @@ public class BasicSetupTest {
 		startGlobalConfig();
 		startMonitor(basePort, stat);
 		startExchange("tcp://localhost:"+basePort, "tcp://localhost:"+stat);
-		startPublisherClient("localhost", basePort);
+		startPublisherClient();
 		startSubscriberClient(); 
 	}
 
@@ -142,7 +142,7 @@ public class BasicSetupTest {
 	/**
 	 * Initiate a thread publisher
 	 */
-	private void startPublisherClient(String monitorHost, int port) {
+	private void startPublisherClient() {
 		//1. Creating the connection
 		this.factory = new RoQConnectionFactory("localhost");
 		this.connection = this.factory.createRoQConnection("queue1");
@@ -160,7 +160,7 @@ public class BasicSetupTest {
 	 */
 	private void startSubscriberClient() {
 		this.subFactory = new RoQSubscriberConnectionFactory();
-		this.subConnection = this.subFactory.createRoQConnection("sabri");
+		this.subConnection = this.factory.createRoQSubscriberConnection("queue1", "sabri");
 		this.subConnection.open();
 		try {
 			Thread.sleep(1000);
