@@ -12,7 +12,7 @@
  * limitations under the License.
  * 
  */
-package org.roqmessaging.tests;
+package org.roq.simulation;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -31,6 +31,7 @@ import org.roqmessaging.core.Exchange;
 import org.roqmessaging.core.Monitor;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.factory.RoQSubscriberConnectionFactory;
+import org.roqmessaging.management.GlobalConfigurationManager;
 
 /**
  * Class BasicSetupTests
@@ -48,7 +49,10 @@ public class BasicSetupTest {
 	private IRoQConnectionFactory factory = null;
 	private IRoQSubscriberConnectionFactory subFactory = null;
 	private IRoQSubscriberConnection subConnection = null;
+	private GlobalConfigurationManager configManager =null;
 	private Logger logger = Logger.getLogger(BasicSetupTest.class);
+	int basePort = 5571;
+	int stat = 5800;
 
 	/**
 	 * Create the Exchange.
@@ -58,12 +62,23 @@ public class BasicSetupTest {
 	@Before
 	public void setUp() throws Exception {
 		logger.log(Level.INFO, "Basic Setup before test");
-		int basePort = 5571;
-		int stat = 5800;
+		startGlobalConfig();
 		startMonitor(basePort, stat);
 		startExchange("tcp://localhost:"+basePort, "tcp://localhost:"+stat);
 		startPublisherClient("localhost", basePort);
 		startSubscriberClient(); 
+	}
+
+
+	/**
+	 * Start the global configuration thread
+	 */
+	private void startGlobalConfig() {
+		this.configManager = new GlobalConfigurationManager();
+		//1. Create a fake logical queue
+		configManager.addQueueName("queue1", "tcp://localhost:"+basePort);
+		Thread thread = new Thread(configManager);
+		thread.start();
 	}
 
 
@@ -75,15 +90,21 @@ public class BasicSetupTest {
 		this.connection.close();
 		this.subConnection.close();
 		this.xChange.cleanShutDown();
+		this.configManager.shutDown();
 	}
 
 	@Test
 	public void test() {
 		int attemp = 0;
-		logger.log(Level.INFO, "Start Test");
+		logger.log(Level.INFO, "Start main Test");
 		assertNotNull(this.xChange);
 		assertNotNull(this.monitor);
+		assertNotNull(this.configManager);
+
+		//1. Check wether the connection is ready
 		try {
+			logger.info("Before sending");
+			Thread.sleep(2000);
 			//Need to wait at least 10 second to make the echange and listener configure porperly.
 			while(	!this.connection.isReady()&& attemp<6){
 				Thread.sleep(3000);
@@ -123,8 +144,8 @@ public class BasicSetupTest {
 	 */
 	private void startPublisherClient(String monitorHost, int port) {
 		//1. Creating the connection
-		this.factory = new RoQConnectionFactory();
-		this.connection = this.factory.createRoQConnection(monitorHost, port);
+		this.factory = new RoQConnectionFactory("localhost");
+		this.connection = this.factory.createRoQConnection("queue1");
 		this.connection.open();
 		this.publisher = this.connection.createPublisher();
 		try {
@@ -150,7 +171,7 @@ public class BasicSetupTest {
 			public void onEvent(byte[] msg) {
 				String content= new String(msg,0,msg.length) ;
 				assert content.equals("hello");
-				logger.info("In message lIstener recieveing :"+ content);
+				logger.info("In message listener recieveing :"+ content);
 			}
 		});
 	}

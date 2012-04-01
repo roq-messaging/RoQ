@@ -14,9 +14,14 @@
  */
 package org.roqmessaging.core.factory;
 
+import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
+import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.RoQPublisherConnection;
+import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Context;
+import org.zeromq.ZMQ.Socket;
 
 /**
  * Class RoQConnectionFactory
@@ -25,12 +30,61 @@ import org.roqmessaging.core.RoQPublisherConnection;
  * @author sskhiri
  */
 public class RoQConnectionFactory implements IRoQConnectionFactory {
+	//The global config server address 
+	private String configServer = null;
+	// ZMQ config
+	private Context context= null;
+	//The socket to the global config
+	private Socket globalConfigReq;
+	
+	private Logger logger = Logger.getLogger(RoQConnectionFactory.class);
+	
+	/**
+	 * Build  a connection Factory and takes the location of the global configuration manager as input
+	 * @param configManager the config manager IP address, the default port 5000 will be applied
+	 */
+	public RoQConnectionFactory(String configManager) {
+		this.configServer= configManager;
+		
+	}
 
 	/**
 	 * @see org.roqmessaging.clientlib.factory.IRoQConnectionFactory#createRoQConnection()
 	 */
-	public IRoQConnection createRoQConnection(String monitorHost, int basePort) {
-		return new RoQPublisherConnection(monitorHost, basePort);
+	public IRoQConnection createRoQConnection(String qName) throws IllegalStateException {
+		initSocketConnection();
+		logger.debug("Asking the the global configuration Manager to translate the qName in a monitor host ...");
+		//1.  Get the location of the monitor according to the logical name
+		//We get the location of the corresponding host manager
+		globalConfigReq.send((Integer.toString(RoQConstant.CONFIG_GET_HOST_BY_QNAME)+","+qName).getBytes(), 0);
+		// The configuration should load the information about the monitor corresponding to this queue
+		byte[] monitor = globalConfigReq.recv(0);
+		String monitorHost = new String(monitor);
+		if(monitorHost.isEmpty()){
+			//TODO do we create a new queue ?
+			throw  new IllegalStateException("The queue Name is not registred @ the global configuration");
+		}
+		logger.info("Creating a connection factory for "+qName+ " @ "+ monitorHost);
+		closeSocketConnection();
+		return new RoQPublisherConnection(monitorHost);
+	}
+
+	/**
+	 * Removes the socket connection to the global config manager
+	 */
+	private void closeSocketConnection() {
+		this.globalConfigReq.close();
+		
+	}
+
+	/**
+	 * Initialise the socket connection.
+	 */
+	private void initSocketConnection() {
+		context = ZMQ.context(1);
+		globalConfigReq = context.socket(ZMQ.REQ);
+		globalConfigReq.connect("tcp://"+this.configServer+":5000");
+		
 	}
 
 }

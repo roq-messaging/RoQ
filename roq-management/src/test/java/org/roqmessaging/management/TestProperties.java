@@ -14,10 +14,7 @@
  */
 package org.roqmessaging.management;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Properties;
 
 import junit.framework.TestCase;
 
@@ -48,14 +45,27 @@ public class TestProperties extends TestCase {
 		// }
 	}
 
-	public void testFileSystem() throws Exception {
-		File script1 = new File(this.monitorScript);
-		if (!script1.exists())
-			System.out.println("False");
-		File script2 = new File(this.exchangeScript);
-		if (!script2.exists())
-			System.out.println("False");
-		System.out.println("True");
+//	public void testFileSystem() throws Exception {
+//		File script1 = new File(this.monitorScript);
+//		if (!script1.exists())
+//			System.out.println("False");
+//		File script2 = new File(this.exchangeScript);
+//		if (!script2.exists())
+//			System.out.println("False");
+//		System.out.println("True");
+//	}
+	
+	public void testExtract() throws Exception {
+		String monitor = "tcp://127.0.0.1:5050";
+		String segment = monitor.substring("tcp://".length());
+		int port =  Integer.parseInt(segment.substring(segment.indexOf(":")+1));
+		System.out.println(" Port :"+ port);
+		assert port !=0;
+		
+		//2. Test the port substitution
+		String portOff = monitor.substring(0, monitor.length()-"xxxx".length());
+		System.out.println("Port off: " +portOff);
+		System.out.println(portOff+(port+1));
 	}
 
 }
