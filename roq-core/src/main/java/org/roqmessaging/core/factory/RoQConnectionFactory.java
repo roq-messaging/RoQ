@@ -60,25 +60,26 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 			throw  new IllegalStateException("The queue Name is not registred @ the global configuration");
 		}
 		logger.info("Creating a connection factory for "+qName+ " @ "+ monitorHost);
-		return new RoQPublisherConnection(monitorHost);
+		return new RoQPublisherConnection(monitorHost.split(",")[0]);
 	}
 	
 	/**
 	 * @see org.roqmessaging.clientlib.factory.IRoQConnectionFactory#createRoQSubscriberConnection(java.lang.String)
 	 */
 	public IRoQSubscriberConnection createRoQSubscriberConnection(String qName, String key) throws IllegalStateException {
-		String monitorHost = translateToMonitorHost(qName);
-		if(monitorHost.isEmpty()){
+		String monitorConfig = translateToMonitorHost(qName);
+		if(monitorConfig.isEmpty()){
 			//TODO do we create a new queue ?
 			throw  new IllegalStateException("The queue Name is not registred @ the global configuration");
 		}
-		logger.info("Creating a subscriber connection factory for "+qName+ " @ "+ monitorHost);
-		return new RoQSubscriberConnection(monitorHost, 0, key);
+		logger.info("Creating a subscriber connection factory for "+qName+ " @ "+ monitorConfig);
+		String[] config = monitorConfig.split(",");
+		return new RoQSubscriberConnection(config[0],config[1], 0, key);
 	}
 	
 	/**
 	 * @param qName the logical queue name
-	 * @return the monitor host address to contact
+	 * @return the monitor host address to contact +"," + the stat monitor address
 	 */
 	public String translateToMonitorHost (String qName){
 		initSocketConnection();

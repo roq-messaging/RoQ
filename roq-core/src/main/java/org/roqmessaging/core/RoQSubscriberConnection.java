@@ -19,35 +19,44 @@ import org.roqmessaging.client.IRoQSubscriberConnection;
 
 /**
  * Class RoQSubscriberConnection
- * <p> Description: Implement the life cycle management of the {@link SubscriberConnectionManager}.
+ * <p>
+ * Description: Implement the life cycle management of the
+ * {@link SubscriberConnectionManager}.
  * 
  * @author sskhiri
  */
 public class RoQSubscriberConnection implements IRoQSubscriberConnection {
-	//The connection manager
+	// The connection manager
 	private SubscriberConnectionManager connectionManager = null;
-	//The key
+	// The key
 	private String key = null;
-	private String monitorHost = null;
-	//The subscriber ID
+	private String monitorHost = null, monitorStat=null;
+	// The subscriber ID
 	private int subscriberID = 0;
-	
+
 	/**
-	 * @param key the filtering key.
-	 * @param subscriberID the listener ID for uniquely identifying subscriber
-	 * @param key the subscriber keyr to filter
+	 * @param monitorHost
+	 *            the host monitor address
+	 * @param monitorStat
+	 *            the host stat monitor address
+	 * @param subscriberID
+	 *            the listener ID for uniquely identifying subscriber
+	 * @param key
+	 *            the subscriber keyr to filter
 	 */
-	public RoQSubscriberConnection(String qName, int subscriberID, String key) {
-		this.monitorHost=qName;
+	public RoQSubscriberConnection(String monitorHost, String monitorStat, int subscriberID, String key) {
+		this.monitorHost = monitorHost;
+		this.monitorStat = monitorStat;
 		this.subscriberID = subscriberID;
-		this.key= key;
+		this.key = key;
 	}
+
 	/**
 	 * @see org.roqmessaging.client.IRoQSubscriberConnection#open()
 	 */
 	public void open() {
-		//TODO Hard coded configuration, this should be in a java.property file
-		this.connectionManager = new SubscriberConnectionManager(this.monitorHost, this.key, this.subscriberID, false);
+		// TODO Hard coded configuration, this should be in a java.property file
+		this.connectionManager = new SubscriberConnectionManager(this.monitorHost, this.monitorStat, this.key, this.subscriberID, false);
 		Thread mainThread = new Thread(connectionManager);
 		mainThread.start();
 
@@ -55,19 +64,24 @@ public class RoQSubscriberConnection implements IRoQSubscriberConnection {
 
 	/**
 	 * Close the connection and shutdown the main connection thread.
+	 * 
 	 * @see org.roqmessaging.client.IRoQSubscriberConnection#close()
 	 */
-	public void close() throws IllegalStateException{
-		if (this.connectionManager== null) throw new IllegalStateException("The connection is not open");
+	public void close() throws IllegalStateException {
+		if (this.connectionManager == null)
+			throw new IllegalStateException("The connection is not open");
 		this.connectionManager.shutdown();
 
 	}
+
 	/**
 	 * Set the listener that will receive the message.
+	 * 
 	 * @see org.roqmessaging.client.IRoQSubscriberConnection#setMessageSubscriber(org.roqmessaging.client.IRoQSubscriber)
 	 */
 	public void setMessageSubscriber(IRoQSubscriber subscriber) throws IllegalStateException {
-		if (this.connectionManager== null) throw new IllegalStateException("The connection is not open");
+		if (this.connectionManager == null)
+			throw new IllegalStateException("The connection is not open");
 		this.connectionManager.setMessageListener(subscriber);
 	}
 

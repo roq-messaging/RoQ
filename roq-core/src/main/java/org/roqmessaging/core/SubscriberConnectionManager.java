@@ -33,7 +33,7 @@ public class SubscriberConnectionManager implements Runnable {
 	private Logger logger = Logger.getLogger(SubscriberConnectionManager.class);
 
 	private ZMQ.Context context;
-	private String s_monitor;
+	private String s_monitorStat;
 	private ZMQ.Poller items;
 	private byte[] subkey;
 
@@ -63,13 +63,14 @@ public class SubscriberConnectionManager implements Runnable {
 	
 	/**
 	 * @param monitor the monitor address to bind
+	 * @param monitorStat the monitor stat address to bind
 	 * @param subKey the subscriber must filter on that key
 	 * @param ID the subscriber ID
 	 * @param tstmp true if we use a timestamp server
 	 */
-	public SubscriberConnectionManager(String monitor, String subKey, int ID, boolean tstmp) {
+	public SubscriberConnectionManager(String monitor, String monitorStat, String subKey, int ID, boolean tstmp) {
 		this.context = ZMQ.context(1);
-		this.s_monitor =  monitor;
+		this.s_monitorStat = monitorStat;
 		this.subkey = subKey.getBytes();
 
 		//as the monitor is and address as tcp://ip:base port
@@ -103,7 +104,7 @@ public class SubscriberConnectionManager implements Runnable {
 		public Stats() {
 			this.statsPub = context.socket(ZMQ.PUB);
 			//TODO we need to return the stat port from the global configuration
-			statsPub.connect(s_monitor + ":5800");
+			statsPub.connect(s_monitorStat);
 		}
 
 		public void run() {

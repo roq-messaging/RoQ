@@ -185,7 +185,7 @@ public class HostConfigManager implements Runnable {
 	 * 
 	 * @param qName
 	 *            the name of the queue to create
-	 * @return the monitor address as tcp://IP:port of the newly created monitor
+	 * @return the monitor address as tcp://IP:port of the newly created monitor +"," tcp://IP: statport
 	 */
 	private String startNewMonitorProcess(String qName) {
 		// 1. Get the number of installed queues on this host
@@ -201,8 +201,9 @@ public class HostConfigManager implements Runnable {
 		try {
 			pb.start();
 			String monitorAddress = "tcp://"+ RoQUtils.getInstance().getLocalIP()+":" + frontPort;
+			String statAddress= "tcp://"+ RoQUtils.getInstance().getLocalIP()+":" + statPort;
 			this.qMonitorMap.put(qName, (monitorAddress));
-			return monitorAddress;
+			return monitorAddress+","+statAddress;
 		} catch (IOException e) {
 			logger.error("Error while executing script", e);
 			return null;

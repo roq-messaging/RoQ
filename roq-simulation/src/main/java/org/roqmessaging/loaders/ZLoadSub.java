@@ -13,7 +13,7 @@ public class ZLoadSub {
 		int IDs = 0;
 		for (int i = 0; i < max; i++) {
 			System.out.println("Starting listener "+ (i+1) +"/" +max);
-			SubscriberConnectionManager tempSub = new SubscriberConnectionManager(args[1], "manche", IDs, false);
+			SubscriberConnectionManager tempSub = new SubscriberConnectionManager("tcp://localhost:5571", "tcp://localhost:5800", "manche",  IDs, false);
 			Thread t = new Thread(tempSub);
 			subThreads[i] = t;
 			subThreads[i].start();

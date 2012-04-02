@@ -26,11 +26,9 @@ import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.client.IRoQSubscriber;
 import org.roqmessaging.client.IRoQSubscriberConnection;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
-import org.roqmessaging.clientlib.factory.IRoQSubscriberConnectionFactory;
 import org.roqmessaging.core.Exchange;
 import org.roqmessaging.core.Monitor;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
-import org.roqmessaging.core.factory.RoQSubscriberConnectionFactory;
 import org.roqmessaging.management.GlobalConfigurationManager;
 
 /**
@@ -47,12 +45,11 @@ public class BasicSetupTest {
 	private IRoQPublisher publisher = null;
 	private IRoQConnection connection = null;
 	private IRoQConnectionFactory factory = null;
-	private IRoQSubscriberConnectionFactory subFactory = null;
 	private IRoQSubscriberConnection subConnection = null;
 	private GlobalConfigurationManager configManager =null;
 	private Logger logger = Logger.getLogger(BasicSetupTest.class);
-	int basePort = 5571;
-	int stat = 5800;
+	int basePort = 5500;
+	int stat = 5900;
 
 	/**
 	 * Create the Exchange.
@@ -76,7 +73,9 @@ public class BasicSetupTest {
 	private void startGlobalConfig() {
 		this.configManager = new GlobalConfigurationManager();
 		//1. Create a fake logical queue
+		// if we use the logical q Factory API we would not need to cheat
 		configManager.addQueueName("queue1", "tcp://localhost:"+basePort);
+		configManager.addQueueStatMonitor("queue1", "tcp://localhost:"+stat);
 		Thread thread = new Thread(configManager);
 		thread.start();
 	}
@@ -159,7 +158,6 @@ public class BasicSetupTest {
 	 * Initiate a thread subscriber
 	 */
 	private void startSubscriberClient() {
-		this.subFactory = new RoQSubscriberConnectionFactory();
 		this.subConnection = this.factory.createRoQSubscriberConnection("queue1", "sabri");
 		this.subConnection.open();
 		try {

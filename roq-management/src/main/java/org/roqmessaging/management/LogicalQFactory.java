@@ -100,10 +100,6 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 			String[] resultHost = new String(hostSocket.recv(0)).split(",");
 			
 			if (Integer.parseInt(resultHost[0]) != RoQConstant.CONFIG_CREATE_QUEUE_OK) {
-				// 3. Roll back
-				// If the answer is not confirmed, we should remove back
-				// the entry in the global config and throw an exception
-				removeQFromGlobalConfig(queueName);
 				throw new IllegalStateException("The queue creation for  " + queueName
 						+ " failed on the local host server");
 			} else {
