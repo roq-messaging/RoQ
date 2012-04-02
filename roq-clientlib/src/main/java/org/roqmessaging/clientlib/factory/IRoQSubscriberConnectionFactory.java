@@ -26,8 +26,8 @@ public interface IRoQSubscriberConnectionFactory {
 	/**
 	 * Instantiates a connection. Notice that the connection will need to connect to an active Exchange. At startup this 
 	 * could take few seconds before being ready.
-	 * @param the filtering key
+	 * @param qName the queue logical name to bind
 	 * @return a connection that can be used to receive  messages.
 	 */
-	public IRoQSubscriberConnection createRoQConnection(String key);
+	public IRoQSubscriberConnection createRoQConnection(String qName);
 }

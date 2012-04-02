@@ -39,6 +39,8 @@ public class GlobalConfigurationManager implements Runnable {
 	private ArrayList<String> hostManagerAddresses = null;
 	//Define the location of the monitor of each queue (Name, monitor address)
 	private HashMap<String, String> queueLocations=null;
+	//Define the location of the monitor stat address for each queue (Name, monitor stat address)
+	private HashMap<String, String> queueStatLocation = null;
 	
 	private Logger logger = Logger.getLogger(GlobalConfigurationManager.class);
 	
@@ -49,12 +51,12 @@ public class GlobalConfigurationManager implements Runnable {
 		this.hostManagerAddresses = new ArrayList<String>();
 		this.logger.info("Started global config Runnable");
 		this.queueLocations = new HashMap<String, String>();
+		this.queueStatLocation = new HashMap<String, String>();
 		this.context = ZMQ.context(1);
 		this.clientReqSocket = context.socket(ZMQ.REP);
 		this.clientReqSocket.bind("tcp://*:5000");
 		this.running = true;
 	}
-
 
 	/**
 	 * Main run
@@ -89,13 +91,15 @@ public class GlobalConfigurationManager implements Runnable {
 				//A create queue request
 				case RoQConstant.CONFIG_CREATE_QUEUE:
 					logger.debug("Recieveing create Q request from a client ");
-					if (info.length == 3) {
-						logger.debug("The request format is valid ");
+					if (info.length == 4) {
+						logger.debug("The request format is valid we 3 part:  "+ info[1] +" "+ info[2]+ " "+ info[3]);
 						// The logical queue config is sent int the part 2
 						String qName = info[1];
 						String monitorHost = info[2];
+						String statMonitorHost = info[3];
 						// register the queue
 						addQueueName(qName, monitorHost);
+						addQueueStatMonitor(qName, statMonitorHost);
 						this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK).getBytes(), 0);
 					}else{
 							logger.error("The create queue request sent does not contain 3 part: ID, quName, Monitor host");
@@ -129,8 +133,8 @@ public class GlobalConfigurationManager implements Runnable {
 					if (info.length == 2) {
 						logger.debug("The request format is valid - Asking for translating  "+ info[1]);
 						if(this.queueLocations.containsKey(info[1])){
-							logger.debug("Answering back:"+ this.queueLocations.get(info[1]));
-							this.clientReqSocket.send((this.queueLocations.get(info[1])).getBytes(), 0);
+							logger.debug("Answering back:"+ this.queueLocations.get(info[1])+","+this.queueStatLocation.get(info[1]));
+							this.clientReqSocket.send((this.queueLocations.get(info[1])+","+this.queueStatLocation.get(info[1])).getBytes(), 0);
 						}else{
 							logger.warn(" No logical queue as:"+info[1]);
 							this.clientReqSocket.send(("").getBytes(), 0);
@@ -145,6 +149,17 @@ public class GlobalConfigurationManager implements Runnable {
 	}
 	
 	
+	/**
+	 * @param qName the name of the logical queue
+	 * @param statMonitorHost the stat port address of the corresponding monitor
+	 */
+	public void addQueueStatMonitor(String qName, String statMonitorHost) {
+		this.queueStatLocation.put(qName, statMonitorHost);
+		logger.debug("Adding stat monitor address for "+ qName +" @"+ statMonitorHost +" in global configuration");
+		
+	}
+
+
 	/**
 	 * @param hosr the ip address of the host to remove.
 	 */
@@ -176,7 +191,7 @@ public class GlobalConfigurationManager implements Runnable {
 	
 	/**
 	 * @param qName the logical queue name
-	 * @param host as tcp://ip:port
+	 * @param host as tcp://ip:port, tcp://ip:statport
 	 */
 	public void addQueueName(String qName, String host){
 		this.queueLocations.put(qName, host);

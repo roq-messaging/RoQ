@@ -33,7 +33,7 @@ public class SubscriberConnectionManager implements Runnable {
 	private Logger logger = Logger.getLogger(SubscriberConnectionManager.class);
 
 	private ZMQ.Context context;
-	private String s_monitor;
+	private String s_monitorStat;
 	private ZMQ.Poller items;
 	private byte[] subkey;
 
@@ -63,21 +63,26 @@ public class SubscriberConnectionManager implements Runnable {
 	
 	/**
 	 * @param monitor the monitor address to bind
+	 * @param monitorStat the monitor stat address to bind
 	 * @param subKey the subscriber must filter on that key
 	 * @param ID the subscriber ID
 	 * @param tstmp true if we use a timestamp server
 	 */
-	public SubscriberConnectionManager(String monitor, String subKey, int ID, boolean tstmp) {
+	public SubscriberConnectionManager(String monitor, String monitorStat, String subKey, int ID, boolean tstmp) {
 		this.context = ZMQ.context(1);
-		this.s_monitor = "tcp://" + monitor;
+		this.s_monitorStat = monitorStat;
 		this.subkey = subKey.getBytes();
 
+		//as the monitor is and address as tcp://ip:base port
+		int basePort = extractBasePort(monitor);
+		String portOff = monitor.substring(0, monitor.length()-"xxxx".length());
+		
 		this.monitorSub = context.socket(ZMQ.SUB);
-		monitorSub.connect(s_monitor + ":5574");
+		monitorSub.connect(portOff+(basePort+3));
 		monitorSub.subscribe(subkey);
 
 		this.initReq = this.context.socket(ZMQ.REQ);
-		this.initReq.connect("tcp://" + monitor + ":5572");
+		this.initReq.connect(portOff+(basePort+1));
 
 		this.received = 0;
 		this.totalReceived = 0;
@@ -89,7 +94,7 @@ public class SubscriberConnectionManager implements Runnable {
 		this.tstmp = tstmp;
 		if (tstmp) {
 			this.tstmpReq = context.socket(ZMQ.REQ);
-			this.tstmpReq.connect("tcp://" + monitor + ":5900");
+			this.tstmpReq.connect(portOff + ":5900");
 		}
 	}
 
@@ -98,7 +103,8 @@ public class SubscriberConnectionManager implements Runnable {
 
 		public Stats() {
 			this.statsPub = context.socket(ZMQ.PUB);
-			statsPub.connect(s_monitor + ":5800");
+			//TODO we need to return the stat port from the global configuration
+			statsPub.connect(s_monitorStat);
 		}
 
 		public void run() {
@@ -247,6 +253,15 @@ public class SubscriberConnectionManager implements Runnable {
 		knownHosts.clear();
 		this.exchSub.close();
 		this.initReq.close();
+	}
+	
+	/**
+	 * @param monitor the host address: tcp://ip:port
+	 * @return the port as an int
+	 */
+	private int extractBasePort(String monitor) {
+		String segment = monitor.substring("tcp://".length());
+		return Integer.parseInt(segment.substring(segment.indexOf(":")+1));
 	}
 
 }

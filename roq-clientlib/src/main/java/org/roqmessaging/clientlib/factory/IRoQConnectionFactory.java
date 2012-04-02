@@ -15,6 +15,7 @@
 package org.roqmessaging.clientlib.factory;
 
 import org.roqmessaging.client.IRoQConnection;
+import org.roqmessaging.client.IRoQSubscriberConnection;
 
 /**
  * Interface  IRoQConnectionFactory
@@ -31,5 +32,14 @@ public interface IRoQConnectionFactory {
 	 * @return a connection that can be used to send messages.
 	 */
 	public IRoQConnection createRoQConnection(String qName) throws IllegalStateException;
+	
+	/**
+	 * Instantiates a connection. Notice that the connection will need to connect to an active Exchange. At startup this 
+	 * could take few seconds before being ready.
+	 * @param qName the queue logical name to bind
+	 * @param key the subscription key
+	 * @return a connection that can be used to receive  messages.
+	 */
+	public IRoQSubscriberConnection createRoQSubscriberConnection(String qName, String key) throws IllegalStateException;
 
 }
