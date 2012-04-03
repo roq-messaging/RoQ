@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.core;
 
+import org.roqmessaging.core.interfaces.IStoppable;
+
 /**
  * Interface RoQConstant
  * <p> Description: This interface defines the different message types that are exchanges between RoQ elements.
@@ -78,6 +80,12 @@ public interface RoQConstant {
 	 * Global configuration request to remove a host manager configuration entry
 	 */
 	public static int CONFIG_GET_HOST_BY_QNAME = 1007;
+
+	
+	/**
+	 * Send to shut donw a {@linkplain IStoppable} element
+	 */
+	public static int SHUTDOWN_REQUEST = 1008;
 	
 
 }

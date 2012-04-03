@@ -21,6 +21,7 @@ import java.util.Timer;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.data.StatData;
+import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.timer.ExchangeStatTimer;
 import org.roqmessaging.core.timer.Heartbeat;
 import org.roqmessaging.state.ProducerState;
@@ -34,7 +35,7 @@ import org.zeromq.ZMQ;
  * 
  * @author Nam-Luc Tran, Sabri Skhiri
  */
-public class Exchange implements Runnable {
+public class Exchange implements Runnable, IStoppable {
 	
 	private Logger logger = Logger.getLogger(Exchange.class);
 
@@ -49,10 +50,14 @@ public class Exchange implements Runnable {
 	private boolean active;
 	private StatData statistic=null;
 	private int frontEnd, backEnd;
+	
+	//Shutdown thread
+	private ShutDownMonitor shutDownMonitor = null;
 
 	/**
-	 * @param frontend
-	 * @param backend
+	 * Notice that we start a shutdown request socket on frontEnd port +1
+	 * @param frontend the front port
+	 * @param backend the back port
 	 * @param monitorHost the address of the monitor to bind  tcp:// monitor:monitorPort;
 	 * @param statHost tcp://monitor:statport
 	 */
@@ -82,11 +87,15 @@ public class Exchange implements Runnable {
 		// this.backend.setSwap(500000000);
 		this.backendPub.bind(s_backend);
 		this.monitorPub = context.socket(ZMQ.PUB);
-
+		
 		this.monitorPub.connect(s_monitor);
 		this.frontEnd=frontend;
 		this.backEnd= backend;
 		this.active = true;
+		
+		//initiatlisation of the shutdown thread
+		this.shutDownMonitor = new ShutDownMonitor(backend+1, this);
+		new Thread(shutDownMonitor);
 	}
 
 	/**
@@ -131,12 +140,6 @@ public class Exchange implements Runnable {
 					+ Long.toString(knownProd.get(index).getBytesSent());
 		}
 		return "x,x";
-	}
-
-	public void cleanShutDown() {
-		logger.info("Inititating shutdown sequence");
-		this.active = false;
-		this.monitorPub.send("6,shutdown".getBytes(), 0);
 	}
 
 	public void run() {
@@ -187,15 +190,28 @@ public class Exchange implements Runnable {
 		this.s_monitor = s_monitor;
 	}
 
-
-
-
-
 	/**
 	 * @return the knownProd
 	 */
 	public ArrayList<ProducerState> getKnownProd() {
 		return knownProd;
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
+	 */
+	public void shutDown() {
+		logger.info("Inititating shutdown sequence");
+		this.active = false;
+		this.monitorPub.send("6,shutdown".getBytes(), 0);
+		
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return "Exchange "+frontEnd+"->" + backEnd;
 	}
 
 

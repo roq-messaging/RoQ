@@ -66,7 +66,7 @@ public class ExchangeLauncher {
 				public void run() {
 					logger.info("Shutting down Exchange");
 					shutDownSocket.send(("6," + RoQUtils.getInstance().getLocalIP()).getBytes(), 0);
-					exchange.cleanShutDown();
+					exchange.shutDown();
 					try {
 						Thread.sleep(1);
 					} catch (InterruptedException e) {

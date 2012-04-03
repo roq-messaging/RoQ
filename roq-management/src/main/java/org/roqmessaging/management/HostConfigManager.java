@@ -151,12 +151,12 @@ public class HostConfigManager implements Runnable {
 			number += xChanges.size();
 		}
 		logger.debug(" This host contains already )" + number + " Exchanges");
-		int frontPort = this.baseFrontPort + number;
+		int frontPort = this.baseFrontPort + number*2;
 		int backPort = this.baseBackPort + number;
 		String ip = RoQUtils.getInstance().getLocalIP();
 		String argument = frontPort + " " + backPort + " tcp://" + ip + ":"
-				+ (this.baseMonitortPort + this.qMonitorMap.size()) + " tcp://" + ip + ":"
-				+ (this.baseStatPort + this.qMonitorMap.size());
+				+ getMonitorPort() + " tcp://" + ip + ":"
+				+ getStatMonitorPort();
 		logger.info(" Starting Xchange script with " + argument);
 		// 2. Launch script
 		ProcessBuilder pb = new ProcessBuilder(this.exchangeScript, argument);
@@ -177,6 +177,20 @@ public class HostConfigManager implements Runnable {
 	}
 
 	/**
+	 * @return the monitor port
+	 */
+	private int getMonitorPort() {
+		return (this.baseMonitortPort + this.qMonitorMap.size()*4);
+	}
+	
+	/**
+	 * @return the monitor stat  port
+	 */
+	private int getStatMonitorPort() {
+		return (this.baseStatPort + this.qMonitorMap.size());
+	}
+
+	/**
 	 * Start a new Monitor process
 	 * <p>
 	 * 1. Check the number of local monitor present in the host 2. Start a new
@@ -189,10 +203,9 @@ public class HostConfigManager implements Runnable {
 	 */
 	private String startNewMonitorProcess(String qName) {
 		// 1. Get the number of installed queues on this host
-		int number = this.qMonitorMap.size();
-		int frontPort = this.baseMonitortPort + (number * 4);
-		int statPort = this.baseStatPort + number;
-		logger.debug(" This host contains already )" + number + " Monitor");
+		int frontPort =getMonitorPort();
+		int statPort =  getStatMonitorPort();
+		logger.debug(" This host contains already )" + this.qMonitorMap.size() + " Monitor");
 		String argument = frontPort + " " + statPort;
 		logger.debug("Starting monitor process by script launch on " + argument);
 		
