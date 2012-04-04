@@ -23,6 +23,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
+import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.state.ExchangeState;
 import org.zeromq.ZMQ;
@@ -36,7 +37,7 @@ import org.zeromq.ZMQ;
  * 
  *  @author Nam-Luc Tran, Sabri Skhiri
  */
-public class Monitor implements Runnable {
+public class Monitor implements Runnable, IStoppable {
 
 	private Logger logger = Logger.getLogger(Monitor.class);
 	private ArrayList<ExchangeState> knownHosts;
@@ -50,6 +51,9 @@ public class Monitor implements Runnable {
 	private ZMQ.Socket producersPub, brokerSub, initRep, listenersPub, statSub;
 	//Monitor heart beat socket, client can check that monitor is alive
 	private ZMQ.Socket heartBeat = null;
+	private int basePort = 0;
+	//Shut down monitor
+	private ShutDownMonitor shutDownMonitor;
 
 	
 	/**
@@ -57,6 +61,7 @@ public class Monitor implements Runnable {
 	 * @param statPort default port for stat socket 5800
 	 */
 	public Monitor(int basePort, int statPort){
+		this.basePort = basePort;
 		knownHosts = new ArrayList<ExchangeState>();
 		hostsToRemove = new ArrayList<Integer>();
 		maxThroughput = 75000000L; // Maximum throughput per exchange, in
@@ -87,6 +92,12 @@ public class Monitor implements Runnable {
 		statSub = context.socket(ZMQ.SUB);
 		statSub.bind("tcp://*:"+ statPort);
 		statSub.subscribe("".getBytes());
+		
+		//shutodown monitor
+		//initiatlisation of the shutdown thread TODO Test
+		this.shutDownMonitor = new ShutDownMonitor(basePort+5, this);
+		new Thread(shutDownMonitor).start();
+		logger.debug("Started shutdown monitor on "+ (basePort+5));
 		
 		if(useFile){
 			try {
@@ -404,9 +415,23 @@ public class Monitor implements Runnable {
 		// Exit running
 		reportTimer.cancel();
 		this.knownHosts.clear();
+		closeSocket();
 		logger.info("Monitor Stopped");
 		// TODO send a clean shutdown to all producer and listener thread
 		// special code
+
+	}
+
+	/**
+	 * Closes all open sockets.
+	 */
+	private void closeSocket() {
+		logger.info("Closing all sockets from " + getName());
+		producersPub.close();
+		brokerSub.close();
+		initRep.close();
+		listenersPub.close();
+		statSub.close();
 
 	}
 
@@ -434,6 +459,23 @@ public class Monitor implements Runnable {
 				}
 			}
 		}
+	}
+
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
+	 */
+	public void shutDown() {
+		logger.info("Starting the shutdown procedure...");
+		this.active = false;
+		
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return "Monitor " + this.basePort;
 	}
 
 }

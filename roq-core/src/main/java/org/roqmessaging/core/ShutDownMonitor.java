@@ -68,6 +68,7 @@ public class ShutDownMonitor implements Runnable {
 				if(infoCode == RoQConstant.SHUTDOWN_REQUEST){
 					logger.info("Shutting down : "+ this.monitored.getName());
 					this.monitored.shutDown();
+					this.shutDownSocket.send(Integer.toString(RoQConstant.OK).getBytes(),0);
 				}else{
 					logger.error("The shutdown Monitor got a wrong request !");
 				}

@@ -47,9 +47,11 @@ public class Exchange implements Runnable, IStoppable {
 	private String s_frontend;
 	private String s_backend;
 	private String s_monitor;
-	private boolean active;
+	private volatile boolean active;
 	private StatData statistic=null;
 	private int frontEnd, backEnd;
+	//the heart beat and the stat
+	private Timer timer = null;
 	
 	//Shutdown thread
 	private ShutDownMonitor shutDownMonitor = null;
@@ -93,9 +95,10 @@ public class Exchange implements Runnable, IStoppable {
 		this.backEnd= backend;
 		this.active = true;
 		
-		//initiatlisation of the shutdown thread
+		//initiatlisation of the shutdown thread TODO Test
 		this.shutDownMonitor = new ShutDownMonitor(backend+1, this);
-		new Thread(shutDownMonitor);
+		new Thread(shutDownMonitor).start();
+		logger.debug("Started shutdown monitor on "+ (backend+1));
 	}
 
 	/**
@@ -144,7 +147,7 @@ public class Exchange implements Runnable, IStoppable {
 
 	public void run() {
 		logger.info("Exchange Started");
-		Timer timer = new Timer();
+		timer = new Timer();
 		timer.schedule(new Heartbeat(this.s_monitor, this.frontEnd, this.backEnd ), 0, 5000);
 		timer.schedule(new ExchangeStatTimer(this, this.statistic, this.context), 10, 60000);
 		int part;
@@ -152,7 +155,7 @@ public class Exchange implements Runnable, IStoppable {
 		while (this.active) {
 			byte[] message;
 			part = 0;
-			while (true) {
+			while (!Thread.currentThread().isInterrupted()) {
 				/*  ** Message multi part construction **
 				 * 1: routing key
 				 * 2: producer ID
@@ -173,8 +176,21 @@ public class Exchange implements Runnable, IStoppable {
 			}
 			this.statistic.setProcessed(this.statistic.getProcessed()+1);
 		}
+		closeSockets();
+		logger.info("Stopping Exchange "+frontEnd+"->"+backEnd);
 	}
 
+
+	/**
+	 * Closes all sockets
+	 */
+	private void closeSockets() {
+		logger.info("Closing all sockets from Exchange");
+		frontendSub.close();
+		backendPub.close();
+		monitorPub.close();
+
+	}
 
 	/**
 	 * @return the s_monitor
@@ -203,6 +219,8 @@ public class Exchange implements Runnable, IStoppable {
 	public void shutDown() {
 		logger.info("Inititating shutdown sequence");
 		this.active = false;
+		this.timer.cancel();
+		this.timer.purge();
 		this.monitorPub.send("6,shutdown".getBytes(), 0);
 		
 	}

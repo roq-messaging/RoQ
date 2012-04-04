@@ -32,6 +32,11 @@ public interface RoQConstant {
 	public static int CHANNEL_STAT =0;
 	
 	/**
+	 * OK.
+	 */
+	public static int OK =0;
+	
+	/**
 	 * Communication channel between the exchange and the monitor
 	 */
 	public static int CHANNEL_EXCHANGE=1;

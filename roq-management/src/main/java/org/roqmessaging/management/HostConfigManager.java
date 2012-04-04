@@ -180,7 +180,7 @@ public class HostConfigManager implements Runnable {
 	 * @return the monitor port
 	 */
 	private int getMonitorPort() {
-		return (this.baseMonitortPort + this.qMonitorMap.size()*4);
+		return (this.baseMonitortPort + this.qMonitorMap.size()*5);
 	}
 	
 	/**
