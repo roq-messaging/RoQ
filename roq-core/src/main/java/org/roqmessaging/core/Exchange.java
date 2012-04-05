@@ -33,7 +33,7 @@ import org.zeromq.ZMQ;
  * <p> Description: The main component of the logical queue. All messages must 
  * go through this element.
  * 
- * @author Nam-Luc Tran, Sabri Skhiri
+ * @author Nam-Luc Tran, Sabri Skhiri, Quentin Dugauthier
  */
 public class Exchange implements Runnable, IStoppable {
 	
@@ -163,7 +163,7 @@ public class Exchange implements Runnable, IStoppable {
 		while (this.active) {
 			byte[] message;
 			part = 0;
-			while (this.active) {
+			do {
 				//Set the poll time out, it returns either when someting arrive or when it time out
 				poller.poll(this.timeout);
 				/*  ** Message multi part construction **
@@ -171,7 +171,7 @@ public class Exchange implements Runnable, IStoppable {
 				 * 2: producer ID
 				 * 3: payload
 				 */ 
-				if(poller.pollin(0)){
+				if (poller.pollin(0)) {
 					message = frontendSub.recv(0);
 					part++;
 					if (part == 2) {
@@ -180,12 +180,12 @@ public class Exchange implements Runnable, IStoppable {
 					if (part == 3) {
 						logPayload(message.length, prodID);
 					}
-					backendPub.send(message, frontendSub.hasReceiveMore() ? ZMQ.SNDMORE
-							: 0);
-					if (!frontendSub.hasReceiveMore())
-						break;
+					backendPub.send(message, frontendSub.hasReceiveMore() ? ZMQ.SNDMORE : 0);
+					// if (!frontendSub.hasReceiveMore())
+					// break;
 				}
-			}
+			}while (this.frontendSub.hasReceiveMore() && this.active);
+			
 			this.statistic.setProcessed(this.statistic.getProcessed()+1);
 		}
 		closeSockets();
