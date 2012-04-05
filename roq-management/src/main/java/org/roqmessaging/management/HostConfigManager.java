@@ -16,12 +16,16 @@ package org.roqmessaging.management;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.core.launcher.ExchangeLauncher;
+import org.roqmessaging.core.launcher.MonitorLauncher;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
@@ -159,7 +163,14 @@ public class HostConfigManager implements Runnable {
 				+ (this.baseStatPort + this.qMonitorMap.size());
 		logger.info(" Starting Xchange script with " + argument);
 		// 2. Launch script
-		ProcessBuilder pb = new ProcessBuilder(this.exchangeScript, argument);
+		//ProcessBuilder pb = new ProcessBuilder(this.exchangeScript, argument);
+		
+		ProcessBuilder pb = new ProcessBuilder("java"
+				," -Djava.library.path="+System.getProperty("java.library.path")
+				," -cp "+System.getProperty("java.class.path")
+				,ExchangeLauncher.class.getCanonicalName()
+				,argument);
+		
 		try {
 			pb.start();
 			if(this.qExchangeMap.containsKey(qName)){
@@ -197,9 +208,21 @@ public class HostConfigManager implements Runnable {
 		logger.debug("Starting monitor process by script launch on " + argument);
 		
 		// 2. Launch script
-		ProcessBuilder pb = new ProcessBuilder(this.monitorScript, argument);
+		ProcessBuilder pb = new ProcessBuilder("java"
+				," -Djava.library.path="+System.getProperty("java.library.path")
+				," -cp "+System.getProperty("java.class.path")
+				,MonitorLauncher.class.getCanonicalName()
+				,argument);
+		
+//		logger.debug("env:"+pb.environment());
+		logger.debug("Starting: "+pb.command());
+		
 		try {
-			pb.start();
+			final Process process = pb.start();
+		    pipe(process.getErrorStream(), System.err);
+		    pipe(process.getInputStream(), System.out);
+			
+			
 			String monitorAddress = "tcp://"+ RoQUtils.getInstance().getLocalIP()+":" + frontPort;
 			String statAddress= "tcp://"+ RoQUtils.getInstance().getLocalIP()+":" + statPort;
 			this.qMonitorMap.put(qName, (monitorAddress));
@@ -210,6 +233,22 @@ public class HostConfigManager implements Runnable {
 		}
 	}
 
+	private static void pipe(final InputStream src, final PrintStream dest) {
+	    new Thread(new Runnable() {
+	        public void run() {
+	            try {
+	                byte[] buffer = new byte[1024];
+	                for (int n = 0; n != -1; n = src.read(buffer)) {
+	                    dest.write(buffer, 0, n);
+	                }
+	            } catch (IOException e) { // just exit
+	            }
+	        }
+	    }).start();
+	}
+
+	
+	
 	/**
 	 * 
 	 */
