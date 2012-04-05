@@ -22,6 +22,8 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.core.ShutDownMonitor;
+import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
@@ -35,7 +37,7 @@ import org.zeromq.ZMQ;
  * 
  * @author sskhiri
  */
-public class HostConfigManager implements Runnable {
+public class HostConfigManager implements Runnable, IStoppable {
 
 	// ZMQ config
 	private ZMQ.Socket clientReqSocket = null;
@@ -55,6 +57,8 @@ public class HostConfigManager implements Runnable {
 	private HashMap<String, String> qMonitorMap = null;
 	// [qName, list of Xchanges]
 	private HashMap<String, List<String>> qExchangeMap = null;
+	private ShutDownMonitor shutDownMonitor = null;
+	
 	//The scripts to starts TODO defining a multi platform approach for script
 	private String monitorScript = "/usr/bin/roq/startMonitor.sh";
 	private String exchangeScript = "/usr/bin/roq/startXchange.sh";
@@ -69,6 +73,8 @@ public class HostConfigManager implements Runnable {
 		this.clientReqSocket.bind("tcp://*:5100");
 		this.qExchangeMap = new HashMap<String, List<String>>();
 		this.qMonitorMap = new HashMap<String, String>();
+		this.shutDownMonitor = new ShutDownMonitor(5101, this);
+		new Thread(this.shutDownMonitor).start();
 	}
 
 	/**
@@ -151,12 +157,12 @@ public class HostConfigManager implements Runnable {
 			number += xChanges.size();
 		}
 		logger.debug(" This host contains already )" + number + " Exchanges");
-		int frontPort = this.baseFrontPort + number;
+		int frontPort = this.baseFrontPort + number*2;
 		int backPort = this.baseBackPort + number;
 		String ip = RoQUtils.getInstance().getLocalIP();
 		String argument = frontPort + " " + backPort + " tcp://" + ip + ":"
-				+ (this.baseMonitortPort + this.qMonitorMap.size()) + " tcp://" + ip + ":"
-				+ (this.baseStatPort + this.qMonitorMap.size());
+				+ getMonitorPort() + " tcp://" + ip + ":"
+				+ getStatMonitorPort();
 		logger.info(" Starting Xchange script with " + argument);
 		// 2. Launch script
 		ProcessBuilder pb = new ProcessBuilder(this.exchangeScript, argument);
@@ -177,6 +183,20 @@ public class HostConfigManager implements Runnable {
 	}
 
 	/**
+	 * @return the monitor port
+	 */
+	private int getMonitorPort() {
+		return (this.baseMonitortPort + this.qMonitorMap.size()*5);
+	}
+	
+	/**
+	 * @return the monitor stat  port
+	 */
+	private int getStatMonitorPort() {
+		return (this.baseStatPort + this.qMonitorMap.size());
+	}
+
+	/**
 	 * Start a new Monitor process
 	 * <p>
 	 * 1. Check the number of local monitor present in the host 2. Start a new
@@ -189,10 +209,9 @@ public class HostConfigManager implements Runnable {
 	 */
 	private String startNewMonitorProcess(String qName) {
 		// 1. Get the number of installed queues on this host
-		int number = this.qMonitorMap.size();
-		int frontPort = this.baseMonitortPort + (number * 4);
-		int statPort = this.baseStatPort + number;
-		logger.debug(" This host contains already )" + number + " Monitor");
+		int frontPort =getMonitorPort();
+		int statPort =  getStatMonitorPort();
+		logger.debug(" This host contains already )" + this.qMonitorMap.size() + " Monitor");
 		String argument = frontPort + " " + statPort;
 		logger.debug("Starting monitor process by script launch on " + argument);
 		
@@ -215,6 +234,13 @@ public class HostConfigManager implements Runnable {
 	 */
 	public void shutDown() {
 		this.running = false;
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return "Host config manager "+RoQUtils.getInstance().getLocalIP();
 	}
 
 }

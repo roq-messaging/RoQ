@@ -52,7 +52,7 @@ public class MonitorLauncher {
 				@Override
 				public void run() {
 					logger.info("Shutting down Monitor");
-					monitor.cleanShutDown();
+					monitor.shutDown();
 				}
 			});
 		} catch (NumberFormatException e) {

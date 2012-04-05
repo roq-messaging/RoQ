@@ -28,8 +28,11 @@ import org.roqmessaging.client.IRoQSubscriberConnection;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.core.Exchange;
 import org.roqmessaging.core.Monitor;
+import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.management.GlobalConfigurationManager;
+import org.roqmessaging.management.LogicalQFactory;
+import org.zeromq.ZMQ;
 
 /**
  * Class BasicSetupTests
@@ -50,6 +53,7 @@ public class BasicSetupTest {
 	private Logger logger = Logger.getLogger(BasicSetupTest.class);
 	int basePort = 5500;
 	int stat = 5900;
+	int frontPort = 5561;
 
 	/**
 	 * Create the Exchange.
@@ -88,8 +92,17 @@ public class BasicSetupTest {
 	public void tearDown() throws Exception {
 		this.connection.close();
 		this.subConnection.close();
-		this.xChange.cleanShutDown();
 		this.configManager.shutDown();
+		ZMQ.Socket shutDownExChange = ZMQ.context(1).socket(ZMQ.REQ);
+		shutDownExChange.connect("tcp://localhost:"+(frontPort+2));
+		shutDownExChange.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
+		ZMQ.Socket shutDownMonitor = ZMQ.context(1).socket(ZMQ.REQ);
+		shutDownMonitor.connect("tcp://localhost:"+(basePort+5));
+		shutDownMonitor.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
+		Thread.sleep(5000);
+//		LogicalQFactory loQFactory = new LogicalQFactory("localhost");
+//		loQFactory.refreshTopology();
+//		loQFactory.removeQueue("queue1");
 	}
 
 	@Test
@@ -113,6 +126,7 @@ public class BasicSetupTest {
 			logger.info("Sending message to subscriber ...");
 			if(this.connection.isReady()){
 				this.publisher.sendMessage("sabri".getBytes(), "hello".getBytes());
+				this.publisher.sendMessage("sabri".getBytes(), "hello2".getBytes());
 			}
 			else throw new IllegalStateException("Connection is not ready after 15 sec");
 			Thread.sleep(2000);
@@ -127,7 +141,7 @@ public class BasicSetupTest {
 	 * parameter are loaded.
 	 */
 	private void startExchange(String monitorHost, String statHost) {
-		this.xChange = new Exchange(5561, 5562, monitorHost,statHost );
+		this.xChange = new Exchange(frontPort, (frontPort+1), monitorHost,statHost );
 		Thread t = new Thread(this.xChange);
 		t.start();
 		

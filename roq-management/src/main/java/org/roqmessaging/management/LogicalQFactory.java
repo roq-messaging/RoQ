@@ -129,6 +129,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	 * @return the monitor host to send the remove request
 	 */
 	private String removeQFromGlobalConfig(String queueName) {
+		logger.debug("Removing "+ queueName+" from the global config");
 		// 1. Clean local cache
 		String monitorHost = this.queueMonitorMap.remove(queueName);
 		// 2. Ask the global configuration to remove the queue
@@ -148,9 +149,17 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	public boolean removeQueue(String queueName) {
 		// 1. Get the monitor address & Remove the entry in the global
 		// configuration
-		String host = removeQFromGlobalConfig(queueName);
+		logger.info("Removing Q " + queueName);
+		String address = this.queueMonitorMap.get(queueName);
+		logger.info("Sending Remove Q request to " + address);
 		// 2. Send the remove message to the monitor
-		// TODO Send the remove message to the monitor
+		//The monitor will stop all the exchanges during its shut down
+		ZMQ.Socket shutDownMonitor = ZMQ.context(1).socket(ZMQ.REQ);
+		shutDownMonitor.setSendTimeOut(0);
+		shutDownMonitor.connect(address);
+		shutDownMonitor.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
+		shutDownMonitor.close();
+		removeQFromGlobalConfig(queueName);
 		return false;
 	}
 

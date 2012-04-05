@@ -19,6 +19,8 @@ import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.core.ShutDownMonitor;
+import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
@@ -29,7 +31,7 @@ import org.zeromq.ZMQ;
  * 
  * @author sskhiri
  */
-public class GlobalConfigurationManager implements Runnable {
+public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private volatile boolean running;
 	//ZMQ config
 	private ZMQ.Socket clientReqSocket = null;
@@ -41,6 +43,8 @@ public class GlobalConfigurationManager implements Runnable {
 	private HashMap<String, String> queueLocations=null;
 	//Define the location of the monitor stat address for each queue (Name, monitor stat address)
 	private HashMap<String, String> queueStatLocation = null;
+	//The shutdown monitor
+	private ShutDownMonitor shutDownMonitor = null;
 	
 	private Logger logger = Logger.getLogger(GlobalConfigurationManager.class);
 	
@@ -56,6 +60,8 @@ public class GlobalConfigurationManager implements Runnable {
 		this.clientReqSocket = context.socket(ZMQ.REP);
 		this.clientReqSocket.bind("tcp://*:5000");
 		this.running = true;
+		this.shutDownMonitor = new ShutDownMonitor(5001, this);
+		new Thread(this.shutDownMonitor).start();
 	}
 
 	/**
@@ -145,6 +151,7 @@ public class GlobalConfigurationManager implements Runnable {
 				
 			}
 		}
+		logger.info("Shutting down the global configuration manager");
 		this.clientReqSocket.close();
 	}
 	
@@ -196,6 +203,13 @@ public class GlobalConfigurationManager implements Runnable {
 	public void addQueueName(String qName, String host){
 		this.queueLocations.put(qName, host);
 		logger.debug("Created queue "+ qName +" @"+ host +" in global configuration");
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return "Global config manager";
 	}
 
 }

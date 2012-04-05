@@ -21,6 +21,7 @@ import java.util.Timer;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.data.StatData;
+import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.timer.ExchangeStatTimer;
 import org.roqmessaging.core.timer.Heartbeat;
 import org.roqmessaging.state.ProducerState;
@@ -32,9 +33,9 @@ import org.zeromq.ZMQ;
  * <p> Description: The main component of the logical queue. All messages must 
  * go through this element.
  * 
- * @author Nam-Luc Tran, Sabri Skhiri
+ * @author Nam-Luc Tran, Sabri Skhiri, Quentin Dugauthier
  */
-public class Exchange implements Runnable {
+public class Exchange implements Runnable, IStoppable {
 	
 	private Logger logger = Logger.getLogger(Exchange.class);
 
@@ -46,13 +47,22 @@ public class Exchange implements Runnable {
 	private String s_frontend;
 	private String s_backend;
 	private String s_monitor;
-	private boolean active;
 	private StatData statistic=null;
 	private int frontEnd, backEnd;
+	//the heart beat and the stat
+	private Timer timer = null;
+	private volatile boolean active=false;
+	
+	//Shutdown thread
+	private ShutDownMonitor shutDownMonitor = null;
+
+	//Timeout value of the front sub poller
+	private long timeout=2000;
 
 	/**
-	 * @param frontend
-	 * @param backend
+	 * Notice that we start a shutdown request socket on frontEnd port +1
+	 * @param frontend the front port
+	 * @param backend the back port
 	 * @param monitorHost the address of the monitor to bind  tcp:// monitor:monitorPort;
 	 * @param statHost tcp://monitor:statport
 	 */
@@ -70,6 +80,7 @@ public class Exchange implements Runnable {
 		this.context = ZMQ.context(1);
 		this.frontendSub = context.socket(ZMQ.SUB);
 		this.backendPub = context.socket(ZMQ.PUB);
+		
 		// Caution, the following method as well as setSwap must be invoked before binding
 		// Use these to (double) check if the settings were correctly set  
 		// logger.info(this.backend.getHWM());
@@ -82,11 +93,16 @@ public class Exchange implements Runnable {
 		// this.backend.setSwap(500000000);
 		this.backendPub.bind(s_backend);
 		this.monitorPub = context.socket(ZMQ.PUB);
-
+		
 		this.monitorPub.connect(s_monitor);
 		this.frontEnd=frontend;
 		this.backEnd= backend;
 		this.active = true;
+		
+		//initiatlisation of the shutdown thread TODO Test
+		this.shutDownMonitor = new ShutDownMonitor(backend+1, this);
+		new Thread(shutDownMonitor).start();
+		logger.debug("Started shutdown monitor on "+ (backend+1));
 	}
 
 	/**
@@ -133,45 +149,60 @@ public class Exchange implements Runnable {
 		return "x,x";
 	}
 
-	public void cleanShutDown() {
-		logger.info("Inititating shutdown sequence");
-		this.active = false;
-		this.monitorPub.send("6,shutdown".getBytes(), 0);
-	}
-
 	public void run() {
 		logger.info("Exchange Started");
-		Timer timer = new Timer();
+		timer = new Timer();
 		timer.schedule(new Heartbeat(this.s_monitor, this.frontEnd, this.backEnd ), 0, 5000);
 		timer.schedule(new ExchangeStatTimer(this, this.statistic, this.context), 10, 60000);
 		int part;
 		String prodID = "";
+		//Adding the poller
+		ZMQ.Poller poller = context.poller(3);
+		poller.register(this.frontendSub);
+		
 		while (this.active) {
 			byte[] message;
 			part = 0;
-			while (true) {
+			do {
+				//Set the poll time out, it returns either when someting arrive or when it time out
+				poller.poll(this.timeout);
 				/*  ** Message multi part construction **
 				 * 1: routing key
 				 * 2: producer ID
 				 * 3: payload
 				 */ 
-				message = frontendSub.recv(0);
-				part++;
-				if (part == 2) {
-					prodID = new String(message);
+				if (poller.pollin(0)) {
+					message = frontendSub.recv(0);
+					part++;
+					if (part == 2) {
+						prodID = new String(message);
+					}
+					if (part == 3) {
+						logPayload(message.length, prodID);
+					}
+					backendPub.send(message, frontendSub.hasReceiveMore() ? ZMQ.SNDMORE : 0);
+					// if (!frontendSub.hasReceiveMore())
+					// break;
 				}
-				if (part == 3) {
-					logPayload(message.length, prodID);
-				}
-				backendPub.send(message, frontendSub.hasReceiveMore() ? ZMQ.SNDMORE
-						: 0);
-				if (!frontendSub.hasReceiveMore())
-					break;
-			}
+			}while (this.frontendSub.hasReceiveMore() && this.active);
+			
 			this.statistic.setProcessed(this.statistic.getProcessed()+1);
 		}
+		closeSockets();
+		logger.info("Stopping Exchange "+frontEnd+"->"+backEnd);
 	}
 
+
+	/**
+	 * Closes all sockets
+	 */
+	private void closeSockets() {
+		logger.info("Closing all sockets from Exchange");
+		frontendSub.close();
+		backendPub.close();
+		monitorPub.close();
+
+	}
 
 	/**
 	 * @return the s_monitor
@@ -187,15 +218,30 @@ public class Exchange implements Runnable {
 		this.s_monitor = s_monitor;
 	}
 
-
-
-
-
 	/**
 	 * @return the knownProd
 	 */
 	public ArrayList<ProducerState> getKnownProd() {
 		return knownProd;
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
+	 */
+	public void shutDown() {
+		logger.info("Inititating shutdown sequence");
+		this.active = false;
+		this.timer.cancel();
+		this.timer.purge();
+		this.monitorPub.send("6,shutdown".getBytes(), 0);
+		
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return "Exchange "+frontEnd+"->" + backEnd;
 	}
 
 
