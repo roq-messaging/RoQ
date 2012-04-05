@@ -435,13 +435,6 @@ public class Monitor implements Runnable, IStoppable {
 
 	}
 
-	/**
-	 * removes states before stopping.
-	 */
-	public void cleanShutDown() {
-		this.active = false;
-	}
-	
 
 	class ReportExchanges extends TimerTask {
 		public void run() {
@@ -468,6 +461,17 @@ public class Monitor implements Runnable, IStoppable {
 	public void shutDown() {
 		logger.info("Starting the shutdown procedure...");
 		this.active = false;
+		//Stopping all exchange
+		logger.info("Stopping all exchanges...");
+		for (ExchangeState exchangeState_i : this.knownHosts) {
+			String address = exchangeState_i.getAddress();
+			int backport = exchangeState_i.getBackPort();
+			ZMQ.Socket shutDownExChange = ZMQ.context(1).socket(ZMQ.REQ);
+			shutDownExChange.setSendTimeOut(0);
+			shutDownExChange.connect("tcp://localhost:"+(backport+1));
+			shutDownExChange.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
+			shutDownExChange.close();
+		}
 		
 	}
 

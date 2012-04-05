@@ -31,6 +31,7 @@ import org.roqmessaging.core.Monitor;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.management.GlobalConfigurationManager;
+import org.roqmessaging.management.LogicalQFactory;
 import org.zeromq.ZMQ;
 
 /**
@@ -99,6 +100,9 @@ public class BasicSetupTest {
 		shutDownMonitor.connect("tcp://localhost:"+(basePort+5));
 		shutDownMonitor.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
 		Thread.sleep(5000);
+//		LogicalQFactory loQFactory = new LogicalQFactory("localhost");
+//		loQFactory.refreshTopology();
+//		loQFactory.removeQueue("queue1");
 	}
 
 	@Test
