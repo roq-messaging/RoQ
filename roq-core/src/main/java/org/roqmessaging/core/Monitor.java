@@ -44,7 +44,7 @@ public class Monitor implements Runnable, IStoppable {
 	private ArrayList<Integer> hostsToRemove;
 	private long maxThroughput;
 	private ZMQ.Context context;
-	private boolean active = true;
+	private volatile boolean active = true;
 	private boolean useFile = false;
 	
 	private BufferedWriter bufferedOutput;

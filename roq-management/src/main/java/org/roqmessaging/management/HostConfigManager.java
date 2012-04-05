@@ -22,6 +22,8 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.core.ShutDownMonitor;
+import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
@@ -35,7 +37,7 @@ import org.zeromq.ZMQ;
  * 
  * @author sskhiri
  */
-public class HostConfigManager implements Runnable {
+public class HostConfigManager implements Runnable, IStoppable {
 
 	// ZMQ config
 	private ZMQ.Socket clientReqSocket = null;
@@ -55,6 +57,8 @@ public class HostConfigManager implements Runnable {
 	private HashMap<String, String> qMonitorMap = null;
 	// [qName, list of Xchanges]
 	private HashMap<String, List<String>> qExchangeMap = null;
+	private ShutDownMonitor shutDownMonitor = null;
+	
 	//The scripts to starts TODO defining a multi platform approach for script
 	private String monitorScript = "/usr/bin/roq/startMonitor.sh";
 	private String exchangeScript = "/usr/bin/roq/startXchange.sh";
@@ -69,6 +73,8 @@ public class HostConfigManager implements Runnable {
 		this.clientReqSocket.bind("tcp://*:5100");
 		this.qExchangeMap = new HashMap<String, List<String>>();
 		this.qMonitorMap = new HashMap<String, String>();
+		this.shutDownMonitor = new ShutDownMonitor(5101, this);
+		new Thread(this.shutDownMonitor).start();
 	}
 
 	/**
@@ -228,6 +234,13 @@ public class HostConfigManager implements Runnable {
 	 */
 	public void shutDown() {
 		this.running = false;
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return "Host config manager "+RoQUtils.getInstance().getLocalIP();
 	}
 
 }

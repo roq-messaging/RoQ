@@ -69,11 +69,15 @@ public class ShutDownMonitor implements Runnable {
 					logger.info("Shutting down : "+ this.monitored.getName());
 					this.monitored.shutDown();
 					this.shutDownSocket.send(Integer.toString(RoQConstant.OK).getBytes(),0);
+					//close me
+					this.active=false;
 				}else{
 					logger.error("The shutdown Monitor got a wrong request !");
 				}
 			}
 		}
+		logger.info("Shut down the monitor");
+		this.shutDownSocket.close();
 	}
 
 }

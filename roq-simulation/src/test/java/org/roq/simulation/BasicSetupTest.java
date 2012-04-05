@@ -98,9 +98,7 @@ public class BasicSetupTest {
 		ZMQ.Socket shutDownMonitor = ZMQ.context(1).socket(ZMQ.REQ);
 		shutDownMonitor.connect("tcp://localhost:"+(basePort+5));
 		shutDownMonitor.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
-		
-		
-		Thread.sleep(2000);
+		Thread.sleep(5000);
 	}
 
 	@Test

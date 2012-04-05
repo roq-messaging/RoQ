@@ -47,14 +47,17 @@ public class Exchange implements Runnable, IStoppable {
 	private String s_frontend;
 	private String s_backend;
 	private String s_monitor;
-	private volatile boolean active;
 	private StatData statistic=null;
 	private int frontEnd, backEnd;
 	//the heart beat and the stat
 	private Timer timer = null;
+	private volatile boolean active=false;
 	
 	//Shutdown thread
 	private ShutDownMonitor shutDownMonitor = null;
+
+	//Timeout value of the front sub poller
+	private long timeout=2000;
 
 	/**
 	 * Notice that we start a shutdown request socket on frontEnd port +1
@@ -77,6 +80,7 @@ public class Exchange implements Runnable, IStoppable {
 		this.context = ZMQ.context(1);
 		this.frontendSub = context.socket(ZMQ.SUB);
 		this.backendPub = context.socket(ZMQ.PUB);
+		
 		// Caution, the following method as well as setSwap must be invoked before binding
 		// Use these to (double) check if the settings were correctly set  
 		// logger.info(this.backend.getHWM());
@@ -152,27 +156,35 @@ public class Exchange implements Runnable, IStoppable {
 		timer.schedule(new ExchangeStatTimer(this, this.statistic, this.context), 10, 60000);
 		int part;
 		String prodID = "";
+		//Adding the poller
+		ZMQ.Poller poller = context.poller(3);
+		poller.register(this.frontendSub);
+		
 		while (this.active) {
 			byte[] message;
 			part = 0;
-			while (!Thread.currentThread().isInterrupted()) {
+			while (this.active) {
+				//Set the poll time out, it returns either when someting arrive or when it time out
+				poller.poll(this.timeout);
 				/*  ** Message multi part construction **
 				 * 1: routing key
 				 * 2: producer ID
 				 * 3: payload
 				 */ 
-				message = frontendSub.recv(0);
-				part++;
-				if (part == 2) {
-					prodID = new String(message);
+				if(poller.pollin(0)){
+					message = frontendSub.recv(0);
+					part++;
+					if (part == 2) {
+						prodID = new String(message);
+					}
+					if (part == 3) {
+						logPayload(message.length, prodID);
+					}
+					backendPub.send(message, frontendSub.hasReceiveMore() ? ZMQ.SNDMORE
+							: 0);
+					if (!frontendSub.hasReceiveMore())
+						break;
 				}
-				if (part == 3) {
-					logPayload(message.length, prodID);
-				}
-				backendPub.send(message, frontendSub.hasReceiveMore() ? ZMQ.SNDMORE
-						: 0);
-				if (!frontendSub.hasReceiveMore())
-					break;
 			}
 			this.statistic.setProcessed(this.statistic.getProcessed()+1);
 		}
