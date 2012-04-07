@@ -122,10 +122,43 @@ public class HostConfigManager implements Runnable, IStoppable {
 						this.clientReqSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL)+", ").getBytes(), 0);
 					}
 					break;
+					
+				case RoQConstant.CONFIG_REMOVE_QUEUE:
+					logger.debug("Recieveing create Q request from a client ");
+					if (info.length == 2) {
+						String qName = info[1];
+						removingQueue(qName);
+					} else {
+						logger.error("The create queue request sent does not contain 2 part: ID, quName");
+						this.clientReqSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL)+", ").getBytes(), 0);
+					}
+					break;
 				}
 			}
 		}
 		this.clientReqSocket.close();
+	}
+
+	/**
+	 * Remove a complete queue:
+	 * 1. Sends a shut down request to the corresponding monitor
+	 * 2. The monitor will send a shut down request to all exchanges that it knows
+	 * @param qName the logical Q name to remove
+	 */
+	private void removingQueue(String qName) {
+		String monitorAddress = this.qMonitorMap.get(qName);
+		//The address is the address of the base monitor, we need to extract the port and make +5
+		// to get the shutdown monitor thread
+		int basePort = RoQUtils.getInstance().extractBasePort(monitorAddress);
+		String portOff = monitorAddress.substring(0, monitorAddress.length()-"xxxx".length());
+		logger.info("Sending Remove Q request to " + portOff+(basePort+5));
+		// 2. Send the remove message to the monitor
+		//The monitor will stop all the exchanges during its shut down
+		ZMQ.Socket shutDownMonitor = ZMQ.context(1).socket(ZMQ.REQ);
+		shutDownMonitor.setSendTimeOut(0);
+		shutDownMonitor.connect(portOff+(basePort+5));
+		shutDownMonitor.send((Integer.toString(RoQConstant.SHUTDOWN_REQUEST)).getBytes(), 0);
+		shutDownMonitor.close();
 	}
 
 	/**
@@ -241,6 +274,20 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 */
 	public String getName() {
 		return "Host config manager "+RoQUtils.getInstance().getLocalIP();
+	}
+
+	/**
+	 * @return the qMonitorMap
+	 */
+	public HashMap<String, String> getqMonitorMap() {
+		return qMonitorMap;
+	}
+
+	/**
+	 * @param qMonitorMap the qMonitorMap to set
+	 */
+	public void setqMonitorMap(HashMap<String, String> qMonitorMap) {
+		this.qMonitorMap = qMonitorMap;
 	}
 
 }

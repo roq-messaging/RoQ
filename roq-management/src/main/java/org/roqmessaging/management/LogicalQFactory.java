@@ -50,6 +50,8 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	private HashMap<String, ZMQ.Socket> hostManagerMap;
 	// QName, monitor location
 	private HashMap<String, String> queueMonitorMap = null;
+	//QName, target host location
+	private HashMap<String, String> queueHostLocation = null;
 	// Lock
 	private Lock lockCreateQ = new ReentrantLock();
 
@@ -106,7 +108,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 				logger.info("Created queue " + queueName + " @ " + resultHost[1]);
 				// 3.B. Create the entry in the global config
 				globalConfigReq.send(
-						(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName + "," +resultHost[1] )
+						(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName + "," +resultHost[1]+","+targetAddress )
 								.getBytes(), 0);
 				String result = new String(globalConfigReq.recv(0));
 				if (Integer.parseInt(result) != RoQConstant.CONFIG_CREATE_QUEUE_OK) {
@@ -150,22 +152,25 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		// 1. Get the monitor address & Remove the entry in the global
 		// configuration
 		logger.info("Removing Q " + queueName);
-		String address = this.queueMonitorMap.get(queueName);
-		//The address is the address of the base monitor, we need to extract the port and make +5
-		// to get the shutdown monitor thread
-		int basePort = RoQUtils.getInstance().extractBasePort(address);
-		String portOff = address.substring(0, address.length()-"xxxx".length());
-		logger.info("Sending Remove Q request to " + portOff+(basePort+5));
-		// 2. Send the remove message to the monitor
-		//The monitor will stop all the exchanges during its shut down
-		//TODO removing through the host manager not directly the monito
-		ZMQ.Socket shutDownMonitor = ZMQ.context(1).socket(ZMQ.REQ);
-		shutDownMonitor.setSendTimeOut(0);
-		shutDownMonitor.connect(portOff+(basePort+5));
-		shutDownMonitor.send((Integer.toString(RoQConstant.SHUTDOWN_REQUEST)).getBytes(), 0);
-		shutDownMonitor.close();
+		//We attack directly the host config manager so, the first things to do it to get the host manager
+		//for this logical queue
+		//1. get the host location of the Q
+		String host = this.queueHostLocation.get(queueName);
+		if(host == null){
+			logger.error("The queue name is not registred in the local cache", new IllegalStateException("The Q name is not registred in the local cache"));
+			return false;
+		}
+		//2. Get the socket of the host local manager
+		ZMQ.Socket hostManagerSocket = this.hostManagerMap.get(host);
+		if(hostManagerSocket == null){
+			logger.error("The host manager socket is not registrated in the local cache", new IllegalStateException("The Q host manager socke is not registred in the local cache"));
+			return false;
+		}
+		//3. send the shutdown request
+		logger.debug("Sending remove queue request to host manager at "+ host);
+		hostManagerSocket.send((Integer.toString(RoQConstant.CONFIG_REMOVE_QUEUE)+","+queueName).getBytes(), 0);
 		removeQFromGlobalConfig(queueName);
-		return false;
+		return true;
 	}
 
 	/**
@@ -183,6 +188,11 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 			// The logical queue config is sent in the part 2
 			byte[] qConfiguration = globalConfigReq.recv(0);
 			queueMonitorMap = RoQUtils.getInstance().deserializeObject(qConfiguration);
+		}
+		if (globalConfigReq.hasReceiveMore()) {
+			// The logical queue config is sent in the part 3
+			byte[] qConfiguration = globalConfigReq.recv(0);
+			queueHostLocation = RoQUtils.getInstance().deserializeObject(qConfiguration);
 		}
 		logger.info("Getting configuration with " + hostManagers.size() + " Host managers and "
 				+ queueMonitorMap.size() + " queues");
