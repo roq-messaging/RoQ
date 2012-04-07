@@ -99,7 +99,7 @@ public class Exchange implements Runnable, IStoppable {
 		this.backEnd= backend;
 		this.active = true;
 		
-		//initiatlisation of the shutdown thread TODO Test
+		//initiatlisation of the shutdown thread
 		this.shutDownMonitor = new ShutDownMonitor(backend+1, this);
 		new Thread(shutDownMonitor).start();
 		logger.debug("Started shutdown monitor on "+ (backend+1));

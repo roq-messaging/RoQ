@@ -28,11 +28,10 @@ import org.roqmessaging.client.IRoQSubscriberConnection;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.core.Exchange;
 import org.roqmessaging.core.Monitor;
-import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.management.GlobalConfigurationManager;
+import org.roqmessaging.management.HostConfigManager;
 import org.roqmessaging.management.LogicalQFactory;
-import org.zeromq.ZMQ;
 
 /**
  * Class BasicSetupTests
@@ -54,6 +53,7 @@ public class BasicSetupTest {
 	int basePort = 5500;
 	int stat = 5900;
 	int frontPort = 5561;
+	private HostConfigManager hostConfigManager=null;
 
 	/**
 	 * Create the Exchange.
@@ -76,10 +76,21 @@ public class BasicSetupTest {
 	 */
 	private void startGlobalConfig() {
 		this.configManager = new GlobalConfigurationManager();
+		//1. start a host config manager
+		this.logger.info("Start host config...");
+		if(hostConfigManager==null){
+			hostConfigManager = new HostConfigManager();
+			// add a fake queue in the host config manager
+			this.hostConfigManager.getqMonitorMap().put("queue1", "tcp://localhost:"+basePort);
+			Thread hostThread = new Thread(hostConfigManager);
+			hostThread.start();
+		}
 		//1. Create a fake logical queue
 		// if we use the logical q Factory API we would not need to cheat
 		configManager.addQueueName("queue1", "tcp://localhost:"+basePort);
 		configManager.addQueueStatMonitor("queue1", "tcp://localhost:"+stat);
+		configManager.addHostManager("localhost");
+		configManager.addQueueLocation("queue1", "localhost");
 		Thread thread = new Thread(configManager);
 		thread.start();
 	}
@@ -92,17 +103,13 @@ public class BasicSetupTest {
 	public void tearDown() throws Exception {
 		this.connection.close();
 		this.subConnection.close();
+		
+		LogicalQFactory loQFactory = new LogicalQFactory("localhost");
+		loQFactory.refreshTopology();
+		//TODO removing through the host manager not directly the monitor
+		loQFactory.removeQueue("queue1");
+	
 		this.configManager.shutDown();
-		ZMQ.Socket shutDownExChange = ZMQ.context(1).socket(ZMQ.REQ);
-		shutDownExChange.connect("tcp://localhost:"+(frontPort+2));
-		shutDownExChange.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
-		ZMQ.Socket shutDownMonitor = ZMQ.context(1).socket(ZMQ.REQ);
-		shutDownMonitor.connect("tcp://localhost:"+(basePort+5));
-		shutDownMonitor.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
-		Thread.sleep(5000);
-//		LogicalQFactory loQFactory = new LogicalQFactory("localhost");
-//		loQFactory.refreshTopology();
-//		loQFactory.removeQueue("queue1");
 	}
 
 	@Test
@@ -112,7 +119,7 @@ public class BasicSetupTest {
 		assertNotNull(this.xChange);
 		assertNotNull(this.monitor);
 		assertNotNull(this.configManager);
-
+		
 		//1. Check wether the connection is ready
 		try {
 			logger.info("Before sending");

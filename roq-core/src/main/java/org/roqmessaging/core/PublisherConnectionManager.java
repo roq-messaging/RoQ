@@ -158,6 +158,7 @@ public class PublisherConnectionManager implements Runnable {
 				}
 			}
 		}
+		logger.debug("Shutting down the publisher connection");
 		this.monitorSub.close();
 		this.initReq.close();
 	}

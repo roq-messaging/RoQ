@@ -103,7 +103,6 @@ public class SubscriberConnectionManager implements Runnable {
 
 		public Stats() {
 			this.statsPub = context.socket(ZMQ.PUB);
-			//TODO we need to return the stat port from the global configuration
 			statsPub.connect(s_monitorStat);
 		}
 

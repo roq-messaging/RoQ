@@ -264,9 +264,9 @@ public class Monitor implements Runnable, IStoppable {
 		reportTimer.schedule(new ReportExchanges(), 0, 10000);
 
 		ZMQ.Poller items = context.poller(3);
-		items.register(statSub);
-		items.register(brokerSub);
-		items.register(initRep);
+		items.register(statSub);//0
+		items.register(brokerSub);//1
+		items.register(initRep);//2
 
 		logger.info("Monitor started");
 		long lastPublish = System.currentTimeMillis();
@@ -289,7 +289,7 @@ public class Monitor implements Runnable, IStoppable {
 			items.poll(2000);
 
 			//3. According to the channel bit used, we can define what kind of info is sent
-			if (items.pollin(RoQConstant.CHANNEL_STAT)) { 
+			if (items.pollin(0)) { 
 				// Stats info: 1* producers, 2* exch, 3*listeners
 				String info[] = new String(statSub.recv(0)).split(",");
 				infoCode = Integer.parseInt(info[0]);
@@ -341,46 +341,53 @@ public class Monitor implements Runnable, IStoppable {
 				}
 			}
 
-			if (items.pollin(RoQConstant.CHANNEL_EXCHANGE)) { // Info from Exchange
+			if (items.pollin(1)) { // Info from Exchange
 				String info[] = new String(brokerSub.recv(0)).split(",");
-				infoCode = Integer.parseInt(info[0]);
-				logger.debug("Recieving message from Exhange:"+infoCode  +" info array "+ info.length);
-				switch (infoCode) {
-				case 3:
-					// Broker debug code
-					logger.info(info[1]);
-					break;
-				case 4:
-					// Broker most productive producer code
-					updateExchgMetadata(info[1], info[4], info[6]);
-					if (!info[1].equals("x")) {
-						String relocation = relocateProd(info[1], info[3]); // ip,bytessent
-						if (!relocation.equals("")) {
-							 logger.debug("relocating " + info[2] + " on " + relocation);
-							producersPub.send(("1," + info[2] + "," + relocation).getBytes(), 0);
+				//Check if exchanges are present: this happens when the queue is shutting down a client is asking for a 
+				//connection
+				if(info.length>1){
+					infoCode = Integer.parseInt(info[0]);
+					logger.debug("Recieving message from Exhange:"+infoCode  +" info array "+ info.length);
+					switch (infoCode) {
+					case 3:
+						// Broker debug code
+						logger.info(info[1]);
+						break;
+					case 4:
+						// Broker most productive producer code
+						updateExchgMetadata(info[1], info[4], info[6]);
+						if (!info[1].equals("x")) {
+							String relocation = relocateProd(info[1], info[3]); // ip,bytessent
+							if (!relocation.equals("")) {
+								 logger.debug("relocating " + info[2] + " on " + relocation);
+								producersPub.send(("1," + info[2] + "," + relocation).getBytes(), 0);
+							}
 						}
-					}
-					break;
-				case 5:
-					// Broker heartbeat code Registration
-					if (info.length==4){
-						if (logHost(info[1], info[2], info[3]) == 1) {
-							listenersPub.send(("1," + info[1]).getBytes(), 0);
+						break;
+					case 5:
+						// Broker heartbeat code Registration
+						if (info.length==4){
+							if (logHost(info[1], info[2], info[3]) == 1) {
+								listenersPub.send(("1," + info[1]).getBytes(), 0);
+							}
+						}	else logger.error("The message recieved from the exchange heart beat" +
+								" does not contains 4 parts");
+						break;
+
+					case 6:
+						// Broker shutdown notification
+						logger.info("Broker " + info[1] + " has left the building");
+
+						if (hostLookup(info[1]) != -1) {
+							knownHosts.remove(hostLookup(info[1]));
 						}
-					}	else logger.error("The message recieved from the exchange heart beat" +
-							" does not contains 4 parts");
-					break;
 
-				case 6:
-					// Broker shutdown notification
-					logger.info("Broker " + info[1] + " has left the building");
-
-					if (hostLookup(info[1]) != -1) {
-						knownHosts.remove(hostLookup(info[1]));
+						producersPub.send(("2," + info[1]).getBytes(), 0);
+						break;
 					}
-
-					producersPub.send(("2," + info[1]).getBytes(), 0);
-					break;
+				}else{
+					logger.error(" Error when recieving information from Exchange there is no  info code !", new IllegalStateException("The exchange sent a request" +
+							" without info code !"));
 				}
 			}
 
@@ -463,15 +470,15 @@ public class Monitor implements Runnable, IStoppable {
 		this.active = false;
 		//Stopping all exchange
 		logger.info("Stopping all exchanges...");
-		for (ExchangeState exchangeState_i : this.knownHosts) {
-			String address = exchangeState_i.getAddress();
-			int backport = exchangeState_i.getBackPort();
-			ZMQ.Socket shutDownExChange = ZMQ.context(1).socket(ZMQ.REQ);
-			shutDownExChange.setSendTimeOut(0);
-			shutDownExChange.connect("tcp://localhost:"+(backport+1));
-			shutDownExChange.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
-			shutDownExChange.close();
-		}
+//		for (ExchangeState exchangeState_i : this.knownHosts) {
+//			String address = exchangeState_i.getAddress();
+//			int backport = exchangeState_i.getBackPort();
+//			ZMQ.Socket shutDownExChange = ZMQ.context(1).socket(ZMQ.REQ);
+//			shutDownExChange.setSendTimeOut(0);
+//			shutDownExChange.connect("tcp://localhost:"+(backport+1));
+//			shutDownExChange.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
+//			shutDownExChange.close();
+//		}
 		
 	}
 

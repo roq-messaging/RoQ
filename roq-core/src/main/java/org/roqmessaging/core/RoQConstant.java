@@ -86,11 +86,23 @@ public interface RoQConstant {
 	 */
 	public static int CONFIG_GET_HOST_BY_QNAME = 1007;
 
+	/**
+	 * Remove Queue request
+	 */
+	public static int CONFIG_REMOVE_QUEUE = 1008;
 	
 	/**
 	 * Send to shut donw a {@linkplain IStoppable} element
 	 */
-	public static int SHUTDOWN_REQUEST = 1008;
+	public static int SHUTDOWN_REQUEST = 1100;
+	
+	/**
+	 * Failing constant
+	 */
+	public static int FAIL = 1101;
+
+
+
 	
 
 }
