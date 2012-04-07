@@ -133,9 +133,9 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		// 1. Clean local cache
 		String monitorHost = this.queueMonitorMap.remove(queueName);
 		// 2. Ask the global configuration to remove the queue
-		globalConfigReq.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName).getBytes(), 0);
+		globalConfigReq.send((Integer.toString(RoQConstant.CONFIG_REMOVE_QUEUE) + "," + queueName).getBytes(), 0);
 		String result = new String(globalConfigReq.recv(0));
-		if (Integer.parseInt(result) != RoQConstant.CONFIG_CREATE_QUEUE_OK) {
+		if (Integer.parseInt(result) != RoQConstant.OK) {
 			logger.error("Error when removing the queue " + queueName + " from global config",
 					new IllegalStateException("The queue creation for  " + queueName
 							+ " failed on the global configuration server"));

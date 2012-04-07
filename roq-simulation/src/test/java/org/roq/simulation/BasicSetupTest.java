@@ -90,19 +90,20 @@ public class BasicSetupTest {
 	 */
 	@After
 	public void tearDown() throws Exception {
+//		ZMQ.Socket shutDownExChange = ZMQ.context(1).socket(ZMQ.REQ);
+//		shutDownExChange.connect("tcp://localhost:"+(frontPort+2));
+//		shutDownExChange.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
+//		ZMQ.Socket shutDownMonitor = ZMQ.context(1).socket(ZMQ.REQ);
+//		shutDownMonitor.connect("tcp://localhost:"+(basePort+5));
+//		shutDownMonitor.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
+//		Thread.sleep(5000);
+		//TODO stop the monitor and exchange by the remove queue API
+		LogicalQFactory loQFactory = new LogicalQFactory("localhost");
+		loQFactory.refreshTopology();
+		loQFactory.removeQueue("queue1");
 		this.connection.close();
 		this.subConnection.close();
 		this.configManager.shutDown();
-		ZMQ.Socket shutDownExChange = ZMQ.context(1).socket(ZMQ.REQ);
-		shutDownExChange.connect("tcp://localhost:"+(frontPort+2));
-		shutDownExChange.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
-		ZMQ.Socket shutDownMonitor = ZMQ.context(1).socket(ZMQ.REQ);
-		shutDownMonitor.connect("tcp://localhost:"+(basePort+5));
-		shutDownMonitor.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
-		Thread.sleep(5000);
-//		LogicalQFactory loQFactory = new LogicalQFactory("localhost");
-//		loQFactory.refreshTopology();
-//		loQFactory.removeQueue("queue1");
 	}
 
 	@Test

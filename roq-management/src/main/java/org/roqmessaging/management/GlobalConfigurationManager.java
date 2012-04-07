@@ -95,9 +95,23 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 					break;
 					
 				//A create queue request
+				case RoQConstant.CONFIG_REMOVE_QUEUE:
+					logger.debug("Recieveing remove Q request from a client ");
+					if (info.length == 2) {
+						logger.debug("The request format is valid we 2 part:  "+ info[1]);
+						// register the queue
+						removeQueue(info[1]);
+						this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+					}else{
+							logger.error("The remove queue request sent does not contain 2 part: ID, quName");
+							this.clientReqSocket.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
+						}
+					break;
+					
+					//A remove  queue request
 				case RoQConstant.CONFIG_CREATE_QUEUE:
 					logger.debug("Recieveing create Q request from a client ");
-					if (info.length == 4) {
+					if (info.length == 2) {
 						logger.debug("The request format is valid we 3 part:  "+ info[1] +" "+ info[2]+ " "+ info[3]);
 						// The logical queue config is sent int the part 2
 						String qName = info[1];
@@ -148,7 +162,6 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 					}
 					break;
 				}
-				
 			}
 		}
 		logger.info("Shutting down the global configuration manager");
@@ -156,6 +169,19 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	}
 	
 	
+	/**
+	 * Removes all reference of the this queue
+	 * @param qName the logical queue name
+	 */
+	private void removeQueue(String qName) {
+		if ((this.queueLocations.remove(qName)==null) ||  (this.queueStatLocation.remove(qName)==null)){
+			logger.error("Error while removing queue", new IllegalStateException("The queue name " + qName +" is not registred in the global configuration"));
+		}else{
+			logger.info("Removing queue "+ qName + " from global configuration");
+		}
+		
+	}
+
 	/**
 	 * @param qName the name of the logical queue
 	 * @param statMonitorHost the stat port address of the corresponding monitor
