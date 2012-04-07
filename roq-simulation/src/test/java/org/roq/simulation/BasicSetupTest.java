@@ -97,12 +97,14 @@ public class BasicSetupTest {
 //		shutDownMonitor.connect("tcp://localhost:"+(basePort+5));
 //		shutDownMonitor.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
 //		Thread.sleep(5000);
-		//TODO stop the monitor and exchange by the remove queue API
-		LogicalQFactory loQFactory = new LogicalQFactory("localhost");
-		loQFactory.refreshTopology();
-		loQFactory.removeQueue("queue1");
 		this.connection.close();
 		this.subConnection.close();
+		
+		LogicalQFactory loQFactory = new LogicalQFactory("localhost");
+		loQFactory.refreshTopology();
+		//TODO removing through the host manager not directly the monitor
+		loQFactory.removeQueue("queue1");
+	
 		this.configManager.shutDown();
 	}
 

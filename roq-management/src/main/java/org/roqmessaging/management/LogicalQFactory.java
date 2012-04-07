@@ -151,13 +151,18 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		// configuration
 		logger.info("Removing Q " + queueName);
 		String address = this.queueMonitorMap.get(queueName);
-		logger.info("Sending Remove Q request to " + address);
+		//The address is the address of the base monitor, we need to extract the port and make +5
+		// to get the shutdown monitor thread
+		int basePort = RoQUtils.getInstance().extractBasePort(address);
+		String portOff = address.substring(0, address.length()-"xxxx".length());
+		logger.info("Sending Remove Q request to " + portOff+(basePort+5));
 		// 2. Send the remove message to the monitor
 		//The monitor will stop all the exchanges during its shut down
+		//TODO removing through the host manager not directly the monito
 		ZMQ.Socket shutDownMonitor = ZMQ.context(1).socket(ZMQ.REQ);
 		shutDownMonitor.setSendTimeOut(0);
-		shutDownMonitor.connect(address);
-		shutDownMonitor.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
+		shutDownMonitor.connect(portOff+(basePort+5));
+		shutDownMonitor.send((Integer.toString(RoQConstant.SHUTDOWN_REQUEST)).getBytes(), 0);
 		shutDownMonitor.close();
 		removeQFromGlobalConfig(queueName);
 		return false;
