@@ -65,6 +65,8 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		globalConfigReq = context.socket(ZMQ.REQ);
 		globalConfigReq.connect("tcp://" + this.configServer + ":5000");
 		this.hostManagerMap = new HashMap<String, ZMQ.Socket>();
+		this.queueHostLocation = new HashMap<String, String>();
+		this.queueMonitorMap = new HashMap<String, String>();
 	}
 
 	/**
@@ -108,7 +110,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 				logger.info("Created queue " + queueName + " @ " + resultHost[1]);
 				// 3.B. Create the entry in the global config
 				globalConfigReq.send(
-						(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName + "," +resultHost[1]+","+targetAddress )
+						(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName + "," +resultHost[1]  + "," +resultHost[2]+","+targetAddress )
 								.getBytes(), 0);
 				String result = new String(globalConfigReq.recv(0));
 				if (Integer.parseInt(result) != RoQConstant.CONFIG_CREATE_QUEUE_OK) {
@@ -149,6 +151,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#removeQueue(java.lang.String)
 	 */
 	public boolean removeQueue(String queueName) {
+		this.refreshTopology();
 		// 1. Get the monitor address & Remove the entry in the global
 		// configuration
 		logger.info("Removing Q " + queueName);

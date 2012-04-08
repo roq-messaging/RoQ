@@ -16,6 +16,8 @@ package org.roqmessaging.management;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +26,8 @@ import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
+import org.roqmessaging.core.launcher.ExchangeLauncher;
+import org.roqmessaging.core.launcher.MonitorLauncher;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
@@ -51,15 +55,14 @@ public class HostConfigManager implements Runnable, IStoppable {
 	private int baseStatPort = 5800;
 
 	private int baseFrontPort = 6000;
-	private int baseBackPort = 7000;
 	// Local configuration maintained by the host manager
 	// [qName, the monitor]
 	private HashMap<String, String> qMonitorMap = null;
 	// [qName, list of Xchanges]
 	private HashMap<String, List<String>> qExchangeMap = null;
 	private ShutDownMonitor shutDownMonitor = null;
-	
-	//The scripts to starts TODO defining a multi platform approach for script
+
+	// The scripts to starts TODO defining a multi platform approach for script
 	private String monitorScript = "/usr/bin/roq/startMonitor.sh";
 	private String exchangeScript = "/usr/bin/roq/startXchange.sh";
 
@@ -103,26 +106,32 @@ public class HostConfigManager implements Runnable, IStoppable {
 					if (info.length == 2) {
 						String qName = info[1];
 						logger.debug("The request format is valid with 2 parts, Q to create:  " + qName);
-						if(!checkScriptInstall()){
+						if (!checkScriptInstall()) {
 							logger.error("The create queue request has failed: the scripts for launching Xchange & monitor have not been found ");
-							this.clientReqSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL)+", ").getBytes(), 0);
+							this.clientReqSocket.send(
+									(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) + ", ").getBytes(), 0);
 						}
 						String monitorAddress = startNewMonitorProcess(qName);
 						boolean xChangeOK = startNewExchangeProcess(qName);
 						// if OK send OK
-						if (monitorAddress!=null & xChangeOK){
-							logger.info("Successfully created new Q for " + qName + "@"+monitorAddress);
-							this.clientReqSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK)+","+monitorAddress).getBytes(),	0);
-						}else{
+						if (monitorAddress != null & xChangeOK) {
+							logger.info("Successfully created new Q for " + qName + "@" + monitorAddress);
+							this.clientReqSocket.send(
+									(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK) + "," + monitorAddress)
+											.getBytes(), 0);
+						} else {
 							logger.error("The create queue request has failed at the monitor host,check log (when starting launching scripts");
-							this.clientReqSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL)+","+monitorAddress).getBytes(), 0);
+							this.clientReqSocket.send(
+									(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) + "," + monitorAddress)
+											.getBytes(), 0);
 						}
 					} else {
 						logger.error("The create queue request sent does not contain 3 part: ID, quName, Monitor host");
-						this.clientReqSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL)+", ").getBytes(), 0);
+						this.clientReqSocket.send(
+								(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) + ", ").getBytes(), 0);
 					}
 					break;
-					
+
 				case RoQConstant.CONFIG_REMOVE_QUEUE:
 					logger.debug("Recieveing create Q request from a client ");
 					if (info.length == 2) {
@@ -130,7 +139,8 @@ public class HostConfigManager implements Runnable, IStoppable {
 						removingQueue(qName);
 					} else {
 						logger.error("The create queue request sent does not contain 2 part: ID, quName");
-						this.clientReqSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL)+", ").getBytes(), 0);
+						this.clientReqSocket.send(
+								(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) + ", ").getBytes(), 0);
 					}
 					break;
 				}
@@ -140,23 +150,26 @@ public class HostConfigManager implements Runnable, IStoppable {
 	}
 
 	/**
-	 * Remove a complete queue:
-	 * 1. Sends a shut down request to the corresponding monitor
-	 * 2. The monitor will send a shut down request to all exchanges that it knows
-	 * @param qName the logical Q name to remove
+	 * Remove a complete queue: 1. Sends a shut down request to the
+	 * corresponding monitor 2. The monitor will send a shut down request to all
+	 * exchanges that it knows
+	 * 
+	 * @param qName
+	 *            the logical Q name to remove
 	 */
 	private void removingQueue(String qName) {
 		String monitorAddress = this.qMonitorMap.get(qName);
-		//The address is the address of the base monitor, we need to extract the port and make +5
+		// The address is the address of the base monitor, we need to extract
+		// the port and make +5
 		// to get the shutdown monitor thread
 		int basePort = RoQUtils.getInstance().extractBasePort(monitorAddress);
-		String portOff = monitorAddress.substring(0, monitorAddress.length()-"xxxx".length());
-		logger.info("Sending Remove Q request to " + portOff+(basePort+5));
+		String portOff = monitorAddress.substring(0, monitorAddress.length() - "xxxx".length());
+		logger.info("Sending Remove Q request to " + portOff + (basePort + 5));
 		// 2. Send the remove message to the monitor
-		//The monitor will stop all the exchanges during its shut down
+		// The monitor will stop all the exchanges during its shut down
 		ZMQ.Socket shutDownMonitor = ZMQ.context(1).socket(ZMQ.REQ);
 		shutDownMonitor.setSendTimeOut(0);
-		shutDownMonitor.connect(portOff+(basePort+5));
+		shutDownMonitor.connect(portOff + (basePort + 5));
 		shutDownMonitor.send((Integer.toString(RoQConstant.SHUTDOWN_REQUEST)).getBytes(), 0);
 		shutDownMonitor.close();
 	}
@@ -166,9 +179,11 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 */
 	private boolean checkScriptInstall() {
 		File script1 = new File(this.monitorScript);
-		if(!script1.exists()) return false;
+		if (!script1.exists())
+			return false;
 		File script2 = new File(this.exchangeScript);
-		if(!script2.exists()) return false;
+		if (!script2.exists())
+			return false;
 		return true;
 	}
 
@@ -191,21 +206,24 @@ public class HostConfigManager implements Runnable, IStoppable {
 		}
 		logger.debug(" This host contains already )" + number + " Exchanges");
 		int frontPort = this.baseFrontPort + number*2;
-		int backPort = this.baseBackPort + number;
+		int backPort = frontPort+1;
 		String ip = RoQUtils.getInstance().getLocalIP();
-		String argument = frontPort + " " + backPort + " tcp://" + ip + ":"
-				+ getMonitorPort() + " tcp://" + ip + ":"
+		String argument = frontPort + " " + backPort + " tcp://" + ip + ":" + getMonitorPort() + " tcp://" + ip + ":"
 				+ getStatMonitorPort();
 		logger.info(" Starting Xchange script with " + argument);
+		
 		// 2. Launch script
-		ProcessBuilder pb = new ProcessBuilder(this.exchangeScript, argument);
 		try {
+			ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
+					+ System.getProperty("java.library.path"), "-cp \"" + System.getProperty("java.class.path")+"\"",
+					ExchangeLauncher.class.getCanonicalName(), argument);
+			logger.debug("Starting: " + pb.command());
 			pb.start();
-			if(this.qExchangeMap.containsKey(qName)){
-				this.qExchangeMap.get(qName).add( "tcp://" + ip + ":"+frontPort);
-			}else {
+			if (this.qExchangeMap.containsKey(qName)) {
+				this.qExchangeMap.get(qName).add("tcp://" + ip + ":" + frontPort);
+			} else {
 				List<String> xChange = new ArrayList<String>();
-				xChange.add("tcp://" + ip + ":"+frontPort);
+				xChange.add("tcp://" + ip + ":" + frontPort);
 				this.qExchangeMap.put(qName, xChange);
 			}
 		} catch (IOException e) {
@@ -219,11 +237,11 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * @return the monitor port
 	 */
 	private int getMonitorPort() {
-		return (this.baseMonitortPort + this.qMonitorMap.size()*5);
+		return (this.baseMonitortPort + this.qMonitorMap.size() * 5);
 	}
-	
+
 	/**
-	 * @return the monitor stat  port
+	 * @return the monitor stat port
 	 */
 	private int getStatMonitorPort() {
 		return (this.baseStatPort + this.qMonitorMap.size());
@@ -238,28 +256,52 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * 
 	 * @param qName
 	 *            the name of the queue to create
-	 * @return the monitor address as tcp://IP:port of the newly created monitor +"," tcp://IP: statport
+	 * @return the monitor address as tcp://IP:port of the newly created monitor
+	 *         +"," tcp://IP: statport
 	 */
 	private String startNewMonitorProcess(String qName) {
 		// 1. Get the number of installed queues on this host
-		int frontPort =getMonitorPort();
-		int statPort =  getStatMonitorPort();
-		logger.debug(" This host contains already )" + this.qMonitorMap.size() + " Monitor");
+		int frontPort = getMonitorPort();
+		int statPort = getStatMonitorPort();
+		logger.debug(" This host contains already " + this.qMonitorMap.size() + " Monitor");
 		String argument = frontPort + " " + statPort;
 		logger.debug("Starting monitor process by script launch on " + argument);
-		
+
 		// 2. Launch script
-		ProcessBuilder pb = new ProcessBuilder(this.monitorScript, argument);
+		// ProcessBuilder pb = new ProcessBuilder(this.monitorScript, argument);
+		ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
+				+ System.getProperty("java.library.path"), "-cp \"" + System.getProperty("java.class.path")+"\"",
+				MonitorLauncher.class.getCanonicalName(), argument);
+
+		logger.debug("Starting: " + pb.command());
+		String monitorAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + frontPort;
+		String statAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + statPort;
+
 		try {
-			pb.start();
-			String monitorAddress = "tcp://"+ RoQUtils.getInstance().getLocalIP()+":" + frontPort;
-			String statAddress= "tcp://"+ RoQUtils.getInstance().getLocalIP()+":" + statPort;
+			final Process process = pb.start();
+			pipe(process.getErrorStream(), System.err);
+			pipe(process.getInputStream(), System.out);
+
 			this.qMonitorMap.put(qName, (monitorAddress));
-			return monitorAddress+","+statAddress;
+			return monitorAddress + "," + statAddress;
 		} catch (IOException e) {
 			logger.error("Error while executing script", e);
 			return null;
 		}
+	}
+
+	private static void pipe(final InputStream src, final PrintStream dest) {
+		new Thread(new Runnable() {
+			public void run() {
+				try {
+					byte[] buffer = new byte[1024];
+					for (int n = 0; n != -1; n = src.read(buffer)) {
+						dest.write(buffer, 0, n);
+					}
+				} catch (IOException e) { // just exit
+				}
+			}
+		}).start();
 	}
 
 	/**
@@ -273,7 +315,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
 	 */
 	public String getName() {
-		return "Host config manager "+RoQUtils.getInstance().getLocalIP();
+		return "Host config manager " + RoQUtils.getInstance().getLocalIP();
 	}
 
 	/**
@@ -284,10 +326,18 @@ public class HostConfigManager implements Runnable, IStoppable {
 	}
 
 	/**
-	 * @param qMonitorMap the qMonitorMap to set
+	 * @param qMonitorMap
+	 *            the qMonitorMap to set
 	 */
 	public void setqMonitorMap(HashMap<String, String> qMonitorMap) {
 		this.qMonitorMap = qMonitorMap;
+	}
+
+	/**
+	 * @return the shutDownMonitor
+	 */
+	public ShutDownMonitor getShutDownMonitor() {
+		return shutDownMonitor;
 	}
 
 }

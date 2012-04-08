@@ -109,7 +109,9 @@ public class BasicSetupTest {
 		//TODO removing through the host manager not directly the monitor
 		loQFactory.removeQueue("queue1");
 	
-		this.configManager.shutDown();
+		this.configManager. getShutDownMonitor().shutDown();
+		
+		Thread.sleep(2000);
 	}
 
 	@Test
