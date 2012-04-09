@@ -106,7 +106,6 @@ public class BasicSetupTest {
 		
 		LogicalQFactory loQFactory = new LogicalQFactory("localhost");
 		loQFactory.refreshTopology();
-		//TODO removing through the host manager not directly the monitor
 		loQFactory.removeQueue("queue1");
 	
 		this.configManager. getShutDownMonitor().shutDown();

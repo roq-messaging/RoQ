@@ -96,7 +96,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 					logger.debug("Sending back the topology - list of local host");
 					this.clientReqSocket.send(serialised, ZMQ.SNDMORE);
 					this.clientReqSocket.send(RoQUtils.getInstance().serialiseObject(this.queueMonitorLocations), ZMQ.SNDMORE);
-					this.clientReqSocket.send(RoQUtils.getInstance().serialiseObject(this.queueHostLocation), 0);
+					this.clientReqSocket.send(RoQUtils.getInstance().serialiseObject(this.queueHostLocation), ZMQ.SNDMORE);
+					this.clientReqSocket.send(RoQUtils.getInstance().serialiseObject(this.queueStatLocation), 0);
 					break;
 					
 				//A create queue request

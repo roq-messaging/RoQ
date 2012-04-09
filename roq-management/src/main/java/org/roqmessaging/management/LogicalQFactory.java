@@ -52,6 +52,8 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	private HashMap<String, String> queueMonitorMap = null;
 	//QName, target host location
 	private HashMap<String, String> queueHostLocation = null;
+	//QName, stat monitor address server (ready to connect!)
+	private HashMap<String, String> queueMonitorStatMap = null;
 	// Lock
 	private Lock lockCreateQ = new ReentrantLock();
 	private Lock lockRemoveQ = new ReentrantLock();
@@ -68,6 +70,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		this.hostManagerMap = new HashMap<String, ZMQ.Socket>();
 		this.queueHostLocation = new HashMap<String, String>();
 		this.queueMonitorMap = new HashMap<String, String>();
+		this.queueMonitorStatMap = new HashMap<String, String>();
 	}
 
 	/**
@@ -85,19 +88,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 			this.lockCreateQ.lock();
 			if (!this.initialized)
 				this.refreshTopology();
-			// 1. Check if the name already exist in the topology
-			if (this.queueMonitorMap.containsKey(queueName)) {
-				// the queue already exist
-				logger.error( new IllegalStateException("The queue name " + queueName + " already exists"));
-				return;
-			}
-			if (!this.hostManagerMap.containsKey(targetAddress)) {
-				// the target address is not registered as node of the cluster
-				// (no Host manager running)
-				logger.error(new IllegalStateException("the target address " + targetAddress + " is not registered as a "
-						+ "node of the cluster (no Host manager running)"));
-				return;
-			}
+			if(!checkForCreateNewQ(queueName, targetAddress))return ;
 			// The name does not exist yet
 			//2. Sends the create event to the hostConfig manager thread
 			ZMQ.Socket hostSocket = this.hostManagerMap.get(targetAddress);
@@ -122,6 +113,56 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		} finally {
 			this.lockCreateQ.unlock();
 		}
+	}
+
+	/**
+	 * @param queueName the logical queue
+	 * @param targetAddress the target address
+	 * @return true if the check is OK
+	 */
+	private boolean checkForCreateNewQ(String queueName, String targetAddress) {
+		// 1. Check if the name already exist in the topology
+		if (this.queueMonitorMap.containsKey(queueName)) {
+			// the queue already exist
+			logger.error(new IllegalStateException("The queue name " + queueName + " already exists"));
+			return false;
+		}
+		
+		if (!this.hostManagerMap.containsKey(targetAddress)) {
+			// the target address is not registered as node of the cluster
+			// (no Host manager running)
+			logger.error(new IllegalStateException("the target address " + targetAddress + " is not registered as a "
+					+ "node of the cluster (no Host manager running)"));
+			return false;
+		}
+		return true;
+	}
+	
+	/**
+	 * @param queueName the logical queue
+	 * @param targetAddress the target address
+	 * @return true if the check is OK
+	 */
+	private boolean checkForUpdateQ(String queueName, String targetAddress) {
+		// 1. Check if the name already exist in the topology
+		if (!this.queueMonitorMap.containsKey(queueName)) {
+			logger.error(new IllegalStateException("The queue name " + queueName + " is not registrated in the cache"));
+			return false;
+		}
+		// 2. Check if the monitor stat is registrated
+		if (!this.queueMonitorStatMap.containsKey(queueName)) {
+			logger.error(new IllegalStateException("The monitor stat of queue name " + queueName + " is not registrated in the cache"));
+			return false;
+		}
+		
+		if (!this.hostManagerMap.containsKey(targetAddress)) {
+			// the target address is not registered as node of the cluster
+			// (no Host manager running)
+			logger.error(new IllegalStateException("the target address " + targetAddress + " is not registered as a "
+					+ "node of the cluster (no Host manager running)"));
+			return false;
+		}
+		return true;
 	}
 
 	/**
@@ -175,7 +216,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 						new IllegalStateException("The Q host manager socke is not registred in the local cache"));
 				return false;
 			}
-			// 3. send the shutdown request TODO BUG here at the second remove Q, the requet is not sent to the host manager !
+			// 3. send the shutdown request
 			logger.debug("Sending remove queue request to host manager at " + host +" "+ hostManagerSocket.toString());
 			hostManagerSocket.send((Integer.toString(RoQConstant.CONFIG_REMOVE_QUEUE) + "," + queueName).getBytes(), 0);
 			logger.debug("Answer from the host config manager "+  new String(hostManagerSocket.recv(0)));
@@ -187,6 +228,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	}
 
 	/**
+	 * Reload cache from the global configuration server
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#refreshTopology()
 	 */
 	public void refreshTopology() {
@@ -203,9 +245,14 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 			queueMonitorMap = RoQUtils.getInstance().deserializeObject(qConfiguration);
 		}
 		if (globalConfigReq.hasReceiveMore()) {
-			// The logical queue config is sent in the part 3
+			// The host location distribution is sent in the part 3
 			byte[] qConfiguration = globalConfigReq.recv(0);
 			queueHostLocation = RoQUtils.getInstance().deserializeObject(qConfiguration);
+		}
+		if (globalConfigReq.hasReceiveMore()) {
+			// The stat monitor for each logical queue is sent in the part 4
+			byte[] qConfiguration = globalConfigReq.recv(0);
+			queueMonitorStatMap = RoQUtils.getInstance().deserializeObject(qConfiguration);
 		}
 		logger.info("Getting configuration with " + hostManagers.size() + " Host managers and "
 				+ queueMonitorMap.size() + " queues");
@@ -270,7 +317,6 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	public void clean() {
 		try {
 			this.lockRemoveQ.lock();
-
 			logger.info("Cleaning the local cache");
 			for (String host : this.hostManagerMap.keySet()) {
 				ZMQ.Socket socket = this.hostManagerMap.get(host);
@@ -281,5 +327,37 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		} finally {
 			this.lockRemoveQ.unlock();
 		}
+	}
+
+	/**
+	 * Creates an exchange on the target address
+	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#createExchange(java.lang.String, java.lang.String)
+	 */
+	public boolean createExchange(String queueName, String targetAddress) {
+		this.refreshTopology();
+		//1. Check
+		if(!checkForUpdateQ(queueName, targetAddress))return false;
+		
+		//2. Get the information to send to the host manager
+		//Need to send, the info code, the queue name and the monitor and stat address as the monitor can be on
+		 // another machine.
+		String monitorAddress = this.queueMonitorMap.get(queueName);
+		String monitorStatAddress = this.queueMonitorStatMap.get(queueName);
+		ZMQ.Socket hostMngSocket = this.hostManagerMap.get(targetAddress);
+		
+		//3. Sends a create exchange to the host manager
+		logger.debug("Sending create Xchange request to host manager at " + targetAddress +" "+ hostMngSocket.toString());
+		String arguments =Integer.toString(RoQConstant.CONFIG_CREATE_EXCHANGE) + "," + queueName +","+monitorAddress+","+monitorStatAddress;
+		logger.debug("Sending "+ arguments);
+		hostMngSocket.send((arguments).getBytes(), 0);
+		String codeBackStr = new String(hostMngSocket.recv(0));
+		int codeBack = Integer.parseInt(codeBackStr);
+		if(codeBack== RoQConstant.FAIL) {
+			logger.error("The create exchange failed");
+			return false;
+		}
+		
+		//3. Sends to the global config Manager - > no needs.
+		return true;
 	}
 }

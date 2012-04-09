@@ -55,7 +55,6 @@ public class RoQSubscriberConnection implements IRoQSubscriberConnection {
 	 * @see org.roqmessaging.client.IRoQSubscriberConnection#open()
 	 */
 	public void open() {
-		// TODO Hard coded configuration, this should be in a java.property file
 		this.connectionManager = new SubscriberConnectionManager(this.monitorHost, this.monitorStat, this.key, this.subscriberID, false);
 		Thread mainThread = new Thread(connectionManager);
 		mainThread.start();
