@@ -148,21 +148,20 @@ public class HostConfigManager implements Runnable, IStoppable {
 					}
 					break;
 
-					//TODO Test the create exchange
 				case RoQConstant.CONFIG_CREATE_EXCHANGE:
 					logger.debug("Recieveing create XChange request from a client ");
 					if (info.length == 4) {
 						String qName = info[1];
 						// Qname, monitorhost, monitorstat host
 						if (startNewExchangeProcess(qName, info[2], info[3])) {
-							this.clientReqSocket.send((Integer.toString(RoQConstant.OK) + ", ").getBytes(), 0);
+							this.clientReqSocket.send((Integer.toString(RoQConstant.OK) ).getBytes(), 0);
 						} else {
-							this.clientReqSocket.send((Integer.toString(RoQConstant.FAIL) + ", ").getBytes(), 0);
+							this.clientReqSocket.send((Integer.toString(RoQConstant.FAIL) ).getBytes(), 0);
 						}
 					} else {
 						logger.error("The create new exchange does not contain 4 parts: ID, Qname, monitor, monitor host");
 						this.clientReqSocket.send(
-								(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) + ", ").getBytes(), 0);
+								(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) ).getBytes(), 0);
 					}
 					break;
 				}
@@ -244,10 +243,12 @@ public class HostConfigManager implements Runnable, IStoppable {
 			pipe(process.getInputStream(), System.out);
 			if (this.qExchangeMap.containsKey(qName)) {
 				this.qExchangeMap.get(qName).add("tcp://" + ip + ":" + frontPort);
+				logger.debug("Storing Xchange info: " + "tcp://" + ip + ":" + frontPort);
 			} else {
 				List<String> xChange = new ArrayList<String>();
 				xChange.add("tcp://" + ip + ":" + frontPort);
 				this.qExchangeMap.put(qName, xChange);
+				logger.debug("Storing Xchange info: " + "tcp://" + ip + ":" + frontPort);
 			}
 		} catch (IOException e) {
 			logger.error("Error while executing script", e);

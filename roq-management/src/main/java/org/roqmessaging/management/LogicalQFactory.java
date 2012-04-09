@@ -334,6 +334,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#createExchange(java.lang.String, java.lang.String)
 	 */
 	public boolean createExchange(String queueName, String targetAddress) {
+		this.refreshTopology();
 		//1. Check
 		if(!checkForUpdateQ(queueName, targetAddress))return false;
 		

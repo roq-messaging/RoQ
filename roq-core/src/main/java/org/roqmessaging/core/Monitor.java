@@ -167,7 +167,8 @@ public class Monitor implements Runnable, IStoppable {
 		int i;
 		if (!knownHosts.isEmpty()) {
 			for (i = 0; i < knownHosts.size(); i++) {
-				if (address.equals(knownHosts.get(i).getAddress())) {
+				if (address.equals(knownHosts.get(i).getAddress()) && Integer.parseInt(frontPort)==knownHosts.get(i).getFrontPort()&&
+						Integer.parseInt(backPort)==knownHosts.get(i).getBackPort() ) {
 					knownHosts.get(i).setAlive(true);
 					 logger.debug("Host "+address+": "+ frontPort+"->"+ backPort+"  reported alive");
 					return 0;
@@ -465,7 +466,7 @@ public class Monitor implements Runnable, IStoppable {
 	public void shutDown() {
 		logger.info("Starting the shutdown procedure...");
 		//Stopping all exchange
-		logger.info("Stopping all exchanges...");
+		logger.info("Stopping all exchanges...("+this.knownHosts.size()+")");
 		for (ExchangeState exchangeState_i : this.knownHosts) {
 			String address = exchangeState_i.getAddress();
 			int backport = exchangeState_i.getBackPort();
