@@ -104,7 +104,7 @@ public class TestLogicalQueue {
 			
 			//3. Create exchange
 			this.factory.createExchange("queue1", host);
-			Thread.sleep(10000);
+			Thread.sleep(4000);
 			this.factory.removeQueue("queue1");
 			//this.factory.removeQueue("queue2");
 			Thread.sleep(3000);
