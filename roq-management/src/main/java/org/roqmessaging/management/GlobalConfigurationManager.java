@@ -80,8 +80,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		while (this.running) {
 			items.poll(2000);
 			if (items.pollin(0)){ //Comes from a client
-				logger.debug("Receiving request...");
-				String  info[] = new String(clientReqSocket.recv(0)).split(",");
+				String content = new String(clientReqSocket.recv(0));
+				logger.debug("Receiving request..." + content);
+				String  info[] = content.split(",");
 				int infoCode = Integer.parseInt(info[0]);
 				logger.debug("Start analysing info code = "+ infoCode);
 				switch (infoCode) {
@@ -253,5 +254,14 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	public String getName() {
 		return "Global config manager";
 	}
+
+	/**
+	 * @return the shutDownMonitor
+	 */
+	public ShutDownMonitor getShutDownMonitor() {
+		return shutDownMonitor;
+	}
+	
+	
 
 }

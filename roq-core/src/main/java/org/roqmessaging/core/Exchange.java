@@ -232,7 +232,6 @@ public class Exchange implements Runnable, IStoppable {
 		logger.info("Inititating shutdown sequence");
 		this.active = false;
 		this.timer.cancel();
-		this.timer.purge();
 		this.monitorPub.send("6,shutdown".getBytes(), 0);
 		
 	}

@@ -423,10 +423,7 @@ public class Monitor implements Runnable, IStoppable {
 		reportTimer.cancel();
 		this.knownHosts.clear();
 		closeSocket();
-		logger.info("Monitor Stopped");
-		// TODO send a clean shutdown to all producer and listener thread
-		// special code
-
+		logger.info("Monitor  "+ this.basePort+" Stopped");
 	}
 
 	/**
@@ -467,18 +464,19 @@ public class Monitor implements Runnable, IStoppable {
 	 */
 	public void shutDown() {
 		logger.info("Starting the shutdown procedure...");
-		this.active = false;
 		//Stopping all exchange
 		logger.info("Stopping all exchanges...");
-//		for (ExchangeState exchangeState_i : this.knownHosts) {
-//			String address = exchangeState_i.getAddress();
-//			int backport = exchangeState_i.getBackPort();
-//			ZMQ.Socket shutDownExChange = ZMQ.context(1).socket(ZMQ.REQ);
-//			shutDownExChange.setSendTimeOut(0);
-//			shutDownExChange.connect("tcp://localhost:"+(backport+1));
-//			shutDownExChange.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
-//			shutDownExChange.close();
-//		}
+		for (ExchangeState exchangeState_i : this.knownHosts) {
+			String address = exchangeState_i.getAddress();
+			int backport = exchangeState_i.getBackPort();
+			logger.debug("Stopping exchange on "+ address+":"+(backport+1));
+			ZMQ.Socket shutDownExChange = ZMQ.context(1).socket(ZMQ.REQ);
+			shutDownExChange.setSendTimeOut(0);
+			shutDownExChange.connect("tcp://"+address+":"+(backport+1));
+			shutDownExChange.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
+			shutDownExChange.close();
+		}
+		this.active = false;
 		
 	}
 

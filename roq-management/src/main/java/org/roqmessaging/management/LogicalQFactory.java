@@ -54,6 +54,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	private HashMap<String, String> queueHostLocation = null;
 	// Lock
 	private Lock lockCreateQ = new ReentrantLock();
+	private Lock lockRemoveQ = new ReentrantLock();
 
 	/**
 	 * Initialise the socket to the config server.
@@ -65,6 +66,8 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		globalConfigReq = context.socket(ZMQ.REQ);
 		globalConfigReq.connect("tcp://" + this.configServer + ":5000");
 		this.hostManagerMap = new HashMap<String, ZMQ.Socket>();
+		this.queueHostLocation = new HashMap<String, String>();
+		this.queueMonitorMap = new HashMap<String, String>();
 	}
 
 	/**
@@ -108,7 +111,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 				logger.info("Created queue " + queueName + " @ " + resultHost[1]);
 				// 3.B. Create the entry in the global config
 				globalConfigReq.send(
-						(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName + "," +resultHost[1]+","+targetAddress )
+						(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName + "," +resultHost[1]  + "," +resultHost[2]+","+targetAddress )
 								.getBytes(), 0);
 				String result = new String(globalConfigReq.recv(0));
 				if (Integer.parseInt(result) != RoQConstant.CONFIG_CREATE_QUEUE_OK) {
@@ -149,27 +152,37 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#removeQueue(java.lang.String)
 	 */
 	public boolean removeQueue(String queueName) {
-		// 1. Get the monitor address & Remove the entry in the global
-		// configuration
-		logger.info("Removing Q " + queueName);
-		//We attack directly the host config manager so, the first things to do it to get the host manager
-		//for this logical queue
-		//1. get the host location of the Q
-		String host = this.queueHostLocation.get(queueName);
-		if(host == null){
-			logger.error("The queue name is not registred in the local cache", new IllegalStateException("The Q name is not registred in the local cache"));
-			return false;
+		try {
+			this.lockRemoveQ.lock();
+			this.refreshTopology();
+			// 1. Get the monitor address & Remove the entry in the global
+			// configuration
+			logger.info("Removing Q " + queueName);
+			// We attack directly the host config manager so, the first things
+			// to do it to get the host manager
+			// for this logical queue
+			// 1. get the host location of the Q
+			String host = this.queueHostLocation.get(queueName);
+			if (host == null) {
+				logger.error("The queue name is not registred in the local cache", new IllegalStateException(
+						"The Q name is not registred in the local cache"));
+				return false;
+			}
+			// 2. Get the socket of the host local manager
+			ZMQ.Socket hostManagerSocket = this.hostManagerMap.get(host);
+			if (hostManagerSocket == null) {
+				logger.error("The host manager socket is not registrated in the local cache",
+						new IllegalStateException("The Q host manager socke is not registred in the local cache"));
+				return false;
+			}
+			// 3. send the shutdown request TODO BUG here at the second remove Q, the requet is not sent to the host manager !
+			logger.debug("Sending remove queue request to host manager at " + host +" "+ hostManagerSocket.toString());
+			hostManagerSocket.send((Integer.toString(RoQConstant.CONFIG_REMOVE_QUEUE) + "," + queueName).getBytes(), 0);
+			logger.debug("Answer from the host config manager "+  new String(hostManagerSocket.recv(0)));
+			removeQFromGlobalConfig(queueName);
+		} finally {
+			this.lockRemoveQ.unlock();
 		}
-		//2. Get the socket of the host local manager
-		ZMQ.Socket hostManagerSocket = this.hostManagerMap.get(host);
-		if(hostManagerSocket == null){
-			logger.error("The host manager socket is not registrated in the local cache", new IllegalStateException("The Q host manager socke is not registred in the local cache"));
-			return false;
-		}
-		//3. send the shutdown request
-		logger.debug("Sending remove queue request to host manager at "+ host);
-		hostManagerSocket.send((Integer.toString(RoQConstant.CONFIG_REMOVE_QUEUE)+","+queueName).getBytes(), 0);
-		removeQFromGlobalConfig(queueName);
 		return true;
 	}
 
@@ -231,7 +244,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		}
 		// 2. To add
 		for (String hostAddress : hostManagers) {
-			if (!this.hostManagerMap.containsKey(hostManagers)) {
+			if (!this.hostManagerMap.containsKey(hostAddress)) {
 				// Must create one
 				toAdd.add(hostAddress);
 			}
@@ -241,6 +254,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 				ZMQ.Socket socket = context.socket(ZMQ.REQ);
 				String address = "tcp://" + hostToadd + ":5100";
 				logger.debug("Connect to " + address);
+				socket.setSendTimeOut(3500);
 				socket.connect(address);
 				this.hostManagerMap.put(hostToadd, socket);
 				logger.debug("Added host " + hostToadd + " in the local configuration");
@@ -254,12 +268,18 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#clean()
 	 */
 	public void clean() {
-		logger.info("Cleaning the local cache");
-		for (String host : this.hostManagerMap.keySet()) {
-			ZMQ.Socket socket = this.hostManagerMap.get(host);
-			socket.close();
+		try {
+			this.lockRemoveQ.lock();
+
+			logger.info("Cleaning the local cache");
+			for (String host : this.hostManagerMap.keySet()) {
+				ZMQ.Socket socket = this.hostManagerMap.get(host);
+				socket.close();
+			}
+			this.hostManagerMap.clear();
+			this.queueMonitorMap.clear();
+		} finally {
+			this.lockRemoveQ.unlock();
 		}
-		this.hostManagerMap.clear();
-		this.queueMonitorMap.clear();
 	}
 }

@@ -33,6 +33,7 @@ public class MonitorLauncher {
 	 * 5571 5800
 	 */
 	public static void main(String[] args) {
+		System.out.println("Launching Monitor process with arg "+displayArg(args));
 		final Logger logger = Logger.getLogger(MonitorLauncher.class);
 		if(args.length !=2){
 			System.out.println("The argument should be <int: base port> <int: stat port>");
@@ -59,6 +60,18 @@ public class MonitorLauncher {
 			System.out.println(" The arguments are not valid, must: <int: base port> <int: stat port>");
 		}
 		
+	}
+
+	/**
+	 * @param args the argument we recieved at the start up
+	 * @return the concatenated string of argument
+	 */
+	private static String displayArg(String[] args) {
+		String result="";
+		for (int i = 0; i < args.length; i++) {
+			result+=args[i] +", ";
+		}
+		return result;
 	}
 
 }
