@@ -423,10 +423,7 @@ public class Monitor implements Runnable, IStoppable {
 		reportTimer.cancel();
 		this.knownHosts.clear();
 		closeSocket();
-		logger.info("Monitor Stopped");
-		// TODO send a clean shutdown to all producer and listener thread
-		// special code
-
+		logger.info("Monitor  "+ this.basePort+" Stopped");
 	}
 
 	/**

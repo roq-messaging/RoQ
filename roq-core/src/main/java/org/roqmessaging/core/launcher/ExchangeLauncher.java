@@ -14,9 +14,7 @@
  */
 package org.roqmessaging.core.launcher;
 
-import org.apache.log4j.Logger;
 import org.roqmessaging.core.Exchange;
-import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
 /**
@@ -36,16 +34,28 @@ public class ExchangeLauncher {
 	 * 
 	 * example: 5559 5560 tcp://localhost:5571, tcp://localhost:5800
 	 * 
+	 * <p>
+	 * Notice that this process must be stopped by the shutdown monitor process
+	 * by using <code>
+	 *     ZMQ.Socket shutDownExChange = ZMQ.context(1).socket(ZMQ.REQ);
+			shutDownExChange.setSendTimeOut(0);
+			shutDownExChange.connect("tcp://"+address+":"+(backport+1));
+			shutDownExChange.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
+			shutDownExChange.close();
+	 * </code>
+	 * 
 	 * @throws InterruptedException
 	 */
 	public static void main(String[] args) throws InterruptedException {
-		final Logger logger = Logger.getLogger(ExchangeLauncher.class);
-		System.out.println("Starting Exchange with monitor " + args[2] + ", stat= " + args[3]);
-		System.out.println("Front  port  " + args[0] + ", Back port= " + args[1]);
+		System.out.println("Launching Exchange process with arg "+displayArg(args));
 		if (args.length != 4) {
 			System.out
 					.println("The argument should be <int front port> <int back port> < tcp:// monitor:monitorPort>  <tcp:// monitor:statport>");
+			return;
 		}
+		System.out.println("Starting Exchange with monitor " + args[2] + ", stat= " + args[3]);
+		System.out.println("Front  port  " + args[0] + ", Back port= " + args[1]);
+		
 		try {
 			int frontPort = Integer.parseInt(args[0]);
 			int backPort = Integer.parseInt(args[1]);
@@ -59,21 +69,6 @@ public class ExchangeLauncher {
 			shutDownSocket.setLinger(3500);
 			// Instanciate the exchange
 			final Exchange exchange = new Exchange(frontPort, backPort, args[2], args[3]);
-			// Add the shutdown hook
-			Runtime.getRuntime().addShutdownHook(new Thread() {
-				// TODO implement a JMX version
-				@Override
-				public void run() {
-					logger.info("Shutting down Exchange");
-					shutDownSocket.send(("6," + RoQUtils.getInstance().getLocalIP()).getBytes(), 0);
-					exchange.shutDown();
-					try {
-						Thread.sleep(1);
-					} catch (InterruptedException e) {
-						logger.error("Error when thread sleeping (shutting down phase))", e);
-					}
-				}
-			});
 			// Launch the thread
 			Thread t = new Thread(exchange);
 			t.start();
@@ -81,5 +76,19 @@ public class ExchangeLauncher {
 			System.out.println(" The arguments are not valid, must: <int: front port> <int: back port>");
 		}
 	}
+	
+
+	/**
+	 * @param args the argument we recieved at the start up
+	 * @return the concatenated string of argument
+	 */
+	private static String displayArg(String[] args) {
+		String result="";
+		for (int i = 0; i < args.length; i++) {
+			result+=args[i] +", ";
+		}
+		return result;
+	}
+
 
 }

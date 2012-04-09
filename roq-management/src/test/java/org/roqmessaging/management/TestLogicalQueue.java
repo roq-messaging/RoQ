@@ -88,52 +88,91 @@ public class TestLogicalQueue {
 
 	@Test
 	public void testCreateQueueRequest() {
-		logger.info("Start create queue test");
-		// Let 1 sec to init the thread
 		try {
-			Thread.sleep(1000);
+			Thread.sleep(500);
 		} catch (InterruptedException e) {
 			logger.error("Error while waiting", e);
 		}
 		// 1. Add new host
 		String host = RoQUtils.getInstance().getLocalIP();
 		this.configurationManager.addHostManager(host);
-		// 2. Create the factory
+	
 		try {
-			factory.createQueue("Sabri", host);
-			IRoQConnectionFactory factory = new RoQConnectionFactory("localhost");
-			
-			// add a subscriber
-			IRoQSubscriberConnection subConnection = factory.createRoQSubscriberConnection("Sabri", "key");
-			// 2. Open the connection to the logical queue
-			subConnection.open();
-			// 3. Register a message listener
-			subConnection.setMessageSubscriber(new IRoQSubscriber() {
-				public void onEvent(byte[] msg) {
-					String content = new String(msg, 0, msg.length);
-					assert content.equals("hello");
-					logger.info("In message lIstener recieveing :" + content);
-				}
-			});
-			
-			// Add a publisher
-			// 1. Creating the connection
-			IRoQConnection connection = factory.createRoQConnection("Sabri");
-			connection.open();
-			// 2. Creating the publisher and sending message
-			IRoQPublisher publisher = connection.createPublisher();
-			publisher.sendMessage("key".getBytes(), "hello".getBytes());
+			// 2. test the  Q
+			testQueue("queue1");
+			testQueue("queue2");
 
 			Thread.sleep(500);
-			this.factory.removeQueue("Sabri");
-			Thread.sleep(3000);
+			this.factory.removeQueue("queue1");
+			this.factory.removeQueue("queue2");
+			Thread.sleep(4000);
 			// factory.createQueue("Sabri2", host);
 		} catch (IllegalStateException e) {
 			logger.error("Error while waiting", e);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+
+	/**
+	 * @param qName the name of the queue to test
+	 * @throws InterruptedException 
+	 */
+	private void testQueue(String qName) throws InterruptedException {
+		logger.info("**********Testing Q "+ qName+"***************");
+		String host = RoQUtils.getInstance().getLocalIP();
+		factory.createQueue(qName, host);
+		//Wait for the queue ready
+		Thread.sleep(2000);
+		
+		//create subscriber
+		IRoQSubscriber subscriber = createSubscriber(qName, "key", "localhost");
+		// Add a publisher
+		RoQConnectionFactory factory = new RoQConnectionFactory("localhost");
+		// 1. Creating the connection
+		IRoQConnection connection = factory.createRoQConnection(qName);
+		connection.open();
+		// 2. Creating the publisher and sending message
+		IRoQPublisher publisher = connection.createPublisher();
+		//3. Wait for the connection is established before sending the first message
+		int attemp=0;
+		while(	!connection.isReady()&& attemp<6){
+			Thread.sleep(3000);
+			logger.info("Waiting for connection ready..." + attemp*3 +" sec");
+			attemp++;
+		}
+		//4. Sending the message
+		publisher.sendMessage("key".getBytes(), "hello".getBytes());
+
+		Thread.sleep(500);
+		
+	}
+
+	/**
+	 * Create a RoQ subscriber
+	 * @param qName the name of the queue
+	 * @param key the key to filter
+	 * @param configurationServer the address of the configuration server
+	 * @return a RoQ subscriber
+	 */
+	private IRoQSubscriber createSubscriber(String qName, String key, String configurationServer) {
+		IRoQConnectionFactory factory = new RoQConnectionFactory(configurationServer);
+		// add a subscriber
+		IRoQSubscriberConnection subConnection = factory.createRoQSubscriberConnection(qName, key);
+		// 2. Open the connection to the logical queue
+		subConnection.open();
+		
+		// 3. Register a message listener
+		IRoQSubscriber subs = new IRoQSubscriber() {
+			public void onEvent(byte[] msg) {
+				String content = new String(msg, 0, msg.length);
+				assert content.equals("hello");
+				logger.info("In message lIstener recieveing :" + content);
+			}
+		};
+		subConnection.setMessageSubscriber(subs);
+		return subs;
 	}
 
 }
