@@ -175,9 +175,10 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 						new IllegalStateException("The Q host manager socke is not registred in the local cache"));
 				return false;
 			}
-			// 3. send the shutdown request
+			// 3. send the shutdown request TODO BUG here at the second remove Q, the requet is not sent to the host manager !
 			logger.debug("Sending remove queue request to host manager at " + host +" "+ hostManagerSocket.toString());
 			hostManagerSocket.send((Integer.toString(RoQConstant.CONFIG_REMOVE_QUEUE) + "," + queueName).getBytes(), 0);
+			logger.debug("Answer from the host config manager "+  new String(hostManagerSocket.recv(0)));
 			removeQFromGlobalConfig(queueName);
 		} finally {
 			this.lockRemoveQ.unlock();
@@ -253,6 +254,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 				ZMQ.Socket socket = context.socket(ZMQ.REQ);
 				String address = "tcp://" + hostToadd + ":5100";
 				logger.debug("Connect to " + address);
+				socket.setSendTimeOut(3500);
 				socket.connect(address);
 				this.hostManagerMap.put(hostToadd, socket);
 				logger.debug("Added host " + hostToadd + " in the local configuration");
@@ -266,12 +268,18 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#clean()
 	 */
 	public void clean() {
-		logger.info("Cleaning the local cache");
-		for (String host : this.hostManagerMap.keySet()) {
-			ZMQ.Socket socket = this.hostManagerMap.get(host);
-			socket.close();
+		try {
+			this.lockRemoveQ.lock();
+
+			logger.info("Cleaning the local cache");
+			for (String host : this.hostManagerMap.keySet()) {
+				ZMQ.Socket socket = this.hostManagerMap.get(host);
+				socket.close();
+			}
+			this.hostManagerMap.clear();
+			this.queueMonitorMap.clear();
+		} finally {
+			this.lockRemoveQ.unlock();
 		}
-		this.hostManagerMap.clear();
-		this.queueMonitorMap.clear();
 	}
 }

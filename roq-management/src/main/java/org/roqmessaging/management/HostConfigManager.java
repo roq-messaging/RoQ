@@ -133,6 +133,8 @@ public class HostConfigManager implements Runnable, IStoppable {
 					if (info.length == 2) {
 						String qName = info[1];
 						removingQueue(qName);
+						this.clientReqSocket.send(
+								(Integer.toString(RoQConstant.OK) + ", ").getBytes(), 0);
 					} else {
 						logger.error("The remove queue request sent does not contain 2 part: ID, quName");
 						this.clientReqSocket.send(

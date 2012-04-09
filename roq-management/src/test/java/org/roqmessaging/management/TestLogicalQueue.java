@@ -102,10 +102,9 @@ public class TestLogicalQueue {
 			testQueue("queue1");
 			testQueue("queue2");
 
-			Thread.sleep(500);
 			this.factory.removeQueue("queue1");
 			this.factory.removeQueue("queue2");
-			Thread.sleep(4000);
+			Thread.sleep(2000);
 			// factory.createQueue("Sabri2", host);
 		} catch (IllegalStateException e) {
 			logger.error("Error while waiting", e);
