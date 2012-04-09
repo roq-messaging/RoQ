@@ -91,6 +91,18 @@ public interface RoQConstant {
 	 */
 	public static int CONFIG_REMOVE_QUEUE = 1008;
 	
+	
+	/**
+	 * create Exchange request
+	 */
+	public static int CONFIG_CREATE_EXCHANGE = 1009;
+	
+	/**
+	 * Create Exchange request
+	 */
+	public static int CONFIG_REMOVE_EXCHANGE = 1010;
+	
+	
 	/**
 	 * Send to shut donw a {@linkplain IStoppable} element
 	 */

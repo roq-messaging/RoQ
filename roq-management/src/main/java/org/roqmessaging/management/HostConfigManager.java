@@ -59,8 +59,8 @@ public class HostConfigManager implements Runnable, IStoppable {
 	// Local configuration maintained by the host manager
 	// [qName, the monitor]
 	private HashMap<String, String> qMonitorMap = null;
-	//[qName, monitor stat server address]
-	private HashMap<String, String> qMonitorStatMap=null;
+	// [qName, monitor stat server address]
+	private HashMap<String, String> qMonitorStatMap = null;
 	// [qName, list of Xchanges]
 	private HashMap<String, List<String>> qExchangeMap = null;
 	private ShutDownMonitor shutDownMonitor = null;
@@ -107,8 +107,15 @@ public class HostConfigManager implements Runnable, IStoppable {
 					if (info.length == 2) {
 						String qName = info[1];
 						logger.debug("The request format is valid with 2 parts, Q to create:  " + qName);
+						// 1. Start the monitor
 						String monitorAddress = startNewMonitorProcess(qName);
-						boolean xChangeOK = startNewExchangeProcess(qName);
+
+						// 2. Start the exchange
+						// 2.1. Getting the monitor stat address
+						// 2.2. Start the exchange
+						boolean xChangeOK = startNewExchangeProcess(qName, this.qMonitorMap.get(qName),
+								this.qMonitorStatMap.get(qName));
+						
 						// if OK send OK
 						if (monitorAddress != null & xChangeOK) {
 							logger.info("Successfully created new Q for " + qName + "@" + monitorAddress);
@@ -133,10 +140,27 @@ public class HostConfigManager implements Runnable, IStoppable {
 					if (info.length == 2) {
 						String qName = info[1];
 						removingQueue(qName);
-						this.clientReqSocket.send(
-								(Integer.toString(RoQConstant.OK) + ", ").getBytes(), 0);
+						this.clientReqSocket.send((Integer.toString(RoQConstant.OK) + ", ").getBytes(), 0);
 					} else {
 						logger.error("The remove queue request sent does not contain 2 part: ID, quName");
+						this.clientReqSocket.send(
+								(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) + ", ").getBytes(), 0);
+					}
+					break;
+
+					//TODO Test the create exchange
+				case RoQConstant.CONFIG_CREATE_EXCHANGE:
+					logger.debug("Recieveing create XChange request from a client ");
+					if (info.length == 4) {
+						String qName = info[1];
+						// Qname, monitorhost, monitorstat host
+						if (startNewExchangeProcess(qName, info[2], info[3])) {
+							this.clientReqSocket.send((Integer.toString(RoQConstant.OK) + ", ").getBytes(), 0);
+						} else {
+							this.clientReqSocket.send((Integer.toString(RoQConstant.FAIL) + ", ").getBytes(), 0);
+						}
+					} else {
+						logger.error("The create new exchange does not contain 4 parts: ID, Qname, monitor, monitor host");
 						this.clientReqSocket.send(
 								(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) + ", ").getBytes(), 0);
 					}
@@ -158,7 +182,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	private void removingQueue(String qName) {
 		try {
 			this.lockRemoveQ.lock();
-			logger.debug("Removing Q  "+qName);
+			logger.debug("Removing Q  " + qName);
 			String monitorAddress = this.qMonitorMap.get(qName);
 			// The address is the address of the base monitor, we need to
 			// extract
@@ -179,7 +203,6 @@ public class HostConfigManager implements Runnable, IStoppable {
 		}
 	}
 
-
 	/**
 	 * Start a new exchange process
 	 * <p>
@@ -190,37 +213,31 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 *            the name of the queue to create
 	 * @return true if the creation process worked well
 	 */
-	private boolean startNewExchangeProcess(String qName) {
+	private boolean startNewExchangeProcess(String qName, String monitorAddress, String monitorStatAddress) {
+		if(monitorAddress == null || monitorStatAddress==null){
+			logger.error("The monitor or the monitor stat server is null", new IllegalStateException());
+			return false;
+		}
 		// 1. Get the number of installed queues on this host
 		int number = 0;
 		for (String q_i : this.qExchangeMap.keySet()) {
 			List<String> xChanges = this.qExchangeMap.get(q_i);
 			number += xChanges.size();
 		}
-		//2. Assigns a front port and a back port
+		// 2. Assigns a front port and a back port
 		logger.debug(" This host contains already " + number + " Exchanges");
-		int frontPort = this.baseFrontPort + number*3; //3 because there is the front, back and the shut down
-		int backPort = frontPort+1;
+		int frontPort = this.baseFrontPort + number * 3; // 3 because there is
+															// the front, back
+															// and the shut down
+		int backPort = frontPort + 1;
 		String ip = RoQUtils.getInstance().getLocalIP();
-		
-		//3. Compute the monitor address 
-		String monitorAddress= this.qMonitorMap.get(qName);
-		if (monitorAddress==null){
-			logger.error("Error while creating exchange ", new IllegalStateException("The monitor is not registrated for this queue name"));
-			return false;
-		}
-		
-		String monitorStatAddress= this.qMonitorMap.get(qName);
-		if (monitorStatAddress==null){
-			logger.error("Error while creating exchange ", new IllegalStateException("The monitor stat server is not registrated for this queue name"));
-			return false;
-		}
-		
+
 		// 2. Launch script
 		try {
 			ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
-					+ System.getProperty("java.library.path"), "-cp",System.getProperty("java.class.path"),
-					ExchangeLauncher.class.getCanonicalName(), new Integer(frontPort).toString(), new Integer(backPort).toString(), monitorAddress, monitorStatAddress);
+					+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),
+					ExchangeLauncher.class.getCanonicalName(), new Integer(frontPort).toString(),
+					new Integer(backPort).toString(), monitorAddress, monitorStatAddress);
 			logger.debug("Starting: " + pb.command());
 			final Process process = pb.start();
 			pipe(process.getErrorStream(), System.err);
@@ -275,9 +292,10 @@ public class HostConfigManager implements Runnable, IStoppable {
 
 		// 2. Launch script
 		// ProcessBuilder pb = new ProcessBuilder(this.monitorScript, argument);
-		ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
-				+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),
-				MonitorLauncher.class.getCanonicalName(), new  Integer(frontPort).toString(), new Integer(statPort).toString());
+		ProcessBuilder pb = new ProcessBuilder("java",
+				"-Djava.library.path=" + System.getProperty("java.library.path"), "-cp",
+				System.getProperty("java.class.path"), MonitorLauncher.class.getCanonicalName(),
+				new Integer(frontPort).toString(), new Integer(statPort).toString());
 
 		logger.debug("Starting: " + pb.command());
 		String monitorAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + frontPort;

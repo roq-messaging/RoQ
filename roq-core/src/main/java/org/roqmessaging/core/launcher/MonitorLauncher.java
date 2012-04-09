@@ -14,7 +14,6 @@
  */
 package org.roqmessaging.core.launcher;
 
-import org.apache.log4j.Logger;
 import org.roqmessaging.core.Monitor;
 
 /**
@@ -34,7 +33,6 @@ public class MonitorLauncher {
 	 */
 	public static void main(String[] args) {
 		System.out.println("Launching Monitor process with arg "+displayArg(args));
-		final Logger logger = Logger.getLogger(MonitorLauncher.class);
 		if(args.length !=2){
 			System.out.println("The argument should be <int: base port> <int: stat port>");
 			return;
@@ -47,15 +45,6 @@ public class MonitorLauncher {
 			Thread t = new Thread(monitor);
 			t.start();
 			
-			//TODO Implementing a JMX interface to clean the shut down
-			//http://stackoverflow.com/questions/191215/how-to-stop-java-process-gracefully
-			Runtime.getRuntime().addShutdownHook(new Thread() {
-				@Override
-				public void run() {
-					logger.info("Shutting down Monitor");
-					monitor.shutDown();
-				}
-			});
 		} catch (NumberFormatException e) {
 			System.out.println(" The arguments are not valid, must: <int: base port> <int: stat port>");
 		}
