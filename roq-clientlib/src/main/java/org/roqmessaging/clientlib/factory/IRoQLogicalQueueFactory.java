@@ -40,6 +40,14 @@ public interface IRoQLogicalQueueFactory {
 	public boolean removeQueue(String queueName); 
 	
 	/**
+	 * @param queueName the name of the logical queue
+	 * @param targetAddress the target address in which we are going to create the exchange. 
+	 * @return true if the creation was OK
+	 */
+	public boolean createExchange(String queueName, String targetAddress);
+	
+	
+	/**
 	 * As the queue factory will keep a local cache of the topology, we enable to refresh the cache.
 	 */
 	public void refreshTopology();

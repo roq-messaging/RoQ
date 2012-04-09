@@ -94,7 +94,7 @@ public class Monitor implements Runnable, IStoppable {
 		statSub.subscribe("".getBytes());
 		
 		//shutodown monitor
-		//initiatlisation of the shutdown thread TODO Test
+		//initiatlisation of the shutdown thread
 		this.shutDownMonitor = new ShutDownMonitor(basePort+5, this);
 		new Thread(shutDownMonitor).start();
 		logger.debug("Started shutdown monitor on "+ (basePort+5));
