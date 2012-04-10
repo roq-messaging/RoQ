@@ -7,6 +7,7 @@ import java.util.TimerTask;
 import java.util.UUID;
 
 import org.apache.log4j.Logger;
+import org.roqmessaging.core.RoQConstant;
 import org.zeromq.ZMQ;
 
 public class PubClientLib implements Runnable {
@@ -83,7 +84,7 @@ public class PubClientLib implements Runnable {
 			minutes++;
 			sent = 0;
 			if (minutesLimit > 0 && minutes == minutesLimit) {
-				statsPub.send(("11," + s_ID + "," + totalSent).getBytes(), 0);
+				statsPub.send((new Integer(RoQConstant.STAT_TOTAL_SENT).toString()+"," + s_ID + "," + totalSent).getBytes(), 0);
 				running = false;
 			}
 		}

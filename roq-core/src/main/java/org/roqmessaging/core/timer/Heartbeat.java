@@ -17,6 +17,7 @@ package org.roqmessaging.core.timer;
 import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
+import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
@@ -42,6 +43,6 @@ public class Heartbeat extends TimerTask {
 	public void run() {
 		String address = RoQUtils.getInstance().getLocalIP();
 		logger.debug("Local address to send with heart bit "+  address+","+fwPort+","+ bkPort);
-		hbsocket.send(("5," +address+","+fwPort+","+ bkPort ).getBytes(), 0);
+		hbsocket.send((new Integer(RoQConstant.EVENT_HEART_BEAT).toString()+"," +address+","+fwPort+","+ bkPort ).getBytes(), 0);
 	}
 }

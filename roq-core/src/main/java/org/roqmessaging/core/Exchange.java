@@ -232,7 +232,7 @@ public class Exchange implements Runnable, IStoppable {
 		logger.info("Inititating shutdown sequence");
 		this.active = false;
 		this.timer.cancel();
-		this.monitorPub.send("6,shutdown".getBytes(), 0);
+		this.monitorPub.send((new Integer(RoQConstant.EVENT_EXCHANGE_SHUT_DONW).toString()+",shutdown").getBytes(), 0);
 		
 	}
 
