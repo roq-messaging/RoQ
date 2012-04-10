@@ -119,7 +119,7 @@ public class SubscriberConnectionManager implements Runnable {
 					+ meanLat + " " + "milliseconds");
 
 			statsPub.send(
-					("31," + minute + "," + totalReceived + "," + received + "," + subsriberID + "," + meanLat).getBytes(), 0);
+					(new Integer(RoQConstant.STAT_TOTAL_RCVD).toString()+"," + minute + "," + totalReceived + "," + received + "," + subsriberID + "," + meanLat).getBytes(), 0);
 			minute++;
 			received = 0;
 			latency = 0;
