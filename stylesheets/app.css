@@ -56,6 +56,7 @@ hr.spacer{
   visibility: hidden;
 }
 /* Titles */
+h2#title { margin-top: 1.5em; }
 h4 { font-weight: normal; font-size: 1.2em; margin-bottom: 6px; }
 h5 { font-weight: bold; font-size: 1em }
 
