@@ -22,7 +22,8 @@ import org.roqmessaging.management.HostConfigManager;
 /**
  * Class RoQAllLocalLauncher
  * <p>
- * Description: launch a all local instance of RoQ elements.
+ * Description: launch a all local instance of RoQ elements. Can be launched by <br>
+ * java -Djava.library.path=/usr/local/lib -cp roq-simulation-1.0-SNAPSHOT-jar-with-dependencies.jar org.roq.simulation.RoQAllLocalLauncher
  * 
  * @author sskhiri
  */
