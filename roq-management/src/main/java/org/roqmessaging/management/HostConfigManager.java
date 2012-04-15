@@ -29,6 +29,7 @@ import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.launcher.ExchangeLauncher;
 import org.roqmessaging.core.launcher.MonitorLauncher;
+import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
@@ -65,6 +66,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	private HashMap<String, List<String>> qExchangeMap = null;
 	private ShutDownMonitor shutDownMonitor = null;
 	private Lock lockRemoveQ = new ReentrantLock();
+	private RoQSerializationUtils serializationUtils = null;
 
 	/**
 	 * Constructor
@@ -78,6 +80,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 		this.qMonitorMap = new HashMap<String, String>();
 		this.qMonitorStatMap = new HashMap<String, String>();
 		this.shutDownMonitor = new ShutDownMonitor(5101, this);
+		this.serializationUtils =  new RoQSerializationUtils();
 		new Thread(this.shutDownMonitor).start();
 	}
 
@@ -187,7 +190,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 			// extract
 			// the port and make +5
 			// to get the shutdown monitor thread
-			int basePort = RoQUtils.getInstance().extractBasePort(monitorAddress);
+			int basePort = this.serializationUtils.extractBasePort(monitorAddress);
 			String portOff = monitorAddress.substring(0, monitorAddress.length() - "xxxx".length());
 			logger.info("Sending Remove Q request to " + portOff + (basePort + 5));
 			// 2. Send the remove message to the monitor

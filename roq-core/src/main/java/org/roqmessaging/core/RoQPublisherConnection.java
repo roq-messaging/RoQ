@@ -82,6 +82,24 @@ public class RoQPublisherConnection implements IRoQConnection {
 		if(this.connectionManager == null) throw new IllegalStateException("The connection were not openned");
 		return this.connectionManager.getConfiguration().isValid();
 	}
+
+	/**
+	 * This method blocks till the connection is ready
+	 * @see org.roqmessaging.client.IRoQConnection#blockTillReady(int)
+	 */
+	public boolean blockTillReady(int timeOut) {
+		try {
+			int attempt = 0;
+			while (!this.connectionManager.getConfiguration().isValid() && (attempt) < timeOut) {
+				Thread.sleep(1000);
+				logger.info("Waiting for connection ready..." + attempt + " sec");
+				attempt++;
+			}
+		} catch (Exception e) {
+			logger.error(e);
+		}
+		return this.connectionManager.getConfiguration().isValid();
+	}
 	
 	//Private methods
 	

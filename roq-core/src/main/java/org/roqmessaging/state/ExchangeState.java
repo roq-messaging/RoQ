@@ -129,4 +129,16 @@ public class ExchangeState {
 			this.backPort = backPort;
 		}
 
+		/**
+		 * @param addressToCompare the address of the exchange
+		 * @param frontPortToCompare the front  port of the exchange
+		 * @param backPortToCompare the back port
+		 * @return true if the exchange matches
+		 */
+		public boolean match(String addressToCompare, String frontPortToCompare, String backPortToCompare) {
+			if (addressToCompare.equals(this.getAddress()) && Integer.parseInt(frontPortToCompare)==this.getFrontPort()&&
+					Integer.parseInt(backPortToCompare)==this.getBackPort() ) {return true;}
+			else return false;
+		}
+
 }

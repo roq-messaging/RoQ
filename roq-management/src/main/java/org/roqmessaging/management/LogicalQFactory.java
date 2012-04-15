@@ -23,7 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.log4j.Logger;
 import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
 import org.roqmessaging.core.RoQConstant;
-import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.zeromq.ZMQ;
 
 /**
@@ -57,12 +57,15 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	// Lock
 	private Lock lockCreateQ = new ReentrantLock();
 	private Lock lockRemoveQ = new ReentrantLock();
+	//utils
+	private RoQSerializationUtils serializationUtils=null;
 
 	/**
 	 * Initialise the socket to the config server.
 	 */
 	public LogicalQFactory(String configServer) {
 		this.configServer = configServer;
+		this.serializationUtils = new RoQSerializationUtils();
 		this.factoryID = String.valueOf(System.currentTimeMillis()) + "_queuefactory";
 		context = ZMQ.context(1);
 		globalConfigReq = context.socket(ZMQ.REQ);
@@ -238,21 +241,21 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		// managers = system topology
 		logger.debug("Sending topology global config request...");
 		byte[] configuration = globalConfigReq.recv(0);
-		List<String> hostManagers = RoQUtils.getInstance().deserializeObject(configuration);
+		List<String> hostManagers = this.serializationUtils.deserializeObject(configuration);
 		if (globalConfigReq.hasReceiveMore()) {
 			// The logical queue config is sent in the part 2
 			byte[] qConfiguration = globalConfigReq.recv(0);
-			queueMonitorMap = RoQUtils.getInstance().deserializeObject(qConfiguration);
+			queueMonitorMap = this.serializationUtils.deserializeObject(qConfiguration);
 		}
 		if (globalConfigReq.hasReceiveMore()) {
 			// The host location distribution is sent in the part 3
 			byte[] qConfiguration = globalConfigReq.recv(0);
-			queueHostLocation = RoQUtils.getInstance().deserializeObject(qConfiguration);
+			queueHostLocation =this.serializationUtils.deserializeObject(qConfiguration);
 		}
 		if (globalConfigReq.hasReceiveMore()) {
 			// The stat monitor for each logical queue is sent in the part 4
 			byte[] qConfiguration = globalConfigReq.recv(0);
-			queueMonitorStatMap = RoQUtils.getInstance().deserializeObject(qConfiguration);
+			queueMonitorStatMap = this.serializationUtils.deserializeObject(qConfiguration);
 		}
 		logger.info("Getting configuration with " + hostManagers.size() + " Host managers and "
 				+ queueMonitorMap.size() + " queues");
