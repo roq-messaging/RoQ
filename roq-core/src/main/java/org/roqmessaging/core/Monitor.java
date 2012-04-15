@@ -164,12 +164,10 @@ public class Monitor implements Runnable, IStoppable {
 	 * @return 1 if the host has been added otherwise it is hearbeat
 	 */
 	private int logHost(String address, String frontPort, String backPort) {
-		int i;
 		if (!knownHosts.isEmpty()) {
-			for (i = 0; i < knownHosts.size(); i++) {
-				if (address.equals(knownHosts.get(i).getAddress()) && Integer.parseInt(frontPort)==knownHosts.get(i).getFrontPort()&&
-						Integer.parseInt(backPort)==knownHosts.get(i).getBackPort() ) {
-					knownHosts.get(i).setAlive(true);
+			for (ExchangeState exchange_i : knownHosts) {
+				if(exchange_i.match(address, frontPort, backPort)){
+					exchange_i.setAlive(true);
 					 logger.debug("Host "+address+": "+ frontPort+"->"+ backPort+"  reported alive");
 					return 0;
 				}

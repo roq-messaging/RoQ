@@ -21,7 +21,7 @@ import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
-import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.zeromq.ZMQ;
 
 /**
@@ -47,6 +47,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private HashMap<String, String> queueHostLocation = null;
 	//The shutdown monitor
 	private ShutDownMonitor shutDownMonitor = null;
+	//utils
+	private RoQSerializationUtils serializationUtils=null;
 	
 	private Logger logger = Logger.getLogger(GlobalConfigurationManager.class);
 	
@@ -63,6 +65,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		this.clientReqSocket = context.socket(ZMQ.REP);
 		this.clientReqSocket.bind("tcp://*:5000");
 		this.running = true;
+		this.serializationUtils = new RoQSerializationUtils();
 		this.shutDownMonitor = new ShutDownMonitor(5001, this);
 		new Thread(this.shutDownMonitor).start();
 	}
@@ -92,12 +95,12 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 					// A client is asking fof the topology of all local host
 					// manager
 					logger.debug("Recieveing init request from a client ");
-					byte[] serialised = RoQUtils.getInstance().serialiseObject(this.hostManagerAddresses);
+					byte[] serialised = this.serializationUtils.serialiseObject(this.hostManagerAddresses);
 					logger.debug("Sending back the topology - list of local host");
 					this.clientReqSocket.send(serialised, ZMQ.SNDMORE);
-					this.clientReqSocket.send(RoQUtils.getInstance().serialiseObject(this.queueMonitorLocations), ZMQ.SNDMORE);
-					this.clientReqSocket.send(RoQUtils.getInstance().serialiseObject(this.queueHostLocation), ZMQ.SNDMORE);
-					this.clientReqSocket.send(RoQUtils.getInstance().serialiseObject(this.queueStatLocation), 0);
+					this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.queueMonitorLocations), ZMQ.SNDMORE);
+					this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.queueHostLocation), ZMQ.SNDMORE);
+					this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.queueStatLocation), 0);
 					break;
 					
 				//A create queue request
