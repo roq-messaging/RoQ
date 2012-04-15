@@ -134,7 +134,7 @@ public class BasicSetupTest {
 			logger.info("Sending message to subscriber ...");
 			if(this.connection.isReady()){
 				this.publisher.sendMessage("sabri".getBytes(), "hello".getBytes());
-				this.publisher.sendMessage("sabri".getBytes(), "hello2".getBytes());
+				this.publisher.sendMessage("sabri".getBytes(), "hello".getBytes());
 			}
 			else throw new IllegalStateException("Connection is not ready after 15 sec");
 			Thread.sleep(2000);

@@ -42,4 +42,11 @@ public interface IRoQConnection {
 	 */
 	public boolean isReady() throws IllegalStateException ;
 
+	/**
+	 * This method blocks till the connection is ready, if not it returns false.
+	 * @param timeOut
+	 * @return true if the connection is ready, false if it goes on time out.
+	 */
+	public boolean blockTillReady(int timeOut);
+
 }

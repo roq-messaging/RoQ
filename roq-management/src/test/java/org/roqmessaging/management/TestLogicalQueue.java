@@ -138,12 +138,7 @@ public class TestLogicalQueue {
 		// 2. Creating the publisher and sending message
 		IRoQPublisher publisher = connection.createPublisher();
 		//3. Wait for the connection is established before sending the first message
-		int attemp=0;
-		while(	!connection.isReady()&& attemp<6){
-			Thread.sleep(3000);
-			logger.info("Waiting for connection ready..." + attemp*3 +" sec");
-			attemp++;
-		}
+		connection.blockTillReady(10000);
 		//4. Sending the message
 		publisher.sendMessage("key".getBytes(), "hello".getBytes());
 
