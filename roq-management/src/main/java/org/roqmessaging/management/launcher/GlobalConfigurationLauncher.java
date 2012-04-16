@@ -15,6 +15,7 @@
 package org.roqmessaging.management.launcher;
 
 import org.roqmessaging.management.GlobalConfigurationManager;
+import org.roqmessaging.management.launcher.hook.ShutDownHook;
 
 /**
  * Class GlobalConfigurationLauncher
@@ -32,7 +33,7 @@ public class GlobalConfigurationLauncher {
 	public static void main(String[] args) {
 		System.out.println("Starting the  global configuration manager");
 		GlobalConfigurationManager configurationManager = new GlobalConfigurationManager();
-		ShutDownHook hook = new ShutDownHook(configurationManager);
+		ShutDownHook hook = new ShutDownHook(configurationManager.getShutDownMonitor());
 		Runtime.getRuntime().addShutdownHook(hook);
 		Thread configThread = new Thread(configurationManager);
 		configThread.start();
@@ -44,36 +45,4 @@ public class GlobalConfigurationLauncher {
 			e.printStackTrace();
 		}
 	}
-	
-	/**
-	 * Class ShutDownHook
-	 * <p>
-	 * Description: provides a hook called when we stop the launcher
-	 * 
-	 * @author sskhiri
-	 */
-	private static class ShutDownHook extends Thread {
-		private GlobalConfigurationManager configMnger = null;
-
-		/**
-		 * Set the launcher as argument
-		 * 
-		 * @param launcher
-		 *            the RaQall in 1 local launcher
-		 */
-		public ShutDownHook(GlobalConfigurationManager manager) {
-			this.configMnger = manager;
-		}
-
-		public void run() {
-			System.out.println("Running Clean Up...");
-			try {
-				this.configMnger.getShutDownMonitor().shutDown();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	
-	}
-
 }
