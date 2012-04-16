@@ -72,6 +72,16 @@ public interface RoQConstant {
 	public static int INIT_REQ =2;
 	
 	/**
+	 * Recived by a publisher when its exchange is lost
+	 */
+	public static int EXCHANGE_LOST=2;
+	
+	/**
+	 * Debug code
+	 */
+	public static int DEBUG =3;
+	
+	/**
 	 * From  Exchange
 	 * Notifies the most productive producer to re-locate.
 	 *  Sends “4,reqID,reqIDcount,msgCount“

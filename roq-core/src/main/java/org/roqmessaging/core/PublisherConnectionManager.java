@@ -132,14 +132,14 @@ public class PublisherConnectionManager implements Runnable {
 				int infoCode = Integer.parseInt(info[0]);
 
 				switch (infoCode) {
-				case 1:
+				case RoQConstant.REQUEST_RELOCATION:
 					// Relocation notice
 					// Because the message is broadcasting to all publishers we need to filter on ID
 					if (info[1].equals(s_ID)) {
 						rellocateExchange(info[2]);
 					}
 					break;
-				case 2:
+				case RoQConstant.EXCHANGE_LOST:
 					// Panic
 					if (info[1].equals(s_currentExchange)) {
 						logger.warn("Panic, my exchange is lost! " + info[1]);

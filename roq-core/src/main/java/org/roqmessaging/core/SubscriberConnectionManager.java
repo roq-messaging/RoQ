@@ -219,7 +219,7 @@ public class SubscriberConnectionManager implements Runnable {
 				String info[] = new String(monitorSub.recv(0)).split(",");
 				int infoCode = Integer.parseInt(info[0]);
 
-				if (infoCode == 1 && !info[1].equals("")) { // new Exchange
+				if (infoCode == RoQConstant.REQUEST_RELOCATION && !info[1].equals("")) { // new Exchange
 															// available message
 					logger.info("listening to " + info[1]);
 					if (!knownHosts.contains(info[1])) {

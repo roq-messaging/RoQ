@@ -295,7 +295,7 @@ public class Monitor implements Runnable, IStoppable {
 
 				logger.debug("Start analysing info code, the use files ="+this.useFile);
 				switch (infoCode) {
-				case 11:
+				case RoQConstant.STAT_TOTAL_SENT:
 					logger.info("1 producer finished, sent " + info[2] + " messages.");
 					try {
 						bufferedOutput.write("PROD," + RoQUtils.getInstance().getFileStamp() + ",FINISH," + info[1]
@@ -317,7 +317,7 @@ public class Monitor implements Runnable, IStoppable {
 						logger.error("Error when writing the report in the output stream", e);
 					}
 					break;
-				case 21:
+				case RoQConstant.STAT_MIN:
 					try {
 						bufferedOutput.write("EXCH," + RoQUtils.getInstance().getFileStamp() + "," + info[1] + ","
 								+ info[2] + "," + info[3] + "," + info[4] + "," + info[5] + "," + info[6]);
@@ -327,7 +327,7 @@ public class Monitor implements Runnable, IStoppable {
 						logger.error("Error when writing the report in the output stream", e);
 					}
 					break;
-				case 31:
+				case RoQConstant.STAT_TOTAL_RCVD:
 					try {
 						bufferedOutput.write("LIST," + RoQUtils.getInstance().getFileStamp() + "," + info[1] + ","
 								+ info[2] + "," + info[3] + "," + info[4] + "," + info[5]);
@@ -348,11 +348,11 @@ public class Monitor implements Runnable, IStoppable {
 					infoCode = Integer.parseInt(info[0]);
 					logger.debug("Recieving message from Exhange:"+infoCode  +" info array "+ info.length);
 					switch (infoCode) {
-					case 3:
+					case RoQConstant.DEBUG:
 						// Broker debug code
 						logger.info(info[1]);
 						break;
-					case 4:
+					case RoQConstant.EVENT_MOST_PRODUCTIVE:
 						// Broker most productive producer code
 						updateExchgMetadata(info[1], info[4], info[6]);
 						if (!info[1].equals("x")) {
@@ -363,7 +363,7 @@ public class Monitor implements Runnable, IStoppable {
 							}
 						}
 						break;
-					case 5:
+					case RoQConstant.EVENT_HEART_BEAT:
 						// Broker heartbeat code Registration
 						if (info.length==4){
 							if (logHost(info[1], info[2], info[3]) == 1) {
@@ -373,7 +373,7 @@ public class Monitor implements Runnable, IStoppable {
 								" does not contains 4 parts");
 						break;
 
-					case 6:
+					case RoQConstant.EVENT_EXCHANGE_SHUT_DONW:
 						// Broker shutdown notification
 						logger.info("Broker " + info[1] + " has left the building");
 
@@ -396,11 +396,11 @@ public class Monitor implements Runnable, IStoppable {
 				infoCode = Integer.parseInt(info[0]);
 
 				switch (infoCode) {
-				case 1:
+				case RoQConstant.CHANNEL_INIT_SUBSCRIBER:
 					logger.debug("Received init request from listener");
 					initRep.send(bcastExchg().getBytes(), 0);
 					break;
-				case 2:
+				case RoQConstant.CHANNEL_INIT_PRODUCER:
 					 logger.debug("Received init request from producer. Assigned on "+ getFreeHostForPublisher());
 					initRep.send(getFreeHostForPublisher().getBytes(), 0);
 					break;
