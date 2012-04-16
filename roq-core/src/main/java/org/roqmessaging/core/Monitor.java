@@ -279,7 +279,7 @@ public class Monitor implements Runnable, IStoppable {
 				logger.info("Alive hosts: " + bcastExchg() + " , Free host: " + getFreeHostForPublisher());
 			}
 			while (!hostsToRemove.isEmpty()) {
-				producersPub.send(("2," + knownHosts.get(hostsToRemove.get(0)).getAddress()).getBytes(), 0);
+				producersPub.send((new Integer(RoQConstant.EXCHANGE_LOST).toString()+"," + knownHosts.get(hostsToRemove.get(0)).getAddress()).getBytes(), 0);
 				knownHosts.remove((int) hostsToRemove.get(0));
 				hostsToRemove.remove(0);
 				logger.warn("Panic procedure initiated");
@@ -381,7 +381,7 @@ public class Monitor implements Runnable, IStoppable {
 							knownHosts.remove(hostLookup(info[1]));
 						}
 
-						producersPub.send(("2," + info[1]).getBytes(), 0);
+						producersPub.send((new Integer(RoQConstant.EXCHANGE_LOST).toString()+"," + info[1]).getBytes(), 0);
 						break;
 					}
 				}else{
@@ -462,21 +462,33 @@ public class Monitor implements Runnable, IStoppable {
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
 	public void shutDown() {
-		logger.info("Starting the shutdown procedure...");
-		//Stopping all exchange
-		logger.info("Stopping all exchanges...("+this.knownHosts.size()+")");
-		for (ExchangeState exchangeState_i : this.knownHosts) {
-			String address = exchangeState_i.getAddress();
-			int backport = exchangeState_i.getBackPort();
-			logger.debug("Stopping exchange on "+ address+":"+(backport+1));
-			ZMQ.Socket shutDownExChange = ZMQ.context(1).socket(ZMQ.REQ);
-			shutDownExChange.setSendTimeOut(1500);
-			shutDownExChange.connect("tcp://"+address+":"+(backport+1));
-			shutDownExChange.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
-			shutDownExChange.close();
+		try {
+			logger.info("Starting the shutdown procedure...");
+			// Stopping all exchange
+			logger.info("Stopping all exchanges...(" + this.knownHosts.size() + ")");
+			for (ExchangeState exchangeState_i : this.knownHosts) {
+				String address = exchangeState_i.getAddress();
+				int backport = exchangeState_i.getBackPort();
+				logger.debug("Stopping exchange on " + address + ":" + (backport + 1));
+				ZMQ.Socket shutDownExChange = ZMQ.context(1).socket(ZMQ.REQ);
+				shutDownExChange.setSendTimeOut(-1);
+				shutDownExChange.connect("tcp://" + address + ":" + (backport + 1));
+				if (!shutDownExChange.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0)) {
+					logger.error("Error while sending shutdown request to exchange", new IllegalStateException(
+							"The message has not been sent"));
+				} else {
+					logger.debug("Sent success fully Stopping exchange on " + address + ":" + (backport + 1));
+				}
+				shutDownExChange.close();
+			}
+			//When we shut down the exchanges, they send a exchange lost notification.
+			//Some time the notification does not arrive because the monitor has already left
+			//This could lead to not remove the exchange properly.
+			Thread.sleep(2500);
+		} catch (Exception  e) {
+			logger.error(e);
 		}
 		this.active = false;
-		
 	}
 
 	/**
