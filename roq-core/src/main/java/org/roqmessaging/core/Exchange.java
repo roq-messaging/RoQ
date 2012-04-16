@@ -232,7 +232,8 @@ public class Exchange implements Runnable, IStoppable {
 		logger.info("Inititating shutdown sequence");
 		this.active = false;
 		this.timer.cancel();
-		this.monitorPub.send((new Integer(RoQConstant.EVENT_EXCHANGE_SHUT_DONW).toString()+",shutdown").getBytes(), 0);
+		if(!this.monitorPub.send((new Integer(RoQConstant.EVENT_EXCHANGE_SHUT_DONW).toString()+",shutdown").getBytes(), 0))
+			logger.error("Error when sending Exchange shut down", new IllegalStateException("Shut down Exchange notification not sent"));
 		
 	}
 

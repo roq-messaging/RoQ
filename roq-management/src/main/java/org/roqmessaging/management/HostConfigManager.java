@@ -363,6 +363,8 @@ public class HostConfigManager implements Runnable, IStoppable {
 	}
 
 	/**
+	 * Use the encapsulation to let the shutdown monitor manage all shutdown 
+	 * related actions.
 	 * @return the shutDownMonitor
 	 */
 	public ShutDownMonitor getShutDownMonitor() {

@@ -107,7 +107,7 @@ public class TestLogicalQueue {
 			Thread.sleep(4000);
 			this.factory.removeQueue("queue1");
 			//this.factory.removeQueue("queue2");
-			Thread.sleep(3000);
+			Thread.sleep(4000);
 			// factory.createQueue("Sabri2", host);
 		} catch (IllegalStateException e) {
 			logger.error("Error while waiting", e);
@@ -127,6 +127,8 @@ public class TestLogicalQueue {
 		factory.createQueue(qName, host);
 		//Wait for the queue ready
 		Thread.sleep(2000);
+		//Add a subscriber
+		createSubscriber(qName, "key", host);
 		
 		// Add a publisher
 		RoQConnectionFactory factory = new RoQConnectionFactory("localhost");

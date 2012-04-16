@@ -15,6 +15,7 @@
 package org.roqmessaging.management.launcher;
 
 import org.roqmessaging.management.HostConfigManager;
+import org.roqmessaging.management.launcher.hook.ShutDownHook;
 
 /**
  * Class HostConfigManagerLauncher 
@@ -31,7 +32,7 @@ public class HostConfigManagerLauncher {
 	public static void main(String[] args) {
 		System.out.println("Starting the local host configuration manager");
 		HostConfigManager hostManager = new HostConfigManager();
-		ShutDownHook hook = new ShutDownHook(hostManager);
+		ShutDownHook hook = new ShutDownHook(hostManager.getShutDownMonitor());
 		Runtime.getRuntime().addShutdownHook(hook);
 		Thread configThread = new Thread(hostManager);
 		configThread.start();
@@ -44,35 +45,5 @@ public class HostConfigManagerLauncher {
 		}
 	}
 	
-	/**
-	 * Class ShutDownHook
-	 * <p>
-	 * Description: provides a hook called when we stop the launcher
-	 * 
-	 * @author sskhiri
-	 */
-	private static class ShutDownHook extends Thread {
-		private HostConfigManager hostManager = null;
-
-		/**
-		 * Set the launcher as argument
-		 * 
-		 * @param launcher
-		 *            the RaQall in 1 local launcher
-		 */
-		public ShutDownHook(HostConfigManager manager) {
-			this.hostManager = manager;
-		}
-
-		public void run() {
-			System.out.println("Running Clean Up...");
-			try {
-				this.hostManager.getShutDownMonitor().shutDown();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	
-	}
 }
 
