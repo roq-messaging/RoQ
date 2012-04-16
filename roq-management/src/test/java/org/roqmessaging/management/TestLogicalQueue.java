@@ -127,6 +127,8 @@ public class TestLogicalQueue {
 		factory.createQueue(qName, host);
 		//Wait for the queue ready
 		Thread.sleep(2000);
+		//Add a subscriber
+		createSubscriber(qName, "key", host);
 		
 		// Add a publisher
 		RoQConnectionFactory factory = new RoQConnectionFactory("localhost");
