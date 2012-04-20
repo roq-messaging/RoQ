@@ -79,7 +79,10 @@ public 	class ExchangeStatTimer extends TimerTask {
 			}
 		}
 		totalThroughput += this.statistic.getThroughput();
-		minute++;
+		if(this.minute< Integer.MAX_VALUE-1000){
+			minute++;
+		}else minute =0;
+		
 		this.statistic.setThroughput(0);
 		this.statistic.setProcessed(0);
 	}
