@@ -43,11 +43,11 @@ public class Monitor implements Runnable, IStoppable {
 	private ArrayList<ExchangeState> knownHosts;
 	private ArrayList<Integer> hostsToRemove;
 	private long maxThroughput;
-	private ZMQ.Context context;
 	private volatile boolean active = true;
 	private boolean useFile = false;
 	
 	private BufferedWriter bufferedOutput;
+	private ZMQ.Context context;
 	private ZMQ.Socket producersPub, brokerSub, initRep, listenersPub, statSub;
 	//Monitor heart beat socket, client can check that monitor is alive
 	private ZMQ.Socket heartBeat = null;
