@@ -109,6 +109,12 @@ public interface RoQConstant {
 	public static int STAT_TOTAL_RCVD= 31;
 	
 	/**
+	 * Event sent from producer every minute.
+	 * "12, s_ID , sent
+	 */
+	public static int STAT_PUB_MIN = 12;
+	
+	/**
 	 * Stat event sent every minute from exchanges to monitor.
 	 * “12,minute,totalProcessed,processed,totalthroughput,throughput,nbProd”
 	 */
@@ -177,6 +183,5 @@ public interface RoQConstant {
 	 */
 	public static int FAIL = 1101;
 
-	
 
 }

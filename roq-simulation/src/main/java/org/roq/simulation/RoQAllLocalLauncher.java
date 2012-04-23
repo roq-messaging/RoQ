@@ -31,6 +31,7 @@ public class RoQAllLocalLauncher {
 	private Logger logger = Logger.getLogger(RoQAllLocalLauncher.class);
 	private GlobalConfigurationManager configurationManager = null;
 	private HostConfigManager hostConfigManager = null;
+	private String configurationServer = "?";
 
 	/**
 	 * Starts:<br>
@@ -55,6 +56,7 @@ public class RoQAllLocalLauncher {
 		this.logger.info("Start factory config...");
 		// 3. Adding this local host as host
 		configurationManager.addHostManager(RoQUtils.getInstance().getLocalIP().toString());
+		this.configurationServer =RoQUtils.getInstance().getLocalIP().toString();
 	}
 
 	/**
@@ -112,5 +114,12 @@ public class RoQAllLocalLauncher {
 				e.printStackTrace();
 			}
 		}
+	}
+
+	/**
+	 * @return the configurationServer
+	 */
+	public String getConfigurationServer() {
+		return configurationServer;
 	}
 }

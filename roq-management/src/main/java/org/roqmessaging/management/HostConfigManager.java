@@ -271,7 +271,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * @return the monitor stat port
 	 */
 	private int getStatMonitorPort() {
-		return (this.baseStatPort + this.qMonitorMap.size());
+		return (this.baseStatPort + this.qMonitorMap.size()*2);
 	}
 
 	/**

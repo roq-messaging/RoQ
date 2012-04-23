@@ -14,17 +14,13 @@
  */
 package org.roqmessaging.core;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.interfaces.IStoppable;
-import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.core.stat.StatisticMonitor;
 import org.roqmessaging.state.ExchangeState;
 import org.zeromq.ZMQ;
 
@@ -43,15 +39,15 @@ public class Monitor implements Runnable, IStoppable {
 	private ArrayList<ExchangeState> knownHosts;
 	private ArrayList<Integer> hostsToRemove;
 	private long maxThroughput;
-	private ZMQ.Context context;
 	private volatile boolean active = true;
-	private boolean useFile = false;
-	
-	private BufferedWriter bufferedOutput;
-	private ZMQ.Socket producersPub, brokerSub, initRep, listenersPub, statSub;
+	private ZMQ.Context context;
+	private ZMQ.Socket producersPub, brokerSub, initRep, listenersPub;
 	//Monitor heart beat socket, client can check that monitor is alive
 	private ZMQ.Socket heartBeat = null;
 	private int basePort = 0;
+	
+	//The handle to the statistic monitor thread
+	private StatisticMonitor statMonitor = null;
 	//Shut down monitor
 	private ShutDownMonitor shutDownMonitor;
 
@@ -88,10 +84,10 @@ public class Monitor implements Runnable, IStoppable {
 		heartBeat = context.socket(ZMQ.REP);
 		heartBeat.bind("tcp://*:"+(basePort+4));
 		logger.debug("Heart beat request socket to "+"tcp://*:"+(basePort+4));
-
-		statSub = context.socket(ZMQ.SUB);
-		statSub.bind("tcp://*:"+ statPort);
-		statSub.subscribe("".getBytes());
+		
+		//Stat monitor init thread
+		this.statMonitor = new StatisticMonitor(statPort);
+		new Thread(this.statMonitor).start();
 		
 		//shutodown monitor
 		//initiatlisation of the shutdown thread
@@ -99,17 +95,6 @@ public class Monitor implements Runnable, IStoppable {
 		new Thread(shutDownMonitor).start();
 		logger.debug("Started shutdown monitor on "+ (basePort+5));
 		
-		if(useFile){
-			try {
-				FileWriter output = new FileWriter(("output" + RoQUtils.getInstance().getFileStamp()), true);
-				bufferedOutput = new BufferedWriter(output);
-			} catch (IOException e) {
-				logger.error("Error when openning file", e);
-			}
-		}else{
-			bufferedOutput = new BufferedWriter(new OutputStreamWriter(System.out));
-		}
-	
 	}
 	
 	private int hostLookup(String address) {
@@ -263,9 +248,8 @@ public class Monitor implements Runnable, IStoppable {
 		reportTimer.schedule(new ReportExchanges(), 0, 10000);
 
 		ZMQ.Poller items = context.poller(3);
-		items.register(statSub);//0
-		items.register(brokerSub);//1
-		items.register(initRep);//2
+		items.register(brokerSub);//0
+		items.register(initRep);//1
 
 		logger.info("Monitor started");
 		long lastPublish = System.currentTimeMillis();
@@ -288,59 +272,7 @@ public class Monitor implements Runnable, IStoppable {
 			items.poll(2000);
 
 			//3. According to the channel bit used, we can define what kind of info is sent
-			if (items.pollin(0)) { 
-				// Stats info: 1* producers, 2* exch, 3*listeners
-				String info[] = new String(statSub.recv(0)).split(",");
-				infoCode = Integer.parseInt(info[0]);
-
-				logger.debug("Start analysing info code, the use files ="+this.useFile);
-				switch (infoCode) {
-				case RoQConstant.STAT_TOTAL_SENT:
-					logger.info("1 producer finished, sent " + info[2] + " messages.");
-					try {
-						bufferedOutput.write("PROD," + RoQUtils.getInstance().getFileStamp() + ",FINISH," + info[1]
-								+ "," + info[2]);
-						bufferedOutput.newLine();
-						bufferedOutput.flush();
-					} catch (IOException e) {
-						logger.error("Error when writing the report in the output stream", e);
-					}
-					break;
-				case 12:
-					try {
-						bufferedOutput.write("PROD," + RoQUtils.getInstance().getFileStamp() + ",STAT," + info[1] + ","
-								+ info[2] + "," + info[3]);
-						bufferedOutput.newLine();
-						bufferedOutput.flush();
-
-					} catch (IOException e) {
-						logger.error("Error when writing the report in the output stream", e);
-					}
-					break;
-				case RoQConstant.STAT_MIN:
-					try {
-						bufferedOutput.write("EXCH," + RoQUtils.getInstance().getFileStamp() + "," + info[1] + ","
-								+ info[2] + "," + info[3] + "," + info[4] + "," + info[5] + "," + info[6]);
-						bufferedOutput.newLine();
-						bufferedOutput.flush();
-					} catch (IOException e) {
-						logger.error("Error when writing the report in the output stream", e);
-					}
-					break;
-				case RoQConstant.STAT_TOTAL_RCVD:
-					try {
-						bufferedOutput.write("LIST," + RoQUtils.getInstance().getFileStamp() + "," + info[1] + ","
-								+ info[2] + "," + info[3] + "," + info[4] + "," + info[5]);
-						bufferedOutput.newLine();
-						bufferedOutput.flush();
-					} catch (IOException e) {
-						logger.error("Error when writing the report in the output stream", e);
-					}
-					break;
-				}
-			}
-
-			if (items.pollin(1)) { // Info from Exchange
+			if (items.pollin(0)) { // Info from Exchange
 				String info[] = new String(brokerSub.recv(0)).split(",");
 				//Check if exchanges are present: this happens when the queue is shutting down a client is asking for a 
 				//connection
@@ -390,7 +322,7 @@ public class Monitor implements Runnable, IStoppable {
 				}
 			}
 
-			if (items.pollin(2)) { // Init socket
+			if (items.pollin(1)) { // Init socket
 				logger.debug("Received init request from either producer or listner");
 				String info[] = new String(initRep.recv(0)).split(",");
 				infoCode = Integer.parseInt(info[0]);
@@ -434,8 +366,6 @@ public class Monitor implements Runnable, IStoppable {
 		brokerSub.close();
 		initRep.close();
 		listenersPub.close();
-		statSub.close();
-
 	}
 
 
@@ -481,6 +411,7 @@ public class Monitor implements Runnable, IStoppable {
 				}
 				shutDownExChange.close();
 			}
+			this.statMonitor.shutDown();
 			//When we shut down the exchanges, they send a exchange lost notification.
 			//Some time the notification does not arrive because the monitor has already left
 			//This could lead to not remove the exchange properly.

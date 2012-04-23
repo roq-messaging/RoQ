@@ -19,13 +19,13 @@ import java.util.TimerTask;
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.Exchange;
 import org.roqmessaging.core.RoQConstant;
-import org.roqmessaging.core.data.StatData;
+import org.roqmessaging.core.data.StatDataState;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
 /**
  * Class StatTimer
- * <p> Description: The stat timer gather statistic information about a producer. This {@link StatData} data 
+ * <p> Description: The stat timer gather statistic information about a producer. This {@link StatDataState} data 
  * object is used for sharing information between the exchange and the timer.
  * 
  * @author sskhiri
@@ -33,29 +33,31 @@ import org.zeromq.ZMQ;
 public 	class ExchangeStatTimer extends TimerTask {
 	private Logger logger = Logger.getLogger(ExchangeStatTimer.class);
 	private ZMQ.Context timercontext;
-	private ZMQ.Socket timersocket;
-	private ZMQ.Socket statsPub;
+	private ZMQ.Socket monitorSocket;
+	private ZMQ.Socket statSocket;
 	private int minute;
 	private long totalThroughput;
-	private StatData statistic = null;
+	private StatDataState statistic = null;
 	private Exchange xchange = null;
 
-	public ExchangeStatTimer(Exchange xChangeRef,  StatData stat,  ZMQ.Context context ) {
+	public ExchangeStatTimer(Exchange xChangeRef,  StatDataState stat,  ZMQ.Context context ) {
 		this.xchange = xChangeRef;
 		this.timercontext = ZMQ.context(1);
-		//TODO TImersocket  == ? statsPub?
-		this.timersocket = timercontext.socket(ZMQ.PUB);
 		this.statistic=stat;
-		timersocket.connect(this.xchange.getS_monitor());
-		this.statsPub = context.socket(ZMQ.PUB);
-		this.statsPub.connect(stat.getStatHost());
+		//init the monitor socket to send info for re-allocation
+		this.monitorSocket = timercontext.socket(ZMQ.PUB);
+		this.monitorSocket.connect(this.xchange.getS_monitor());
+		//init the statistic socket that sends information to the stat monitor forwarder
+		this.statSocket = context.socket(ZMQ.PUB);
+		this.statSocket.connect(stat.getStatHost());
 		this.logger.debug("Connecting to "+ stat.getStatHost());
+		//init
 		this.minute = 0;
 		this.totalThroughput = 0;
 	}
 
 	public void run() {
-		timersocket.send((new Integer(RoQConstant.EVENT_MOST_PRODUCTIVE).toString()+"," + RoQUtils.getInstance().getLocalIP() + "," + this.xchange.getMostProducer()
+		monitorSocket.send((new Integer(RoQConstant.EVENT_MOST_PRODUCTIVE).toString()+"," + RoQUtils.getInstance().getLocalIP() + "," + this.xchange.getMostProducer()
 				+ "," + this.statistic.getThroughput() + "," + this.statistic.getMax_bw() + "," + this.xchange.getKnownProd().size())
 				.getBytes(), 0);
 		logger.info(RoQUtils.getInstance().getLocalIP() + " : minute " + minute + " : "
@@ -63,10 +65,17 @@ public 	class ExchangeStatTimer extends TimerTask {
 				+ " producers connected");
 		logger.info(RoQUtils.getInstance().getLocalIP() + " : minute " + minute + " : "
 				+ this.xchange.getMostProducer());
+		
        this.statistic.setTotalProcessed(this.statistic.getTotalProcessed()+this.statistic.getProcessed());
-		statsPub.send((new Integer(RoQConstant.STAT_MIN).toString()+"" + minute + "," + this.statistic.getTotalProcessed() + ","
-				+ this.statistic.getProcessed() + "," + totalThroughput + "," + this.statistic.getThroughput()
-				+ "," + this.xchange.getKnownProd().size()).getBytes(), 0);
+       
+		statSocket.send((
+				new Integer(RoQConstant.STAT_MIN).toString()+","
+		                + minute + "," 
+						+ this.statistic.getTotalProcessed() + ","
+					 	+ this.statistic.getProcessed() + "," 
+		                + totalThroughput + ","
+					   	+ this.statistic.getThroughput()	+ "," 
+		                + this.xchange.getKnownProd().size()).getBytes(), 0);
 
 		for (int i = 0; i < this.xchange.getKnownProd().size(); i++) {
 			if (!this.xchange.getKnownProd().get(i).isActive()) {
@@ -79,8 +88,22 @@ public 	class ExchangeStatTimer extends TimerTask {
 			}
 		}
 		totalThroughput += this.statistic.getThroughput();
-		minute++;
+		if(this.minute< Integer.MAX_VALUE-1000){
+			minute++;
+		}else minute =0;
+		
 		this.statistic.setThroughput(0);
 		this.statistic.setProcessed(0);
 	}
+	
+	/**
+	 * @see java.util.TimerTask#cancel()
+	 */
+	@Override
+	public boolean cancel() {
+		this.monitorSocket.close();
+		this.statSocket.close();
+		return super.cancel();
+	}
+	
 }
