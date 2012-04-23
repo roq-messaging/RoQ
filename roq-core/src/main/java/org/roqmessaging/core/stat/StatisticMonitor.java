@@ -12,7 +12,7 @@
  * limitations under the License.
  * 
  */
-package org.roqmessaging.core;
+package org.roqmessaging.core.stat;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.interfaces.IStoppable;
