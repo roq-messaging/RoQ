@@ -20,7 +20,7 @@ package org.roqmessaging.core.data;
  * 
  * @author sskhiri
  */
-public class StatData {
+public class StatDataState {
 	private String statHost =null;
 	private long throughput = 0;
 	private long max_bw=0;

@@ -16,6 +16,7 @@ package org.roqmessaging.core.stat;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.interfaces.IStoppable;
+import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
 /**
@@ -51,7 +52,7 @@ public class StatisticMonitor implements Runnable, IStoppable {
 		this.statPort = statPort;
 		//Start the sub socket from RoQ elements
 		statSub = context.socket(ZMQ.SUB);
-		statSub.bind("tcp://*:"+ statPort);
+		statSub.connect("tcp://"+RoQUtils.getInstance().getLocalIP()+":"+ statPort);
 		statSub.subscribe("".getBytes());
 		
 		//Start the forwarder element

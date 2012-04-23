@@ -17,6 +17,10 @@ package org.roq.simulation;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.roq.simulation.stat.KPISubscriber;
+import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
+import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.management.LogicalQFactory;
 
 /**
  * Class TestStatMonitor
@@ -26,6 +30,7 @@ import org.junit.Test;
  */
 public class TestStatMonitor {
 	private RoQAllLocalLauncher launcher = null;
+	private 	KPISubscriber kpiSubscriber = null;
 	
 	/**
 	 * @throws java.lang.Exception
@@ -42,12 +47,31 @@ public class TestStatMonitor {
 	@After
 	public void tearDown() throws Exception {
 		this.launcher.tearDown();
+		this.kpiSubscriber.shutDown();
 	}
 
 	@Test
 	public void test() {
-		//1. Init the KPI subscriber
-		//2. Check the content
+		//1. Create a Queue
+		IRoQLogicalQueueFactory logicalQFactory = new LogicalQFactory(launcher.getConfigurationServer());
+		logicalQFactory.createQueue("queue1", RoQUtils.getInstance().getLocalIP());
+		
+		//2. Init the KPI subscriber
+		kpiSubscriber = new KPISubscriber(launcher.getConfigurationServer(), "queue1", false);
+		new Thread(kpiSubscriber).start();
+		
+		//3 Wait &. Check the content
+		try {
+			Thread.sleep(30000);
+			
+			//Delete the queue
+			logicalQFactory.removeQueue("queue1");
+			Thread.sleep(2000);
+			
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
 	}
 
 }

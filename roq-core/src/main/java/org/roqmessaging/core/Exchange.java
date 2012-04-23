@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Timer;
 
 import org.apache.log4j.Logger;
-import org.roqmessaging.core.data.StatData;
+import org.roqmessaging.core.data.StatDataState;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.timer.ExchangeStatTimer;
 import org.roqmessaging.core.timer.Heartbeat;
@@ -47,7 +47,7 @@ public class Exchange implements Runnable, IStoppable {
 	private String s_frontend;
 	private String s_backend;
 	private String s_monitor;
-	private StatData statistic=null;
+	private StatDataState statistic=null;
 	private int frontEnd, backEnd;
 	//the heart beat and the stat
 	private Timer timer = null;
@@ -68,7 +68,7 @@ public class Exchange implements Runnable, IStoppable {
 	 */
 	public Exchange(int frontend, int backend, String monitorHost, String statHost) {
 		knownProd = new ArrayList<ProducerState>();
-		this.statistic = new StatData();
+		this.statistic = new StatDataState();
 		this.statistic.setProcessed(0);
 		this.statistic.setThroughput(0);
 		this.statistic.setStatHost(statHost);
@@ -165,13 +165,13 @@ public class Exchange implements Runnable, IStoppable {
 			part = 0;
 			//Set the poll time out, it returns either when someting arrive or when it time out
 			poller.poll(this.timeout);
-			do {
-				/*  ** Message multi part construction **
-				 * 1: routing key
-				 * 2: producer ID
-				 * 3: payload
-				 */ 
-				if (poller.pollin(0)) {
+			if (poller.pollin(0)) {
+				do {
+					/*
+					 *  ** Message multi part construction ** 1: routing key 2:
+					 * producer ID 3: payload
+					 */
+
 					message = frontendSub.recv(0);
 					part++;
 					if (part == 2) {
@@ -183,10 +183,10 @@ public class Exchange implements Runnable, IStoppable {
 					backendPub.send(message, frontendSub.hasReceiveMore() ? ZMQ.SNDMORE : 0);
 					// if (!frontendSub.hasReceiveMore())
 					// break;
-				}
-			}while (this.frontendSub.hasReceiveMore() && this.active);
-			
-			this.statistic.setProcessed(this.statistic.getProcessed()+1);
+
+				} while (this.frontendSub.hasReceiveMore() && this.active);
+				this.statistic.setProcessed(this.statistic.getProcessed() + 1);
+			}
 		}
 		closeSockets();
 		logger.info("Stopping Exchange "+frontEnd+"->"+backEnd);

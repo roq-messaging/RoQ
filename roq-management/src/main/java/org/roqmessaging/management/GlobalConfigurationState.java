@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.management;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -62,6 +63,12 @@ public class GlobalConfigurationState {
 		globalConfigReq = context.socket(ZMQ.REQ);
 		globalConfigReq.connect("tcp://" + this.configServer + ":5000");
 		this.clientID =String.valueOf(System.currentTimeMillis()) + "globalconfigclientState";
+		
+		//init map
+		this.hostManagerMap = new HashMap<String, ZMQ.Socket>();
+		this.queueHostLocation = new HashMap<String, String>();
+		this.queueMonitorMap = new HashMap<String, String>();
+		this.queueMonitorStatMap = new HashMap<String, String>();
 	}
 	
 	
@@ -94,6 +101,58 @@ public class GlobalConfigurationState {
 		}
 		logger.info("Getting configuration with " + hostManagers.size() + " Host managers and "
 				+ queueMonitorMap.size() + " queues");
+		updateLocalConfiguration(hostManagers);
+	}
+	
+	/**
+	 * Update the local configuration according to the refreshed list of host
+	 * managers. According to the delta it removes or adds new sockets.
+	 * <p>
+	 * This method connects directly all the host managers. If really to many
+	 * host we can imagine to connect the host only when we need, a kind a lazy
+	 * loading, but it is not yet implemented.
+	 * 
+	 * @param hostManagers
+	 *            the new list of host manager
+	 */
+	private void updateLocalConfiguration(List<String> hostManagers) {
+		// Create the socket for all host manager that are new or remove the old
+		// ones
+		logger.debug("Updating new local configuration");
+		List<String> toRemove = new ArrayList<String>();
+		List<String> toAdd = new ArrayList<String>();
+		// 1. Remove the old one
+		for (String existingHost : hostManagerMap.keySet()) {
+			if (!hostManagers.contains(existingHost)) {
+				// must be removed
+				toRemove.add(existingHost);
+			}
+		}
+		for (String hostToRemove : toRemove) {
+			logger.debug("Removing to " + hostToRemove);
+			ZMQ.Socket socket = this.hostManagerMap.remove(hostToRemove);
+			socket.close();
+		}
+		// 2. To add
+		for (String hostAddress : hostManagers) {
+			if (!this.hostManagerMap.containsKey(hostAddress)) {
+				// Must create one
+				toAdd.add(hostAddress);
+			}
+		}
+		for (String hostToadd : toAdd) {
+			try {
+				ZMQ.Socket socket = context.socket(ZMQ.REQ);
+				String address = "tcp://" + hostToadd + ":5100";
+				logger.debug("Connect to " + address);
+				socket.setSendTimeOut(3500);
+				socket.connect(address);
+				this.hostManagerMap.put(hostToadd, socket);
+				logger.debug("Added host " + hostToadd + " in the local configuration");
+			} catch (Exception e) {
+				logger.error("Error when connecting to host " + hostToadd, e);
+			}
+		}
 	}
 	
 	

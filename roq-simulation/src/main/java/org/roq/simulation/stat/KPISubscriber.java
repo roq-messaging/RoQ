@@ -21,6 +21,7 @@ import java.io.OutputStreamWriter;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.GlobalConfigurationState;
 import org.zeromq.ZMQ;
@@ -31,7 +32,7 @@ import org.zeromq.ZMQ;
  * 
  * @author sskhiri
  */
-public class KPISubscriber implements Runnable{
+public class KPISubscriber implements Runnable, IStoppable{
 	//ZMQ configuration
 	private ZMQ.Context context = null;
 	
@@ -118,7 +119,7 @@ public class KPISubscriber implements Runnable{
 				String info[] = new String(kpiSocket.recv(0)).split(",");
 				infoCode = Integer.parseInt(info[0]);
 
-				logger.debug("Start analysing info code, the use files ="+this.useFile);
+				logger.debug("Start analysing info code, the use files ="+this.useFile +", code ="+ infoCode);
 				switch (infoCode) {
 				case RoQConstant.STAT_TOTAL_SENT:
 					logger.info("1 producer finished, sent " + info[2] + " messages.");
@@ -131,7 +132,7 @@ public class KPISubscriber implements Runnable{
 						logger.error("Error when writing the report in the output stream", e);
 					}
 					break;
-				case 12:
+				case RoQConstant.STAT_PUB_MIN:
 					try {
 						bufferedOutput.write("PROD," + RoQUtils.getInstance().getFileStamp() + ",STAT," + info[1] + ","
 								+ info[2] + "," + info[3]);
@@ -144,8 +145,14 @@ public class KPISubscriber implements Runnable{
 					break;
 				case RoQConstant.STAT_MIN:
 					try {
-						bufferedOutput.write("EXCH," + RoQUtils.getInstance().getFileStamp() + "," + info[1] + ","
-								+ info[2] + "," + info[3] + "," + info[4] + "," + info[5] + "," + info[6]);
+						bufferedOutput.write("EXCH,"
+					+ RoQUtils.getInstance().getFileStamp() + "," +
+								info[1] + ","
+					+ info[2] + ","
+								+ info[3] + "," 
+					+ info[4] + ","
+								+ info[5] + "," 
+					+ info[6]);
 						bufferedOutput.newLine();
 						bufferedOutput.flush();
 					} catch (IOException e) {
@@ -167,6 +174,27 @@ public class KPISubscriber implements Runnable{
 			}
 		}
 		
+	}
+
+	/* (non-Javadoc)
+	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
+	 */
+	public void shutDown() {
+		this.active = false;
+		this.kpiSocket.close();
+		try {
+			this.bufferedOutput.close();
+		} catch (IOException e) {
+			logger.error("Error while closing the buffer output stream", e);
+		}
+		
+	}
+
+	/* (non-Javadoc)
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return "KPI subscriber";
 	}
 
 }

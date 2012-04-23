@@ -63,10 +63,6 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		globalConfigReq = context.socket(ZMQ.REQ);
 		globalConfigReq.connect("tcp://" + this.configServer + ":5000");
 		this.configurationState = new GlobalConfigurationState(this.configServer);
-//		this.hostManagerMap = new HashMap<String, ZMQ.Socket>();
-//		this.queueHostLocation = new HashMap<String, String>();
-//		this.queueMonitorMap = new HashMap<String, String>();
-//		this.queueMonitorStatMap = new HashMap<String, String>();
 	}
 
 	/**
