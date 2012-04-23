@@ -241,7 +241,7 @@ public class SubscriberConnectionManager implements Runnable {
 						computeLatency(Long.parseLong(new String(request, 0, request.length - 1)));
 					}
 				}
-				logger.debug("Recieving message " +  new String(request,0,request.length) + " key : "+ new String(request,0,request.length));
+				//logger.debug("Recieving message " +  new String(request,0,request.length) + " key : "+ new String(request,0,request.length));
 				//delivering to the message listener
 				if(Arrays.equals(subkey, key)){
 					this.subscriber.onEvent(request);

@@ -14,11 +14,18 @@
  */
 package org.roq.simulation;
 
+import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.roq.simulation.stat.KPISubscriber;
+import org.roqmessaging.client.IRoQConnection;
+import org.roqmessaging.client.IRoQPublisher;
+import org.roqmessaging.client.IRoQSubscriber;
+import org.roqmessaging.client.IRoQSubscriberConnection;
+import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
+import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.LogicalQFactory;
 
@@ -31,6 +38,7 @@ import org.roqmessaging.management.LogicalQFactory;
 public class TestStatMonitor {
 	private RoQAllLocalLauncher launcher = null;
 	private 	KPISubscriber kpiSubscriber = null;
+	private Logger logger = Logger.getLogger(TestStatMonitor.class);
 	
 	/**
 	 * @throws java.lang.Exception
@@ -60,9 +68,49 @@ public class TestStatMonitor {
 		kpiSubscriber = new KPISubscriber(launcher.getConfigurationServer(), "queue1", false);
 		new Thread(kpiSubscriber).start();
 		
+		//3. Create a subscriber
+		IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getConfigurationServer());
+		// add a subscriber
+		IRoQSubscriberConnection subConnection = factory.createRoQSubscriberConnection("queue1", "key");
+		// Open the connection to the logical queue
+		subConnection.open();
+		// Register a message listener
+		IRoQSubscriber subs = new IRoQSubscriber() {
+			public void onEvent(byte[] msg) {
+				String content = new String(msg, 0, msg.length);
+				assert content.equals("hello");
+				//logger.info("In message lIstener recieveing :" + content);
+			}
+		};
+		subConnection.setMessageSubscriber(subs);
+		
+		//4. Create a publisher// Add a publisher
+		// Creating the connection
+		IRoQConnection connection = factory.createRoQConnection("queue1");
+		connection.open();
+		// Creating the publisher and sending message
+		IRoQPublisher publisher = connection.createPublisher();
+		// Wait for the connection is established before sending the first message
+		connection.blockTillReady(10000);
+		
+		//5 Sending the message
+		logger.info("Sending MESSAGES ...");
+		for (int i = 0; i < 500; i++) {
+			publisher.sendMessage("key".getBytes(), ("hello"+i).getBytes());
+		}
+		
 		//3 Wait &. Check the content
 		try {
-			Thread.sleep(30000);
+			Thread.sleep(8000);
+			logger.info("Sending MESSAGES ...");
+			for (int i = 0; i < 500; i++) {
+				publisher.sendMessage("key".getBytes(), ("hello"+i).getBytes());
+			}
+			Thread.sleep(15000);
+			
+			//End close connection
+			connection.close();
+			subConnection.close();
 			
 			//Delete the queue
 			logicalQFactory.removeQueue("queue1");
