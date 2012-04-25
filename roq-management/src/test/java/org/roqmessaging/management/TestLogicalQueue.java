@@ -54,7 +54,7 @@ public class TestLogicalQueue {
 		}
 		this.logger.info("Start host config...");
 		if (hostConfigManager == null) {
-			hostConfigManager = new HostConfigManager();
+			hostConfigManager = new HostConfigManager("localhost");
 			Thread hostThread = new Thread(hostConfigManager);
 			hostThread.start();
 		}
@@ -75,28 +75,22 @@ public class TestLogicalQueue {
 	}
 
 	@Test
-	public void testQueueTopologyRequest() {
-		logger.info("Start the main test");
+	public void testCreateQueueRequest() {
 		// Let 1 sec to init the thread
 		try {
 			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			logger.error("Error while waiting", e);
 		}
+		logger.info("Test refresh");
 		factory.refreshTopology();
-	}
-
-	@Test
-	public void testCreateQueueRequest() {
 		try {
 			Thread.sleep(500);
 		} catch (InterruptedException e) {
 			logger.error("Error while waiting", e);
 		}
-		// 1. Add new host
+		// 1. Add new host - now it is automatic
 		String host = RoQUtils.getInstance().getLocalIP();
-		this.configurationManager.addHostManager(host);
-	
 		try {
 			// 2. test the  Q
 			testQueue("queue1");

@@ -79,7 +79,7 @@ public class BasicSetupTest {
 		//1. start a host config manager
 		this.logger.info("Start host config...");
 		if(hostConfigManager==null){
-			hostConfigManager = new HostConfigManager();
+			hostConfigManager = new HostConfigManager("localhost");
 			// add a fake queue in the host config manager
 			this.hostConfigManager.getqMonitorMap().put("queue1", "tcp://localhost:"+basePort);
 			Thread hostThread = new Thread(hostConfigManager);
@@ -89,7 +89,6 @@ public class BasicSetupTest {
 		// if we use the logical q Factory API we would not need to cheat
 		configManager.addQueueName("queue1", "tcp://localhost:"+basePort);
 		configManager.addQueueStatMonitor("queue1", "tcp://localhost:"+stat);
-		configManager.addHostManager("localhost");
 		configManager.addQueueLocation("queue1", "localhost");
 		Thread thread = new Thread(configManager);
 		thread.start();

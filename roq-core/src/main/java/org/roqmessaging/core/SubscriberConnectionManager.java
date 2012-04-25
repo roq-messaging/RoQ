@@ -115,7 +115,7 @@ public class SubscriberConnectionManager implements Runnable {
 			} else {
 				meanLat = Math.round(latency / latenced);
 			}
-			logger.info("Total latency: " + latency + " Received: " + received + " Latenced: " + latenced + " Mean: "
+			logger.debug("Total latency: " + latency + " Received: " + received + " Latenced: " + latenced + " Mean: "
 					+ meanLat + " " + "milliseconds");
 
 			statsPub.send(
