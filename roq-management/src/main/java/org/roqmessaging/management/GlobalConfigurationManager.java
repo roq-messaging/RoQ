@@ -142,9 +142,12 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				case RoQConstant.CONFIG_ADD_HOST:
 					logger.debug("Recieveing ADD HOST request from a client ");
 					if (info.length == 2) {
-						logger.debug("The request format is valid ");
+						logger.debug("The request format is valid adding as host : "+ info[1]);
 						// The logical queue config is sent int the part 2
 						addHostManager(info[1]);
+						this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+					}else{
+						this.clientReqSocket.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
 					}
 					break;
 					

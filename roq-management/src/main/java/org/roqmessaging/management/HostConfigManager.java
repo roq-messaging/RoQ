@@ -47,6 +47,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 
 	// ZMQ config
 	private ZMQ.Socket clientReqSocket = null;
+	private ZMQ.Socket globalConfigSocket =null;
 	private ZMQ.Context context;
 	// Logger
 	private Logger logger = Logger.getLogger(HostConfigManager.class);
@@ -64,24 +65,31 @@ public class HostConfigManager implements Runnable, IStoppable {
 	private HashMap<String, String> qMonitorStatMap = null;
 	// [qName, list of Xchanges]
 	private HashMap<String, List<String>> qExchangeMap = null;
+	//The shutdown monitor
 	private ShutDownMonitor shutDownMonitor = null;
+	//The lock to avoid any race condition
 	private Lock lockRemoveQ = new ReentrantLock();
 	private RoQSerializationUtils serializationUtils = null;
 
 	/**
 	 * Constructor
 	 */
-	public HostConfigManager() {
+	public HostConfigManager(String globalConfigurationServer) {
 		// ZMQ Init
 		this.context = ZMQ.context(1);
 		this.clientReqSocket = context.socket(ZMQ.REP);
 		this.clientReqSocket.bind("tcp://*:5100");
+		this.globalConfigSocket = context.socket(ZMQ.REQ);
+		this.globalConfigSocket.connect("tcp://"+globalConfigurationServer+":5000");
+		//Init the map
 		this.qExchangeMap = new HashMap<String, List<String>>();
 		this.qMonitorMap = new HashMap<String, String>();
 		this.qMonitorStatMap = new HashMap<String, String>();
+		//Init the shutdown monitor
 		this.shutDownMonitor = new ShutDownMonitor(5101, this);
-		this.serializationUtils =  new RoQSerializationUtils();
 		new Thread(this.shutDownMonitor).start();
+		//Global init
+		this.serializationUtils =  new RoQSerializationUtils();
 	}
 
 	/**
@@ -89,6 +97,8 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 */
 	public void run() {
 		this.running = true;
+		//1. Register to the global configuration
+		registerHost();
 		// ZMQ init
 		ZMQ.Poller items = context.poller(1);
 		items.register(this.clientReqSocket);
@@ -171,6 +181,22 @@ public class HostConfigManager implements Runnable, IStoppable {
 			}
 		}
 		this.clientReqSocket.close();
+	}
+
+	/**
+	 * Register the host config manager to the global configration
+	 */
+	private void registerHost() throws IllegalStateException {
+		logger.info("Registration process started");
+		this.globalConfigSocket.send((new Integer(RoQConstant.CONFIG_ADD_HOST).toString()+","+RoQUtils.getInstance().getLocalIP()).getBytes(),0);
+		String   info[] = new String (this.globalConfigSocket.recv(0)).split(",");
+		int infoCode = Integer.parseInt(info[0]);
+		logger.debug("Start analysing info code = "+ infoCode);
+		if(infoCode != RoQConstant.OK){
+			throw new IllegalStateException("The global config manager cannot register us ..");
+		}
+		logger.info("Registration process sucessfull");
+		
 	}
 
 	/**

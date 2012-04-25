@@ -43,6 +43,7 @@ public class RoQAllLocalLauncher {
 	 */
 	public void setUp() throws Exception {
 		// 1. Start the configuration
+		this.configurationServer =RoQUtils.getInstance().getLocalIP().toString();
 		this.logger.info("Initial setup Start global config thread");
 		this.logger.info("Start global config...");
 		configurationManager = new GlobalConfigurationManager();
@@ -50,13 +51,13 @@ public class RoQAllLocalLauncher {
 		configThread.start();
 		// 2. Start the host configuration manager locally
 		this.logger.info("Start host config....");
-		hostConfigManager = new HostConfigManager();
+		hostConfigManager = new HostConfigManager(this.configurationServer);
 		Thread hostThread = new Thread(hostConfigManager);
 		hostThread.start();
 		this.logger.info("Start factory config...");
 		// 3. Adding this local host as host
-		configurationManager.addHostManager(RoQUtils.getInstance().getLocalIP().toString());
-		this.configurationServer =RoQUtils.getInstance().getLocalIP().toString();
+		//configurationManager.addHostManager(RoQUtils.getInstance().getLocalIP().toString());
+		
 	}
 
 	/**

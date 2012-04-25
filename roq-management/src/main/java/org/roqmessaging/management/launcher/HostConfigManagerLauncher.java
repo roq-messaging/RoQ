@@ -20,7 +20,7 @@ import org.roqmessaging.management.launcher.hook.ShutDownHook;
 /**
  * Class HostConfigManagerLauncher 
  * <p> Description: Launcher for {@linkplain HostConfigManager}
- * Launched by  java -Djava.library.path=/usr/local/lib -cp roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar org.roqmessaging.management.launcher.HostConfigManagerLauncher
+ * Launched by  java -Djava.library.path=/usr/local/lib -cp roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar org.roqmessaging.management.launcher.HostConfigManagerLauncher <global config IP>
  * 
  * @author sskhiri
  */
@@ -31,7 +31,11 @@ public class HostConfigManagerLauncher {
 	 */
 	public static void main(String[] args) {
 		System.out.println("Starting the local host configuration manager");
-		HostConfigManager hostManager = new HostConfigManager();
+		if(args.length !=1){
+			System.out.println("you must provide the global config manager server address");
+		}
+		System.out.println("Register on " +args[0]);
+		HostConfigManager hostManager = new HostConfigManager(args[0]);
 		ShutDownHook hook = new ShutDownHook(hostManager.getShutDownMonitor());
 		Runtime.getRuntime().addShutdownHook(hook);
 		Thread configThread = new Thread(hostManager);
