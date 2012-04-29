@@ -1,26 +1,23 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<?xml version="1.0"?>
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<modelVersion>4.0.0</modelVersion>
-
-	<groupId>org.roqmessaging.core</groupId>
-	<artifactId>roq-core</artifactId>
-	<name>RoQ core</name>
+	<artifactId>roq-management</artifactId>
+	<name>roq-management</name>
 	<packaging>jar</packaging>
-	<url>https://github.com/roq-messaging/RoQ</url>
+	<url>https://github.com/roq-messaging/RoQ/</url>
 
 	<parent>
 		<groupId>org.roqmessaging</groupId>
 		<artifactId>roq-parent</artifactId>
 		<version>1.0-SNAPSHOT</version>
 	</parent>
-
 	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>2.2</version>
-				<!-- nothing here anymore -->
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -32,8 +29,7 @@
 					</descriptorRefs>
 					<archive>
 						<manifest>
-							<mainClass>org.roqmessaging.core.launcher.MonitorLauncher</mainClass>
-							<mainClass>org.roqmessaging.core.launcher.ExchangeLauncher</mainClass>
+							<mainClass>org.roqmessaging.management.launcher.HostConfigManagerLauncher</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
@@ -46,7 +42,6 @@
 					</execution>
 				</executions>
 			</plugin>
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
@@ -58,7 +53,9 @@
 			</plugin>
 		</plugins>
 	</build>
-
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
@@ -66,24 +63,14 @@
 			<version>4.10</version>
 		</dependency>
 		<dependency>
-			<groupId>log4j</groupId>
-			<artifactId>log4j</artifactId>
-			<version>1.2.16</version>
-		</dependency>
-		<dependency>
-			<groupId>org.zeromq</groupId>
-			<artifactId>jzmq</artifactId>
-			<version>1.0.0</version>
-		</dependency>
-		<dependency>
 			<groupId>org.roqmessaging</groupId>
 			<artifactId>roq-clientlib</artifactId>
 			<version>1.0-SNAPSHOT</version>
-			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.roqmessaging.core</groupId>
+			<artifactId>roq-core</artifactId>
+			<version>1.0-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
-	<organization>
-		<name>EURA NOVA</name>
-		<url>http://euranova.eu</url>
-	</organization>
 </project>
