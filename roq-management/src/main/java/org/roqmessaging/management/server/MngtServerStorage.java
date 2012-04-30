@@ -31,15 +31,15 @@ import org.roqmessaging.management.HostConfigManager;
  * 
  * @author sskhiri
  */
-public class MngtServerStorageFacade {
-	private Logger logger = Logger.getLogger(MngtServerStorageFacade.class);
+public class MngtServerStorage {
+	private Logger logger = Logger.getLogger(MngtServerStorage.class);
 	//The SQL connection
 	private  Connection connection = null;
 	
 	/**
 	 * 
 	 */
-	public MngtServerStorageFacade() {
+	public MngtServerStorage() {
 		init();
 	}
 	

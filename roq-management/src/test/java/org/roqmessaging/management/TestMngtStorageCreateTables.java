@@ -22,7 +22,7 @@ import java.sql.Statement;
 
 import org.apache.log4j.Logger;
 import org.junit.Test;
-import org.roqmessaging.management.server.MngtServerStorageFacade;
+import org.roqmessaging.management.server.MngtServerStorage;
 
 /**
  * Class TestMngtStorageCreateTables
@@ -72,7 +72,7 @@ public class TestMngtStorageCreateTables {
 	      		" FOREIGN KEY(`ConfigRef`) REFERENCES `Configuration` (idConfiguration)" +
 	      		")");
 	      //insert tuples
-	      MngtServerStorageFacade facade = new MngtServerStorageFacade();
+	      MngtServerStorage facade = new MngtServerStorage();
 	      String serverAddress = "127.0.0.1";
 	      facade.addRoQHost(serverAddress);
 	      facade.addRoQHost("1270.1.2");
