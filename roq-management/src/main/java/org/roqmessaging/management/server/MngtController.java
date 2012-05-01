@@ -18,6 +18,7 @@ import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.management.GlobalConfigurationManager;
@@ -28,6 +29,10 @@ import org.zeromq.ZMQ;
  * <p>
  * Description: Controller that loads/receive data from the
  * {@linkplain GlobalConfigurationManager} and refresh the stored data.
+ * Global config manager: 5000 <br>
+ * Global config manager pub sub port 5001<br>
+ * Shutdown moonitor port 5002
+ * 
  * 
  * @author sskhiri
  */
@@ -38,6 +43,7 @@ public class MngtController implements Runnable, IStoppable {
 	private ZMQ.Socket mngtSubSocket = null;
 	// running
 	private volatile boolean active = true;
+	private ShutDownMonitor shutDownMonitor = null;
 	// utils for serialization
 	private RoQSerializationUtils serializationUtils = null;
 	//Management infra
@@ -50,12 +56,34 @@ public class MngtController implements Runnable, IStoppable {
 	 *            the address on which the global config server runs.
 	 */
 	public MngtController(String globalConfigAddress) {
+		init(globalConfigAddress, 5002);
+	}
+	
+	/**
+	 * Constructor.
+	 * 
+	 * @param globalConfigAddress
+	 *            the address on which the global config server runs.
+	 *  @param shuttDownPort the port on which the shutdown monitor starts
+	 */
+	public MngtController(String globalConfigAddress, int shuttDownPort) {
+		init(globalConfigAddress, shuttDownPort);
+	}
+	
+	/**
+	 * @param globalConfigAddress the global configuration server 
+	 * @param shuttDownPort the port on which the shut down thread listens
+	 */
+	private void init(String globalConfigAddress,  int shuttDownPort ){
 		// Init ZMQ
 		context = ZMQ.context(1);
 		mngtSubSocket = context.socket(ZMQ.SUB);
 		mngtSubSocket.connect("tcp://" + globalConfigAddress + ":5001");
 		// init variable
 		this.serializationUtils = new RoQSerializationUtils();
+		this.storage = new MngtServerStorage();
+		//Shutdown thread configuration
+		this.shutDownMonitor = new ShutDownMonitor(shuttDownPort, this);
 	}
 
 	/**
@@ -90,7 +118,7 @@ public class MngtController implements Runnable, IStoppable {
 					if (mngtSubSocket.hasReceiveMore()) {
 						HashMap<String, String> newConfig = this.serializationUtils.deserializeObject(mngtSubSocket
 								.recv(0));
-						updateConfiguration(newConfig);
+						storage.updateConfiguration(newConfig);
 					} else {
 						// Problem expected map here
 						logger.error("Error, expected map of (Qname, host", new IllegalStateException(
@@ -105,14 +133,6 @@ public class MngtController implements Runnable, IStoppable {
 		}
 		logger.info("Stopping " + this.getClass().getName() + " cleaning sockets");
 		this.mngtSubSocket.close();
-	}
-
-	/**
-	 * @param newConfig the updated configuration recieved each minute
-	 */
-	private void updateConfiguration(HashMap<String, String> newConfig) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	/**

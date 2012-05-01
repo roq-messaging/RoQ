@@ -18,6 +18,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.management.GlobalConfigurationManager;
@@ -110,6 +111,16 @@ public class MngtServerStorage {
 	    }catch (Exception e) {
 			logger.error("Error whil inserting new configuration", e);
 		}
+	}
+	
+	/**
+	 * @param newConfig the updated configuration recieved each minute
+	 */
+	public  void updateConfiguration(HashMap<String, String> newConfig) {
+		//1. Select name from Queues
+		//2. Check whether an existing Q is now running
+		//3. Check whether there is a new Q (created by code)
+		
 	}
 
 }
