@@ -81,7 +81,7 @@ public class MngtController implements Runnable, IStoppable {
 		mngtSubSocket.connect("tcp://" + globalConfigAddress + ":5001");
 		// init variable
 		this.serializationUtils = new RoQSerializationUtils();
-		this.storage = new MngtServerStorage();
+		this.storage = new MngtServerStorage("managementDB.db");
 		//Shutdown thread configuration
 		this.shutDownMonitor = new ShutDownMonitor(shuttDownPort, this);
 	}

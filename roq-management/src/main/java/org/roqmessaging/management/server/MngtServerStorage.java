@@ -16,13 +16,17 @@ package org.roqmessaging.management.server;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.HostConfigManager;
+import org.roqmessaging.management.server.state.QueueManagementState;
 
 /**
  * Class MngtServerController
@@ -40,16 +44,16 @@ public class MngtServerStorage {
 	/**
 	 * 
 	 */
-	public MngtServerStorage() {
-		init();
+	public MngtServerStorage(String dbName) {
+		init(dbName);
 	}
 	
-	public void init(){
+	public void init(String dbName){
 		 // load the sqlite-JDBC driver using the current class loader
 	    try {
 			Class.forName("org.sqlite.JDBC");
 		      // create a database connection
-		      connection = DriverManager.getConnection("jdbc:sqlite:sampleMngt.db");
+		      connection = DriverManager.getConnection("jdbc:sqlite:"+dbName);
 		} catch (ClassNotFoundException e1) {
 			logger.error("The SQL lite has not been installed in the class path",e1);
 		} catch (SQLException e) {
@@ -109,18 +113,90 @@ public class MngtServerStorage {
 	      statement.setQueryTimeout(10); 
 	      statement.execute("insert into Queues  values(null, '"+ name+"',"+hostRef+", "+configRef+", "+(state?1:0)+")");
 	    }catch (Exception e) {
-			logger.error("Error whil inserting new configuration", e);
+			logger.error("Error while inserting new configuration", e);
 		}
+	}
+	
+	/**
+	 * Read all queues definition in DB
+	 * @return the list of Queue states
+	 * @throws SQLException 
+	 */
+	public ArrayList<QueueManagementState> getQueues() throws SQLException{
+		logger.debug("Get all queues");
+		ArrayList<QueueManagementState> result = new ArrayList<QueueManagementState>();
+		Statement statement = connection.createStatement();
+		// set timeout to 10 sec.
+		statement.setQueryTimeout(5);
+		ResultSet  rs = statement.executeQuery("select name, State, IP_Address" + " from Queues, Hosts "
+				+ "where Queues.MainhostRef=Hosts.idHosts;");
+		 while(rs.next())  {
+			 QueueManagementState state = new QueueManagementState(  rs.getString("name"), rs.getString("IP_Address"),  rs.getBoolean("State"));
+	    	 logger.debug("name = " + state.getName() + ", State = " +state.isRunning() + " IP = " + state.getHost());
+	    	 result.add(state);
+	      }
+		 return result;
 	}
 	
 	/**
 	 * @param newConfig the updated configuration recieved each minute
 	 */
-	public  void updateConfiguration(HashMap<String, String> newConfig) {
-		//1. Select name from Queues
-		//2. Check whether an existing Q is now running
-		//3. Check whether there is a new Q (created by code)
-		
+	public void updateConfiguration(HashMap<String, String> newConfig) {
+		// TODO update configuration & tests
+		try {
+			//This will define the set of new queues that are not known yet by the management
+			ArrayList<String> newQueues = new ArrayList<String>();
+					
+			// 1. Select name from Queues
+			ArrayList<QueueManagementState> queues = this.getQueues();
+			
+			// 2. Check whether an existing Q is now running
+			for (String qName : newConfig.keySet()) {
+				boolean qFound = false;
+				Iterator<QueueManagementState> iter = queues.iterator();
+				while (iter.hasNext() && !qFound ) {
+					QueueManagementState state_i = iter.next();
+					if (state_i.getName().equals(qName)) {
+						qFound = true;
+						// This means that the was known, let's check the host
+						
+						if (!state_i.getHost().equals(newConfig.get(qName))) {
+							// The queue was known but the host changed-> update
+							// the host in management DB
+							// TODO update host
+						}
+						
+						if(!state_i.isRunning() ){
+							//The Q is known but was seen as off
+							// TODO update running to true
+						}
+					}
+				}//end of inner loop
+				
+				if(!qFound){
+					newQueues.add(qName);
+				}
+			}
+			// 3. Check whether there is a new Q (created by code)
+		} catch (Exception e) {
+			logger.error("Error while updating configuration", e);
+		}
+	}
+
+	/**
+	 * @param name the logical queue name
+	 * @return the state of the queue if exists , otherwise null
+	 * @throws IllegalStateException whether there is 2 entry for the same name
+	 * @throws SQLException 
+	 */
+	public QueueManagementState getQueue(String name) throws IllegalStateException, SQLException {
+		Statement statement = connection.createStatement();
+		// set timeout to 10 sec.
+		statement.setQueryTimeout(5);
+		ResultSet  rs = statement.executeQuery("select name, State, IP_Address" + " from Queues, Hosts "
+				+ "where Queues.MainhostRef=Hosts.idHosts AND name='"+name+"';");
+		if(rs.getString("name")!=null) 	return  new QueueManagementState(  rs.getString("name"), rs.getString("IP_Address"),  rs.getBoolean("State"));
+		else return null;
 	}
 
 }
