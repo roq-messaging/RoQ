@@ -38,44 +38,36 @@ import org.roqmessaging.management.server.state.QueueManagementState;
  */
 public class MngtServerStorage {
 	private Logger logger = Logger.getLogger(MngtServerStorage.class);
-	//The SQL connection
-	private  Connection connection = null;
+	private Connection connection = null;
 	
 	/**
 	 * 
 	 */
-	public MngtServerStorage(String dbName) {
-		init(dbName);
+	public MngtServerStorage(Connection connection) {
+		this.connection = connection;
 	}
 	
-	public void init(String dbName){
-		 // load the sqlite-JDBC driver using the current class loader
-	    try {
-			Class.forName("org.sqlite.JDBC");
-		      // create a database connection
-		      connection = DriverManager.getConnection("jdbc:sqlite:"+dbName);
-		} catch (ClassNotFoundException e1) {
-			logger.error("The SQL lite has not been installed in the class path",e1);
-		} catch (SQLException e) {
-			logger.error(e);
-		}
-	}
+//	public void init(){
+//	}
 	
 	/**
 	 * @param serverAddress the address of the host on which the {@linkplain HostConfigManager}
 	 * is running.
+	 * @return the row id of the inserted tuple
 	 */
-	public void addRoQHost(String serverAddress){
+	public int addRoQHost(String serverAddress){
 		logger.info("Inserting 1 new host in configuration " +serverAddress);
 		
-		    try {
-		      Statement statement = connection.createStatement();
-		      // set timeout to 10 sec.
-		      statement.setQueryTimeout(10); 
-		      statement.execute("insert into Hosts  values(null, '"+serverAddress+"')");
-		    }catch (Exception e) {
+		try {
+			Statement statement = connection.createStatement();
+			// set timeout to 10 sec.
+			statement.setQueryTimeout(10);
+			 statement.execute("insert into Hosts  values(null, '"+serverAddress+"')");
+			return getHost(serverAddress);
+		}catch (Exception e) {
 				logger.error("Error while inserting new host",e);
 			}
+			return -1;
 	}
 	
 	/**
@@ -87,12 +79,13 @@ public class MngtServerStorage {
 	public void addConfiguration(String name, int maxEvent, int maxPub) {
 		logger.info("Inserting 1 new Exchange configuration");
 		logger.info("Inserting "+ name+" "+ maxEvent+" "+ maxPub);
-	    try {
-	      Statement statement = connection.createStatement();
-	      // set timeout to 10 sec.
-	      statement.setQueryTimeout(10); 
-	      statement.execute("insert into Configuration  values(null, '"+ name+"',"+maxEvent+", "+maxPub+")");
-	    }catch (Exception e) {
+		try {
+			Statement statement = connection.createStatement();
+			// set timeout to 10 sec.
+			statement.setQueryTimeout(10);
+			statement.execute("insert into Configuration  values(null, '" + name + "'," + maxEvent + ", " + maxPub
+					+ ")");
+		}catch (Exception e) {
 			logger.error("Error whil inserting new configuration", e);
 		}
 	}
@@ -140,20 +133,20 @@ public class MngtServerStorage {
 	
 	/**
 	 * @param newConfig the updated configuration recieved each minute
+	 * @throws SQLException 
 	 */
-	public void updateConfiguration(HashMap<String, String> newConfig) {
-		// TODO update configuration & tests
+	public void updateConfiguration(HashMap<String, String> newConfig) throws SQLException {
+		//TODO when a queue which is registred is not in the new config then we need to set running to false
 		try {
 			//This will define the set of new queues that are not known yet by the management
 			ArrayList<String> newQueues = new ArrayList<String>();
-					
 			// 1. Select name from Queues
-			ArrayList<QueueManagementState> queues = this.getQueues();
+			ArrayList<QueueManagementState> queueStates = this.getQueues();
 			
 			// 2. Check whether an existing Q is now running
 			for (String qName : newConfig.keySet()) {
 				boolean qFound = false;
-				Iterator<QueueManagementState> iter = queues.iterator();
+				Iterator<QueueManagementState> iter = queueStates.iterator();
 				while (iter.hasNext() && !qFound ) {
 					QueueManagementState state_i = iter.next();
 					if (state_i.getName().equals(qName)) {
@@ -163,13 +156,25 @@ public class MngtServerStorage {
 						if (!state_i.getHost().equals(newConfig.get(qName))) {
 							// The queue was known but the host changed-> update
 							// the host in management DB
-							// TODO update host
+							int rowID = this.getHost(newConfig.get(qName));
+							if(rowID==-1){
+								//The host on the new configuration is unknown
+								//Add the host
+								rowID = addRoQHost(newConfig.get(qName));
+							}
+							logger.debug("Update DB: update Queue "+ state_i.getName()+" with host to "+rowID);
+							Statement statement = connection.createStatement();				
+							statement.setQueryTimeout(10);
+							statement.executeUpdate("UPDATE Queues SET MainhostRef="+rowID+" where name='"+state_i.getName()+"' ;");
 						}
 						
 						if(!state_i.isRunning() ){
 							//The Q is known but was seen as off
-							// TODO update running to true
-						}
+							logger.debug("Update DB: update Queue "+ state_i.getName()+" with running TRUE");
+							Statement statement = connection.createStatement();				
+							statement.setQueryTimeout(10);
+							statement.executeUpdate("UPDATE Queues SET State=1 where name='"+state_i.getName()+"' ;");
+							}
 					}
 				}//end of inner loop
 				
@@ -177,7 +182,29 @@ public class MngtServerStorage {
 					newQueues.add(qName);
 				}
 			}
-			// 3. Check whether there is a new Q (created by code)
+			//3. Set to running false the queue that are not present anymore
+			for (QueueManagementState state_i : queueStates) {
+				if(!newConfig.containsKey(state_i.getName())){
+					//Set the queue to running false
+					logger.debug("Update DB: update Queue "+ state_i.getName()+" with running FALSE");
+					Statement statement = connection.createStatement();				
+					statement.setQueryTimeout(10);
+					statement.executeUpdate("UPDATE Queues SET State=0 where name='"+state_i.getName()+"' ;");
+				}
+			}
+			
+			// 4. Check whether there is a new Q (created by code)
+			for (String qName : newQueues) {
+				//Check whether the host is known
+				int rowID = this.getHost(newConfig.get(qName));
+				if(rowID==-1){
+					//The host on the new configuration is unknown
+					//Add the host
+					rowID = addRoQHost(newConfig.get(qName));
+				}
+				//Add the queue with default configuration 
+				this.addQueueConfiguration(qName, rowID, 1, true);
+			}
 		} catch (Exception e) {
 			logger.error("Error while updating configuration", e);
 		}
@@ -190,13 +217,31 @@ public class MngtServerStorage {
 	 * @throws SQLException 
 	 */
 	public QueueManagementState getQueue(String name) throws IllegalStateException, SQLException {
+		Connection connection = DriverManager.getConnection("jdbc:sqlite:sampleMngt.db");
 		Statement statement = connection.createStatement();
-		// set timeout to 10 sec.
+		// set timeout to 5 sec.
 		statement.setQueryTimeout(5);
 		ResultSet  rs = statement.executeQuery("select name, State, IP_Address" + " from Queues, Hosts "
 				+ "where Queues.MainhostRef=Hosts.idHosts AND name='"+name+"';");
-		if(rs.getString("name")!=null) 	return  new QueueManagementState(  rs.getString("name"), rs.getString("IP_Address"),  rs.getBoolean("State"));
-		else return null;
+		if(!rs.next()) {
+		return null;
+		}
+		else 	return  new QueueManagementState(  rs.getString("name"), rs.getString("IP_Address"),  rs.getBoolean("State"));
+	}
+	
+	/**
+	 * @param ipAddress the IP address of the host
+	 * @return the row id of the host or -1 if unknown
+	 * @throws SQLException
+	 */
+	public int getHost(String ipAddress) throws SQLException {
+		Statement statement = connection.createStatement();
+		// set timeout to 5 sec.
+		statement.setQueryTimeout(5);
+		ResultSet rs = statement.executeQuery("select idHosts from Hosts "
+				+ "WHERE IP_Address='" + ipAddress +"';");
+		if(!rs.next()) return -1;
+		else 	return rs.getInt("idHosts");
 	}
 
 }

@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.management.server;
 
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.HashMap;
 
 import org.apache.log4j.Logger;
@@ -28,8 +30,8 @@ import org.zeromq.ZMQ;
  * Class MngtController
  * <p>
  * Description: Controller that loads/receive data from the
- * {@linkplain GlobalConfigurationManager} and refresh the stored data.
- * Global config manager: 5000 <br>
+ * {@linkplain GlobalConfigurationManager} and refresh the stored data. Global
+ * config manager: 5000 <br>
  * Global config manager pub sub port 5001<br>
  * Shutdown moonitor port 5002
  * 
@@ -46,8 +48,10 @@ public class MngtController implements Runnable, IStoppable {
 	private ShutDownMonitor shutDownMonitor = null;
 	// utils for serialization
 	private RoQSerializationUtils serializationUtils = null;
-	//Management infra
+	// Management infra
 	private MngtServerStorage storage = null;
+	// The DB file
+	private String dbName = "sampleMngt.db";
 
 	/**
 	 * Constructor.
@@ -56,33 +60,45 @@ public class MngtController implements Runnable, IStoppable {
 	 *            the address on which the global config server runs.
 	 */
 	public MngtController(String globalConfigAddress) {
-		init(globalConfigAddress, 5002);
+		try {
+			init(globalConfigAddress, 5002);
+		} catch (SQLException e) {
+			logger.error("Error while initiating the SQL connection", e);
+		}
 	}
-	
+
 	/**
 	 * Constructor.
 	 * 
 	 * @param globalConfigAddress
 	 *            the address on which the global config server runs.
-	 *  @param shuttDownPort the port on which the shutdown monitor starts
+	 * @param shuttDownPort
+	 *            the port on which the shutdown monitor starts
 	 */
 	public MngtController(String globalConfigAddress, int shuttDownPort) {
-		init(globalConfigAddress, shuttDownPort);
+		try {
+			init(globalConfigAddress, shuttDownPort);
+		} catch (SQLException e) {
+			logger.error("Error while initiating the SQL connection", e);
+		}
 	}
-	
+
 	/**
-	 * @param globalConfigAddress the global configuration server 
-	 * @param shuttDownPort the port on which the shut down thread listens
+	 * @param globalConfigAddress
+	 *            the global configuration server
+	 * @param shuttDownPort
+	 *            the port on which the shut down thread listens
+	 * @throws SQLException
 	 */
-	private void init(String globalConfigAddress,  int shuttDownPort ){
+	private void init(String globalConfigAddress, int shuttDownPort) throws SQLException {
 		// Init ZMQ
 		context = ZMQ.context(1);
 		mngtSubSocket = context.socket(ZMQ.SUB);
 		mngtSubSocket.connect("tcp://" + globalConfigAddress + ":5001");
 		// init variable
 		this.serializationUtils = new RoQSerializationUtils();
-		this.storage = new MngtServerStorage("managementDB.db");
-		//Shutdown thread configuration
+		this.storage = new MngtServerStorage(DriverManager.getConnection("jdbc:sqlite:" + this.dbName));
+		// Shutdown thread configuration
 		this.shutDownMonitor = new ShutDownMonitor(shuttDownPort, this);
 	}
 
@@ -118,7 +134,11 @@ public class MngtController implements Runnable, IStoppable {
 					if (mngtSubSocket.hasReceiveMore()) {
 						HashMap<String, String> newConfig = this.serializationUtils.deserializeObject(mngtSubSocket
 								.recv(0));
-						storage.updateConfiguration(newConfig);
+						try {
+							storage.updateConfiguration(newConfig);
+						} catch (SQLException e) {
+							logger.error("Error while updating the configuration", e);
+						}
 					} else {
 						// Problem expected map here
 						logger.error("Error, expected map of (Qname, host", new IllegalStateException(
