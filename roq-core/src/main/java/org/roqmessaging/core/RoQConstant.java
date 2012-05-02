@@ -182,6 +182,15 @@ public interface RoQConstant {
 	 * Failing constant
 	 */
 	public static int FAIL = 1101;
+	
+	/*Operations for configuration management*/
+	
+	/**
+	 * Sent by the Global config manager} to the Mngt server.
+	 * Infocode
+	 * in a second message of the same envelope :  map(Q Name, host)
+	 */
+	public static int MNGT_UPDATE_CONFIG = 1500;
 
 
 }
