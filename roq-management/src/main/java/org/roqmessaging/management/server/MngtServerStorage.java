@@ -45,11 +45,50 @@ public class MngtServerStorage {
 	 */
 	public MngtServerStorage(Connection connection) {
 		this.connection = connection;
+		initSchema();
 	}
 	
-//	public void init(){
-//	}
 	
+	/**
+	 * Create the schema if it does exist yet, otherwise, does nothing.
+	 */
+	private void initSchema() {
+		String dbLocation= null;
+		try {
+			//1. Get the DB location
+			dbLocation = connection.getMetaData().getURL();
+			logger.info("Meta data:"+dbLocation);
+			
+			//2 Init the schema
+			Statement statement = connection.createStatement();
+			statement.setQueryTimeout(10);  // set timeout to 10 sec.
+			// Create scripts
+			statement
+					.executeUpdate("CREATE  TABLE IF NOT EXISTS `Hosts`"
+							+ " (  `idHosts` INTEGER PRIMARY KEY AUTOINCREMENT ,"
+							+ "  `IP_Address` VARCHAR(45) UNIQUE "
+							+ " )");
+			statement.executeUpdate("CREATE  TABLE IF NOT EXISTS `Configuration`"
+					+ " (  `idConfiguration` INTEGER PRIMARY KEY AUTOINCREMENT ,	"
+					+ "  `Name` VARCHAR(45) NOT NULL UNIQUE ,	  " 
+					+ "`MAX_EVENT_EXCHANGE` MEDIUMTEXT NULL ,"
+					+ " `MAX_PUB_EXCHANGE` MEDIUMTEXT NULL " 
+					+ "  );");
+			statement.executeUpdate("CREATE  TABLE IF NOT EXISTS `Queues` "
+					+ "( `idQueues`INTEGER PRIMARY KEY AUTOINCREMENT ," + " `Name` VARCHAR(45) NOT NULL UNIQUE ,  "
+					+ "`MainhostRef`  INT NOT NULL, "
+					+ "`ConfigRef`  INT NOT NULL,  "
+					+ "`State` INT NOT NULL,"
+					+ "  FOREIGN KEY(`MainhostRef`) REFERENCES `Hosts` (idHosts),"
+					+ " FOREIGN KEY(`ConfigRef`) REFERENCES `Configuration` (idConfiguration)"
+					+ ")");
+		} catch (SQLException e) {
+			logger.error("Error when initiating the schema", e);
+		}
+
+	}
+
+
 	/**
 	 * @param serverAddress the address of the host on which the {@linkplain HostConfigManager}
 	 * is running.

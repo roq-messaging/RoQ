@@ -100,6 +100,7 @@ public class MngtController implements Runnable, IStoppable {
 		this.storage = new MngtServerStorage(DriverManager.getConnection("jdbc:sqlite:" + this.dbName));
 		// Shutdown thread configuration
 		this.shutDownMonitor = new ShutDownMonitor(shuttDownPort, this);
+		new Thread(this.shutDownMonitor).start();
 	}
 
 	/**
@@ -168,6 +169,13 @@ public class MngtController implements Runnable, IStoppable {
 	 */
 	public String getName() {
 		return this.getClass().getName() + " Server";
+	}
+
+	/**
+	 * @return the shutDownMonitor
+	 */
+	public ShutDownMonitor getShutDownMonitor() {
+		return shutDownMonitor;
 	}
 
 }
