@@ -31,67 +31,51 @@ import org.roqmessaging.management.server.state.QueueManagementState;
 
 /**
  * Class TestMngtStorageCreateTables
- * <p> Description: Test the SQL lite storage feature and schemas creation
+ * <p>
+ * Description: Test the SQL lite storage feature and schemas creation
  * 
  * @author sskhiri
  */
 public class TestMngtStorageCreateTables {
-	private String dbName ="sampleMngt.db";
+	private String dbName = "sampleMngt.db";
 
 	private Logger logger = Logger.getLogger(TestMngtStorageCreateTables.class);
-	
+
 	@Test
 	public void testCreate() {
-		 // load the sqlite-JDBC driver using the current class loader
-	    try {
+		// load the sqlite-JDBC driver using the current class loader
+		try {
 			Class.forName("org.sqlite.JDBC");
 		} catch (ClassNotFoundException e1) {
 			logger.error(e1);
 		}
-	    
-	    Connection connection = null;
-	    try
-	    {
+
+		Connection connection = null;
+		try {
 			logger.debug("-> Test the SQL DB creation & query");
-	      // create a database connection
-	      connection = DriverManager.getConnection("jdbc:sqlite:"+this.dbName);
-	      Statement statement = connection.createStatement();
-	      statement.setQueryTimeout(30);  // set timeout to 30 sec.
-	      //Drop table if exist - clean the file
-	      statement.executeUpdate("drop table if exists Hosts");
-	      statement.executeUpdate("drop table if exists Configuration");
-	      statement.executeUpdate("drop table if exists Queues");
-	      //Create scripts
-	      statement.executeUpdate("CREATE  TABLE IF NOT EXISTS `Hosts` (  `idHosts` INTEGER PRIMARY KEY AUTOINCREMENT ," +
-	      		"  `IP_Address` VARCHAR(45) UNIQUE " +
-	      		" )");
-	      statement.executeUpdate("CREATE  TABLE IF NOT EXISTS `Configuration` (  `idConfiguration` INTEGER PRIMARY KEY AUTOINCREMENT ,	" +
-	      		"  `Name` VARCHAR(45) NOT NULL UNIQUE ,	  " +
-	      		"`MAX_EVENT_EXCHANGE` MEDIUMTEXT NULL ," +
-	      		" `MAX_PUB_EXCHANGE` MEDIUMTEXT NULL " +
-	      		"  );");
-	      statement.executeUpdate("CREATE  TABLE IF NOT EXISTS `Queues` ( `idQueues`INTEGER PRIMARY KEY AUTOINCREMENT ," +
-	      		" `Name` VARCHAR(45) NOT NULL UNIQUE ,  " +
-	      		"`MainhostRef`  INT NOT NULL, " +
-	      		"`ConfigRef`  INT NOT NULL,  " +
-	      		"`State` INT NOT NULL," +
-	      		"  FOREIGN KEY(`MainhostRef`) REFERENCES `Hosts` (idHosts)," +
-	      		" FOREIGN KEY(`ConfigRef`) REFERENCES `Configuration` (idConfiguration)" +
-	      		")");
-	      //insert tuples
-	      MngtServerStorage facade = new MngtServerStorage(connection);
-	      
-	      facade.addRoQHost("127.0.0.1");
-	     facade.addRoQHost("127.0.0.2");
-//	      Assert.assertEquals(1,  facade.addRoQHost("127.0.0.1"));
-//	      Assert.assertEquals(2,  facade.addRoQHost("127.0.1.2"));
-	      
-	      facade.addConfiguration("Configuration1", 100000, 2000);
-	      facade.addConfiguration("Configuration2", 5000, 2000);
-	      facade.addQueueConfiguration("Queue1", 1, 2, true);
-	      facade.addQueueConfiguration("Queue2", 2, 2, false);
-      
-	      //Query example
+			// create a database connection
+			connection = DriverManager.getConnection("jdbc:sqlite:" + this.dbName);
+			Statement statement = connection.createStatement();
+			statement.setQueryTimeout(10);  // set timeout to 30 sec.
+
+			// Drop table if exist - clean the file
+			statement.executeUpdate("drop table if exists Hosts");
+			statement.executeUpdate("drop table if exists Configuration");
+			statement.executeUpdate("drop table if exists Queues");
+			// insert tuples
+			MngtServerStorage facade = new MngtServerStorage(connection);
+
+			facade.addRoQHost("127.0.0.1");
+			facade.addRoQHost("127.0.0.2");
+			// Assert.assertEquals(1, facade.addRoQHost("127.0.0.1"));
+			// Assert.assertEquals(2, facade.addRoQHost("127.0.1.2"));
+
+			facade.addConfiguration("Configuration1", 100000, 2000);
+			facade.addConfiguration("Configuration2", 5000, 2000);
+			facade.addQueueConfiguration("Queue1", 1, 2, true);
+			facade.addQueueConfiguration("Queue2", 2, 2, false);
+
+			// Query example
 			ResultSet rs = statement.executeQuery("select * from Queues");
 			while (rs.next()) {
 				// read the result set
@@ -137,36 +121,37 @@ public class TestMngtStorageCreateTables {
 				// connection close failed.
 				System.err.println(e);
 			}
-	    }
+		}
 	}
+
 	@Test
 	public void testUpdate() throws Exception {
 		logger.debug("-> Test the update of new configuration");
-	      MngtServerStorage facade = new MngtServerStorage( DriverManager.getConnection("jdbc:sqlite:"+this.dbName));
-		  //Test state queue query
-	     ArrayList<QueueManagementState> queues =  facade.getQueues();
-	     Assert.assertEquals(2, queues.size());
-	     //Test update new configuration
-	     //Test 1 the queues 2 has restarted and Queue3 has been added by code
-	     HashMap<String, String> newConfig = new HashMap<String, String>();
-	     newConfig.put("Queue2", "127.0.1.2");
-	     newConfig.put("Queue3", "127.0.1.1");
-	     facade.updateConfiguration(newConfig);
-	     
-	     // Check whether the Queue2 is running
-	     QueueManagementState q2State = facade.getQueue("Queue2");
-	     Assert.assertNotNull(q2State);
-	     Assert.assertEquals(true, q2State.isRunning());
-	     // Check whether the Queue3 has been added
-	     QueueManagementState q3State = facade.getQueue("Queue3");
-	     Assert.assertNotNull(q3State);
-	     Assert.assertEquals("127.0.1.1",q3State.getHost());
-	     Assert.assertEquals(true, q3State.isRunning());
-	     // Check whether the Queue1 has been set to stop
-	     QueueManagementState q1State = facade.getQueue("Queue1");
-	     Assert.assertNotNull(q1State);
-	     Assert.assertEquals(false, q1State.isRunning());
-	     facade.getQueues();
+		MngtServerStorage facade = new MngtServerStorage(DriverManager.getConnection("jdbc:sqlite:" + this.dbName));
+		// Test state queue query
+		ArrayList<QueueManagementState> queues = facade.getQueues();
+		Assert.assertEquals(2, queues.size());
+		// Test update new configuration
+		// Test 1 the queues 2 has restarted and Queue3 has been added by code
+		HashMap<String, String> newConfig = new HashMap<String, String>();
+		newConfig.put("Queue2", "127.0.1.2");
+		newConfig.put("Queue3", "127.0.1.1");
+		facade.updateConfiguration(newConfig);
+
+		// Check whether the Queue2 is running
+		QueueManagementState q2State = facade.getQueue("Queue2");
+		Assert.assertNotNull(q2State);
+		Assert.assertEquals(true, q2State.isRunning());
+		// Check whether the Queue3 has been added
+		QueueManagementState q3State = facade.getQueue("Queue3");
+		Assert.assertNotNull(q3State);
+		Assert.assertEquals("127.0.1.1", q3State.getHost());
+		Assert.assertEquals(true, q3State.isRunning());
+		// Check whether the Queue1 has been set to stop
+		QueueManagementState q1State = facade.getQueue("Queue1");
+		Assert.assertNotNull(q1State);
+		Assert.assertEquals(false, q1State.isRunning());
+		facade.getQueues();
 	}
 
 }

@@ -59,10 +59,13 @@ public class MngtController implements Runnable, IStoppable {
 	 * @param globalConfigAddress
 	 *            the address on which the global config server runs.
 	 */
-	public MngtController(String globalConfigAddress) {
+	public MngtController(String globalConfigAddress, String dbName) {
 		try {
-			init(globalConfigAddress, 5002);
+			this.dbName = dbName;
+			init(globalConfigAddress, 5003);
 		} catch (SQLException e) {
+			logger.error("Error while initiating the SQL connection", e);
+		} catch (ClassNotFoundException e) {
 			logger.error("Error while initiating the SQL connection", e);
 		}
 	}
@@ -75,31 +78,39 @@ public class MngtController implements Runnable, IStoppable {
 	 * @param shuttDownPort
 	 *            the port on which the shutdown monitor starts
 	 */
-	public MngtController(String globalConfigAddress, int shuttDownPort) {
+	public MngtController(String globalConfigAddress, int shuttDownPort, String dbName) {
 		try {
+			this.dbName = dbName;
 			init(globalConfigAddress, shuttDownPort);
 		} catch (SQLException e) {
+			logger.error("Error while initiating the SQL connection", e);
+		} catch (ClassNotFoundException e) {
 			logger.error("Error while initiating the SQL connection", e);
 		}
 	}
 
 	/**
+	 * We start start the global conifg at 5000 + 5001 for its shutdown port, 5002 for the configuration timer + 5003 for its shutdown.
 	 * @param globalConfigAddress
 	 *            the global configuration server
 	 * @param shuttDownPort
 	 *            the port on which the shut down thread listens
 	 * @throws SQLException
+	 * @throws ClassNotFoundException whenthe JDBC driver has not been found
 	 */
-	private void init(String globalConfigAddress, int shuttDownPort) throws SQLException {
+	private void init(String globalConfigAddress, int shuttDownPort) throws SQLException, ClassNotFoundException {
+		Class.forName("org.sqlite.JDBC");
 		// Init ZMQ
 		context = ZMQ.context(1);
 		mngtSubSocket = context.socket(ZMQ.SUB);
-		mngtSubSocket.connect("tcp://" + globalConfigAddress + ":5001");
+		mngtSubSocket.connect("tcp://" + globalConfigAddress + ":5002");
+		mngtSubSocket.subscribe("".getBytes());
 		// init variable
 		this.serializationUtils = new RoQSerializationUtils();
 		this.storage = new MngtServerStorage(DriverManager.getConnection("jdbc:sqlite:" + this.dbName));
 		// Shutdown thread configuration
 		this.shutDownMonitor = new ShutDownMonitor(shuttDownPort, this);
+		new Thread(this.shutDownMonitor).start();
 	}
 
 	/**
@@ -109,10 +120,11 @@ public class MngtController implements Runnable, IStoppable {
 	 * @see java.lang.Runnable#run()
 	 */
 	public void run() {
+		logger.debug("Starting "+ getName());
+		this.active = true;
 		// ZMQ init of the subscriber socket
-		ZMQ.Poller poller = context.poller(3);
+		ZMQ.Poller poller = context.poller(2);
 		poller.register(mngtSubSocket);// 0
-
 		// Init variables
 		int infoCode = 0;
 
@@ -122,15 +134,17 @@ public class MngtController implements Runnable, IStoppable {
 			// when it time out
 			poller.poll(2000);
 			if (poller.pollin(0)) {
+				logger.debug("Recieving Message in the update broadcast update channel");
 				// An event arrives start analysing code
-				String info[] = new String(mngtSubSocket.recv(0)).split(",");
+				String info= new String(mngtSubSocket.recv(0));
 				// Check if exchanges are present: this happens when the queue
 				// is shutting down a client is asking for a
 				// connection
-				infoCode = Integer.parseInt(info[0]);
+				infoCode = Integer.parseInt(info);
 				switch (infoCode) {
 				case RoQConstant.MNGT_UPDATE_CONFIG:
 					// Infocode, map(Q Name, host)
+					logger.debug("Recieving update configuration message");
 					if (mngtSubSocket.hasReceiveMore()) {
 						HashMap<String, String> newConfig = this.serializationUtils.deserializeObject(mngtSubSocket
 								.recv(0));
@@ -168,6 +182,27 @@ public class MngtController implements Runnable, IStoppable {
 	 */
 	public String getName() {
 		return this.getClass().getName() + " Server";
+	}
+
+	/**
+	 * @return the shutDownMonitor
+	 */
+	public ShutDownMonitor getShutDownMonitor() {
+		return shutDownMonitor;
+	}
+
+	/**
+	 * @return the storage
+	 */
+	public MngtServerStorage getStorage() {
+		return storage;
+	}
+
+	/**
+	 * @param storage the storage to set
+	 */
+	public void setStorage(MngtServerStorage storage) {
+		this.storage = storage;
 	}
 
 }

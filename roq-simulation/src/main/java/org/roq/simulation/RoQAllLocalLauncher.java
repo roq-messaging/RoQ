@@ -32,6 +32,7 @@ public class RoQAllLocalLauncher {
 	private GlobalConfigurationManager configurationManager = null;
 	private HostConfigManager hostConfigManager = null;
 	private String configurationServer = "?";
+	private int configPeriod = 60000;
 
 	/**
 	 * Starts:<br>
@@ -47,6 +48,7 @@ public class RoQAllLocalLauncher {
 		this.logger.info("Initial setup Start global config thread");
 		this.logger.info("Start global config...");
 		configurationManager = new GlobalConfigurationManager();
+		this.configurationManager.setConfigPeriod(configPeriod);
 		Thread configThread = new Thread(configurationManager);
 		configThread.start();
 		// 2. Start the host configuration manager locally
@@ -55,9 +57,6 @@ public class RoQAllLocalLauncher {
 		Thread hostThread = new Thread(hostConfigManager);
 		hostThread.start();
 		this.logger.info("Start factory config...");
-		// 3. Adding this local host as host
-		//configurationManager.addHostManager(RoQUtils.getInstance().getLocalIP().toString());
-		
 	}
 
 	/**
@@ -122,5 +121,19 @@ public class RoQAllLocalLauncher {
 	 */
 	public String getConfigurationServer() {
 		return configurationServer;
+	}
+
+	/**
+	 * @return the configPeriod
+	 */
+	public int getConfigPeriod() {
+		return configPeriod;
+	}
+
+	/**
+	 * @param configPeriod the configPeriod to set
+	 */
+	public void setConfigPeriod(int configPeriod) {
+		this.configPeriod = configPeriod;
 	}
 }

@@ -15,7 +15,6 @@
 package org.roqmessaging.management.server;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -45,11 +44,52 @@ public class MngtServerStorage {
 	 */
 	public MngtServerStorage(Connection connection) {
 		this.connection = connection;
+		initSchema();
 	}
 	
-//	public void init(){
-//	}
 	
+	/**
+	 * Create the schema if it does exist yet, otherwise, does nothing.
+	 */
+	private void initSchema() {
+		String dbLocation= null;
+		try {
+			//1. Get the DB location
+			dbLocation = connection.getMetaData().getURL();
+			logger.info("Meta data:"+dbLocation);
+			logger.info("Creating DB schemas if not created yet...");
+			
+			//2 Init the schema
+			Statement statement = connection.createStatement();
+			statement.setQueryTimeout(10);  // set timeout to 10 sec.
+			// Create scripts
+			statement
+					.executeUpdate("CREATE  TABLE IF NOT EXISTS `Hosts`"
+							+ " (  `idHosts` INTEGER PRIMARY KEY AUTOINCREMENT ,"
+							+ "  `IP_Address` VARCHAR(45) UNIQUE "
+							+ " )");
+			statement.executeUpdate("CREATE  TABLE IF NOT EXISTS `Configuration`"
+					+ " (  `idConfiguration` INTEGER PRIMARY KEY AUTOINCREMENT ,	"
+					+ "  `Name` VARCHAR(45) NOT NULL UNIQUE ,	  " 
+					+ "`MAX_EVENT_EXCHANGE` MEDIUMTEXT NULL ,"
+					+ " `MAX_PUB_EXCHANGE` MEDIUMTEXT NULL " 
+					+ "  );");
+			statement.executeUpdate("CREATE  TABLE IF NOT EXISTS `Queues` "
+					+ "( `idQueues`INTEGER PRIMARY KEY AUTOINCREMENT ," + " `Name` VARCHAR(45) NOT NULL UNIQUE ,  "
+					+ "`MainhostRef`  INT NOT NULL, "
+					+ "`ConfigRef`  INT NOT NULL,  "
+					+ "`State` INT NOT NULL,"
+					+ "  FOREIGN KEY(`MainhostRef`) REFERENCES `Hosts` (idHosts),"
+					+ " FOREIGN KEY(`ConfigRef`) REFERENCES `Configuration` (idConfiguration)"
+					+ ")");
+			logger.info("DB Created and initiated.");
+		} catch (SQLException e) {
+			logger.error("Error when initiating the schema", e);
+		}
+
+	}
+
+
 	/**
 	 * @param serverAddress the address of the host on which the {@linkplain HostConfigManager}
 	 * is running.
@@ -184,7 +224,7 @@ public class MngtServerStorage {
 			}
 			//3. Set to running false the queue that are not present anymore
 			for (QueueManagementState state_i : queueStates) {
-				if(!newConfig.containsKey(state_i.getName())){
+				if(!newConfig.containsKey(state_i.getName())&& state_i.isRunning()){
 					//Set the queue to running false
 					logger.debug("Update DB: update Queue "+ state_i.getName()+" with running FALSE");
 					Statement statement = connection.createStatement();				
@@ -217,16 +257,18 @@ public class MngtServerStorage {
 	 * @throws SQLException 
 	 */
 	public QueueManagementState getQueue(String name) throws IllegalStateException, SQLException {
-		Connection connection = DriverManager.getConnection("jdbc:sqlite:sampleMngt.db");
 		Statement statement = connection.createStatement();
 		// set timeout to 5 sec.
 		statement.setQueryTimeout(5);
 		ResultSet  rs = statement.executeQuery("select name, State, IP_Address" + " from Queues, Hosts "
-				+ "where Queues.MainhostRef=Hosts.idHosts AND name='"+name+"';");
+				+ "where Queues.MainhostRef=Hosts.idHosts AND Queues.name='"+name+"';");
 		if(!rs.next()) {
 		return null;
 		}
-		else 	return  new QueueManagementState(  rs.getString("name"), rs.getString("IP_Address"),  rs.getBoolean("State"));
+		else{
+			logger.debug("Getting Q " + rs.getString("name") +": "+ rs.getString("IP_Address")+ ( rs.getInt("State")==0?false:true));
+			return  new QueueManagementState(  rs.getString("name"), rs.getString("IP_Address"),  rs.getInt("State")==0?false:true);
+		}
 	}
 	
 	/**

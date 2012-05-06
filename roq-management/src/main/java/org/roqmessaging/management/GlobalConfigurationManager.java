@@ -16,6 +16,7 @@ package org.roqmessaging.management;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Timer;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
@@ -49,6 +50,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private ShutDownMonitor shutDownMonitor = null;
 	//utils
 	private RoQSerializationUtils serializationUtils=null;
+	//Config mngt timer time
+	private int configPeriod = 60000;
 	
 	private Logger logger = Logger.getLogger(GlobalConfigurationManager.class);
 	
@@ -61,9 +64,11 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		this.queueMonitorLocations = new HashMap<String, String>();
 		this.queueStatLocation = new HashMap<String, String>();
 		this.queueHostLocation = new HashMap<String, String>();
+		//ZMQ init
 		this.context = ZMQ.context(1);
 		this.clientReqSocket = context.socket(ZMQ.REP);
 		this.clientReqSocket.bind("tcp://*:5000");
+		//Init variables and pointers
 		this.running = true;
 		this.serializationUtils = new RoQSerializationUtils();
 		this.shutDownMonitor = new ShutDownMonitor(5001, this);
@@ -76,6 +81,10 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 */
 	public void run() {
 		this.running = true;
+		//Init the timer for management subscriber
+		Timer mngtTimer = new Timer("Management config publisher");
+		mngtTimer.schedule(new GlobalConfigTimer(this), 500, this.configPeriod);
+		
 		//ZMQ init
 		ZMQ.Poller items = context.poller(3);
 		items.register(this.clientReqSocket);
@@ -95,12 +104,11 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 					// A client is asking fof the topology of all local host
 					// manager
 					logger.debug("Recieveing init request from a client ");
-					byte[] serialised = this.serializationUtils.serialiseObject(this.hostManagerAddresses);
-					logger.debug("Sending back the topology - list of local host");
-					this.clientReqSocket.send(serialised, ZMQ.SNDMORE);
+					this.clientReqSocket.send( this.serializationUtils.serialiseObject(this.hostManagerAddresses), ZMQ.SNDMORE);
 					this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.queueMonitorLocations), ZMQ.SNDMORE);
 					this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.queueHostLocation), ZMQ.SNDMORE);
 					this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.queueStatLocation), 0);
+					logger.debug("Sending back the topology - list of local host");
 					break;
 					
 				//A create queue request
@@ -180,6 +188,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		}
 		logger.info("Shutting down the global configuration manager");
 		this.clientReqSocket.close();
+		mngtTimer.cancel();
 	}
 	
 	
@@ -197,7 +206,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * Removes all reference of the this queue
 	 * @param qName the logical queue name
 	 */
-	private void removeQueue(String qName) {
+	public void removeQueue(String qName) {
 		if ((this.queueMonitorLocations.remove(qName)==null) ||  (this.queueStatLocation.remove(qName)==null) || (this.queueHostLocation.remove(qName)==null)){
 			logger.error("Error while removing queue", new IllegalStateException("The queue name " + qName +" is not registred in the global configuration"));
 		}else{
@@ -267,6 +276,27 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 */
 	public ShutDownMonitor getShutDownMonitor() {
 		return shutDownMonitor;
+	}
+
+	/**
+	 * @return the queueHostLocation
+	 */
+	public HashMap<String, String> getQueueHostLocation() {
+		return queueHostLocation;
+	}
+
+	/**
+	 * @return the configPeriod
+	 */
+	public int getConfigPeriod() {
+		return configPeriod;
+	}
+
+	/**
+	 * @param configPeriod the configPeriod to set
+	 */
+	public void setConfigPeriod(int configPeriod) {
+		this.configPeriod = configPeriod;
 	}
 	
 	
