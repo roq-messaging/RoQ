@@ -44,8 +44,8 @@ public class GlobalConfigTimer extends TimerTask {
 	 */
 	public GlobalConfigTimer(GlobalConfigurationManager manager) {
 		this.context = ZMQ.context(1);
-		this.mngtPubSocket = context.socket(ZMQ.REP);
-		this.mngtPubSocket.bind("tcp://*:5001");
+		this.mngtPubSocket = context.socket(ZMQ.PUB);
+		this.mngtPubSocket.bind("tcp://*:5002");
 		
 		this.configurationManager = manager;
 		this.serializationUtils = new RoQSerializationUtils();

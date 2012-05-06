@@ -61,8 +61,10 @@ public class MngtController implements Runnable, IStoppable {
 	 */
 	public MngtController(String globalConfigAddress) {
 		try {
-			init(globalConfigAddress, 5002);
+			init(globalConfigAddress, 5003);
 		} catch (SQLException e) {
+			logger.error("Error while initiating the SQL connection", e);
+		} catch (ClassNotFoundException e) {
 			logger.error("Error while initiating the SQL connection", e);
 		}
 	}
@@ -80,21 +82,26 @@ public class MngtController implements Runnable, IStoppable {
 			init(globalConfigAddress, shuttDownPort);
 		} catch (SQLException e) {
 			logger.error("Error while initiating the SQL connection", e);
+		} catch (ClassNotFoundException e) {
+			logger.error("Error while initiating the SQL connection", e);
 		}
 	}
 
 	/**
+	 * We start start the global conifg at 5000 + 5001 for its shutdown port, 5002 for the configuration timer + 5003 for its shutdown.
 	 * @param globalConfigAddress
 	 *            the global configuration server
 	 * @param shuttDownPort
 	 *            the port on which the shut down thread listens
 	 * @throws SQLException
+	 * @throws ClassNotFoundException whenthe JDBC driver has not been found
 	 */
-	private void init(String globalConfigAddress, int shuttDownPort) throws SQLException {
+	private void init(String globalConfigAddress, int shuttDownPort) throws SQLException, ClassNotFoundException {
+		Class.forName("org.sqlite.JDBC");
 		// Init ZMQ
 		context = ZMQ.context(1);
 		mngtSubSocket = context.socket(ZMQ.SUB);
-		mngtSubSocket.connect("tcp://" + globalConfigAddress + ":5001");
+		mngtSubSocket.connect("tcp://" + globalConfigAddress + ":5002");
 		// init variable
 		this.serializationUtils = new RoQSerializationUtils();
 		this.storage = new MngtServerStorage(DriverManager.getConnection("jdbc:sqlite:" + this.dbName));
@@ -123,15 +130,17 @@ public class MngtController implements Runnable, IStoppable {
 			// when it time out
 			poller.poll(2000);
 			if (poller.pollin(0)) {
+				logger.debug("Recieving Message in the update broadcast update channel");
 				// An event arrives start analysing code
-				String info[] = new String(mngtSubSocket.recv(0)).split(",");
+				String info= new String(mngtSubSocket.recv(0));
 				// Check if exchanges are present: this happens when the queue
 				// is shutting down a client is asking for a
 				// connection
-				infoCode = Integer.parseInt(info[0]);
+				infoCode = Integer.parseInt(info);
 				switch (infoCode) {
 				case RoQConstant.MNGT_UPDATE_CONFIG:
 					// Infocode, map(Q Name, host)
+					logger.debug("Recieving update configuration message");
 					if (mngtSubSocket.hasReceiveMore()) {
 						HashMap<String, String> newConfig = this.serializationUtils.deserializeObject(mngtSubSocket
 								.recv(0));
@@ -176,6 +185,20 @@ public class MngtController implements Runnable, IStoppable {
 	 */
 	public ShutDownMonitor getShutDownMonitor() {
 		return shutDownMonitor;
+	}
+
+	/**
+	 * @return the storage
+	 */
+	public MngtServerStorage getStorage() {
+		return storage;
+	}
+
+	/**
+	 * @param storage the storage to set
+	 */
+	public void setStorage(MngtServerStorage storage) {
+		this.storage = storage;
 	}
 
 }

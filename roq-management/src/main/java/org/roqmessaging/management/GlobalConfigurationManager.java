@@ -50,6 +50,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private ShutDownMonitor shutDownMonitor = null;
 	//utils
 	private RoQSerializationUtils serializationUtils=null;
+	//Config mngt timer time
+	private int configPeriod = 60000;
 	
 	private Logger logger = Logger.getLogger(GlobalConfigurationManager.class);
 	
@@ -81,7 +83,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		this.running = true;
 		//Init the timer for management subscriber
 		Timer mngtTimer = new Timer("Management config publisher");
-		mngtTimer.schedule(new GlobalConfigTimer(this), 10000, 10000);
+		mngtTimer.schedule(new GlobalConfigTimer(this), 500, this.configPeriod);
 		
 		//ZMQ init
 		ZMQ.Poller items = context.poller(3);
@@ -281,6 +283,20 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 */
 	public HashMap<String, String> getQueueHostLocation() {
 		return queueHostLocation;
+	}
+
+	/**
+	 * @return the configPeriod
+	 */
+	public int getConfigPeriod() {
+		return configPeriod;
+	}
+
+	/**
+	 * @param configPeriod the configPeriod to set
+	 */
+	public void setConfigPeriod(int configPeriod) {
+		this.configPeriod = configPeriod;
 	}
 	
 	

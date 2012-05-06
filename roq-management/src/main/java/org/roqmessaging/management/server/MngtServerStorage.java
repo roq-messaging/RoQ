@@ -58,6 +58,7 @@ public class MngtServerStorage {
 			//1. Get the DB location
 			dbLocation = connection.getMetaData().getURL();
 			logger.info("Meta data:"+dbLocation);
+			logger.info("Creating DB schemas if not created yet...");
 			
 			//2 Init the schema
 			Statement statement = connection.createStatement();
@@ -82,6 +83,7 @@ public class MngtServerStorage {
 					+ "  FOREIGN KEY(`MainhostRef`) REFERENCES `Hosts` (idHosts),"
 					+ " FOREIGN KEY(`ConfigRef`) REFERENCES `Configuration` (idConfiguration)"
 					+ ")");
+			logger.info("DB Created and initiated.");
 		} catch (SQLException e) {
 			logger.error("Error when initiating the schema", e);
 		}

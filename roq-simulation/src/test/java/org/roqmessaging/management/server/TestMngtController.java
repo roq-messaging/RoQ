@@ -14,13 +14,19 @@
  */
 package org.roqmessaging.management.server;
 
-import static org.junit.Assert.fail;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import junit.framework.Assert;
 
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.roq.simulation.RoQAllLocalLauncher;
+import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.management.LogicalQFactory;
+import org.roqmessaging.management.server.state.QueueManagementState;
 
 /**
  * Class TestMngtController
@@ -31,14 +37,20 @@ import org.roq.simulation.RoQAllLocalLauncher;
 public class TestMngtController {
 	private RoQAllLocalLauncher launcher = null;
 	private Logger logger = Logger.getLogger(TestMngtController.class);
+	private LogicalQFactory factory = null;
 	
-	/**
+	//under test
+	private MngtController mngtController =null;
+	
+	 /**
 	 * @throws java.lang.Exception
 	 */
 	@Before
 	public void setUp() throws Exception {
 		this.launcher = new RoQAllLocalLauncher();
+		this.launcher.setConfigPeriod(3000);
 		this.launcher.setUp();
+		this.factory = new LogicalQFactory(RoQUtils.getInstance().getLocalIP().toString());
 	}
 
 	/**
@@ -46,13 +58,51 @@ public class TestMngtController {
 	 */
 	@After
 	public void tearDown() throws Exception {
+		this.factory.clean();
 		this.launcher.tearDown();
 	}
 
 
 	@Test
 	public void test() {
-		fail("Not yet implemented");
+		try {
+			logger.info("---> Test 1 create  2 Qs");
+			// 1. Create Q
+			 this.factory.createQueue("queue1", RoQUtils.getInstance().getLocalIP().toString());
+			 this.factory.createQueue("queueTest", RoQUtils.getInstance().getLocalIP().toString());
+			 //2. Init the management controller
+			mngtController = new MngtController(RoQUtils.getInstance().getLocalIP());
+			new Thread(mngtController).start();
+			//3. Sleep for test
+			Thread.sleep(5000);
+			
+			//4. Test queues
+			logger.info("---> Test 2 check  2 Qs");
+			ArrayList<QueueManagementState> queues = mngtController.getStorage().getQueues();
+			Assert.assertEquals(2, queues.size());
+			
+			logger.info("---> Test 3 check  3 Qs");
+			 this.factory.createQueue("queue2", RoQUtils.getInstance().getLocalIP().toString());
+			//3. Sleep for test
+			Thread.sleep(5000);
+			Assert.assertEquals(3, queues.size());
+			
+			logger.info("---> Test 4 Remove  1Q and check 2 Qs");
+			this.factory.removeQueue("queue1");
+			Thread.sleep(5000);
+			Assert.assertEquals(3, queues.size());
+			
+			//Clean all
+			this.factory.removeQueue("queueTest");
+			this.factory.removeQueue("queue2");
+			this.mngtController.getShutDownMonitor().shutDown();
+			Thread.sleep(5000);
+			
+		} catch (InterruptedException e) {
+			logger.error("Error here", e);
+		} catch (SQLException e) {
+			logger.error("Error here due to SQL storage", e);
+		}
 	}
 
 }
