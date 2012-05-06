@@ -206,7 +206,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * Removes all reference of the this queue
 	 * @param qName the logical queue name
 	 */
-	private void removeQueue(String qName) {
+	public void removeQueue(String qName) {
 		if ((this.queueMonitorLocations.remove(qName)==null) ||  (this.queueStatLocation.remove(qName)==null) || (this.queueHostLocation.remove(qName)==null)){
 			logger.error("Error while removing queue", new IllegalStateException("The queue name " + qName +" is not registred in the global configuration"));
 		}else{

@@ -15,7 +15,6 @@
 package org.roqmessaging.management.server;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -225,7 +224,7 @@ public class MngtServerStorage {
 			}
 			//3. Set to running false the queue that are not present anymore
 			for (QueueManagementState state_i : queueStates) {
-				if(!newConfig.containsKey(state_i.getName())){
+				if(!newConfig.containsKey(state_i.getName())&& state_i.isRunning()){
 					//Set the queue to running false
 					logger.debug("Update DB: update Queue "+ state_i.getName()+" with running FALSE");
 					Statement statement = connection.createStatement();				
@@ -258,16 +257,18 @@ public class MngtServerStorage {
 	 * @throws SQLException 
 	 */
 	public QueueManagementState getQueue(String name) throws IllegalStateException, SQLException {
-		Connection connection = DriverManager.getConnection("jdbc:sqlite:sampleMngt.db");
 		Statement statement = connection.createStatement();
 		// set timeout to 5 sec.
 		statement.setQueryTimeout(5);
 		ResultSet  rs = statement.executeQuery("select name, State, IP_Address" + " from Queues, Hosts "
-				+ "where Queues.MainhostRef=Hosts.idHosts AND name='"+name+"';");
+				+ "where Queues.MainhostRef=Hosts.idHosts AND Queues.name='"+name+"';");
 		if(!rs.next()) {
 		return null;
 		}
-		else 	return  new QueueManagementState(  rs.getString("name"), rs.getString("IP_Address"),  rs.getBoolean("State"));
+		else{
+			logger.debug("Getting Q " + rs.getString("name") +": "+ rs.getString("IP_Address")+ ( rs.getInt("State")==0?false:true));
+			return  new QueueManagementState(  rs.getString("name"), rs.getString("IP_Address"),  rs.getInt("State")==0?false:true);
+		}
 	}
 	
 	/**

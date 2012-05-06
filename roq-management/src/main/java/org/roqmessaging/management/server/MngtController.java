@@ -59,8 +59,9 @@ public class MngtController implements Runnable, IStoppable {
 	 * @param globalConfigAddress
 	 *            the address on which the global config server runs.
 	 */
-	public MngtController(String globalConfigAddress) {
+	public MngtController(String globalConfigAddress, String dbName) {
 		try {
+			this.dbName = dbName;
 			init(globalConfigAddress, 5003);
 		} catch (SQLException e) {
 			logger.error("Error while initiating the SQL connection", e);
@@ -77,8 +78,9 @@ public class MngtController implements Runnable, IStoppable {
 	 * @param shuttDownPort
 	 *            the port on which the shutdown monitor starts
 	 */
-	public MngtController(String globalConfigAddress, int shuttDownPort) {
+	public MngtController(String globalConfigAddress, int shuttDownPort, String dbName) {
 		try {
+			this.dbName = dbName;
 			init(globalConfigAddress, shuttDownPort);
 		} catch (SQLException e) {
 			logger.error("Error while initiating the SQL connection", e);
@@ -102,6 +104,7 @@ public class MngtController implements Runnable, IStoppable {
 		context = ZMQ.context(1);
 		mngtSubSocket = context.socket(ZMQ.SUB);
 		mngtSubSocket.connect("tcp://" + globalConfigAddress + ":5002");
+		mngtSubSocket.subscribe("".getBytes());
 		// init variable
 		this.serializationUtils = new RoQSerializationUtils();
 		this.storage = new MngtServerStorage(DriverManager.getConnection("jdbc:sqlite:" + this.dbName));
@@ -117,10 +120,11 @@ public class MngtController implements Runnable, IStoppable {
 	 * @see java.lang.Runnable#run()
 	 */
 	public void run() {
+		logger.debug("Starting "+ getName());
+		this.active = true;
 		// ZMQ init of the subscriber socket
-		ZMQ.Poller poller = context.poller(3);
+		ZMQ.Poller poller = context.poller(2);
 		poller.register(mngtSubSocket);// 0
-
 		// Init variables
 		int infoCode = 0;
 
