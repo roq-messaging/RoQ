@@ -19,11 +19,16 @@ import java.util.TimerTask;
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
+import org.roqmessaging.management.server.MngtController;
 import org.zeromq.ZMQ;
 
 /**
  * Class GlobalConfigTImer
  * <p> Description: timer task that publish every minute the new queue topology configuration.
+ * This element is attached to the {@linkplain GlobalConfigurationManager}, it published periodically 
+ * the global configuration of active RoQ element to the management server that maintains off-line 
+ * element information. The {@linkplain MngtController} is responsible for updating the the management
+ * configuration according to the published information by the Global config timer.
  * 
  * @author sskhiri
  */
@@ -37,7 +42,6 @@ public class GlobalConfigTimer extends TimerTask {
 	private GlobalConfigurationManager configurationManager = null;
 	//The serializer
 	private RoQSerializationUtils serializationUtils = null;
-	//TODO test the timer and the update configuration.
 
 	/**
 	 * 
