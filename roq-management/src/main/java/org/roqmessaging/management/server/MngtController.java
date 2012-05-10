@@ -33,7 +33,9 @@ import org.zeromq.ZMQ;
  * {@linkplain GlobalConfigurationManager} and refresh the stored data. Global
  * config manager: 5000 <br>
  * Global config manager pub sub port 5001<br>
- * Shutdown moonitor port 5002
+ * Shutdown monitor port 5002<br>
+ * Management contoller on port 5003<br>
+ * Management timer port 5004
  * 
  * 
  * @author sskhiri

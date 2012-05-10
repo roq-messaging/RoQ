@@ -84,7 +84,7 @@ public class UnitTestManagement {
 			this.globalConfigurationManager.addHostManager("127.0.0.1");
 			this.globalConfigurationManager.addHostManager("127.0.0.2");
 			this.globalConfigurationManager.addHostManager("127.0.0.3");
-
+			
 			// 2. Add queues
 			this.globalConfigurationManager.addQueueName("queue1", "127.0.0.1");
 			this.globalConfigurationManager.addQueueLocation("queue1", "127.0.0.1");
@@ -103,6 +103,8 @@ public class UnitTestManagement {
 			logger.debug("Checking queues size at management");
 			ArrayList<QueueManagementState>queues = this.mngtController.getStorage().getQueues();
 			Assert.assertEquals(3, queues.size());
+			ArrayList<String> hosts = this.mngtController.getStorage().getHosts();
+			Assert.assertEquals(2, hosts.size());
 			
 			//5. Removes Qs
 			logger.debug("Checking queues size at management aftrer remove");
