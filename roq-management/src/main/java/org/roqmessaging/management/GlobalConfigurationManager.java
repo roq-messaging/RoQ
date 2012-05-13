@@ -23,6 +23,7 @@ import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
+import org.roqmessaging.management.server.MngtController;
 import org.zeromq.ZMQ;
 
 /**
@@ -53,6 +54,11 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	//Config mngt timer time
 	private int configPeriod = 60000;
 	
+	//The management controller that maintains the off line configuration
+	private MngtController mngtController = null;
+	//The SQL DB name
+	private String dbName = "Management.db";
+	
 	private Logger logger = Logger.getLogger(GlobalConfigurationManager.class);
 	
 	/**
@@ -71,8 +77,13 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		//Init variables and pointers
 		this.running = true;
 		this.serializationUtils = new RoQSerializationUtils();
+		
+		//The shutdown thread
 		this.shutDownMonitor = new ShutDownMonitor(5001, this);
 		new Thread(this.shutDownMonitor).start();
+		//The mngt controller
+		this.mngtController = new MngtController("localhost", dbName, 60000);
+		new Thread(mngtController).start();
 	}
 
 	/**
@@ -240,6 +251,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 */
 	public void  shutDown(){
 		this.running = false;
+		this.mngtController.getShutDownMonitor().shutDown();
 		this.logger.info("Shutting down config server");
 	}
 	
@@ -297,6 +309,13 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 */
 	public void setConfigPeriod(int configPeriod) {
 		this.configPeriod = configPeriod;
+	}
+
+	/**
+	 * @return the mngtController
+	 */
+	public MngtController getMngtController() {
+		return mngtController;
 	}
 	
 	

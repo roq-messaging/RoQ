@@ -76,24 +76,6 @@ public class MngtController implements Runnable, IStoppable {
 		}
 	}
 
-	/**
-	 * Constructor.
-	 * 
-	 * @param globalConfigAddress
-	 *            the address on which the global config server runs.
-	 * @param shuttDownPort
-	 *            the port on which the shutdown monitor starts
-	 */
-	public MngtController(String globalConfigAddress, int shuttDownPort, String dbName) {
-		try {
-			this.dbName = dbName;
-			init(globalConfigAddress, shuttDownPort);
-		} catch (SQLException e) {
-			logger.error("Error while initiating the SQL connection", e);
-		} catch (ClassNotFoundException e) {
-			logger.error("Error while initiating the SQL connection", e);
-		}
-	}
 
 	/**
 	 * We start start the global conifg at 5000 + 5001 for its shutdown port, 5002 for the configuration timer + 5003 for its shutdown.
@@ -179,6 +161,7 @@ public class MngtController implements Runnable, IStoppable {
 		}
 		logger.info("Stopping " + this.getClass().getName() + " cleaning sockets");
 		this.mngtSubSocket.close();
+		controllerTimer.cancel();
 	}
 
 	/**

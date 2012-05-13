@@ -25,7 +25,7 @@ import org.bson.BasicBSONEncoder;
 import org.bson.BasicBSONObject;
 import org.junit.Assert;
 import org.junit.Test;
-import org.roqmessaging.management.serializer.BSONSerializer;
+import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
 
 /**
@@ -36,7 +36,7 @@ import org.roqmessaging.management.server.state.QueueManagementState;
  */
 public class BSONUnitTest {
 	//under tests
-	private BSONSerializer serialiazer = new BSONSerializer();
+	private RoQBSONSerializer serialiazer = new RoQBSONSerializer();
 	//Logger
 	private Logger logger = Logger.getLogger(BSONUnitTest.class);
 

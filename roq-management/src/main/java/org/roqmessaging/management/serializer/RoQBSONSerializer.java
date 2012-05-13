@@ -20,6 +20,7 @@ import java.util.List;
 import org.apache.log4j.Logger;
 import org.bson.BSON;
 import org.bson.BSONObject;
+import org.bson.BasicBSONDecoder;
 import org.bson.BasicBSONEncoder;
 import org.bson.BasicBSONObject;
 import org.roqmessaging.management.server.state.QueueManagementState;
@@ -31,8 +32,10 @@ import org.roqmessaging.management.server.state.QueueManagementState;
  * 
  * @author sskhiri
  */
-public class BSONSerializer implements IRoQSerializer {
-	private Logger logger = Logger.getLogger(BSONSerializer.class);
+public class RoQBSONSerializer implements IRoQSerializer {
+	private Logger logger = Logger.getLogger(RoQBSONSerializer.class);
+	//Bson decoder
+	private BasicBSONDecoder decoder = new BasicBSONDecoder();
 
 	/**
 	 * @see org.roqmessaging.management.serializer.IRoQSerializer#serialiseQueues(java.util.ArrayList)
@@ -73,6 +76,47 @@ public class BSONSerializer implements IRoQSerializer {
 
 		// Encode the object
 		return  BSON.encode(bsonObject);
+	}
+
+	/**
+	 * @see org.roqmessaging.management.serializer.IRoQSerializer#serialiseCMDID(java.lang.String)
+	 */
+	public byte[] serialiseCMDID(int cmd) {
+		BSONObject bsonObject = new BasicBSONObject();
+		bsonObject.put("CMD_ID", cmd);
+		logger.debug("Encoding CMD ID in BSON= "+bsonObject.toString());
+		return BSON.encode(bsonObject);
+	}
+
+	/**
+	 * @see org.roqmessaging.management.serializer.IRoQSerializer#unSerializeQueues(byte[])
+	 */
+	public List<QueueManagementState> unSerializeQueues(byte[] encodedQ) {
+		logger.debug("Unserializing encoded Q");
+		BSONObject decodedQ = decoder.readObject(encodedQ);
+		
+		//Building the Queue state Array
+		@SuppressWarnings("unchecked")
+		ArrayList<BSONObject> dedodedList = (ArrayList<BSONObject>) decodedQ.get("Queues");
+		List<QueueManagementState> queues = new ArrayList<QueueManagementState>();
+		
+		//Through the list of decoded object, we re build the states
+		for (BSONObject bsonObject : dedodedList) {
+			QueueManagementState state_i =  new QueueManagementState((String) bsonObject.get("Name"),
+					(String) bsonObject.get("Host"),  (Boolean) bsonObject.get("State"));
+			queues.add(state_i);
+			logger.debug(state_i.toString());
+		}
+		return queues;
+	}
+
+	/**
+	 * @see org.roqmessaging.management.serializer.IRoQSerializer#unSerializeHosts(byte[])
+	 */
+	@SuppressWarnings("unchecked")
+	public List<String> unSerializeHosts(byte[] encodedH) {
+		BSONObject newHostObject = decoder.readObject(encodedH);
+		return (ArrayList<String>) newHostObject.get("hosts");
 	}
 
 }

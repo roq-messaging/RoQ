@@ -35,9 +35,27 @@ public interface IRoQSerializer {
 	public byte[] serialiseQueues(List<QueueManagementState> queues);
 	
 	/**
+	 * @param encodedQ the encoded Qs
+	 * @return the list of Queue Management state
+	 */
+	public List<QueueManagementState> unSerializeQueues(byte [] encodedQ);
+	
+	/**
 	 * @param hosts the list of RoQ host (ip address)
 	 * @return the serialized message
 	 */
 	public byte[] serialiseHosts(ArrayList<String> hosts);
+	
+	/**
+	 * @param encodedH the encoded list of hosts 
+	 * @return the list of Host ip address
+	 */
+	public List<String> unSerializeHosts(byte [] encodedH);
+	
+	/**
+	 * @param cmd the cmd ID to serialize
+	 * @return the encoded cmd ID
+	 */
+	public byte[] serialiseCMDID(int cmd);
 
 }

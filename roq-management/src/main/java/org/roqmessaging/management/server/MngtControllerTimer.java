@@ -19,7 +19,7 @@ import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
-import org.roqmessaging.management.serializer.BSONSerializer;
+import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
 import org.zeromq.ZMQ;
@@ -55,7 +55,7 @@ public class MngtControllerTimer extends TimerTask {
 		super();
 		//init variable
 		this.controller = controller;
-		this.serializer = new BSONSerializer();
+		this.serializer = new RoQBSONSerializer();
 		//ZMQ init
 		this.context = ZMQ.context(1);
 		this.mngtPubSocket = context.socket(ZMQ.PUB);
@@ -75,12 +75,22 @@ public class MngtControllerTimer extends TimerTask {
 			ArrayList<String> hosts = this.controller.getStorage().getHosts();
 			
 			// 2. Serialization &  Publish the configuration
-			this.mngtPubSocket.send(new Integer(RoQConstant.MNGT_UPDATE_CONFIG).toString().getBytes(), ZMQ.SNDMORE);
+			this.mngtPubSocket.send(this.serializer.serialiseCMDID(RoQConstant.MNGT_UPDATE_CONFIG), ZMQ.SNDMORE);
 			this.mngtPubSocket.send(this.serializer.serialiseQueues(queues), ZMQ.SNDMORE);
 			this.mngtPubSocket.send(this.serializer.serialiseHosts(hosts), 0);
 			
 		} catch (Exception e) {
 			logger.error("Error while sending MNGT config to management console", e);
 		}
+	}
+	
+	/* (non-Javadoc)
+	 * @see java.util.TimerTask#cancel()
+	 */
+	@Override
+	public boolean cancel() {
+		logger.info("Stopping the Management controller publisher");
+		this.mngtPubSocket.close();
+		return super.cancel();
 	}
 }
