@@ -15,6 +15,7 @@
 package org.roqmessaging.management.serializer;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.roqmessaging.management.server.state.QueueManagementState;
 
@@ -31,12 +32,30 @@ public interface IRoQSerializer {
 	 * @param queues the list of queue to serialized
 	 * @return the serialised version
 	 */
-	public byte[] serialiseQueues(ArrayList<QueueManagementState> queues);
+	public byte[] serialiseQueues(List<QueueManagementState> queues);
+	
+	/**
+	 * @param encodedQ the encoded Qs
+	 * @return the list of Queue Management state
+	 */
+	public List<QueueManagementState> unSerializeQueues(byte [] encodedQ);
 	
 	/**
 	 * @param hosts the list of RoQ host (ip address)
 	 * @return the serialized message
 	 */
 	public byte[] serialiseHosts(ArrayList<String> hosts);
+	
+	/**
+	 * @param encodedH the encoded list of hosts 
+	 * @return the list of Host ip address
+	 */
+	public List<String> unSerializeHosts(byte [] encodedH);
+	
+	/**
+	 * @param cmd the cmd ID to serialize
+	 * @return the encoded cmd ID
+	 */
+	public byte[] serialiseCMDID(int cmd);
 
 }

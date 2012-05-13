@@ -25,6 +25,7 @@ import org.bson.BasicBSONEncoder;
 import org.bson.BasicBSONObject;
 import org.junit.Assert;
 import org.junit.Test;
+import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
 
 /**
@@ -34,6 +35,9 @@ import org.roqmessaging.management.server.state.QueueManagementState;
  * @author sskhiri
  */
 public class BSONUnitTest {
+	//under tests
+	private RoQBSONSerializer serialiazer = new RoQBSONSerializer();
+	//Logger
 	private Logger logger = Logger.getLogger(BSONUnitTest.class);
 
 	@SuppressWarnings("unchecked")
@@ -99,14 +103,25 @@ public class BSONUnitTest {
 		//Encode test
 		BasicBSONEncoder encoder = new BasicBSONEncoder();
 		final byte[] encodedQueues = encoder.encode(mainQ);
-	
+		
 		//Decode
 		BasicBSONDecoder decoder = new BasicBSONDecoder();
-		BSONObject decodecQ = decoder.readObject(encodedQueues);
+		BSONObject decodedQ = decoder.readObject(encodedQueues);
 		logger.debug(mainQ.toString());
-		Assert.assertEquals(mainQ.toString(), decodecQ.toString());
+		Assert.assertEquals(mainQ.toString(), decodedQ.toString());
 		
-		//TODO test content of the list
+		final byte[] encodedQueuesRoQ = serialiazer.serialiseQueues(queues);
+		BSONObject decodedQRoQ = decoder.readObject(encodedQueuesRoQ);
+		Assert.assertEquals(mainQ.toString(), decodedQRoQ.toString());
+		
+		@SuppressWarnings("unchecked")
+		ArrayList<BSONObject> dedodedList = (ArrayList<BSONObject>) decodedQ.get("Queues");
+		for (BSONObject bsonObject : dedodedList) {
+			String name = (String) bsonObject.get("Name");
+			String host = (String) bsonObject.get("Host");
+			boolean running = (Boolean) bsonObject.get("State");
+			logger.debug("Queue: "+ name +" "+ host +" "+ running);
+		}
 		
 	}
 

@@ -77,6 +77,14 @@ public class QueueManagementState {
 		this.running = running;
 	}
 	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "Queue: " + this.name +" running on "+ this.host + " is "+ (isRunning()?"ON":"OFF");
+	}
+	
 	
 
 }

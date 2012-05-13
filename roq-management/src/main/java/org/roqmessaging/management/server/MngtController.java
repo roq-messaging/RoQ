@@ -17,6 +17,7 @@ package org.roqmessaging.management.server;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Timer;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
@@ -54,6 +55,8 @@ public class MngtController implements Runnable, IStoppable {
 	private MngtServerStorage storage = null;
 	// The DB file
 	private String dbName = "sampleMngt.db";
+	//The publication period of the configuration
+	private int period = 60000;
 
 	/**
 	 * Constructor.
@@ -61,8 +64,9 @@ public class MngtController implements Runnable, IStoppable {
 	 * @param globalConfigAddress
 	 *            the address on which the global config server runs.
 	 */
-	public MngtController(String globalConfigAddress, String dbName) {
+	public MngtController(String globalConfigAddress, String dbName, int period) {
 		try {
+			this.period = period;
 			this.dbName = dbName;
 			init(globalConfigAddress, 5003);
 		} catch (SQLException e) {
@@ -72,24 +76,6 @@ public class MngtController implements Runnable, IStoppable {
 		}
 	}
 
-	/**
-	 * Constructor.
-	 * 
-	 * @param globalConfigAddress
-	 *            the address on which the global config server runs.
-	 * @param shuttDownPort
-	 *            the port on which the shutdown monitor starts
-	 */
-	public MngtController(String globalConfigAddress, int shuttDownPort, String dbName) {
-		try {
-			this.dbName = dbName;
-			init(globalConfigAddress, shuttDownPort);
-		} catch (SQLException e) {
-			logger.error("Error while initiating the SQL connection", e);
-		} catch (ClassNotFoundException e) {
-			logger.error("Error while initiating the SQL connection", e);
-		}
-	}
 
 	/**
 	 * We start start the global conifg at 5000 + 5001 for its shutdown port, 5002 for the configuration timer + 5003 for its shutdown.
@@ -124,6 +110,12 @@ public class MngtController implements Runnable, IStoppable {
 	public void run() {
 		logger.debug("Starting "+ getName());
 		this.active = true;
+		
+		//Launching the timer 
+		MngtControllerTimer controllerTimer = new MngtControllerTimer(this.period, this, 5004);
+		Timer publicationTimer = new Timer();
+		publicationTimer.schedule(controllerTimer,  period, period);
+		
 		// ZMQ init of the subscriber socket
 		ZMQ.Poller poller = context.poller(2);
 		poller.register(mngtSubSocket);// 0
@@ -169,6 +161,7 @@ public class MngtController implements Runnable, IStoppable {
 		}
 		logger.info("Stopping " + this.getClass().getName() + " cleaning sockets");
 		this.mngtSubSocket.close();
+		controllerTimer.cancel();
 	}
 
 	/**
