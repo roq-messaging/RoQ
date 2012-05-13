@@ -18,12 +18,26 @@ import org.apache.log4j.Logger;
 
 /**
  * Class MngtFacade
- * <p> Description: Receives and Expose ZMQ API for the manegement configuration. 
+ * <p> Description: Receives and Expose ZMQ API for the management configuration. 
  * 
  * @author sskhiri
  */
 public class MngtFacade implements Runnable {
 	private Logger logger = Logger.getLogger(MngtFacade.class);
+	
+	//the mngt controller handle
+	private MngtController mnController = null;
+
+
+	/**
+	 * @param mnController the management controller reference.
+	 */
+	public MngtFacade(MngtController mnController) {
+		super();
+		this.mnController = mnController;
+	}
+
+
 
 	/* (non-Javadoc)
 	 * @see java.lang.Runnable#run()
