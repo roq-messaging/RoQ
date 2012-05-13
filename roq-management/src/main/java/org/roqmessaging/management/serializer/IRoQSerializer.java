@@ -15,6 +15,7 @@
 package org.roqmessaging.management.serializer;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.roqmessaging.management.server.state.QueueManagementState;
 
@@ -31,7 +32,7 @@ public interface IRoQSerializer {
 	 * @param queues the list of queue to serialized
 	 * @return the serialised version
 	 */
-	public byte[] serialiseQueues(ArrayList<QueueManagementState> queues);
+	public byte[] serialiseQueues(List<QueueManagementState> queues);
 	
 	/**
 	 * @param hosts the list of RoQ host (ip address)

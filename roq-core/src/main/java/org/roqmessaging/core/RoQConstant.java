@@ -192,5 +192,15 @@ public interface RoQConstant {
 	 */
 	public static int MNGT_UPDATE_CONFIG = 1500;
 
+	
+	/**
+	 * Used by the management server to broadcast configuration.
+	 */
+	public static String BSON_QUEUES = "Queues";
+	
+	/**
+	 * Used by the management server to broadcast configuration.
+	 */
+	public static String BSON_HOSTS = "Hosts";
 
 }

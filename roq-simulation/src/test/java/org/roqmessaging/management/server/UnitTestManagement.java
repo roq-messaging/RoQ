@@ -60,11 +60,15 @@ public class UnitTestManagement {
 		statement.executeUpdate("drop table if exists Queues");
 		
 		//Start the config
+		//TODO launching them together
 		globalConfigurationManager = new GlobalConfigurationManager();
 		globalConfigurationManager.setConfigPeriod(3000);
 		new Thread(globalConfigurationManager).start();
-		mngtController = new MngtController("localhost", dbName);
+		mngtController = new MngtController("localhost", dbName, 4000);
 		new Thread(mngtController).start();
+		
+		//Launching a thread that listen the broadcast channel for management update
+		
 	}
 
 	/**
@@ -129,6 +133,24 @@ public class UnitTestManagement {
 			logger.error("Error while exec SQL", e);
 		}
 
+	}
+	
+	/**
+	 * Class ConfigListener
+	 * <p> Description: Test class used for simulating a management console that listen the update broadcast.
+	 * 
+	 * @author sskhiri
+	 */
+	protected class ConfigListener implements Runnable{
+
+		/**
+		 * @see java.lang.Runnable#run()
+		 */
+		public void run() {
+			// TODO Auto-generated method stub for testing
+			
+		}
+		
 	}
 
 }

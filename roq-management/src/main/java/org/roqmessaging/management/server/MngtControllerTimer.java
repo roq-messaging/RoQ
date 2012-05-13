@@ -19,7 +19,8 @@ import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
-import org.roqmessaging.management.GlobalConfigTimer;
+import org.roqmessaging.management.serializer.BSONSerializer;
+import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
 import org.zeromq.ZMQ;
 
@@ -32,8 +33,6 @@ import org.zeromq.ZMQ;
  * @author sskhiri
  */
 public class MngtControllerTimer extends TimerTask {
-	//Publication period 3sec
-	private int period = 3000;
 	//The reference to the magement controller
 	private MngtController controller = null;
 	//ZMQ init
@@ -41,6 +40,8 @@ public class MngtControllerTimer extends TimerTask {
 	private ZMQ.Context context;
 	//The port on which we broadcast the config
 	private int port = 5004;
+	//The Serialiazer
+	private IRoQSerializer serializer = null;
 	//logger
 	private Logger logger = Logger.getLogger(MngtControllerTimer.class);
 	
@@ -53,8 +54,8 @@ public class MngtControllerTimer extends TimerTask {
 	public MngtControllerTimer(int period, MngtController controller, int port) {
 		super();
 		//init variable
-		this.period = period;
 		this.controller = controller;
+		this.serializer = new BSONSerializer();
 		//ZMQ init
 		this.context = ZMQ.context(1);
 		this.mngtPubSocket = context.socket(ZMQ.PUB);
@@ -62,7 +63,7 @@ public class MngtControllerTimer extends TimerTask {
 		this.mngtPubSocket.bind("tcp://*:"+this.port);
 	}
 
-	/* (non-Javadoc)
+	/**
 	 * @see java.util.TimerTask#run()
 	 */
 	@Override
@@ -73,13 +74,11 @@ public class MngtControllerTimer extends TimerTask {
 			ArrayList<QueueManagementState> queues =  this.controller.getStorage().getQueues();
 			ArrayList<String> hosts = this.controller.getStorage().getHosts();
 			
-			// 2. Serialization
-			//TODO serialization by an adapter
-			byte[] serialised = null;
-			
-			// 3. Publish the configuration
+			// 2. Serialization &  Publish the configuration
 			this.mngtPubSocket.send(new Integer(RoQConstant.MNGT_UPDATE_CONFIG).toString().getBytes(), ZMQ.SNDMORE);
-			this.mngtPubSocket.send(serialised, 0);
+			this.mngtPubSocket.send(this.serializer.serialiseQueues(queues), ZMQ.SNDMORE);
+			this.mngtPubSocket.send(this.serializer.serialiseHosts(hosts), 0);
+			
 		} catch (Exception e) {
 			logger.error("Error while sending MNGT config to management console", e);
 		}
