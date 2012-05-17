@@ -57,5 +57,12 @@ public interface IRoQSerializer {
 	 * @return the encoded cmd ID
 	 */
 	public byte[] serialiseCMDID(int cmd);
-
+	
+	/**
+	 * @param Monitor the monitor host
+	 * @param StatMonitor the stat monitor host
+	 * @return the serialized byte array
+	 */
+	public byte[] serialiazeMonitorInfo(String monitor, String statMonitor);
+	
 }

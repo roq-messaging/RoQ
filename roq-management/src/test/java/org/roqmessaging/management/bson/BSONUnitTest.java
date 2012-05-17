@@ -25,6 +25,7 @@ import org.bson.BasicBSONEncoder;
 import org.bson.BasicBSONObject;
 import org.junit.Assert;
 import org.junit.Test;
+import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
 
@@ -122,7 +123,31 @@ public class BSONUnitTest {
 			boolean running = (Boolean) bsonObject.get("State");
 			logger.debug("Queue: "+ name +" "+ host +" "+ running);
 		}
+	}
+	
+	/**
+	 * Tests the code in the Global configuration manager to encode 
+	 * Monitor host and Stat host
+	 * @throws Exception
+	 */
+	@Test
+	public void testGetHostByQNameBSON() throws Exception {
+		BSONObject answer = new BasicBSONObject();
+		answer.put(RoQConstant.BSON_MONITOR_HOST,"tcp://127.0.1.1:5000");
+		answer.put(RoQConstant.BSON_STAT_MONITOR_HOST, "tcp://127.0.0.1:5061");
+		this.logger.debug("Test Get Host by QName:");
+		this.logger.debug(answer);
 		
+		//Encode
+		byte[] encoded = 	BSON.encode(answer);
+		
+		//Decode
+		BSONObject decoded= 	BSON.decode(encoded);
+		Assert.assertEquals(answer.toString(), decoded.toString());
+		
+		//Test with serializer
+		byte[] encoded2 = 	serialiazer.serialiazeMonitorInfo("tcp://127.0.1.1:5000", "tcp://127.0.0.1:5061");
+		Assert.assertEquals(answer.toString(), BSON.decode(encoded2).toString());
 	}
 
 }

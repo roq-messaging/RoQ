@@ -19,11 +19,14 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 
+import junit.framework.Assert;
+
 import org.apache.log4j.Logger;
+import org.bson.BSON;
+import org.bson.BSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQUtils;
-import org.roqmessaging.management.GlobalConfigurationState;
 import org.zeromq.ZMQ;
 
 /**
@@ -39,8 +42,6 @@ public class KPISubscriber implements Runnable, IStoppable{
 	//KPI socket
 	private ZMQ.Socket kpiSocket = null;
 	
-	//Global configuration
-	private GlobalConfigurationState configurationState = null;
 	//The configuration server
 	private String configurationServer = null;
 	//the Qname to subscriber
@@ -87,17 +88,25 @@ public class KPISubscriber implements Runnable, IStoppable{
 	 * Subscribe to the statistic stream got from the global configuration
 	 * @throws IllegalStateException if the monitor stat is not present in the cache
 	 */
-	private void subscribe() throws IllegalStateException{
-		//1. Get the location of the stat monitor address to subscribe from the global configuration
-		this.configurationState = new GlobalConfigurationState(this.configurationServer);
-		this.configurationState.refreshConfiguration();
-		String monitorStatServer = this.configurationState.getQueueMonitorStatMap().get(qName);
-		if(monitorStatServer == null) throw new IllegalStateException("The stat monitor is not present in the global configuration cache !" +
-				" Cannot subscribe KPI");
-		//2. Register a socket to the stat monitor
+	private void subscribe() throws IllegalStateException {
+		// 1. Get the location in BSON
+		// 1.1 Create the request socket
+		ZMQ.Socket globalConfigReq = context.socket(ZMQ.REQ);
+		globalConfigReq.connect("tcp://" + this.configurationServer + ":5000");
+
+		// 1.2 Send the request
+		globalConfigReq.send((RoQConstant.BSON_CONFIG_GET_HOST_BY_QNAME + "," + qName).getBytes(), 0);
+		byte[] configuration = globalConfigReq.recv(0);
+		BSONObject dConfiguration = BSON.decode(configuration);
+		String monitorStatServer = (String) dConfiguration.get(RoQConstant.BSON_STAT_MONITOR_HOST);
+		Assert.assertNotNull(monitorStatServer);
+
+		// 2. Register a socket to the stat monitor
 		kpiSocket = context.socket(ZMQ.SUB);
-		kpiSocket.bind(monitorStatServer);
-		kpiSocket.subscribe("".getBytes()); 
+		kpiSocket.connect(monitorStatServer);
+		kpiSocket.subscribe("".getBytes());
+		logger.debug("Connected to Stat monitor " + monitorStatServer);
+
 	}
 
 
@@ -108,24 +117,19 @@ public class KPISubscriber implements Runnable, IStoppable{
 	public void run() {
 		ZMQ.Poller poller = context.poller(1);
 		poller.register(kpiSocket);
-		int infoCode =0;
 		
 		while (active){
 			poller.poll(2000);
 			if(poller.pollin(0)){
-				//Stat comming from the KPI stream
-				 
-				// Stats info: 1* producers, 2* exch, 3*listeners
-				String info[] = new String(kpiSocket.recv(0)).split(",");
-				infoCode = Integer.parseInt(info[0]);
-
-				logger.debug("Start analysing info code, the use files ="+this.useFile +", code ="+ infoCode);
-				switch (infoCode) {
+				//Stat coming from the KPI stream
+				BSONObject statObj = BSON.decode(kpiSocket.recv(0));
+				logger.debug("Start analysing info code, the use files ="+this.useFile +", code ="+ statObj.get("CMD"));
+				switch ((Integer)statObj.get("CMD")) {
 				case RoQConstant.STAT_TOTAL_SENT:
-					logger.info("1 producer finished, sent " + info[2] + " messages.");
+					logger.info("1 producer finished, sent " + statObj.get("TotalSent") + " messages.");
 					try {
-						bufferedOutput.write("PROD," + RoQUtils.getInstance().getFileStamp() + ",FINISH," + info[1]
-								+ "," + info[2]);
+						bufferedOutput.write("PROD," + RoQUtils.getInstance().getFileStamp() + ",FINISH," + statObj.get("PublisherID") 
+								+ "," +  statObj.get("TotalSent"));
 						bufferedOutput.newLine();
 						bufferedOutput.flush();
 					} catch (IOException e) {
@@ -134,8 +138,8 @@ public class KPISubscriber implements Runnable, IStoppable{
 					break;
 				case RoQConstant.STAT_PUB_MIN:
 					try {
-						bufferedOutput.write("PROD," + RoQUtils.getInstance().getFileStamp() + ",STAT," + info[1] + ","
-								+ info[2] + "," + info[3]);
+						bufferedOutput.write("SUB," + RoQUtils.getInstance().getFileStamp() + ",STAT," + statObj.get("SubscriberID")  + ","
+								+statObj.get("Total"));
 						bufferedOutput.newLine();
 						bufferedOutput.flush();
 
@@ -143,16 +147,16 @@ public class KPISubscriber implements Runnable, IStoppable{
 						logger.error("Error when writing the report in the output stream", e);
 					}
 					break;
-				case RoQConstant.STAT_MIN:
+				case RoQConstant.STAT_EXCHANGE_MIN:
 					try {
 						bufferedOutput.write("EXCH,"
 					+ RoQUtils.getInstance().getFileStamp() + "," +
-								info[1] + ","
-					+ info[2] + ","
-								+ info[3] + "," 
-					+ info[4] + ","
-								+ info[5] + "," 
-					+ info[6]);
+					statObj.get("Minute") + ","
+					+ statObj.get("TotalProcessed") + ","
+								+ statObj.get("Processed")+ "," 
+					+ statObj.get("TotalThroughput")+ ","
+								+ statObj.get("Throughput") + "," 
+					+ statObj.get("Producers"));
 						bufferedOutput.newLine();
 						bufferedOutput.flush();
 					} catch (IOException e) {
@@ -161,8 +165,8 @@ public class KPISubscriber implements Runnable, IStoppable{
 					break;
 				case RoQConstant.STAT_TOTAL_RCVD:
 					try {
-						bufferedOutput.write("LIST," + RoQUtils.getInstance().getFileStamp() + "," + info[1] + ","
-								+ info[2] + "," + info[3] + "," + info[4] + "," + info[5]);
+						bufferedOutput.write("LIST," + RoQUtils.getInstance().getFileStamp() + "," + statObj.get("Minute") + ","
+								+  statObj.get("TotalReceived") + "," +  statObj.get("Received")  + "," +  statObj.get("SubsriberID")  + "," +  statObj.get("MeanLat") );
 						bufferedOutput.newLine();
 						bufferedOutput.flush();
 					} catch (IOException e) {
@@ -170,8 +174,8 @@ public class KPISubscriber implements Runnable, IStoppable{
 					}
 					break;
 				}
-			
 			}
+			
 		}
 		
 	}

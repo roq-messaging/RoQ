@@ -60,62 +60,68 @@ public class TestStatMonitor {
 
 	@Test
 	public void test() {
-		//1. Create a Queue
-		IRoQLogicalQueueFactory logicalQFactory = new LogicalQFactory(launcher.getConfigurationServer());
-		logicalQFactory.createQueue("queue1", RoQUtils.getInstance().getLocalIP());
-		
-		//2. Init the KPI subscriber
-		kpiSubscriber = new KPISubscriber(launcher.getConfigurationServer(), "queue1", false);
-		new Thread(kpiSubscriber).start();
-		
-		//3. Create a subscriber
-		IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getConfigurationServer());
-		// add a subscriber
-		IRoQSubscriberConnection subConnection = factory.createRoQSubscriberConnection("queue1", "key");
-		// Open the connection to the logical queue
-		subConnection.open();
-		// Register a message listener
-		IRoQSubscriber subs = new IRoQSubscriber() {
-			public void onEvent(byte[] msg) {
-				String content = new String(msg, 0, msg.length);
-				assert content.equals("hello");
-				//logger.info("In message lIstener recieveing :" + content);
-			}
-		};
-		subConnection.setMessageSubscriber(subs);
-		
-		//4. Create a publisher// Add a publisher
-		// Creating the connection
-		IRoQConnection connection = factory.createRoQConnection("queue1");
-		connection.open();
-		// Creating the publisher and sending message
-		IRoQPublisher publisher = connection.createPublisher();
-		// Wait for the connection is established before sending the first message
-		connection.blockTillReady(10000);
-		
-		//5 Sending the message
-		logger.info("Sending MESSAGES ...");
-		for (int i = 0; i < 500; i++) {
-			publisher.sendMessage("key".getBytes(), ("hello"+i).getBytes());
-		}
-		
-		//3 Wait &. Check the content
 		try {
-			Thread.sleep(8000);
+			// Let the host self register to the global configuration
+			Thread.sleep(3000);
+			// 1. Create a Queue
+			IRoQLogicalQueueFactory logicalQFactory = new LogicalQFactory(launcher.getConfigurationServer());
+			logicalQFactory.createQueue("queue1", RoQUtils.getInstance().getLocalIP());
+			
+			// Let the Process start and binding port
+			Thread.sleep(3000);
+			
+			// 2. Init the KPI subscriber
+			kpiSubscriber = new KPISubscriber(launcher.getConfigurationServer(), "queue1", false);
+			new Thread(kpiSubscriber).start();
+
+			// 3. Create a subscriber
+			IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getConfigurationServer());
+			// add a subscriber
+			IRoQSubscriberConnection subConnection = factory.createRoQSubscriberConnection("queue1", "key");
+			// Open the connection to the logical queue
+			subConnection.open();
+			// Register a message listener
+			IRoQSubscriber subs = new IRoQSubscriber() {
+				public void onEvent(byte[] msg) {
+					String content = new String(msg, 0, msg.length);
+					assert content.equals("hello");
+//					 logger.debug("In message listener recieveing :" +	 content);
+				}
+			};
+			subConnection.setMessageSubscriber(subs);
+
+			// 4. Create a publisher// Add a publisher
+			// Creating the connection
+			IRoQConnection connection = factory.createRoQConnection("queue1");
+			connection.open();
+			// Creating the publisher and sending message
+			IRoQPublisher publisher = connection.createPublisher();
+			// Wait for the connection is established before sending the first
+			// message
+			connection.blockTillReady(10000);
+
+			// 5 Sending the message
 			logger.info("Sending MESSAGES ...");
 			for (int i = 0; i < 500; i++) {
-				publisher.sendMessage("key".getBytes(), ("hello"+i).getBytes());
+				publisher.sendMessage("key".getBytes(), ("hello" + i).getBytes());
+			}
+
+			// 3 Wait &. Check the content
+
+			logger.info("Sending MESSAGES ...");
+			for (int i = 0; i < 500; i++) {
+				publisher.sendMessage("key".getBytes(), ("hello" + i).getBytes());
 			}
 			Thread.sleep(15000);
-			
-			//End close connection
+
+			// End close connection
 			connection.close();
 			subConnection.close();
-			
-			//Delete the queue
+
+			// Delete the queue
 			logicalQFactory.removeQueue("queue1");
 			Thread.sleep(2000);
-			
+
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}

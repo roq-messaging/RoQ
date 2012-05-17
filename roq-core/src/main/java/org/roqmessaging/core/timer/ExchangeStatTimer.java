@@ -40,7 +40,7 @@ public 	class ExchangeStatTimer extends TimerTask {
 	private StatDataState statistic = null;
 	private Exchange xchange = null;
 
-	public ExchangeStatTimer(Exchange xChangeRef,  StatDataState stat,  ZMQ.Context context ) {
+	public ExchangeStatTimer(Exchange xChangeRef,  StatDataState stat ) {
 		this.xchange = xChangeRef;
 		this.timercontext = ZMQ.context(1);
 		this.statistic=stat;
@@ -48,7 +48,7 @@ public 	class ExchangeStatTimer extends TimerTask {
 		this.monitorSocket = timercontext.socket(ZMQ.PUB);
 		this.monitorSocket.connect(this.xchange.getS_monitor());
 		//init the statistic socket that sends information to the stat monitor forwarder
-		this.statSocket = context.socket(ZMQ.PUB);
+		this.statSocket = timercontext.socket(ZMQ.PUB);
 		this.statSocket.connect(stat.getStatHost());
 		this.logger.debug("Connecting to "+ stat.getStatHost());
 		//init
@@ -69,7 +69,7 @@ public 	class ExchangeStatTimer extends TimerTask {
        this.statistic.setTotalProcessed(this.statistic.getTotalProcessed()+this.statistic.getProcessed());
        
 		statSocket.send((
-				new Integer(RoQConstant.STAT_MIN).toString()+","
+				new Integer(RoQConstant.STAT_EXCHANGE_MIN).toString()+","
 		                + minute + "," 
 						+ this.statistic.getTotalProcessed() + ","
 					 	+ this.statistic.getProcessed() + "," 

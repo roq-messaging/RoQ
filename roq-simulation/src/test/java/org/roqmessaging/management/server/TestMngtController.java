@@ -88,7 +88,7 @@ public class TestMngtController {
 			 this.factory.createQueue("queue1", RoQUtils.getInstance().getLocalIP().toString());
 			 this.factory.createQueue("queueTest", RoQUtils.getInstance().getLocalIP().toString());
 			 //2. Init the management controller
-			mngtController = new MngtController(RoQUtils.getInstance().getLocalIP(), "SampleManagement.db");
+			mngtController = new MngtController(RoQUtils.getInstance().getLocalIP(), "SampleManagement.db", 4000);
 			new Thread(mngtController).start();
 			//3. Sleep for test
 			Thread.sleep(5000);
