@@ -118,7 +118,7 @@ public interface RoQConstant {
 	 * Stat event sent every minute from exchanges to monitor.
 	 * “12,minute,totalProcessed,processed,totalthroughput,throughput,nbProd”
 	 */
-	public static int STAT_MIN= 21;
+	public static int STAT_EXCHANGE_MIN= 21;
 	
 	/**
 	 * Stat sent from producer to monitor.
@@ -192,15 +192,36 @@ public interface RoQConstant {
 	 */
 	public static int MNGT_UPDATE_CONFIG = 1500;
 
+
+	/**
+	 *  Request command that can be sent to the Global ConfigManager to get the Monitor and
+	 *   Stat Monitor.
+	 *   Request: "2000, QName"
+	 *   Answer:"monitor address, Statistic monitor host on the subscribing port" while the
+	 *    CONFIG_GET_HOST_BY_QNAME  return the stat monitor port on the publioshing port
+	 */
+	public static int BSON_CONFIG_GET_HOST_BY_QNAME = 2000;
 	
 	/**
 	 * Used by the management server to broadcast configuration.
 	 */
 	public static String BSON_QUEUES = "Queues";
 	
+
 	/**
 	 * Used by the management server to broadcast configuration.
 	 */
 	public static String BSON_HOSTS = "Hosts";
+	
+	/**
+	 * Used by the Global  management  to answer the get host by QName request.
+	 */
+	public static String BSON_MONITOR_HOST = "Monitor_host";
+	
+	/**
+* Used by the Global  management  to answer the get host by QName request.
+	 */
+	public static String BSON_STAT_MONITOR_HOST = "Stat_Monitor_host";
 
+	
 }

@@ -15,6 +15,10 @@
 package org.roqmessaging.core.stat;
 
 import org.apache.log4j.Logger;
+import org.bson.BSON;
+import org.bson.BSONObject;
+import org.bson.BasicBSONObject;
+import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
@@ -52,12 +56,14 @@ public class StatisticMonitor implements Runnable, IStoppable {
 		this.statPort = statPort;
 		//Start the sub socket from RoQ elements
 		statSub = context.socket(ZMQ.SUB);
-		statSub.connect("tcp://"+RoQUtils.getInstance().getLocalIP()+":"+ statPort);
+		statSub.bind("tcp://"+RoQUtils.getInstance().getLocalIP()+":"+ statPort);
 		statSub.subscribe("".getBytes());
+		logger.debug("Statistic Monitor on "+ "tcp://"+RoQUtils.getInstance().getLocalIP()+":"+ statPort);
 		
 		//Start the forwarder element
 		kpiPub = context.socket(ZMQ.PUB);
 		kpiPub.bind("tcp://*:"+ (statPort+1));
+		logger.debug("Binding the Stat publisher port on "+ (statPort+1));
 	}
 
 	/**
@@ -65,23 +71,82 @@ public class StatisticMonitor implements Runnable, IStoppable {
 	 * @see java.lang.Runnable#run()
 	 */
 	public void run() {
+		logger.info("Starting the Stat Monitor on " + RoQUtils.getInstance().getLocalIP() + ":" + (this.statPort));
 		this.running = true;
-		//Poller that will poll for a message on the stat sub
-		ZMQ.Poller poller = context.poller(3);
+		// Poller that will poll for a message on the stat sub
+		ZMQ.Poller poller = context.poller(1);
 		poller.register(this.statSub);
-		//Running the thread
+		// Running the thread
 		while (this.running) {
-			do {
-				if (poller.pollin(0)) {
-					kpiPub.send(statSub.recv(0), statSub.hasReceiveMore() ? ZMQ.SNDMORE : 0);
-					// if (!frontendSub.hasReceiveMore())
-					// break;
-				}
-			}while (this.statSub.hasReceiveMore() && this.running);
+			poller.poll(2000);
+			if (poller.pollin(0)) {
+				do {
+					kpiPub.send(translateStream(statSub.recv(0)), statSub.hasReceiveMore() ? ZMQ.SNDMORE : 0);
+				} while (this.statSub.hasReceiveMore() && this.running);
+			}
 		}
-		logger.info("Stopping the statistic monitor thread "+this.statPort);
+		logger.info("Stopping the statistic monitor thread " + this.statPort);
 		this.statSub.close();
 		this.kpiPub.close();
+	}
+
+	/**
+	 * Translates the java encoding in BSON encoding
+	 * @param recv the stat recieved by the RoQ elements
+	 */
+	private byte [] translateStream(byte[] recv) {
+		logger.debug("Start translating the Statistic stream in BSON");
+		String info[] = new String(recv).split(",");
+		int infoCode = Integer.parseInt(info[0]);
+		BSONObject statObj = null;
+		
+		//Check what are the stat types
+		switch (infoCode) {
+		case RoQConstant.STAT_TOTAL_SENT:
+			logger.info("1 producer finished, sent " + info[2] + " messages.");
+			statObj = new BasicBSONObject();
+			statObj.put("CMD",RoQConstant.STAT_TOTAL_SENT);
+			statObj.put("PublisherID", info[1]);
+			statObj.put("TotalSent", info[2]);
+			logger.debug(statObj.toString());
+			return BSON.encode(statObj);
+			
+		case RoQConstant.STAT_PUB_MIN:
+			statObj = new BasicBSONObject();
+			statObj.put("CMD",RoQConstant.STAT_PUB_MIN);
+			statObj.put("SubscriberID", info[1]);
+			statObj.put("Total", info[2]);
+			logger.debug(statObj.toString());
+			return BSON.encode(statObj);
+			
+		case RoQConstant.STAT_EXCHANGE_MIN:
+			//Stat send by the exchange
+			//12,minute,totalProcessed,processed,totalthroughput,throughput,nbProd
+			statObj = new BasicBSONObject();
+			statObj.put("CMD",RoQConstant.STAT_EXCHANGE_MIN);
+			statObj.put("Minute", info[1]);
+			statObj.put("TotalProcessed", info[2]);
+			statObj.put("Processed", info[3]);
+			statObj.put("TotalThroughput", info[4]);
+			statObj.put("Throughput", info[5]);
+			statObj.put("Producers", info[6]);
+			logger.debug(statObj.toString());
+			return BSON.encode(statObj);
+
+		case RoQConstant.STAT_TOTAL_RCVD:
+			//Stat send from Subscriber 
+			//31, minute + "," + totalReceived + "," + received + "," + subsriberID + "," + meanLat)
+			statObj = new BasicBSONObject();
+			statObj.put("CMD",RoQConstant.STAT_TOTAL_RCVD);
+			statObj.put("Minute", info[1]);
+			statObj.put("TotalReceived", info[2]);
+			statObj.put("Received", info[3]);
+			statObj.put("SubsriberID", info[4]);
+			statObj.put("MeanLat", info[5]);
+			logger.debug(statObj.toString());
+			return BSON.encode(statObj);
+	}
+		return BSON.encode(new BasicBSONObject());
 	}
 
 	/**

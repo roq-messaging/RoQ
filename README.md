@@ -77,3 +77,10 @@ cd /home/username/RoQ
 mvn install
 ```
 
+To test the code locally on 1 VM, we have created a simple launcher which instantiates the complete RoQ stack. To start this class just open a terminal:
+
+```
+ java -Djava.library.path=/usr/local/lib -cp roq-simulation-1.0-SNAPSHOT-jar-with-dependencies.jar org.roq.simulation.RoQAllLocalLauncher 
+```
+
+

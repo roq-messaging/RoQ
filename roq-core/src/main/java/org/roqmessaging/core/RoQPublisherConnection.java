@@ -47,7 +47,6 @@ public class RoQPublisherConnection implements IRoQConnection {
 	 * @see org.roqmessaging.client.IRoQConnection#open()
 	 */
 	public void open() {
-		//TODO Hard coded configuration, this should be in a java.property file
 		this.connectionManager = new PublisherConnectionManager(this.monitor, false);
 		Thread mainThread = new Thread(connectionManager);
 		mainThread.start();

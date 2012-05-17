@@ -23,6 +23,7 @@ import org.bson.BSONObject;
 import org.bson.BasicBSONDecoder;
 import org.bson.BasicBSONEncoder;
 import org.bson.BasicBSONObject;
+import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.management.server.state.QueueManagementState;
 
 /**
@@ -117,6 +118,18 @@ public class RoQBSONSerializer implements IRoQSerializer {
 	public List<String> unSerializeHosts(byte[] encodedH) {
 		BSONObject newHostObject = decoder.readObject(encodedH);
 		return (ArrayList<String>) newHostObject.get("hosts");
+	}
+
+	/**
+	 * @see org.roqmessaging.management.serializer.IRoQSerializer#serialiazeMonitorInfo(java.lang.String, java.lang.String)
+	 */
+	public byte[] serialiazeMonitorInfo(String monitor, String statMonitor) {
+		BSONObject answer = new BasicBSONObject();
+		answer.put(RoQConstant.BSON_MONITOR_HOST, monitor);
+		answer.put(RoQConstant.BSON_STAT_MONITOR_HOST, statMonitor);
+		this.logger.debug("Serialize Get Host by QName:");
+		this.logger.debug(answer);
+		return BSON.encode(answer);
 	}
 
 }

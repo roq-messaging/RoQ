@@ -23,6 +23,8 @@ import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
+import org.roqmessaging.management.serializer.IRoQSerializer;
+import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.MngtController;
 import org.zeromq.ZMQ;
 
@@ -58,6 +60,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private MngtController mngtController = null;
 	//The SQL DB name
 	private String dbName = "Management.db";
+	
+	//Serializer (BSON)
+	private IRoQSerializer serialiazer = new RoQBSONSerializer();
 	
 	private Logger logger = Logger.getLogger(GlobalConfigurationManager.class);
 	
@@ -180,7 +185,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 					}
 					break;
 					
-					//A remove host request
+					//Get the monitor and the statistic monitor forwarder  by the QName
 				case RoQConstant.CONFIG_GET_HOST_BY_QNAME:
 					logger.debug("Recieveing GET HOST request from a client ");
 					if (info.length == 2) {
@@ -188,6 +193,26 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 						if(this.queueMonitorLocations.containsKey(info[1])){
 							logger.debug("Answering back:"+ this.queueMonitorLocations.get(info[1])+","+this.queueStatLocation.get(info[1]));
 							this.clientReqSocket.send((this.queueMonitorLocations.get(info[1])+","+this.queueStatLocation.get(info[1])).getBytes(), 0);
+						}else{
+							logger.warn(" No logical queue as:"+info[1]);
+							this.clientReqSocket.send(("").getBytes(), 0);
+						}
+					}
+					break;
+					
+					//Get the monitor and the statistic monitor forwarder  by the QName BUT In BSON for non java processes
+				case RoQConstant.BSON_CONFIG_GET_HOST_BY_QNAME:
+					logger.debug("Recieveing GET HOST by QNAME in BSON request from a client ");
+					if (info.length == 2) {
+						logger.debug("The request format is valid - Asking for translating  "+ info[1]);
+						if(this.queueMonitorLocations.containsKey(info[1]) && this.queueStatLocation.containsKey(info[1])){
+							//Replace the stat monitor port to the subscription port
+							String subscribingKPIMonitor = this.queueStatLocation.get(info[1]);
+							int basePort = this.serializationUtils.extractBasePort(subscribingKPIMonitor);
+							String portOff = subscribingKPIMonitor.substring(0, subscribingKPIMonitor.length() - "xxxx".length());
+							subscribingKPIMonitor= portOff+(basePort+1);
+							logger.debug("Answering back:"+ this.queueMonitorLocations.get(info[1])+","+subscribingKPIMonitor);
+							this.clientReqSocket.send(this.serialiazer.serialiazeMonitorInfo(this.queueMonitorLocations.get(info[1]),subscribingKPIMonitor), 0);
 						}else{
 							logger.warn(" No logical queue as:"+info[1]);
 							this.clientReqSocket.send(("").getBytes(), 0);
