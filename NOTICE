@@ -20,4 +20,7 @@ and founded by EURANOVA
 Portions of this software were developed in collaboration with
 the "Université Libre de Bruxelles" (ULB) in Brussels, Belgium.
 
-This software built upon the ZeroMQ library, developed a.o. by Pieter Hintjens
+This software built upon the ZeroMQ library, developed a.o. by Pieter Hintjens,
+the sqlite-jdbc developed by xerial, 
+the BSON encoder/decoder provided by the mongo-DB driver and developed by Mongo DB, 
+and finally Maven2 for the build and Jenkins for the continous integration.

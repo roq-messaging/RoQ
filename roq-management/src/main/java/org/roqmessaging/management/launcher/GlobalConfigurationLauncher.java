@@ -32,7 +32,7 @@ public class GlobalConfigurationLauncher {
 	 */
 	public static void main(String[] args) {
 		System.out.println("Starting the  global configuration manager");
-		GlobalConfigurationManager configurationManager = new GlobalConfigurationManager();
+		GlobalConfigurationManager configurationManager = new GlobalConfigurationManager(60000);
 		ShutDownHook hook = new ShutDownHook(configurationManager.getShutDownMonitor());
 		Runtime.getRuntime().addShutdownHook(hook);
 		Thread configThread = new Thread(configurationManager);

@@ -71,8 +71,10 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	
 	/**
 	 * Constructor.
+	 * @param period the period for sending the configuration udpate to the 
+	 * management controller.
 	 */
-	public GlobalConfigurationManager() {
+	public GlobalConfigurationManager( int period) {
 		this.hostManagerAddresses = new ArrayList<String>();
 		this.logger.info("Started global config Runnable");
 		this.queueMonitorLocations = new HashMap<String, String>();
@@ -85,12 +87,14 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		//Init variables and pointers
 		this.running = true;
 		this.serializationUtils = new RoQSerializationUtils();
+		this.configPeriod = period;
 		
 		//The shutdown thread
 		this.shutDownMonitor = new ShutDownMonitor(5001, this);
 		new Thread(this.shutDownMonitor).start();
-		//The mngt controller
-		this.mngtController = new MngtController("localhost", dbName, 60000);
+		
+		//The Management controller - the start is in the run to take the period attribute
+		this.mngtController = new MngtController("localhost", dbName, (this.configPeriod+500));
 		new Thread(mngtController).start();
 	}
 

@@ -48,7 +48,7 @@ public class TestLogicalQueue {
 		this.logger.info("Initial setup Start global config thread");
 		this.logger.info("Start global config...");
 		if (configurationManager == null) {
-			configurationManager = new GlobalConfigurationManager();
+			configurationManager = new GlobalConfigurationManager(4000);
 			Thread configThread = new Thread(configurationManager);
 			configThread.start();
 		}

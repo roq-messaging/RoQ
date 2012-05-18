@@ -18,6 +18,7 @@ import org.apache.log4j.Logger;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.HostConfigManager;
+import org.roqmessaging.management.server.MngtController;
 
 /**
  * Class RoQAllLocalLauncher
@@ -47,8 +48,7 @@ public class RoQAllLocalLauncher {
 		this.configurationServer =RoQUtils.getInstance().getLocalIP().toString();
 		this.logger.info("Initial setup Start global config thread");
 		this.logger.info("Start global config...");
-		configurationManager = new GlobalConfigurationManager();
-		this.configurationManager.setConfigPeriod(configPeriod);
+		configurationManager = new GlobalConfigurationManager(configPeriod);
 		Thread configThread = new Thread(configurationManager);
 		configThread.start();
 		// 2. Start the host configuration manager locally
@@ -135,5 +135,12 @@ public class RoQAllLocalLauncher {
 	 */
 	public void setConfigPeriod(int configPeriod) {
 		this.configPeriod = configPeriod;
+	}
+	
+	/**
+	 * @return the mangement controller handle
+	 */
+	public MngtController getMngtController(){
+		return this.configurationManager.getMngtController();
 	}
 }
