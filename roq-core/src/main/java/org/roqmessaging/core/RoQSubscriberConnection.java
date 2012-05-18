@@ -31,8 +31,6 @@ public class RoQSubscriberConnection implements IRoQSubscriberConnection {
 	// The key
 	private String key = null;
 	private String monitorHost = null, monitorStat=null;
-	// The subscriber ID
-	private int subscriberID = 0;
 
 	/**
 	 * @param monitorHost
@@ -44,10 +42,9 @@ public class RoQSubscriberConnection implements IRoQSubscriberConnection {
 	 * @param key
 	 *            the subscriber keyr to filter
 	 */
-	public RoQSubscriberConnection(String monitorHost, String monitorStat, int subscriberID, String key) {
+	public RoQSubscriberConnection(String monitorHost, String monitorStat, String key) {
 		this.monitorHost = monitorHost;
 		this.monitorStat = monitorStat;
-		this.subscriberID = subscriberID;
 		this.key = key;
 	}
 
@@ -55,7 +52,7 @@ public class RoQSubscriberConnection implements IRoQSubscriberConnection {
 	 * @see org.roqmessaging.client.IRoQSubscriberConnection#open()
 	 */
 	public void open() {
-		this.connectionManager = new SubscriberConnectionManager(this.monitorHost, this.monitorStat, this.key, this.subscriberID, false);
+		this.connectionManager = new SubscriberConnectionManager(this.monitorHost, this.monitorStat, this.key, false);
 		Thread mainThread = new Thread(connectionManager);
 		mainThread.start();
 

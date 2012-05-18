@@ -74,7 +74,7 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 		}
 		logger.info("Creating a subscriber connection factory for "+qName+ " @ "+ monitorConfig);
 		String[] config = monitorConfig.split(",");
-		return new RoQSubscriberConnection(config[0],config[1], 0, key);
+		return new RoQSubscriberConnection(config[0],config[1], key);
 	}
 	
 	/**
