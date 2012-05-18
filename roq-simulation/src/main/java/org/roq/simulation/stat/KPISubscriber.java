@@ -24,6 +24,7 @@ import junit.framework.Assert;
 import org.apache.log4j.Logger;
 import org.bson.BSON;
 import org.bson.BSONObject;
+import org.bson.BasicBSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQUtils;
@@ -95,8 +96,14 @@ public class KPISubscriber implements Runnable, IStoppable{
 		globalConfigReq.connect("tcp://" + this.configurationServer + ":5000");
 
 		// 1.2 Send the request
-		globalConfigReq.send((RoQConstant.BSON_CONFIG_GET_HOST_BY_QNAME + "," + qName).getBytes(), 0);
+		// Prepare the request BSON object
+		BSONObject request = new BasicBSONObject();
+		request.put("CMD", RoQConstant.BSON_CONFIG_GET_HOST_BY_QNAME);
+		request.put("QName", qName);
+		//Send 
+		globalConfigReq.send(BSON.encode(request), 0);
 		byte[] configuration = globalConfigReq.recv(0);
+		//Decode answer
 		BSONObject dConfiguration = BSON.decode(configuration);
 		String monitorStatServer = (String) dConfiguration.get(RoQConstant.BSON_STAT_MONITOR_HOST);
 		Assert.assertNotNull(monitorStatServer);

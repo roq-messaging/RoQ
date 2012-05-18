@@ -149,5 +149,37 @@ public class BSONUnitTest {
 		byte[] encoded2 = 	serialiazer.serialiazeMonitorInfo("tcp://127.0.1.1:5000", "tcp://127.0.0.1:5061");
 		Assert.assertEquals(answer.toString(), BSON.decode(encoded2).toString());
 	}
+	
+	/**
+	 * test the java encoding Vs BSON
+	 * @throws Exception
+	 */
+	@Test
+	public void testBSON_VS_JAVA() throws Exception {
+		this.logger.debug("Test encoding JAVA");
+		BSONObject request = new BasicBSONObject();
+		request.put("CMD",RoQConstant.BSON_CONFIG_GET_HOST_BY_QNAME);
+		request.put("QName", "myName");
+		
+		BSONObject request2 = new BasicBSONObject();
+		request2.put("CMD",RoQConstant.BSON_CONFIG_GET_HOST_BY_QNAME);
+		request2.put("QName", "SuperSabriSayen2");
+			
+		this.logger.debug(request);
+		this.logger.debug(request2);
+		
+		//Encode
+		byte[] encoded = 	BSON.encode(request);
+		byte[] encoded2 = 	BSON.encode(request2);
+		
+		String string = new String(encoded);
+		String string2 = new String(encoded2);
+		logger.debug(string);
+		logger.debug(string2);
+		
+		if(! string.contains(",")){
+			logger.debug(BSON.decode(encoded).toString());
+		}
+	}
 
 }

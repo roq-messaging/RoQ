@@ -50,7 +50,7 @@ public class SubscriberConnectionManager implements Runnable {
 	private int totalReceived=0;
 	private int minute=0;
 
-	private int subsriberID=0;
+	private String subsriberID="0";
 
 	private long latency;
 	private int latenced;
@@ -68,10 +68,11 @@ public class SubscriberConnectionManager implements Runnable {
 	 * @param ID the subscriber ID
 	 * @param tstmp true if we use a timestamp server
 	 */
-	public SubscriberConnectionManager(String monitor, String monitorStat, String subKey, int ID, boolean tstmp) {
+	public SubscriberConnectionManager(String monitor, String monitorStat, String subKey,  boolean tstmp) {
 		this.context = ZMQ.context(1);
 		this.s_monitorStat = monitorStat;
 		this.subkey = subKey.getBytes();
+		this.subsriberID = System.currentTimeMillis()+subKey;
 
 		//as the monitor is and address as tcp://ip:base port
 		int basePort = extractBasePort(monitor);
@@ -87,7 +88,6 @@ public class SubscriberConnectionManager implements Runnable {
 		this.received = 0;
 		this.totalReceived = 0;
 		this.minute = 0;
-		this.subsriberID = ID;
 		this.latency = 0;
 		this.latenced = 0;
 
@@ -104,6 +104,7 @@ public class SubscriberConnectionManager implements Runnable {
 		public Stats() {
 			this.statsPub = context.socket(ZMQ.PUB);
 			statsPub.connect(s_monitorStat);
+			logger.debug("Subscriber Connecting stat monitor on "+ s_monitorStat);
 		}
 
 		public void run() {

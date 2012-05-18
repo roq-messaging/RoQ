@@ -29,7 +29,7 @@ public class SubScriberLauncher {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		SubscriberConnectionManager SubClient = new SubscriberConnectionManager("tcp://localhost:5571", "tcp://localhost:5800", "manche", 0, Boolean.parseBoolean(args[1]));
+		SubscriberConnectionManager SubClient = new SubscriberConnectionManager("tcp://localhost:5571", "tcp://localhost:5800", "manche", Boolean.parseBoolean(args[1]));
 		Thread t = new Thread(SubClient);
 		t.start();
 	}
