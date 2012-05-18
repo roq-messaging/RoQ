@@ -72,7 +72,7 @@ public class RoQBSONSerializer implements IRoQSerializer {
 		logger.debug("Encoding hosts in BSON ...");
 		// Create the bson object
 		BSONObject bsonObject = new BasicBSONObject();
-		bsonObject.put("hosts", hosts);
+		bsonObject.put("Hosts", hosts);
 		logger.debug(bsonObject.toString());
 
 		// Encode the object
@@ -84,7 +84,7 @@ public class RoQBSONSerializer implements IRoQSerializer {
 	 */
 	public byte[] serialiseCMDID(int cmd) {
 		BSONObject bsonObject = new BasicBSONObject();
-		bsonObject.put("CMD_ID", cmd);
+		bsonObject.put("CMD", cmd);
 		logger.debug("Encoding CMD ID in BSON= "+bsonObject.toString());
 		return BSON.encode(bsonObject);
 	}
@@ -117,7 +117,7 @@ public class RoQBSONSerializer implements IRoQSerializer {
 	@SuppressWarnings("unchecked")
 	public List<String> unSerializeHosts(byte[] encodedH) {
 		BSONObject newHostObject = decoder.readObject(encodedH);
-		return (ArrayList<String>) newHostObject.get("hosts");
+		return (ArrayList<String>) newHostObject.get("Hosts");
 	}
 
 	/**

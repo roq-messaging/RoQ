@@ -25,7 +25,6 @@ import junit.framework.Assert;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.roq.simulation.RoQAllLocalLauncher;
 import org.roqmessaging.core.utils.RoQUtils;
@@ -38,7 +37,7 @@ import org.roqmessaging.management.server.state.QueueManagementState;
  * 
  * @author sskhiri
  */
-@Ignore
+//@Ignore
 public class TestMngtController {
 	private RoQAllLocalLauncher launcher = null;
 	private Logger logger = Logger.getLogger(TestMngtController.class);
@@ -68,6 +67,7 @@ public class TestMngtController {
 		this.launcher.setConfigPeriod(3000);
 		this.launcher.setUp();
 		this.factory = new LogicalQFactory(RoQUtils.getInstance().getLocalIP().toString());
+		this.mngtController = this.launcher.getMngtController();
 	}
 
 	/**
@@ -87,9 +87,11 @@ public class TestMngtController {
 			// 1. Create Q
 			 this.factory.createQueue("queue1", RoQUtils.getInstance().getLocalIP().toString());
 			 this.factory.createQueue("queueTest", RoQUtils.getInstance().getLocalIP().toString());
-			 //2. Init the management controller
-			mngtController = new MngtController(RoQUtils.getInstance().getLocalIP(), "SampleManagement.db", 4000);
-			new Thread(mngtController).start();
+			
+			 //2. Start the test class
+			MngtSubscriber subscriber = new MngtSubscriber();
+			new Thread(subscriber).start();
+			
 			//3. Sleep for test
 			Thread.sleep(5000);
 			

@@ -69,8 +69,7 @@ public class UnitTestManagement {
 		statement.executeUpdate("drop table if exists Queues");
 		
 		//Start the config
-		globalConfigurationManager = new GlobalConfigurationManager();
-		globalConfigurationManager.setConfigPeriod(3000);
+		globalConfigurationManager = new GlobalConfigurationManager(3000);
 		new Thread(globalConfigurationManager).start();
 		
 		//Launching a thread that listens the broadcast channel for management update
