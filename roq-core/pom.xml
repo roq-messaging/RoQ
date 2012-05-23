@@ -89,7 +89,6 @@
 			<groupId>org.roqmessaging</groupId>
 			<artifactId>roq-clientlib</artifactId>
 			<version>1.0-SNAPSHOT</version>
-			<scope>test</scope>
 		</dependency>
 	</dependencies>
 	<organization>
