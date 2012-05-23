@@ -44,6 +44,8 @@ import org.zeromq.ZMQ;
  * @author sskhiri
  */
 public class HostConfigManager implements Runnable, IStoppable {
+	//TODO giving the name of the interface (optional constructor) issue with virtual
+	//ethernet interface
 
 	// ZMQ config
 	private ZMQ.Socket clientReqSocket = null;
