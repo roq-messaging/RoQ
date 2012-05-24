@@ -25,17 +25,20 @@ import org.roqmessaging.management.LogicalQFactory;
 
 /**
  * Class PublisherInit
- * <p> Description:  will initiate a subscriber and will wait untill we kill it.
+ * <p> Description:  This class is used to test a simple RoQ deployment on cluster.
+ *  It will initiate a subscriber, create a queue and will wait until we kill it.
  * 
  * @author sskhiri
  */
-public class PublisherInit implements Runnable, IStoppable{
+public class PublisherInit implements  IStoppable{
 	private Logger logger = Logger.getLogger(PublisherInit.class);
 	private volatile boolean active = true;
 	private String qName = null;
 	private String gcmAddress = null;
 
 	/**
+	 * 1. Create A connection to the queue name
+	 * 2. Register a Subscriber that will live in this thread
 	 * @param qName the name of the queue to connect
 	 * @param gcmAddress the global configuration manager address
 	 */
@@ -58,23 +61,6 @@ public class PublisherInit implements Runnable, IStoppable{
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
 	public void shutDown() {
-		this.active = false;
-	}
-
-	/**
-	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
-	 */
-	public String getName() {
-		return this.getClass().getName();
-	}
-
-	/**
-	 * @see java.lang.Runnable#run()
-	 */
-	public void run() {
-		while (this.active) {
-			// just wait that someone kill me
-		}
 		logger.info("Stoping Subscriber & removing queue");
 		IRoQLogicalQueueFactory factory = new LogicalQFactory(this.gcmAddress);
 		factory.removeQueue(this.qName);
@@ -84,6 +70,13 @@ public class PublisherInit implements Runnable, IStoppable{
 			logger.error(e);
 		}
 		logger.info("Stopped.");
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return this.getClass().getName();
 	}
 
 	/**

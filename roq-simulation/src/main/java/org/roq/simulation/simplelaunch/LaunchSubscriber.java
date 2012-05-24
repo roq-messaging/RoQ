@@ -22,12 +22,12 @@ import org.roqmessaging.management.launcher.hook.ShutDownHook;
 /**
  * Class LaunchSubscriber
  * <p> Description: Clean test class to validate a simple Roq installation. 
- * it creates a Queue  and register a subscriber with the key "key"
+ * it creates a Queue  and register a subscriber with the key "key".
+ * It will stop either on kill signal or after 20 seconds
  * 
  * @author sskhiri
  */
 public class LaunchSubscriber {
-
 
 	/**
 	 * @param args [0] the global configuration manager address, [1] the queue name to create
@@ -47,10 +47,6 @@ public class LaunchSubscriber {
 		PublisherInit init = new PublisherInit(args[1], args[0]);
 		ShutDownHook hook = new ShutDownHook(new ShutDownMonitor(1000, init));
 		Runtime.getRuntime().addShutdownHook(hook);
-		
-		//Launch thread
-		Thread th = new Thread(init) ;
-		th.start();
 		
 		int count =0;
 		try {
