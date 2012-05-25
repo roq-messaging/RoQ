@@ -15,6 +15,8 @@
 package org.roqmessaging.management;
 
 import java.util.TimerTask;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
@@ -43,6 +45,8 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 	private GlobalConfigurationManager configurationManager = null;
 	//The serializer
 	private RoQSerializationUtils serializationUtils = null;
+	//Lock to avoid course condition
+	private Lock lock = new ReentrantLock();
 
 	/**
 	 * 
@@ -61,11 +65,17 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 	 */
 	@Override
 	public void run() {
-		logger.debug("Sending Global configuration update to Management Subscribers ...");
-		//1. Get the configuration 
-		//2. Publish the configuration
-		this.mngtPubSocket.send(new Integer(RoQConstant.MNGT_UPDATE_CONFIG).toString().getBytes(), ZMQ.SNDMORE);
-		this.mngtPubSocket.send(serializationUtils.serialiseObject(this.configurationManager.getQueueHostLocation()), 0);
+		try {
+			lock.lock();
+			logger.debug("Sending Global configuration update to Management Subscribers ...");
+			// 1. Get the configuration
+			// 2. Publish the configuration
+			this.mngtPubSocket.send(new Integer(RoQConstant.MNGT_UPDATE_CONFIG).toString().getBytes(), ZMQ.SNDMORE);
+			this.mngtPubSocket.send(
+					serializationUtils.serialiseObject(this.configurationManager.getQueueHostLocation()), 0);
+		} finally {
+			lock.unlock();
+		}
 	}
 	
 
@@ -73,9 +83,13 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
 	public void shutDown() {
-		logger.debug("Closing Sockets");
-		this.mngtPubSocket.close();
-		
+		try {
+			lock.lock();
+			logger.debug("Closing Sockets");
+			this.mngtPubSocket.close();
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	/**
