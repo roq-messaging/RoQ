@@ -34,7 +34,6 @@ import org.roqmessaging.management.server.state.QueueManagementState;
  * 
  * @author sskhiri
  */
-//@Ignore
 public class TestMngtController {
 	private RoQAllLocalLauncher launcher = null;
 	private Logger logger = Logger.getLogger(TestMngtController.class);

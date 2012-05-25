@@ -17,7 +17,6 @@ package org.roq.simulation;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.roq.simulation.stat.KPISubscriber;
 import org.roqmessaging.client.IRoQConnection;
