@@ -15,6 +15,7 @@
 package org.roq.simulation;
 
 import org.apache.log4j.Logger;
+import org.junit.Ignore;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.HostConfigManager;
@@ -28,6 +29,7 @@ import org.roqmessaging.management.server.MngtController;
  * 
  * @author sskhiri
  */
+@Ignore
 public class RoQAllLocalLauncher {
 	private Logger logger = Logger.getLogger(RoQAllLocalLauncher.class);
 	private GlobalConfigurationManager configurationManager = null;
@@ -40,15 +42,15 @@ public class RoQAllLocalLauncher {
 	 * 1. The global configuration manager<br>
 	 * 2. The local host configuration manager for this host <br>
 	 * 3. Adding the local host to global host configuration manager
-	 * 
+	 * @param formatDB defined whether the DB must be cleaned.
 	 * @throws java.lang.Exception
 	 */
-	public void setUp() throws Exception {
+	public void setUp(boolean formatDB) throws Exception {
 		// 1. Start the configuration
 		this.configurationServer =RoQUtils.getInstance().getLocalIP().toString();
 		this.logger.info("Initial setup Start global config thread");
 		this.logger.info("Start global config...");
-		configurationManager = new GlobalConfigurationManager(configPeriod);
+		configurationManager = new GlobalConfigurationManager(configPeriod, formatDB);
 		Thread configThread = new Thread(configurationManager);
 		configThread.start();
 		// 2. Start the host configuration manager locally
@@ -65,19 +67,23 @@ public class RoQAllLocalLauncher {
 	public void tearDown() throws Exception {
 		this.configurationManager.getShutDownMonitor().shutDown();
 		this.hostConfigManager.getShutDownMonitor().shutDown();
-		Thread.sleep(3000);
+		Thread.sleep(4000);
 	}
 
 	/**
 	 * @param args
-	 *            must contain 1 argument the queue name that we want to create
+	 *            must contain 2 argument the queue name that we want to create and true or false
 	 */
 	public static void main(String[] args) {
+		if(args.length!=2){
+			System.out.println("The args must be <qname> <true||false>");
+			System.exit(0);
+		}
 		RoQAllLocalLauncher launcher = new RoQAllLocalLauncher();
 		ShutDownHook hook = new ShutDownHook(launcher);
 		Runtime.getRuntime().addShutdownHook(hook);
 		try {
-			launcher.setUp();
+			launcher.setUp(Boolean.parseBoolean(args[1]));
 			while (true) {
 				Thread.sleep(500);
 			}

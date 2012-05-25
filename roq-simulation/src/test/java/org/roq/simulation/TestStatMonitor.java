@@ -17,6 +17,7 @@ package org.roq.simulation;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.roq.simulation.stat.KPISubscriber;
 import org.roqmessaging.client.IRoQConnection;
@@ -46,7 +47,7 @@ public class TestStatMonitor {
 	@Before
 	public void setUp() throws Exception {
 		this.launcher = new RoQAllLocalLauncher();
-		this.launcher.setUp();
+		this.launcher.setUp(true);
 	}
 
 	/**
@@ -84,8 +85,7 @@ public class TestStatMonitor {
 			IRoQSubscriber subs = new IRoQSubscriber() {
 				public void onEvent(byte[] msg) {
 					String content = new String(msg, 0, msg.length);
-					assert content.equals("hello");
-//					 logger.debug("In message listener recieveing :" +	 content);
+					assert content.startsWith("hello");
 				}
 			};
 			subConnection.setMessageSubscriber(subs);
@@ -120,7 +120,7 @@ public class TestStatMonitor {
 
 			// Delete the queue
 			logicalQFactory.removeQueue("queue1");
-			Thread.sleep(2000);
+			Thread.sleep(3000);
 
 		} catch (InterruptedException e) {
 			e.printStackTrace();

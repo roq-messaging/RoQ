@@ -14,10 +14,7 @@
  */
 package org.roqmessaging.management.server;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 
 import junit.framework.Assert;
@@ -51,21 +48,9 @@ public class TestMngtController {
 	 */
 	@Before
 	public void setUp() throws Exception {
-		//Clean the DB
-		Class.forName("org.sqlite.JDBC");
-		String dbName = "SampleManagement.db";
-		Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbName);
-		Statement statement = connection.createStatement();
-		statement.setQueryTimeout(10);  // set timeout to 30 sec.
-
-		// Drop table if exist - clean the file
-		statement.executeUpdate("drop table if exists Hosts");
-		statement.executeUpdate("drop table if exists Configuration");
-		statement.executeUpdate("drop table if exists Queues");
-		
 		this.launcher = new RoQAllLocalLauncher();
 		this.launcher.setConfigPeriod(3000);
-		this.launcher.setUp();
+		this.launcher.setUp(true);
 		this.factory = new LogicalQFactory(RoQUtils.getInstance().getLocalIP().toString());
 		this.mngtController = this.launcher.getMngtController();
 	}
@@ -117,7 +102,7 @@ public class TestMngtController {
 			this.factory.removeQueue("queueTest");
 			this.factory.removeQueue("queue2");
 			this.mngtController.getShutDownMonitor().shutDown();
-			Thread.sleep(5000);
+			Thread.sleep(3000);
 			
 		} catch (InterruptedException e) {
 			logger.error("Error here", e);

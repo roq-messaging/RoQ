@@ -183,6 +183,8 @@ public class HostConfigManager implements Runnable, IStoppable {
 			}
 		}
 		this.clientReqSocket.close();
+		this.globalConfigSocket.close();
+		logger.info("Closing the client & global config sockets.");
 	}
 
 	/**

@@ -39,6 +39,11 @@
 			<artifactId>roq-management</artifactId>
 			<version>1.0-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>org.zeromq</groupId>
+			<artifactId>jzmq</artifactId>
+			<version>1.0.0</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
@@ -72,6 +77,15 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<forkMode>once</forkMode>
+					<workingDirectory>target</workingDirectory>
+					<argLine>-Djava.library.path=/usr/local/lib</argLine>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

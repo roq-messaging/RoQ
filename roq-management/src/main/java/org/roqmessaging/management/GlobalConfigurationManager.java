@@ -73,8 +73,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * Constructor.
 	 * @param period the period for sending the configuration udpate to the 
 	 * management controller.
+	 * @param formatDB defined whether the persistant db of the management controller must be formatted.
 	 */
-	public GlobalConfigurationManager( int period) {
+	public GlobalConfigurationManager( int period, boolean formatDB) {
 		this.hostManagerAddresses = new ArrayList<String>();
 		this.logger.info("Started global config Runnable");
 		this.queueMonitorLocations = new HashMap<String, String>();
@@ -95,6 +96,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		
 		//The Management controller - the start is in the run to take the period attribute
 		this.mngtController = new MngtController("localhost", dbName, (this.configPeriod+500));
+		if(formatDB) this.mngtController.getStorage().formatDB();
 		new Thread(mngtController).start();
 	}
 
@@ -106,7 +108,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		this.running = true;
 		//Init the timer for management subscriber
 		Timer mngtTimer = new Timer("Management config publisher");
-		mngtTimer.schedule(new GlobalConfigTimer(this), 500, this.configPeriod);
+		GlobalConfigTimer configTimerTask = new GlobalConfigTimer(this);
+		mngtTimer.schedule(configTimerTask, 500, this.configPeriod);
 		
 		//ZMQ init
 		ZMQ.Poller items = context.poller(3);
@@ -129,6 +132,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		}
 		logger.info("Shutting down the global configuration manager");
 		this.clientReqSocket.close();
+		configTimerTask.shutDown();
 		mngtTimer.cancel();
 	}
 	

@@ -18,6 +18,7 @@ import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.management.server.MngtController;
 import org.zeromq.ZMQ;
@@ -32,7 +33,7 @@ import org.zeromq.ZMQ;
  * 
  * @author sskhiri
  */
-public class GlobalConfigTimer extends TimerTask {
+public class GlobalConfigTimer extends TimerTask implements IStoppable {
 	//ZMQ init
 	private ZMQ.Socket mngtPubSocket = null;
 	private ZMQ.Context context;
@@ -67,13 +68,21 @@ public class GlobalConfigTimer extends TimerTask {
 		this.mngtPubSocket.send(serializationUtils.serialiseObject(this.configurationManager.getQueueHostLocation()), 0);
 	}
 	
+
 	/**
-	 * @see java.util.TimerTask#cancel()
+	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
-	@Override
-	public boolean cancel() {
+	public void shutDown() {
+		logger.debug("Closing Sockets");
 		this.mngtPubSocket.close();
-		return super.cancel();
+		
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return this.getClass().getName();
 	}
 
 }

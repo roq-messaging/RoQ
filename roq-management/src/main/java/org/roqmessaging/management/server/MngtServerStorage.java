@@ -83,6 +83,7 @@ public class MngtServerStorage {
 						+ "  FOREIGN KEY(`MainhostRef`) REFERENCES `Hosts` (idHosts),"
 						+ " FOREIGN KEY(`ConfigRef`) REFERENCES `Configuration` (idConfiguration)" + ")");
 				logger.info("DB Created and initiated.");
+				statement.close();
 			} catch (SQLException e) {
 				logger.error("Error when initiating the schema", e);
 			}
@@ -90,6 +91,24 @@ public class MngtServerStorage {
 			this.lock.unlock();
 		}
 
+	}
+	
+	/**
+	 * Drop the table if they exit
+	 */
+	public void formatDB() {
+		try {
+			Statement statement = connection.createStatement();
+			statement.setQueryTimeout(10);  // set timeout to 30 sec.
+			statement.executeUpdate("drop table if exists Hosts");
+			statement.executeUpdate("drop table if exists Configuration");
+			statement.executeUpdate("drop table if exists Queues");
+			statement.close();
+			//Re-build schema
+			initSchema();
+		} catch (Exception e) {
+			logger.error("Error while inserting new host", e);
+		}
 	}
 
 	/**
@@ -108,6 +127,7 @@ public class MngtServerStorage {
 				// set timeout to 10 sec.
 				statement.setQueryTimeout(10);
 				statement.execute("insert into Hosts  values(null, '" + serverAddress + "')");
+				statement.close();
 				return getHost(serverAddress);
 			} catch (Exception e) {
 				logger.error("Error while inserting new host", e);
@@ -139,6 +159,7 @@ public class MngtServerStorage {
 				statement.setQueryTimeout(10);
 				statement.execute("insert into Configuration  values(null, '" + name + "'," + maxEvent + ", " + maxPub
 						+ ")");
+				statement.close();
 			} catch (Exception e) {
 				logger.error("Error whil inserting new configuration", e);
 			}
@@ -170,6 +191,7 @@ public class MngtServerStorage {
 				statement.setQueryTimeout(10);
 				statement.execute("insert into Queues  values(null, '" + name + "'," + hostRef + ", " + configRef
 						+ ", " + (state ? 1 : 0) + ")");
+				statement.close();
 			} catch (Exception e) {
 				logger.error("Error while inserting new configuration", e);
 			}
@@ -198,6 +220,7 @@ public class MngtServerStorage {
 			logger.debug("name = " + state.getName() + ", State = " + state.isRunning() + " IP = " + state.getHost());
 			result.add(state);
 		}
+		statement.close();
 		return result;
 	}
 
@@ -239,6 +262,7 @@ public class MngtServerStorage {
 							statement.setQueryTimeout(10);
 							statement.executeUpdate("UPDATE Queues SET MainhostRef=" + rowID + " where name='"
 									+ state_i.getName() + "' ;");
+							statement.close();
 						}
 
 						if (!state_i.isRunning()) {
@@ -248,6 +272,7 @@ public class MngtServerStorage {
 							statement.setQueryTimeout(10);
 							statement.executeUpdate("UPDATE Queues SET State=1 where name='" + state_i.getName()
 									+ "' ;");
+							statement.close();
 						}
 					}
 				}// end of inner loop
@@ -264,6 +289,7 @@ public class MngtServerStorage {
 					Statement statement = connection.createStatement();
 					statement.setQueryTimeout(10);
 					statement.executeUpdate("UPDATE Queues SET State=0 where name='" + state_i.getName() + "' ;");
+					statement.close();
 				}
 			}
 
@@ -305,8 +331,10 @@ public class MngtServerStorage {
 		} else {
 			logger.debug("Getting Q " + rs.getString("name") + ": " + rs.getString("IP_Address")
 					+ (rs.getInt("State") == 0 ? false : true));
-			return new QueueManagementState(rs.getString("name"), rs.getString("IP_Address"),
+			QueueManagementState result = new QueueManagementState(rs.getString("name"), rs.getString("IP_Address"),
 					rs.getInt("State") == 0 ? false : true);
+			statement.close();
+			return result;
 		}
 	}
 
@@ -323,8 +351,11 @@ public class MngtServerStorage {
 		ResultSet rs = statement.executeQuery("select idHosts from Hosts " + "WHERE IP_Address='" + ipAddress + "';");
 		if (!rs.next())
 			return -1;
-		else
-			return rs.getInt("idHosts");
+		else {
+			int result = rs.getInt("idHosts");
+			statement.close();
+			return result;
+		}
 	}
 
 	/**
@@ -342,6 +373,7 @@ public class MngtServerStorage {
 			hosts.add(rs.getString("IP_Address"));
 			logger.debug(rs.getString("IP_Address"));
 		}
+		statement.close();
 		return hosts;
 	}
 
