@@ -20,6 +20,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQPublisher;
@@ -38,9 +39,11 @@ import org.roqmessaging.management.LogicalQFactory;
  * <p>
  * Description: This Test case test the basic setup of the Exchange with few
  * listeners and providers.
+ * @deprecated the test uses shortcut that makes following test invalid.
  * 
  * @author Sabri Skhiri
  */
+@Ignore
 public class BasicSetupTest {
 	private Exchange xChange = null;
 	private Monitor monitor = null;
