@@ -54,7 +54,7 @@ public class MngtController implements Runnable, IStoppable {
 	// Management infra
 	private MngtServerStorage storage = null;
 	// The DB file
-	private String dbName = "sampleMngt.db";
+	private String dbName = "Management.db";
 	//The publication period of the configuration
 	private int period = 60000;
 

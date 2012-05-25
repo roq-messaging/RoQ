@@ -20,6 +20,7 @@ import org.apache.log4j.Logger;
 import org.roqmessaging.core.Exchange;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.data.StatDataState;
+import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
@@ -30,7 +31,7 @@ import org.zeromq.ZMQ;
  * 
  * @author sskhiri
  */
-public 	class ExchangeStatTimer extends TimerTask {
+public 	class ExchangeStatTimer extends TimerTask implements IStoppable {
 	private Logger logger = Logger.getLogger(ExchangeStatTimer.class);
 	private ZMQ.Context timercontext;
 	private ZMQ.Socket monitorSocket;
@@ -97,13 +98,20 @@ public 	class ExchangeStatTimer extends TimerTask {
 	}
 	
 	/**
-	 * @see java.util.TimerTask#cancel()
+	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
-	@Override
-	public boolean cancel() {
+	public void shutDown() {
+		logger.info("Closing  socket");
 		this.monitorSocket.close();
 		this.statSocket.close();
-		return super.cancel();
+		
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return this.getClass().getName();
 	}
 	
 }

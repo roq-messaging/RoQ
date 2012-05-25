@@ -75,7 +75,7 @@ public class BasicSetupTest {
 	 * Start the global configuration thread
 	 */
 	private void startGlobalConfig() {
-		this.configManager = new GlobalConfigurationManager(4000);
+		this.configManager = new GlobalConfigurationManager(4000, true);
 		//1. start a host config manager
 		this.logger.info("Start host config...");
 		if(hostConfigManager==null){
@@ -108,6 +108,7 @@ public class BasicSetupTest {
 		loQFactory.removeQueue("queue1");
 	
 		this.configManager. getShutDownMonitor().shutDown();
+		this.hostConfigManager.getShutDownMonitor().shutDown();
 		
 		Thread.sleep(2000);
 	}
