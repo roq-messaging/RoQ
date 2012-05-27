@@ -85,6 +85,7 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 	public void shutDown() {
 		try {
 			lock.lock();
+			this.cancel();
 			logger.debug("Closing Sockets");
 			this.mngtPubSocket.close();
 		} finally {

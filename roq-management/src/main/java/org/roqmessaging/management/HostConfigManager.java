@@ -205,7 +205,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 */
 	private void registerHost() throws IllegalStateException {
 		logger.info("Registration process started");
-		Assert.assertNotNull(nif);
+		if(useNif)Assert.assertNotNull(nif);
 		this.globalConfigSocket.send((new Integer(RoQConstant.CONFIG_ADD_HOST).toString()+"," +
 				(!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(nif))).getBytes(),0);
 		String   info[] = new String (this.globalConfigSocket.recv(0)).split(",");

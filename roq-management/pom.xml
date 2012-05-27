@@ -30,6 +30,7 @@
 					<archive>
 						<manifest>
 							<mainClass>org.roqmessaging.management.launcher.HostConfigManagerLauncher</mainClass>
+							<mainClass>org.roqmessaging.management.launcher.GlobalConfigurationLauncher</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
