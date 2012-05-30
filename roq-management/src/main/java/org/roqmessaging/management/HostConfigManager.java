@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import junit.framework.Assert;
+
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
@@ -44,9 +46,6 @@ import org.zeromq.ZMQ;
  * @author sskhiri
  */
 public class HostConfigManager implements Runnable, IStoppable {
-	//TODO giving the name of the interface (optional constructor) issue with virtual
-	//ethernet interface
-
 	// ZMQ config
 	private ZMQ.Socket clientReqSocket = null;
 	private ZMQ.Socket globalConfigSocket =null;
@@ -72,9 +71,13 @@ public class HostConfigManager implements Runnable, IStoppable {
 	//The lock to avoid any race condition
 	private Lock lockRemoveQ = new ReentrantLock();
 	private RoQSerializationUtils serializationUtils = null;
+	//Network & IP address Configuration
+	private String nif = null;
+	private boolean useNif = false;
 
 	/**
 	 * Constructor
+	 * @param globalConfigurationServer the global configuration manager IP address.
 	 */
 	public HostConfigManager(String globalConfigurationServer) {
 		// ZMQ Init
@@ -92,6 +95,16 @@ public class HostConfigManager implements Runnable, IStoppable {
 		new Thread(this.shutDownMonitor).start();
 		//Global init
 		this.serializationUtils =  new RoQSerializationUtils();
+	}
+	
+	/**
+	 * @param globalConfigurationServer the global configuration manager IP address.
+	 * @param networkInterface the network interface on which we want to make register the host config manager. Dee Issue #65 on GitHub.
+	 */
+	public HostConfigManager(String globalConfigurationServer, String networkInterface){
+		this(globalConfigurationServer);
+		this.useNif = true;
+		this.nif = networkInterface;
 	}
 
 	/**
@@ -192,7 +205,9 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 */
 	private void registerHost() throws IllegalStateException {
 		logger.info("Registration process started");
-		this.globalConfigSocket.send((new Integer(RoQConstant.CONFIG_ADD_HOST).toString()+","+RoQUtils.getInstance().getLocalIP()).getBytes(),0);
+		if(useNif)Assert.assertNotNull(nif);
+		this.globalConfigSocket.send((new Integer(RoQConstant.CONFIG_ADD_HOST).toString()+"," +
+				(!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(nif))).getBytes(),0);
 		String   info[] = new String (this.globalConfigSocket.recv(0)).split(",");
 		int infoCode = Integer.parseInt(info[0]);
 		logger.debug("Start analysing info code = "+ infoCode);

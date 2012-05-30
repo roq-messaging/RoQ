@@ -33,5 +33,16 @@ public class TestUtils {
 		logger.debug("Local address to send with heart bit "+ address);
 		assert address.length()>1;
 	}
+	
+	/**
+	 * Test the local interface query
+	 * @throws Exception
+	 */
+	@Test
+	public void testLocalInterface() throws Exception {
+		String name = "eth0";
+		String address = RoQUtils.getInstance().getLocalIP(name);
+		logger.debug("Interface "+ name + "="+ address);
+	}
 
 }

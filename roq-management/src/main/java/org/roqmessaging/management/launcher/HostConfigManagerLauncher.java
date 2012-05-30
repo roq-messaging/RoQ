@@ -30,14 +30,28 @@ public class HostConfigManagerLauncher {
 	 * @param args no argument shall be provided,  it starts on the port 5100
 	 */
 	public static void main(String[] args) {
-		System.out.println("Starting the local host configuration manager");
-		if(args.length !=1){
+		System.out.println("Starting the local host configuration manager with "+args.length);
+		if(args.length ==0){
 			System.out.println("you must provide the global config manager server address");
+			System.exit(0);
 		}
-		System.out.println("Register on " +args[0]);
-		HostConfigManager hostManager = new HostConfigManager(args[0]);
+		if(args.length !=1 && args.length !=2){
+			System.out.println("you must provide  either the< global config manager server address> or < global config manager server address> <network interface to register> ");
+			System.exit(0);
+		}
+		//Init
+		HostConfigManager hostManager = null;		
+		if(args.length ==1){
+			//Just the global config address
+			System.out.println("Register on " +args[0]);
+			hostManager = new HostConfigManager(args[0]);
+		}else{
+			System.out.println("Register on " +args[0] +" on network interface "+ args[1]);
+			hostManager = new HostConfigManager(args[0],args[1]);
+		}
 		ShutDownHook hook = new ShutDownHook(hostManager.getShutDownMonitor());
 		Runtime.getRuntime().addShutdownHook(hook);
+		//Start
 		Thread configThread = new Thread(hostManager);
 		configThread.start();
 		try {

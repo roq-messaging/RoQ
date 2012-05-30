@@ -15,9 +15,7 @@
 package org.roq.simulation.simplelaunch;
 
 import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
-import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.management.LogicalQFactory;
-import org.roqmessaging.management.launcher.hook.ShutDownHook;
 
 /**
  * Class LaunchSubscriber
@@ -43,19 +41,25 @@ public class LaunchSubscriber {
 		IRoQLogicalQueueFactory factory = new LogicalQFactory(args[0]);
 		factory.createQueue(args[1], args[0]);
 		
-		//Register a hook
+		//Create publisher and producer
 		PublisherInit init = new PublisherInit(args[1], args[0]);
-		ShutDownHook hook = new ShutDownHook(new ShutDownMonitor(1000, init));
-		Runtime.getRuntime().addShutdownHook(hook);
+		Thread publisherProcess = new Thread(init);
+		publisherProcess.start();
 		
+		//Continue to run 10 sec the run
 		int count =0;
 		try {
 			while (count<10) {
 				Thread.sleep(1000);
+				count++;
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
+		//Shutdown the publisher
+		init.shutDown();
+		factory.removeQueue(args[1]);
 	}
 }
 	

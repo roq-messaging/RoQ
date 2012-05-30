@@ -102,6 +102,41 @@ public class RoQUtils {
 			return "127.0.0.1";
 		}
 	}
+	
+	/**
+	 * Allow to get the IP address for a specific interface
+	 * Added for issue #65
+	 * @param netwInterface the name of the network interface
+	 * @return the IP address of this interface
+	 * @throws IllegalStateException when the network interface does not exist
+	 */
+	public String getLocalIP(String netwInterface) throws IllegalStateException {
+		try {
+			Enumeration<NetworkInterface> nifs = NetworkInterface.getNetworkInterfaces();
+			if (nifs == null)
+				return "";
+
+			while (nifs.hasMoreElements()) {
+				NetworkInterface nif = nifs.nextElement();
+				// We ignore subinterfaces - as not yet needed.
+				if (!nif.isLoopback() && nif.isUp() && !nif.isVirtual()) {
+					Enumeration<InetAddress> adrs = nif.getInetAddresses();
+					if (netwInterface.equalsIgnoreCase(nif.getName())) {
+						while (adrs.hasMoreElements()) {
+							InetAddress adr = adrs.nextElement();
+							if (adr != null && !adr.isLoopbackAddress()
+									&& (nif.isPointToPoint() || !adr.isLinkLocalAddress())) {
+								return adr.getHostAddress();
+							}
+						}
+					}
+				}
+			}
+			return null;
+		} catch (SocketException ex) {
+			return "127.0.0.1";
+		}
+	}
 
 	public  String getFileStamp() {
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd_hh:mm:ss");
