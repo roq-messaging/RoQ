@@ -15,45 +15,49 @@
 package org.roq.simulation.simplelaunch;
 
 import org.apache.log4j.Logger;
+import org.roqmessaging.client.IRoQConnection;
+import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.client.IRoQSubscriber;
 import org.roqmessaging.client.IRoQSubscriberConnection;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
-import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.interfaces.IStoppable;
-import org.roqmessaging.management.LogicalQFactory;
 
 /**
  * Class PublisherInit
- * <p> Description:  This class is used to test a simple RoQ deployment on cluster.
- *  It will initiate a subscriber, create a queue and will wait until we kill it.
+ * <p>
+ * Description: This class is used to test a simple RoQ deployment on cluster.
+ * It will initiate a subscriber, create a queue and will wait until we kill it.
  * 
  * @author sskhiri
  */
-public class PublisherInit implements  IStoppable{
+public class PublisherInit implements Runnable, IStoppable {
 	private Logger logger = Logger.getLogger(PublisherInit.class);
 	private volatile boolean active = true;
 	private String qName = null;
 	private String gcmAddress = null;
+	private IRoQSubscriberConnection subscriberConnection = null;
 
 	/**
-	 * 1. Create A connection to the queue name
-	 * 2. Register a Subscriber that will live in this thread
-	 * @param qName the name of the queue to connect
-	 * @param gcmAddress the global configuration manager address
+	 * 1. Create A connection to the queue name 2. Register a Subscriber that
+	 * will live in this thread
+	 * 
+	 * @param qName
+	 *            the name of the queue to connect
+	 * @param gcmAddress
+	 *            the global configuration manager address
 	 */
-	public PublisherInit( String qName, String gcmAddress) {
+	public PublisherInit(String qName, String gcmAddress) {
 		this.qName = qName;
 		this.gcmAddress = gcmAddress;
 		// Create subscriber
 		IRoQConnectionFactory connectionFactory = new RoQConnectionFactory(gcmAddress);
-		IRoQSubscriberConnection subscriberConnection = connectionFactory.createRoQSubscriberConnection(qName,
-							"key");
+		subscriberConnection = connectionFactory.createRoQSubscriberConnection(qName, "key");
 		subscriberConnection.open();
 		subscriberConnection.setMessageSubscriber(new IRoQSubscriber() {
-		public void onEvent(byte[] msg) {
-			logger.info("On message:" + new String(msg));
-		}
+			public void onEvent(byte[] msg) {
+				logger.info("On message:" + new String(msg));
+			}
 		});
 	}
 
@@ -62,14 +66,7 @@ public class PublisherInit implements  IStoppable{
 	 */
 	public void shutDown() {
 		logger.info("Stoping Subscriber & removing queue");
-		IRoQLogicalQueueFactory factory = new LogicalQFactory(this.gcmAddress);
-		factory.removeQueue(this.qName);
-		try {
-			Thread.sleep(2000);
-		} catch (InterruptedException e) {
-			logger.error(e);
-		}
-		logger.info("Stopped.");
+		this.active = false;
 	}
 
 	/**
@@ -87,9 +84,40 @@ public class PublisherInit implements  IStoppable{
 	}
 
 	/**
-	 * @param active the active to set
+	 * @param active
+	 *            the active to set
 	 */
 	public void setActive(boolean active) {
 		this.active = active;
+
+	}
+
+	/**
+	 * @see java.lang.Runnable#run()
+	 */
+	public void run() {
+		// Create a publisher on the connection
+		// 1. Creating the connection
+		IRoQConnectionFactory factory = new RoQConnectionFactory(this.gcmAddress);
+		IRoQConnection connection = factory.createRoQConnection(this.qName);
+		connection.open();
+		// 2. Creating the publisher and sending message
+		IRoQPublisher publisher = connection.createPublisher();
+		// Wait for the connection is established before sending the first
+		// message
+		connection.blockTillReady(10000);
+		// Send message while is active
+		while (this.active) {
+			publisher.sendMessage("key".getBytes(), "hello".getBytes());
+			try {
+				Thread.sleep(500);
+			} catch (Exception e) {
+				logger.error(e);
+			}
+		}
+		logger.info("Stoping publisher thread");
+		connection.close();
+		this.subscriberConnection.close();
+
 	}
 }
