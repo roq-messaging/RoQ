@@ -214,7 +214,7 @@ public class SubscriberConnectionManager implements Runnable {
 		logger.info("Worker connected");
 
 		while (running) {
-			items.poll(10);
+			items.poll(5000);
 			if (items.pollin(0)) { // Info from Monitor
 
 				String info[] = new String(monitorSub.recv(0)).split(",");

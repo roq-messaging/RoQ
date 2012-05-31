@@ -49,7 +49,7 @@ public class LaunchSubscriber {
 		//Continue to run 10 sec the run
 		int count =0;
 		try {
-			while (count<10) {
+			while (count<20) {
 				Thread.sleep(1000);
 				count++;
 			}
