@@ -171,8 +171,6 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		}else{
 			this.logger.error("The BSON object does not contain the CMD field ", new IllegalStateException("Expecting the CDM field in the request BSON object"));
 		}
-	
-		
 	}
 
 	/**

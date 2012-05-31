@@ -48,7 +48,7 @@ public class TestMngtController {
 	@Before
 	public void setUp() throws Exception {
 		this.launcher = new RoQAllLocalLauncher();
-		this.launcher.setConfigPeriod(3000);
+		this.launcher.setConfigPeriod(1500);
 		this.launcher.setUp(true);
 		this.factory = new LogicalQFactory(RoQUtils.getInstance().getLocalIP().toString());
 		this.mngtController = this.launcher.getMngtController();
