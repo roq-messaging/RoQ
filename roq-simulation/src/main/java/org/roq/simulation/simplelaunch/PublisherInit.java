@@ -56,7 +56,7 @@ public class PublisherInit implements Runnable, IStoppable {
 		subscriberConnection.open();
 		subscriberConnection.setMessageSubscriber(new IRoQSubscriber() {
 			public void onEvent(byte[] msg) {
-				logger.info("On message:" + new String(msg));
+				//logger.info("On message:" + new String(msg));
 			}
 		});
 	}
@@ -106,6 +106,7 @@ public class PublisherInit implements Runnable, IStoppable {
 		// Wait for the connection is established before sending the first
 		// message
 		connection.blockTillReady(10000);
+		logger.info("Ready .. Sending");
 		// Send message while is active
 		while (this.active) {
 			publisher.sendMessage("key".getBytes(), "hello".getBytes());

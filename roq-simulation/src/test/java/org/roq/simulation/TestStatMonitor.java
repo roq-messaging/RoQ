@@ -104,11 +104,14 @@ public class TestStatMonitor {
 			for (int i = 0; i < 500; i++) {
 				publisher.sendMessage("key".getBytes(), ("hello" + i).getBytes());
 			}
+			
+			logger.info("ON  WAIT ...");
+			Thread.sleep(3000);
 
 			// 3 Wait &. Check the content
 
 			logger.info("Sending MESSAGES ...");
-			for (int i = 0; i < 500; i++) {
+			for (int i = 0; i < 1000; i++) {
 				publisher.sendMessage("key".getBytes(), ("hello" + i).getBytes());
 			}
 			Thread.sleep(15000);
