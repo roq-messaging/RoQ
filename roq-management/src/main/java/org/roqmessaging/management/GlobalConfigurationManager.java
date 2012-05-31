@@ -116,7 +116,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		items.register(this.clientReqSocket);
 		//2. Start the main run of the monitor
 		while (this.running) {
-			items.poll(2000);
+			items.poll(10000);
 			if (items.pollin(0)){ //Comes from a client
 				byte[] encoded = clientReqSocket.recv(0);
 				String content = new String(encoded);
@@ -171,8 +171,6 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		}else{
 			this.logger.error("The BSON object does not contain the CMD field ", new IllegalStateException("Expecting the CDM field in the request BSON object"));
 		}
-	
-		
 	}
 
 	/**
