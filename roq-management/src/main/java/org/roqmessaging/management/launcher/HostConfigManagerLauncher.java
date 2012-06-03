@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.management.launcher;
 
+import java.io.File;
+
 import org.roqmessaging.management.HostConfigManager;
 import org.roqmessaging.management.launcher.hook.ShutDownHook;
 
@@ -27,27 +29,22 @@ import org.roqmessaging.management.launcher.hook.ShutDownHook;
 public class HostConfigManagerLauncher {
 	
 	/**
-	 * @param args no argument shall be provided,  it starts on the port 5100
+	 * @param args(1) the host local manager property file
 	 */
 	public static void main(String[] args) {
 		System.out.println("Starting the local host configuration manager with "+args.length);
-		if(args.length ==0){
-			System.out.println("you must provide the global config manager server address");
-			System.exit(0);
+		System.out.println("Starting the  global configuration manager");
+		HostConfigManager hostManager = null;
+		if(args.length ==0) {
+			hostManager  = new HostConfigManager("HCM.properties");
 		}
-		if(args.length !=1 && args.length !=2){
-			System.out.println("you must provide  either the< global config manager server address> or < global config manager server address> <network interface to register> ");
-			System.exit(0);
-		}
-		//Init
-		HostConfigManager hostManager = null;		
-		if(args.length ==1){
-			//Just the global config address
-			System.out.println("Register on " +args[0]);
-			hostManager = new HostConfigManager(args[0]);
-		}else{
-			System.out.println("Register on " +args[0] +" on network interface "+ args[1]);
-			hostManager = new HostConfigManager(args[0],args[1]);
+		if(args.length ==1) {
+			File file = new File(args[0]);
+			if(file.exists())hostManager  = new HostConfigManager(args[0]);
+			else{
+				System.out.println(" File does not exist...");
+				System.exit(0);
+			}
 		}
 		ShutDownHook hook = new ShutDownHook(hostManager.getShutDownMonitor());
 		Runtime.getRuntime().addShutdownHook(hook);

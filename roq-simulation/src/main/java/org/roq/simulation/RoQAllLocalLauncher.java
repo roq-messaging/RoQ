@@ -35,7 +35,7 @@ public class RoQAllLocalLauncher {
 	private GlobalConfigurationManager configurationManager = null;
 	private HostConfigManager hostConfigManager = null;
 	private String configurationServer = "?";
-	private int configPeriod = 60000;
+	private String configFile = "GCM.properties";
 
 	/**
 	 * Starts:<br>
@@ -45,17 +45,17 @@ public class RoQAllLocalLauncher {
 	 * @param formatDB defined whether the DB must be cleaned.
 	 * @throws java.lang.Exception
 	 */
-	public void setUp(boolean formatDB) throws Exception {
+	public void setUp() throws Exception {
 		// 1. Start the configuration
 		this.configurationServer =RoQUtils.getInstance().getLocalIP().toString();
 		this.logger.info("Initial setup Start global config thread");
 		this.logger.info("Start global config...");
-		configurationManager = new GlobalConfigurationManager(configPeriod, formatDB);
+		configurationManager = new GlobalConfigurationManager(this.configFile);
 		Thread configThread = new Thread(configurationManager);
 		configThread.start();
 		// 2. Start the host configuration manager locally
 		this.logger.info("Start host config....");
-		hostConfigManager = new HostConfigManager(this.configurationServer);
+		hostConfigManager = new HostConfigManager("testHCM.properties");
 		Thread hostThread = new Thread(hostConfigManager);
 		hostThread.start();
 		this.logger.info("Start factory config...");
@@ -83,7 +83,7 @@ public class RoQAllLocalLauncher {
 		ShutDownHook hook = new ShutDownHook(launcher);
 		Runtime.getRuntime().addShutdownHook(hook);
 		try {
-			launcher.setUp(Boolean.parseBoolean(args[1]));
+			launcher.setUp();
 			while (true) {
 				Thread.sleep(500);
 			}
@@ -129,24 +129,25 @@ public class RoQAllLocalLauncher {
 		return configurationServer;
 	}
 
-	/**
-	 * @return the configPeriod
-	 */
-	public int getConfigPeriod() {
-		return configPeriod;
-	}
-
-	/**
-	 * @param configPeriod the configPeriod to set
-	 */
-	public void setConfigPeriod(int configPeriod) {
-		this.configPeriod = configPeriod;
-	}
 	
 	/**
 	 * @return the mangement controller handle
 	 */
 	public MngtController getMngtController(){
 		return this.configurationManager.getMngtController();
+	}
+
+	/**
+	 * @return the configFile
+	 */
+	public String getConfigFile() {
+		return configFile;
+	}
+
+	/**
+	 * @param configFile the configFile to set
+	 */
+	public void setConfigFile(String configFile) {
+		this.configFile = configFile;
 	}
 }

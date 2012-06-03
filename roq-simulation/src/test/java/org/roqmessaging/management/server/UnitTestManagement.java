@@ -69,7 +69,7 @@ public class UnitTestManagement {
 		statement.executeUpdate("drop table if exists Queues");
 		
 		//Start the config
-		globalConfigurationManager = new GlobalConfigurationManager(3000, true);
+		globalConfigurationManager = new GlobalConfigurationManager("testGCM.properties");
 		new Thread(globalConfigurationManager).start();
 		
 		//Launching a thread that listens the broadcast channel for management update

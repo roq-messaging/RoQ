@@ -26,6 +26,8 @@ import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
+import org.roqmessaging.management.config.internal.FileConfigurationReader;
+import org.roqmessaging.management.config.internal.GCMPropertyDAO;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.MngtController;
@@ -43,6 +45,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	//ZMQ config
 	private ZMQ.Socket clientReqSocket = null;
 	private ZMQ.Context context;
+	private GCMPropertyDAO properties=null;
 	
 	//Configuration data: list of host manager (1 per RoQ Host)
 	private ArrayList<String> hostManagerAddresses = null;
@@ -56,8 +59,6 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private ShutDownMonitor shutDownMonitor = null;
 	//utils
 	private RoQSerializationUtils serializationUtils=null;
-	//Config mngt timer time
-	private int configPeriod = 60000;
 	
 	//The management controller that maintains the off line configuration
 	private MngtController mngtController = null;
@@ -71,33 +72,43 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	
 	/**
 	 * Constructor.
-	 * @param period the period for sending the configuration udpate to the 
-	 * management controller.
-	 * @param formatDB defined whether the persistant db of the management controller must be formatted.
+	 * @param configFile the file location of the properties. By default, is the GCM.properties in the resources.
 	 */
-	public GlobalConfigurationManager( int period, boolean formatDB) {
-		this.hostManagerAddresses = new ArrayList<String>();
-		this.logger.info("Started global config Runnable");
-		this.queueMonitorLocations = new HashMap<String, String>();
-		this.queueStatLocation = new HashMap<String, String>();
-		this.queueHostLocation = new HashMap<String, String>();
-		//ZMQ init
-		this.context = ZMQ.context(1);
-		this.clientReqSocket = context.socket(ZMQ.REP);
-		this.clientReqSocket.bind("tcp://*:5000");
-		//Init variables and pointers
-		this.running = true;
-		this.serializationUtils = new RoQSerializationUtils();
-		this.configPeriod = period;
-		
-		//The shutdown thread
-		this.shutDownMonitor = new ShutDownMonitor(5001, this);
-		new Thread(this.shutDownMonitor).start();
-		
-		//The Management controller - the start is in the run to take the period attribute
-		this.mngtController = new MngtController("localhost", dbName, (this.configPeriod+500));
-		if(formatDB) this.mngtController.getStorage().formatDB();
-		new Thread(mngtController).start();
+	public GlobalConfigurationManager(String configFile) {
+		try {
+			this.hostManagerAddresses = new ArrayList<String>();
+			this.logger.info("Started global config Runnable");
+			this.queueMonitorLocations = new HashMap<String, String>();
+			this.queueStatLocation = new HashMap<String, String>();
+			this.queueHostLocation = new HashMap<String, String>();
+
+			// ZMQ init
+			this.context = ZMQ.context(1);
+			this.clientReqSocket = context.socket(ZMQ.REP);
+			this.clientReqSocket.bind("tcp://*:5000");
+
+			// Init variables and pointers
+			this.running = true;
+			this.serializationUtils = new RoQSerializationUtils();
+
+			// The shutdown thread
+			this.shutDownMonitor = new ShutDownMonitor(5001, this);
+			new Thread(this.shutDownMonitor).start();
+
+			// Read configuration from file
+			FileConfigurationReader reader = new FileConfigurationReader();
+			properties = reader.loadGCMConfiguration(configFile);
+			logger.info("Configuration from props: "+properties.toString());
+
+			// The Management controller - the start is in the run to take the
+			// period attribute
+			this.mngtController = new MngtController("localhost", dbName, (properties.getPeriod() + 500));
+			if (properties.isFormatDB())
+				this.mngtController.getStorage().formatDB();
+			new Thread(mngtController).start();
+		} catch (Exception e) {
+			logger.error("Error in constructor", e);
+		}
 	}
 
 	/**
@@ -109,7 +120,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		//Init the timer for management subscriber
 		Timer mngtTimer = new Timer("Management config publisher");
 		GlobalConfigTimer configTimerTask = new GlobalConfigTimer(this);
-		mngtTimer.schedule(configTimerTask, 500, this.configPeriod);
+		mngtTimer.schedule(configTimerTask, 500, this.properties.getPeriod());
 		
 		//ZMQ init
 		ZMQ.Poller items = context.poller(3);
@@ -385,18 +396,12 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		return queueHostLocation;
 	}
 
-	/**
-	 * @return the configPeriod
-	 */
-	public int getConfigPeriod() {
-		return configPeriod;
-	}
 
 	/**
 	 * @param configPeriod the configPeriod to set
 	 */
 	public void setConfigPeriod(int configPeriod) {
-		this.configPeriod = configPeriod;
+		this.properties.setPeriod(configPeriod);
 	}
 
 	/**

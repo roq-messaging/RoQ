@@ -1,6 +1,5 @@
 #!/bin/bash
 echo Starting Global configuration process
-#Currenty no agruments is required by the GCM
 
 
 if [ -n "$1" ]; then

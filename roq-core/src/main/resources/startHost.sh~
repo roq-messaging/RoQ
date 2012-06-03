@@ -1,7 +1,7 @@
 #!/bin/bash
 echo Starting Host manager process
 
-# INPUT: either the< global config manager server address> or
+#either the< global config manager server address> or
 # < global config manager server address> <network interface to register> 
 if [ -n "$1" ]; then
 	echo "Input starting script $@"

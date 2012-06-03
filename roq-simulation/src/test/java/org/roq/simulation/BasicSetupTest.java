@@ -78,11 +78,11 @@ public class BasicSetupTest {
 	 * Start the global configuration thread
 	 */
 	private void startGlobalConfig() {
-		this.configManager = new GlobalConfigurationManager(4000, true);
+		this.configManager = new GlobalConfigurationManager("testCGM.properties");
 		//1. start a host config manager
 		this.logger.info("Start host config...");
 		if(hostConfigManager==null){
-			hostConfigManager = new HostConfigManager("localhost");
+			hostConfigManager = new HostConfigManager("testHCM.properties");
 			// add a fake queue in the host config manager
 			this.hostConfigManager.getqMonitorMap().put("queue1", "tcp://localhost:"+basePort);
 			Thread hostThread = new Thread(hostConfigManager);

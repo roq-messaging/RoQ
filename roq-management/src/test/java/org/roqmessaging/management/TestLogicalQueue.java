@@ -48,13 +48,13 @@ public class TestLogicalQueue {
 		this.logger.info("Initial setup Start global config thread");
 		this.logger.info("Start global config...");
 		if (configurationManager == null) {
-			configurationManager = new GlobalConfigurationManager(4000, true);
+			configurationManager = new GlobalConfigurationManager("testGCM.properties");
 			Thread configThread = new Thread(configurationManager);
 			configThread.start();
 		}
 		this.logger.info("Start host config...");
 		if (hostConfigManager == null) {
-			hostConfigManager = new HostConfigManager("localhost");
+			hostConfigManager = new HostConfigManager("HCM.properties");
 			Thread hostThread = new Thread(hostConfigManager);
 			hostThread.start();
 		}

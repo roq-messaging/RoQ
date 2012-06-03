@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.management.launcher;
 
+import java.io.File;
+
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.launcher.hook.ShutDownHook;
 
@@ -28,11 +30,22 @@ import org.roqmessaging.management.launcher.hook.ShutDownHook;
 public class GlobalConfigurationLauncher {
 
 	/**
-	 * @param args no args,  it starts on the port 5100
+	 * @param args no args or the location of a configuration file
 	 */
 	public static void main(String[] args) {
 		System.out.println("Starting the  global configuration manager");
-		GlobalConfigurationManager configurationManager = new GlobalConfigurationManager(60000, false);
+		GlobalConfigurationManager configurationManager= null;
+		if(args.length ==0) {
+			configurationManager  = new GlobalConfigurationManager("GCM.properties");
+		}
+		if(args.length ==1) {
+			File file = new File(args[0]);
+			if(file.exists())configurationManager  = new GlobalConfigurationManager(args[0]);
+			else{
+				System.out.println(" File does not exist...");
+				System.exit(0);
+			}
+		}
 		ShutDownHook hook = new ShutDownHook(configurationManager.getShutDownMonitor());
 		Runtime.getRuntime().addShutdownHook(hook);
 		Thread configThread = new Thread(configurationManager);

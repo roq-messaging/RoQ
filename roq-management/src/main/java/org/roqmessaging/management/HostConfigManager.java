@@ -25,6 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import junit.framework.Assert;
 
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
@@ -33,6 +34,8 @@ import org.roqmessaging.core.launcher.ExchangeLauncher;
 import org.roqmessaging.core.launcher.MonitorLauncher;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.management.config.internal.FileConfigurationReader;
+import org.roqmessaging.management.config.internal.HostConfigDAO;
 import org.zeromq.ZMQ;
 
 /**
@@ -54,11 +57,8 @@ public class HostConfigManager implements Runnable, IStoppable {
 	private Logger logger = Logger.getLogger(HostConfigManager.class);
 	// Host manager config
 	private volatile boolean running = false;
-	// the base port for front port
-	private int baseMonitortPort = 5500;
-	private int baseStatPort = 5800;
-
-	private int baseFrontPort = 6000;
+	// The host configuration manager properties
+	private HostConfigDAO properties = null;
 	// Local configuration maintained by the host manager
 	// [qName, the monitor]
 	private HashMap<String, String> qMonitorMap = null;
@@ -72,41 +72,42 @@ public class HostConfigManager implements Runnable, IStoppable {
 	private Lock lockRemoveQ = new ReentrantLock();
 	private RoQSerializationUtils serializationUtils = null;
 	//Network & IP address Configuration
-	private String nif = null;
 	private boolean useNif = false;
 
 	/**
 	 * Constructor
-	 * @param globalConfigurationServer the global configuration manager IP address.
+	 * @param propertyFile the location of the property file
 	 */
-	public HostConfigManager(String globalConfigurationServer) {
-		// ZMQ Init
-		this.context = ZMQ.context(1);
-		this.clientReqSocket = context.socket(ZMQ.REP);
-		this.clientReqSocket.bind("tcp://*:5100");
-		this.globalConfigSocket = context.socket(ZMQ.REQ);
-		this.globalConfigSocket.connect("tcp://"+globalConfigurationServer+":5000");
-		//Init the map
-		this.qExchangeMap = new HashMap<String, List<String>>();
-		this.qMonitorMap = new HashMap<String, String>();
-		this.qMonitorStatMap = new HashMap<String, String>();
-		//Init the shutdown monitor
-		this.shutDownMonitor = new ShutDownMonitor(5101, this);
-		new Thread(this.shutDownMonitor).start();
-		//Global init
-		this.serializationUtils =  new RoQSerializationUtils();
+	public HostConfigManager(String propertyFile) {
+		try {
+			// Global init
+			this.serializationUtils = new RoQSerializationUtils();
+			FileConfigurationReader reader = new FileConfigurationReader();
+			this.properties = reader.loadHCMConfiguration(propertyFile);
+			if(this.properties.getNetworkInterface()==null)
+				useNif=false;
+			else {
+				useNif=true;
+			}
+			logger.info(this.properties.toString());
+			// ZMQ Init
+			this.context = ZMQ.context(1);
+			this.clientReqSocket = context.socket(ZMQ.REP);
+			this.clientReqSocket.bind("tcp://*:5100");
+			this.globalConfigSocket = context.socket(ZMQ.REQ);
+			this.globalConfigSocket.connect("tcp://" + this.properties.getGcmAddress() + ":5000");
+			// Init the map
+			this.qExchangeMap = new HashMap<String, List<String>>();
+			this.qMonitorMap = new HashMap<String, String>();
+			this.qMonitorStatMap = new HashMap<String, String>();
+			// Init the shutdown monitor
+			this.shutDownMonitor = new ShutDownMonitor(5101, this);
+			new Thread(this.shutDownMonitor).start();
+		} catch (ConfigurationException e) {
+			logger.error("Error while reading configuration in " + propertyFile, e);
+		}
 	}
 	
-	/**
-	 * @param globalConfigurationServer the global configuration manager IP address.
-	 * @param networkInterface the network interface on which we want to make register the host config manager. Dee Issue #65 on GitHub.
-	 */
-	public HostConfigManager(String globalConfigurationServer, String networkInterface){
-		this(globalConfigurationServer);
-		this.useNif = true;
-		this.nif = networkInterface;
-	}
-
 	/**
 	 * @see java.lang.Runnable#run()
 	 */
@@ -205,9 +206,9 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 */
 	private void registerHost() throws IllegalStateException {
 		logger.info("Registration process started");
-		if(useNif)Assert.assertNotNull(nif);
+		if(useNif)Assert.assertNotNull(this.properties.getNetworkInterface());
 		this.globalConfigSocket.send((new Integer(RoQConstant.CONFIG_ADD_HOST).toString()+"," +
-				(!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(nif))).getBytes(),0);
+				(!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()))).getBytes(),0);
 		String   info[] = new String (this.globalConfigSocket.recv(0)).split(",");
 		int infoCode = Integer.parseInt(info[0]);
 		logger.debug("Start analysing info code = "+ infoCode);
@@ -273,9 +274,8 @@ public class HostConfigManager implements Runnable, IStoppable {
 		}
 		// 2. Assigns a front port and a back port
 		logger.debug(" This host contains already " + number + " Exchanges");
-		int frontPort = this.baseFrontPort + number * 3; // 3 because there is
-															// the front, back
-															// and the shut down
+		int frontPort = this.properties.getExchangeFrontEndPort() + number * 3; 
+		// 3 because there is the front, back and the shut down
 		int backPort = frontPort + 1;
 		String ip = RoQUtils.getInstance().getLocalIP();
 
@@ -309,14 +309,14 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * @return the monitor port
 	 */
 	private int getMonitorPort() {
-		return (this.baseMonitortPort + this.qMonitorMap.size() * 6);
+		return (this.properties.getMonitorBasePort() + this.qMonitorMap.size() * 6);
 	}
 
 	/**
 	 * @return the monitor stat port
 	 */
 	private int getStatMonitorPort() {
-		return (this.baseStatPort + this.qMonitorMap.size()*2);
+		return (this.properties.getStatMonitorBasePort() + this.qMonitorMap.size()*2);
 	}
 
 	/**

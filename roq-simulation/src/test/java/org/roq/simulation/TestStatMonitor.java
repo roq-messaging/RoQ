@@ -46,7 +46,8 @@ public class TestStatMonitor {
 	@Before
 	public void setUp() throws Exception {
 		this.launcher = new RoQAllLocalLauncher();
-		this.launcher.setUp(true);
+		this.launcher.setConfigFile("testGCM.properties");
+		this.launcher.setUp();
 	}
 
 	/**
