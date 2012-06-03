@@ -48,8 +48,8 @@ public class TestMngtController {
 	@Before
 	public void setUp() throws Exception {
 		this.launcher = new RoQAllLocalLauncher();
-		this.launcher.setConfigPeriod(1500);
-		this.launcher.setUp(true);
+		this.launcher.setConfigFile("testGCM.properties");
+		this.launcher.setUp();
 		this.factory = new LogicalQFactory(RoQUtils.getInstance().getLocalIP().toString());
 		this.mngtController = this.launcher.getMngtController();
 	}

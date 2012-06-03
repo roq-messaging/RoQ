@@ -46,7 +46,8 @@ public class TestStatMonitor {
 	@Before
 	public void setUp() throws Exception {
 		this.launcher = new RoQAllLocalLauncher();
-		this.launcher.setUp(true);
+		this.launcher.setConfigFile("testGCM.properties");
+		this.launcher.setUp();
 	}
 
 	/**
@@ -114,7 +115,7 @@ public class TestStatMonitor {
 			for (int i = 0; i < 1000; i++) {
 				publisher.sendMessage("key".getBytes(), ("hello" + i).getBytes());
 			}
-			Thread.sleep(15000);
+			Thread.sleep(4000);
 
 			// End close connection
 			connection.close();

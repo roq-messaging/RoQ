@@ -14,8 +14,9 @@
  */
 package org.roq.simulation;
 
+import java.io.File;
+
 import org.apache.log4j.Logger;
-import org.junit.Ignore;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.HostConfigManager;
@@ -29,13 +30,12 @@ import org.roqmessaging.management.server.MngtController;
  * 
  * @author sskhiri
  */
-@Ignore
 public class RoQAllLocalLauncher {
 	private Logger logger = Logger.getLogger(RoQAllLocalLauncher.class);
 	private GlobalConfigurationManager configurationManager = null;
 	private HostConfigManager hostConfigManager = null;
 	private String configurationServer = "?";
-	private int configPeriod = 60000;
+	private String configFile = "GCM.properties";
 
 	/**
 	 * Starts:<br>
@@ -45,23 +45,24 @@ public class RoQAllLocalLauncher {
 	 * @param formatDB defined whether the DB must be cleaned.
 	 * @throws java.lang.Exception
 	 */
-	public void setUp(boolean formatDB) throws Exception {
+	public void setUp() throws Exception {
 		// 1. Start the configuration
 		this.configurationServer =RoQUtils.getInstance().getLocalIP().toString();
 		this.logger.info("Initial setup Start global config thread");
 		this.logger.info("Start global config...");
-		configurationManager = new GlobalConfigurationManager(configPeriod, formatDB);
+		configurationManager = new GlobalConfigurationManager(this.configFile);
 		Thread configThread = new Thread(configurationManager);
 		configThread.start();
 		// 2. Start the host configuration manager locally
 		this.logger.info("Start host config....");
-		hostConfigManager = new HostConfigManager(this.configurationServer);
+		hostConfigManager = new HostConfigManager("testHCM.properties");
 		Thread hostThread = new Thread(hostConfigManager);
 		hostThread.start();
 		this.logger.info("Start factory config...");
 	}
 
 	/**
+	 * Stops all the involved elements
 	 * @throws java.lang.Exception
 	 */
 	public void tearDown() throws Exception {
@@ -75,15 +76,25 @@ public class RoQAllLocalLauncher {
 	 *            must contain 2 argument the queue name that we want to create and true or false
 	 */
 	public static void main(String[] args) {
-		if(args.length!=2){
-			System.out.println("The args must be <qname> <true||false>");
-			System.exit(0);
+		RoQAllLocalLauncher launcher = null;
+		if(args.length ==0) {
+			launcher = new RoQAllLocalLauncher();
 		}
-		RoQAllLocalLauncher launcher = new RoQAllLocalLauncher();
+		if(args.length ==1) {
+			File file = new File(args[0]);
+			if(file.exists()){
+				launcher = new RoQAllLocalLauncher();
+				launcher.setConfigFile(args[0]);
+			}
+			else{
+				System.out.println(" File does not exist...");
+				System.exit(0);
+			}
+		}
 		ShutDownHook hook = new ShutDownHook(launcher);
 		Runtime.getRuntime().addShutdownHook(hook);
 		try {
-			launcher.setUp(Boolean.parseBoolean(args[1]));
+			launcher.setUp();
 			while (true) {
 				Thread.sleep(500);
 			}
@@ -129,24 +140,25 @@ public class RoQAllLocalLauncher {
 		return configurationServer;
 	}
 
-	/**
-	 * @return the configPeriod
-	 */
-	public int getConfigPeriod() {
-		return configPeriod;
-	}
-
-	/**
-	 * @param configPeriod the configPeriod to set
-	 */
-	public void setConfigPeriod(int configPeriod) {
-		this.configPeriod = configPeriod;
-	}
 	
 	/**
 	 * @return the mangement controller handle
 	 */
 	public MngtController getMngtController(){
 		return this.configurationManager.getMngtController();
+	}
+
+	/**
+	 * @return the configFile
+	 */
+	public String getConfigFile() {
+		return configFile;
+	}
+
+	/**
+	 * @param configFile the configFile to set
+	 */
+	public void setConfigFile(String configFile) {
+		this.configFile = configFile;
 	}
 }
