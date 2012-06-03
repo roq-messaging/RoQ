@@ -14,8 +14,9 @@
  */
 package org.roq.simulation;
 
+import java.io.File;
+
 import org.apache.log4j.Logger;
-import org.junit.Ignore;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.HostConfigManager;
@@ -29,7 +30,6 @@ import org.roqmessaging.management.server.MngtController;
  * 
  * @author sskhiri
  */
-@Ignore
 public class RoQAllLocalLauncher {
 	private Logger logger = Logger.getLogger(RoQAllLocalLauncher.class);
 	private GlobalConfigurationManager configurationManager = null;
@@ -62,6 +62,7 @@ public class RoQAllLocalLauncher {
 	}
 
 	/**
+	 * Stops all the involved elements
 	 * @throws java.lang.Exception
 	 */
 	public void tearDown() throws Exception {
@@ -75,11 +76,21 @@ public class RoQAllLocalLauncher {
 	 *            must contain 2 argument the queue name that we want to create and true or false
 	 */
 	public static void main(String[] args) {
-		if(args.length!=2){
-			System.out.println("The args must be <qname> <true||false>");
-			System.exit(0);
+		RoQAllLocalLauncher launcher = null;
+		if(args.length ==0) {
+			launcher = new RoQAllLocalLauncher();
 		}
-		RoQAllLocalLauncher launcher = new RoQAllLocalLauncher();
+		if(args.length ==1) {
+			File file = new File(args[0]);
+			if(file.exists()){
+				launcher = new RoQAllLocalLauncher();
+				launcher.setConfigFile(args[0]);
+			}
+			else{
+				System.out.println(" File does not exist...");
+				System.exit(0);
+			}
+		}
 		ShutDownHook hook = new ShutDownHook(launcher);
 		Runtime.getRuntime().addShutdownHook(hook);
 		try {
