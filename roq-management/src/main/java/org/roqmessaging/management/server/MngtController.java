@@ -29,6 +29,7 @@ import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
+import org.roqmessaging.management.server.state.QueueManagementState;
 import org.zeromq.ZMQ;
 
 /**
@@ -171,25 +172,41 @@ public class MngtController implements Runnable, IStoppable {
 				IRoQSerializer serializer = new RoQBSONSerializer();
 				// 1. Checking the command ID
 				BSONObject request = BSON.decode(mngtRepSocket.recv(0));
-				if (!request.containsField("CMD")) {
+				if (!request.containsField("CMD") || request.containsField("QName")) {
 					mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-							"The command does not contain a CMD field"), 0);
+							"The command does not contain a CMD nor QName field"), 0);
 				} else {
 					// 2. Getting the command ID
 					switch ((Integer) request.get("CMD")) {
 					case RoQConstant.BSON_CONFIG_REMOVE_QUEUE:
-
+						logger.debug("Processing a REMOVE QUEUE REQUEST");
+						String qName =(String) request.get("QName");
+						logger.debug("Remove "+ qName);
+						//Removing Q
+						//1. Check whether the queue is running 
+						try {
+							QueueManagementState state = this.storage.getQueue(qName);
+							if(state.isRunning()){
+								//2. if running ask the global configuration manager to remove it
+							}
+							//3. ask the storage manager to remove it
+							this.storage.removeQueue(qName);
+						} catch (Exception e) {
+							logger.error("Error while processing the REMOVE Q", e);
+						}
 						break;
 
 					case RoQConstant.BSON_CONFIG_START_QUEUE:
-
+						//Starting a queue
 						break;
 
 					case RoQConstant.BSON_CONFIG_STOP_QUEUE:
-
+						//Stopping a queue
 						break;
 
 					default:
+						mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+								"INVALID CMD Value"), 0);
 						break;
 					}
 				}

@@ -377,4 +377,21 @@ public class MngtServerStorage {
 		return hosts;
 	}
 
+	/**
+	 * Removes the queue defined by the qName
+	 * @param qName the queue to remove
+	 * @throws SQLException if an exception occured when removing the record
+	 */
+	public void removeQueue(String qName) throws SQLException {
+		logger.debug("Delete the queue "+ qName);
+		Statement statement = connection.createStatement();
+		// set timeout to 5 sec.
+		statement.setQueryTimeout(5);
+		ResultSet rs = statement.executeQuery("Select idQueues from Queues  where name='" + qName + "' ;");
+		while (rs.next()) {
+			statement.executeUpdate("DELETE  from Queues where idQueues="+rs.getInt("idQueues")+";");
+		}
+		statement.close();
+	}
+
 }
