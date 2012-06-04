@@ -65,4 +65,18 @@ public interface IRoQSerializer {
 	 */
 	public byte[] serialiazeMonitorInfo(String monitor, String statMonitor);
 	
+	/**
+	 * @param cmdID the command to execute on the queue
+	 * @param qName the qname on which we want to execute the request
+	 * @return the serialized byte array
+	 */
+	public byte[] serialiazeConfigRequest(int cmdID, String qName);
+	
+	/**
+	 * @param result the result of the request
+	 * @param comment the comment on the request, can be null if the result is OK
+	 * @return the serialized byte array
+	 */
+	public byte[] serialiazeConfigAnswer(int result, String comment);
+	
 }

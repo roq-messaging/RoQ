@@ -132,4 +132,24 @@ public class RoQBSONSerializer implements IRoQSerializer {
 		return BSON.encode(answer);
 	}
 
+	/**
+	 * @see org.roqmessaging.management.serializer.IRoQSerializer#serialiazeConfigRequest(int, java.lang.String)
+	 */
+	public byte[] serialiazeConfigRequest(int cmdID, String qName) {
+		BSONObject request = new BasicBSONObject();
+		request.put("CMD",cmdID);
+		request.put("QName", qName);
+		return	BSON.encode(request);
+	}
+
+	/**
+	 * @see org.roqmessaging.management.serializer.IRoQSerializer#serialiazeConfigAnswer(int, java.lang.String)
+	 */
+	public byte[] serialiazeConfigAnswer(int result, String comment) {
+		BSONObject answer = new BasicBSONObject();
+		answer.put("RESULT",result);
+		answer.put("COMMENT", comment);
+		return	BSON.encode(answer);
+	}
+
 }

@@ -20,11 +20,15 @@ import java.util.HashMap;
 import java.util.Timer;
 
 import org.apache.log4j.Logger;
+import org.bson.BSON;
+import org.bson.BSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.management.GlobalConfigurationManager;
+import org.roqmessaging.management.serializer.IRoQSerializer;
+import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.zeromq.ZMQ;
 
 /**
@@ -46,6 +50,7 @@ public class MngtController implements Runnable, IStoppable {
 	// ZMQ
 	private ZMQ.Context context = null;
 	private ZMQ.Socket mngtSubSocket = null;
+	private ZMQ.Socket mngtRepSocket = null;
 	// running
 	private volatile boolean active = true;
 	private ShutDownMonitor shutDownMonitor = null;
@@ -68,7 +73,7 @@ public class MngtController implements Runnable, IStoppable {
 		try {
 			this.period = period;
 			this.dbName = dbName;
-			init(globalConfigAddress, 5003);
+			init(globalConfigAddress, 5004);
 		} catch (SQLException e) {
 			logger.error("Error while initiating the SQL connection", e);
 		} catch (ClassNotFoundException e) {
@@ -88,11 +93,14 @@ public class MngtController implements Runnable, IStoppable {
 	 */
 	private void init(String globalConfigAddress, int shuttDownPort) throws SQLException, ClassNotFoundException {
 		Class.forName("org.sqlite.JDBC");
-		// Init ZMQ
+		// Init ZMQ subscriber API for configuration
 		context = ZMQ.context(1);
 		mngtSubSocket = context.socket(ZMQ.SUB);
 		mngtSubSocket.connect("tcp://" + globalConfigAddress + ":5002");
 		mngtSubSocket.subscribe("".getBytes());
+		// Init ZMQ subscriber API for configuration
+		mngtRepSocket = context.socket(ZMQ.REP);
+		mngtRepSocket.bind("tcp://" + globalConfigAddress + ":5003");
 		// init variable
 		this.serializationUtils = new RoQSerializationUtils();
 		this.storage = new MngtServerStorage(DriverManager.getConnection("jdbc:sqlite:" + this.dbName));
@@ -119,6 +127,7 @@ public class MngtController implements Runnable, IStoppable {
 		// ZMQ init of the subscriber socket
 		ZMQ.Poller poller = context.poller(2);
 		poller.register(mngtSubSocket);// 0
+		poller.register(mngtRepSocket);
 		// Init variables
 		int infoCode = 0;
 
@@ -153,12 +162,40 @@ public class MngtController implements Runnable, IStoppable {
 								"Expected a second message" + " in the envelope"));
 					}
 					break;
-
 				default:
 					break;
 				}
 			}
-		}
+			//Pollin 1 = Management facade interface in BSON
+			if (poller.pollin(1)) {
+				IRoQSerializer serializer = new RoQBSONSerializer();
+				// 1. Checking the command ID
+				BSONObject request = BSON.decode(mngtRepSocket.recv(0));
+				if (!request.containsField("CMD")) {
+					mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+							"The command does not contain a CMD field"), 0);
+				} else {
+					// 2. Getting the command ID
+					switch ((Integer) request.get("CMD")) {
+					case RoQConstant.BSON_CONFIG_REMOVE_QUEUE:
+
+						break;
+
+					case RoQConstant.BSON_CONFIG_START_QUEUE:
+
+						break;
+
+					case RoQConstant.BSON_CONFIG_STOP_QUEUE:
+
+						break;
+
+					default:
+						break;
+					}
+				}
+			}
+		}//END OF THE LOOP
+		
 		logger.info("Stopping " + this.getClass().getName() + " cleaning sockets");
 		this.mngtSubSocket.close();
 		controllerTimer.cancel();

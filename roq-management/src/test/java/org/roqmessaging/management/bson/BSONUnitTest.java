@@ -26,6 +26,7 @@ import org.bson.BasicBSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
 
@@ -180,6 +181,29 @@ public class BSONUnitTest {
 		if(! string.contains(",")){
 			logger.debug(BSON.decode(encoded).toString());
 		}
+	}
+	
+	/**
+	 * Test the management interface query language
+	 * @throws Exception
+	 */
+	@Test
+	public void testBSONMngRequest() throws Exception {
+		IRoQSerializer serializer = new RoQBSONSerializer();
+		
+		//1. Remove Queue
+		byte[] encoded = 	serializer.serialiazeConfigRequest(RoQConstant.BSON_CONFIG_REMOVE_QUEUE, "myName");
+		logger.debug(BSON.decode(encoded).toString());
+		BSONObject decoded = BSON.decode(encoded);
+		Assert.assertEquals(RoQConstant.BSON_CONFIG_REMOVE_QUEUE, decoded.get("CMD"));
+		
+		byte[] encodedAnswer = serializer.serialiazeConfigAnswer(RoQConstant.FAIL, "The queue does not exist");
+		logger.debug(BSON.decode(encodedAnswer).toString());
+		BSONObject decodedAnswer = BSON.decode(encodedAnswer);
+		Assert.assertEquals("The queue does not exist", decodedAnswer.get("COMMENT"));
+		
+		
+		
 	}
 
 }
