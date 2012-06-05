@@ -15,6 +15,7 @@
 package org.roqmessaging.management.serializer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -135,10 +136,12 @@ public class RoQBSONSerializer implements IRoQSerializer {
 	/**
 	 * @see org.roqmessaging.management.serializer.IRoQSerializer#serialiazeConfigRequest(int, java.lang.String)
 	 */
-	public byte[] serialiazeConfigRequest(int cmdID, String qName) {
+	public byte[] serialiazeConfigRequest(int cmdID, HashMap<String, String> fields) {
 		BSONObject request = new BasicBSONObject();
 		request.put("CMD",cmdID);
-		request.put("QName", qName);
+		for (String key : fields.keySet()) {
+			request.put(key	,fields.get(key));
+		}
 		return	BSON.encode(request);
 	}
 

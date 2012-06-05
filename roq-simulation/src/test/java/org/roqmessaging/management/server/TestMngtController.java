@@ -27,6 +27,7 @@ import org.roq.simulation.RoQAllLocalLauncher;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.LogicalQFactory;
 import org.roqmessaging.management.server.state.QueueManagementState;
+import org.zeromq.ZMQ;
 
 /**
  * Class TestMngtController
@@ -108,6 +109,21 @@ public class TestMngtController {
 		} catch (SQLException e) {
 			logger.error("Error here due to SQL storage", e);
 		}
+	}
+	
+	/**
+	 * Test the BSON interface exposed by the management controller
+	 * @throws Exception
+	 */
+	@Test
+	public void testBsonRequest() throws Exception {
+		ZMQ.Context context = ZMQ.context(1);
+		ZMQ.Socket mngtREQSocket = context.socket(ZMQ.REQ);
+		mngtREQSocket.connect("tcp://localhost:5003");
+		
+		//TODO 1. Create a queue
+		//TODO 2. Subcribing and publishing a message
+		//TODO 3. Removing the queue
 	}
 
 }

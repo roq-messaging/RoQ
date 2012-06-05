@@ -15,6 +15,7 @@
 package org.roqmessaging.management.bson;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -192,10 +193,13 @@ public class BSONUnitTest {
 		IRoQSerializer serializer = new RoQBSONSerializer();
 		
 		//1. Remove Queue
-		byte[] encoded = 	serializer.serialiazeConfigRequest(RoQConstant.BSON_CONFIG_REMOVE_QUEUE, "myName");
+		HashMap<String, String> fields = new HashMap<String, String>();
+		fields.put("QName", "myName");
+		byte[] encoded = 	serializer.serialiazeConfigRequest(RoQConstant.BSON_CONFIG_REMOVE_QUEUE, fields);
 		logger.debug(BSON.decode(encoded).toString());
 		BSONObject decoded = BSON.decode(encoded);
 		Assert.assertEquals(RoQConstant.BSON_CONFIG_REMOVE_QUEUE, decoded.get("CMD"));
+		Assert.assertEquals("myName", decoded.get("QName"));
 		
 		byte[] encodedAnswer = serializer.serialiazeConfigAnswer(RoQConstant.FAIL, "The queue does not exist");
 		logger.debug(BSON.decode(encodedAnswer).toString());
