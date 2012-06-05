@@ -42,14 +42,6 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 
 	// Config to hold
 	private GlobalConfigurationState configurationState = null;
-//	// [Host manager address, socket>
-//	private HashMap<String, ZMQ.Socket> hostManagerMap;
-//	// QName, monitor location
-//	private HashMap<String, String> queueMonitorMap = null;
-//	//QName, target host location
-//	private HashMap<String, String> queueHostLocation = null;
-//	//QName, stat monitor address server (ready to connect!)
-//	private HashMap<String, String> queueMonitorStatMap = null;
 	// Lock
 	private Lock lockCreateQ = new ReentrantLock();
 	private Lock lockRemoveQ = new ReentrantLock();
@@ -75,12 +67,12 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#createQueue(java.lang.String,
 	 *      java.lang.String)
 	 */
-	public void createQueue(String queueName, String targetAddress) throws IllegalStateException {
+	public boolean createQueue(String queueName, String targetAddress) throws IllegalStateException {
 		try {
 			this.lockCreateQ.lock();
 			if (!this.initialized)
 				this.refreshTopology();
-			if(!checkForCreateNewQ(queueName, targetAddress))return ;
+			if(!checkForCreateNewQ(queueName, targetAddress))return false ;
 			// The name does not exist yet
 			//2. Sends the create event to the hostConfig manager thread
 			ZMQ.Socket hostSocket = this.configurationState.getHostManagerMap().get(targetAddress);
@@ -88,8 +80,9 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 			String[] resultHost = new String(hostSocket.recv(0)).split(",");
 			
 			if (Integer.parseInt(resultHost[0]) != RoQConstant.CONFIG_CREATE_QUEUE_OK) {
-				throw new IllegalStateException("The queue creation for  " + queueName
+				logger.error("The queue creation for  " + queueName
 						+ " failed on the local host server");
+				return false;
 			} else {
 				logger.info("Created queue " + queueName + " @ " + resultHost[1]);
 				// 3.B. Create the entry in the global config
@@ -98,8 +91,11 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 								.getBytes(), 0);
 				String result = new String(globalConfigReq.recv(0));
 				if (Integer.parseInt(result) != RoQConstant.CONFIG_CREATE_QUEUE_OK) {
-					throw new IllegalStateException("The queue creation for  " + queueName
+					logger.error("The queue creation for  " + queueName
 							+ " failed on the global configuration server");
+					return false;
+				}else{
+					return true;
 				}
 			}
 		} finally {

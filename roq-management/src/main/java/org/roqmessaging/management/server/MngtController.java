@@ -22,11 +22,13 @@ import java.util.Timer;
 import org.apache.log4j.Logger;
 import org.bson.BSON;
 import org.bson.BSONObject;
+import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.management.GlobalConfigurationManager;
+import org.roqmessaging.management.LogicalQFactory;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
@@ -38,10 +40,11 @@ import org.zeromq.ZMQ;
  * Description: Controller that loads/receive data from the
  * {@linkplain GlobalConfigurationManager} and refresh the stored data. Global
  * config manager: 5000 <br>
- * Global config manager pub sub port 5001<br>
- * Shutdown monitor port 5002<br>
- * Management contoller on port 5003<br>
- * Management timer port 5004
+ * Shut down config manager 5001<br>
+ * Global config manager pub sub port 5002<br>
+ * Mngt request server port 5003<br>
+ * Shutdown monitor port 5004<br>
+ * Management timer port 5005
  * 
  * 
  * @author sskhiri
@@ -52,6 +55,8 @@ public class MngtController implements Runnable, IStoppable {
 	private ZMQ.Context context = null;
 	private ZMQ.Socket mngtSubSocket = null;
 	private ZMQ.Socket mngtRepSocket = null;
+	//Logical queue factory
+	private IRoQLogicalQueueFactory factory = null;
 	// running
 	private volatile boolean active = true;
 	private ShutDownMonitor shutDownMonitor = null;
@@ -84,7 +89,7 @@ public class MngtController implements Runnable, IStoppable {
 
 
 	/**
-	 * We start start the global conifg at 5000 + 5001 for its shutdown port, 5002 for the configuration timer + 5003 for its shutdown.
+	 * We start start the global conifg at 5000 + 5001 for its shutdown port, 5002 for the configuration timer + 5003 for its request server
 	 * @param globalConfigAddress
 	 *            the global configuration server
 	 * @param shuttDownPort
@@ -105,6 +110,7 @@ public class MngtController implements Runnable, IStoppable {
 		// init variable
 		this.serializationUtils = new RoQSerializationUtils();
 		this.storage = new MngtServerStorage(DriverManager.getConnection("jdbc:sqlite:" + this.dbName));
+		this.factory = new LogicalQFactory(globalConfigAddress);
 		// Shutdown thread configuration
 		this.shutDownMonitor = new ShutDownMonitor(shuttDownPort, this);
 		new Thread(this.shutDownMonitor).start();
@@ -121,7 +127,7 @@ public class MngtController implements Runnable, IStoppable {
 		this.active = true;
 		
 		//Launching the timer 
-		MngtControllerTimer controllerTimer = new MngtControllerTimer(this.period, this, 5004);
+		MngtControllerTimer controllerTimer = new MngtControllerTimer(this.period, this, 5005);
 		Timer publicationTimer = new Timer();
 		publicationTimer.schedule(controllerTimer,  period, period);
 		
@@ -176,11 +182,15 @@ public class MngtController implements Runnable, IStoppable {
 					mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
 							"The command does not contain a CMD nor QName field"), 0);
 				} else {
+					//Variables
+					String qName = "?";
+					String host ="?";
+					
 					// 2. Getting the command ID
 					switch ((Integer) request.get("CMD")) {
 					case RoQConstant.BSON_CONFIG_REMOVE_QUEUE:
 						logger.debug("Processing a REMOVE QUEUE REQUEST");
-						String qName =(String) request.get("QName");
+						qName =(String) request.get("QName");
 						logger.debug("Remove "+ qName);
 						//Removing Q
 						//1. Check whether the queue is running 
@@ -188,20 +198,56 @@ public class MngtController implements Runnable, IStoppable {
 							QueueManagementState state = this.storage.getQueue(qName);
 							if(state.isRunning()){
 								//2. if running ask the global configuration manager to remove it
+								if(! this.factory.removeQueue(qName)){
+									mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+											"ERROR when stopping Running queue, check logs of the logical queue factory"), 0);
+									break;
+								}
 							}
 							//3. ask the storage manager to remove it
 							this.storage.removeQueue(qName);
+							//4. send back OK
+							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK,
+									"SUCCESS"), 0);
 						} catch (Exception e) {
 							logger.error("Error while processing the REMOVE Q", e);
 						}
 						break;
 
 					case RoQConstant.BSON_CONFIG_START_QUEUE:
+						logger.debug("Create Q Request ...");
 						//Starting a queue
+						//Just create a queue on a host
+						if(!request.containsField("Host")){
+							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+									"The Host field is not present, INVALID REQUEST"), 0);
+							logger.error("Invalid request, does not contain Host field.");
+							break;
+						}
+						//1. Get the host
+						host = (String) request.get("Host");
+						qName =(String) request.get("QName");
+						logger.debug("Create queue name = "+ qName+" on "+host);
+						
+						//Just create queue the timer will update the management server configuration
+						if(!factory.createQueue(qName, host)){
+							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+									"ERROR when starting  queue, check logs of the logical queue factory"), 0);
+						}else{
+							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK,
+									"SUCCESS"), 0);
+						}
 						break;
 
 					case RoQConstant.BSON_CONFIG_STOP_QUEUE:
-						//Stopping a queue
+						//Stopping a queue is just removing from the global configuration
+						if(! this.factory.removeQueue(qName)){
+							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+									"ERROR when stopping Running queue, check logs of the logical queue factory"), 0);
+						}else{
+							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK,
+									"SUCCESS"), 0);
+						}
 						break;
 
 					default:

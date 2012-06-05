@@ -30,7 +30,7 @@ public interface IRoQLogicalQueueFactory {
 	 * @throws IllegalStateException if a queue already exist with this name, the name must be unique for 
 	 * the complete cluster.
 	 */
-	public void createQueue(String queueName, String targetAddress) throws IllegalStateException;
+	public boolean createQueue(String queueName, String targetAddress) throws IllegalStateException;
 	
 	/**
 	 * Removes a logical queue.
