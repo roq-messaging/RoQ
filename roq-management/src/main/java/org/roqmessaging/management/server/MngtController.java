@@ -64,6 +64,8 @@ public class MngtController implements Runnable, IStoppable {
 	private RoQSerializationUtils serializationUtils = null;
 	// Management infra
 	private MngtServerStorage storage = null;
+	//The BSON serialiazer
+	private IRoQSerializer serializer =null;
 	// The DB file
 	private String dbName = "Management.db";
 	//The publication period of the configuration
@@ -106,11 +108,12 @@ public class MngtController implements Runnable, IStoppable {
 		mngtSubSocket.subscribe("".getBytes());
 		// Init ZMQ subscriber API for configuration
 		mngtRepSocket = context.socket(ZMQ.REP);
-		mngtRepSocket.bind("tcp://" + globalConfigAddress + ":5003");
+		mngtRepSocket.bind("tcp://*:5003");
 		// init variable
 		this.serializationUtils = new RoQSerializationUtils();
 		this.storage = new MngtServerStorage(DriverManager.getConnection("jdbc:sqlite:" + this.dbName));
 		this.factory = new LogicalQFactory(globalConfigAddress);
+		this.serializer  = new RoQBSONSerializer();
 		// Shutdown thread configuration
 		this.shutDownMonitor = new ShutDownMonitor(shuttDownPort, this);
 		new Thread(this.shutDownMonitor).start();
@@ -175,40 +178,42 @@ public class MngtController implements Runnable, IStoppable {
 			}
 			//Pollin 1 = Management facade interface in BSON
 			if (poller.pollin(1)) {
-				IRoQSerializer serializer = new RoQBSONSerializer();
 				// 1. Checking the command ID
 				BSONObject request = BSON.decode(mngtRepSocket.recv(0));
-				if (!request.containsField("CMD") || request.containsField("QName")) {
-					mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-							"The command does not contain a CMD nor QName field"), 0);
-				} else {
-					//Variables
+				if (checkField(request, "CMD")) {
+					// Variables
 					String qName = "?";
-					String host ="?";
-					
+					String host = "?";
+
 					// 2. Getting the command ID
 					switch ((Integer) request.get("CMD")) {
 					case RoQConstant.BSON_CONFIG_REMOVE_QUEUE:
 						logger.debug("Processing a REMOVE QUEUE REQUEST");
-						qName =(String) request.get("QName");
-						logger.debug("Remove "+ qName);
-						//Removing Q
-						//1. Check whether the queue is running 
+						if (!checkField(request, "QName")) {
+							break;
+						}
+						qName = (String) request.get("QName");
+						logger.debug("Remove " + qName);
+						// Removing Q
+						// 1. Check whether the queue is running
 						try {
 							QueueManagementState state = this.storage.getQueue(qName);
-							if(state.isRunning()){
-								//2. if running ask the global configuration manager to remove it
-								if(! this.factory.removeQueue(qName)){
-									mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-											"ERROR when stopping Running queue, check logs of the logical queue factory"), 0);
+							if (state.isRunning()) {
+								// 2. if running ask the global configuration
+								// manager to remove it
+								if (!this.factory.removeQueue(qName)) {
+									mngtRepSocket
+											.send(serializer
+													.serialiazeConfigAnswer(RoQConstant.FAIL,
+															"ERROR when stopping Running queue, check logs of the logical queue factory"),
+													0);
 									break;
 								}
 							}
-							//3. ask the storage manager to remove it
+							// 3. ask the storage manager to remove it
 							this.storage.removeQueue(qName);
-							//4. send back OK
-							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK,
-									"SUCCESS"), 0);
+							// 4. send back OK
+							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK, "SUCCESS"), 0);
 						} catch (Exception e) {
 							logger.error("Error while processing the REMOVE Q", e);
 						}
@@ -216,43 +221,51 @@ public class MngtController implements Runnable, IStoppable {
 
 					case RoQConstant.BSON_CONFIG_START_QUEUE:
 						logger.debug("Create Q Request ...");
-						//Starting a queue
-						//Just create a queue on a host
-						if(!request.containsField("Host")){
-							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-									"The Host field is not present, INVALID REQUEST"), 0);
-							logger.error("Invalid request, does not contain Host field.");
+						// Starting a queue
+						// Just create a queue on a host
+						if (!checkField(request, "QName") || !checkField(request, "Host")) {
 							break;
 						}
-						//1. Get the host
+						// 1. Get the host
 						host = (String) request.get("Host");
-						qName =(String) request.get("QName");
-						logger.debug("Create queue name = "+ qName+" on "+host);
-						
-						//Just create queue the timer will update the management server configuration
-						if(!factory.createQueue(qName, host)){
+						qName = (String) request.get("QName");
+						logger.debug("Create queue name = " + qName + " on " + host);
+
+						// Just create queue the timer will update the
+						// management server configuration
+						if (!factory.createQueue(qName, host)) {
 							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
 									"ERROR when starting  queue, check logs of the logical queue factory"), 0);
-						}else{
-							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK,
-									"SUCCESS"), 0);
+						} else {
+							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK, "SUCCESS"), 0);
 						}
 						break;
 
 					case RoQConstant.BSON_CONFIG_STOP_QUEUE:
-						//Stopping a queue is just removing from the global configuration
-						if(! this.factory.removeQueue(qName)){
+						// Stopping a queue is just removing from the global
+						// configuration
+						// 1. Check the request
+						if (!checkField(request, "QName")) {
+							break;
+						}
+						// 2. Get the Qname
+						qName = (String) request.get("QName");
+						logger.debug("Stop queue name = " + qName);
+						// 3. Remove the queue
+						if (!this.factory.removeQueue(qName)) {
 							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
 									"ERROR when stopping Running queue, check logs of the logical queue factory"), 0);
-						}else{
-							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK,
-									"SUCCESS"), 0);
+						} else {
+							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK, "SUCCESS"), 0);
 						}
 						break;
 
+					case RoQConstant.BSON_CONFIG_CREATE_XCHANGE:
+						//TODO create exchange
+						break;
+
 					default:
-						mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-								"INVALID CMD Value"), 0);
+						mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL, "INVALID CMD Value"), 0);
 						break;
 					}
 				}
@@ -261,8 +274,27 @@ public class MngtController implements Runnable, IStoppable {
 		
 		logger.info("Stopping " + this.getClass().getName() + " cleaning sockets");
 		this.mngtSubSocket.close();
+		this.mngtRepSocket.close();
 		controllerTimer.cancel();
 	}
+
+	/**
+	 * Checks whether the field is present in the BSON request
+	 * @param request the request
+	 * @param field the field to check
+	 * @return true if the field is present, false otherwise, in addition it sends a INVALI answer.
+	 */
+	private boolean checkField(BSONObject request, String field) {
+		if(!request.containsField(field)){
+			mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+					"The "+field+"  field is not present, INVALID REQUEST"), 0);
+			logger.error("Invalid request, does not contain Host field.");
+		return false;
+	}else{
+		return true;
+	}
+	}
+
 
 	/**
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()

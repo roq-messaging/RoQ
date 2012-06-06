@@ -20,12 +20,10 @@ import java.util.ArrayList;
 import junit.framework.Assert;
 
 import org.apache.log4j.Logger;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import org.roq.simulation.RoQAllLocalLauncher;
+import org.roq.simulation.test.RoQTestCase;
+import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.core.utils.RoQUtils;
-import org.roqmessaging.management.LogicalQFactory;
 import org.roqmessaging.management.server.state.QueueManagementState;
 import org.zeromq.ZMQ;
 
@@ -35,39 +33,14 @@ import org.zeromq.ZMQ;
  * 
  * @author sskhiri
  */
-public class TestMngtController {
-	private RoQAllLocalLauncher launcher = null;
+public class TestMngtController extends RoQTestCase {
 	private Logger logger = Logger.getLogger(TestMngtController.class);
-	private LogicalQFactory factory = null;
-	
-	//under test
-	private MngtController mngtController =null;
-	
-	 /**
-	 * @throws java.lang.Exception
-	 */
-	@Before
-	public void setUp() throws Exception {
-		this.launcher = new RoQAllLocalLauncher();
-		this.launcher.setConfigFile("testGCM.properties");
-		this.launcher.setUp();
-		this.factory = new LogicalQFactory(RoQUtils.getInstance().getLocalIP().toString());
-		this.mngtController = this.launcher.getMngtController();
-	}
-
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@After
-	public void tearDown() throws Exception {
-		this.factory.clean();
-		this.launcher.tearDown();
-	}
-
+	private MngtController mngtController = null;
 
 	@Test
 	public void test() {
 		try {
+			this.mngtController = this.launcher.getMngtController();
 			logger.info("---> Test 1 create  2 Qs");
 			// 1. Create Q
 			 this.factory.createQueue("queue1", RoQUtils.getInstance().getLocalIP().toString());
@@ -121,9 +94,20 @@ public class TestMngtController {
 		ZMQ.Socket mngtREQSocket = context.socket(ZMQ.REQ);
 		mngtREQSocket.connect("tcp://localhost:5003");
 		
-		//TODO 1. Create a queue
-		//TODO 2. Subcribing and publishing a message
-		//TODO 3. Removing the queue
+		//1. Create a queue
+		String qName = "queueTest";
+		this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP());
+		//Let the queue starting
+		Thread.sleep(4000);
+		//2. Subscribing and publishing a message
+		attachSUbscriber(qName);
+		IRoQPublisher publisher = attachPublisher(qName);
+		sendMsg(publisher);
+		//3. Removing the queue
+		this.factory.removeQueue(qName);
+		//4. Let the time to remove the queue
+		this.logger.info("Removing "+qName);
+		Thread.sleep(4000);
 	}
 
 }

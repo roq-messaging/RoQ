@@ -234,6 +234,16 @@ public interface RoQConstant {
 	public static int BSON_CONFIG_START_QUEUE = 2003;
 	
 	/**
+	 *  Request command that can be sent to the Configuration server
+	 *   Request: "2004, QName, Host"
+	 *   Answer: 
+	 *   RESULT, OK
+	 *   COMMENT, "The reason why it fails". This comment is not present in case of success.
+	 *   This request will start an exchange on the specified host for the specified Q..
+	 */
+	public static int BSON_CONFIG_CREATE_XCHANGE = 2004;
+	
+	/**
 	 * Used by the management server to broadcast configuration.
 	 */
 	public static String BSON_QUEUES = "Queues";
