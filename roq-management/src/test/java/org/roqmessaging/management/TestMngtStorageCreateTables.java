@@ -153,5 +153,19 @@ public class TestMngtStorageCreateTables {
 		Assert.assertEquals(false, q1State.isRunning());
 		facade.getQueues();
 	}
+	
+	/**
+	 * Test the queue removal
+	 * @throws Exception
+	 */
+	@Test
+	public void testRemoveQ() throws Exception {
+		MngtServerStorage facade = new MngtServerStorage(DriverManager.getConnection("jdbc:sqlite:" + this.dbName));
+		facade.getQueues();
+		facade.removeQueue("Queue2");
+		facade.removeQueue("Queue3");
+		ArrayList<QueueManagementState> queues = facade.getQueues();
+		Assert.assertEquals(1, queues.size());
+	}
 
 }

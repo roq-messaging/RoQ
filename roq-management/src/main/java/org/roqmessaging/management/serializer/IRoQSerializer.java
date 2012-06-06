@@ -15,6 +15,7 @@
 package org.roqmessaging.management.serializer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.roqmessaging.management.server.state.QueueManagementState;
@@ -64,5 +65,19 @@ public interface IRoQSerializer {
 	 * @return the serialized byte array
 	 */
 	public byte[] serialiazeMonitorInfo(String monitor, String statMonitor);
+	
+	/**
+	 * @param cmdID the command to execute on the queue
+	 * @param fields the list of fields to include
+	 * @return the serialized byte array
+	 */
+	public byte[] serialiazeConfigRequest(int cmdID, HashMap<String, String> fields);
+	
+	/**
+	 * @param result the result of the request
+	 * @param comment the comment on the request, can be null if the result is OK
+	 * @return the serialized byte array
+	 */
+	public byte[] serialiazeConfigAnswer(int result, String comment);
 	
 }

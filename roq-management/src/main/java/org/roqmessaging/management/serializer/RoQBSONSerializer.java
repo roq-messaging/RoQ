@@ -15,6 +15,7 @@
 package org.roqmessaging.management.serializer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -130,6 +131,28 @@ public class RoQBSONSerializer implements IRoQSerializer {
 		this.logger.debug("Serialize Get Host by QName:");
 		this.logger.debug(answer);
 		return BSON.encode(answer);
+	}
+
+	/**
+	 * @see org.roqmessaging.management.serializer.IRoQSerializer#serialiazeConfigRequest(int, java.lang.String)
+	 */
+	public byte[] serialiazeConfigRequest(int cmdID, HashMap<String, String> fields) {
+		BSONObject request = new BasicBSONObject();
+		request.put("CMD",cmdID);
+		for (String key : fields.keySet()) {
+			request.put(key	,fields.get(key));
+		}
+		return	BSON.encode(request);
+	}
+
+	/**
+	 * @see org.roqmessaging.management.serializer.IRoQSerializer#serialiazeConfigAnswer(int, java.lang.String)
+	 */
+	public byte[] serialiazeConfigAnswer(int result, String comment) {
+		BSONObject answer = new BasicBSONObject();
+		answer.put("RESULT",result);
+		answer.put("COMMENT", comment);
+		return	BSON.encode(answer);
 	}
 
 }

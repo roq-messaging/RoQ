@@ -203,6 +203,47 @@ public interface RoQConstant {
 	public static int BSON_CONFIG_GET_HOST_BY_QNAME = 2000;
 	
 	/**
+	 *  Request command that can be sent to the Configuration server
+	 *   Request: "2001, QName"
+	 *   Answer: 
+	 *   RESULT, OK
+	 *   COMMENT, "The reason why it fails". This comment is not present in case of success.
+	 *   This request will definitively remove the queue from the global configuration manager if it runs
+	 *   and from the Management server DB.
+	 */
+	public static int BSON_CONFIG_REMOVE_QUEUE = 2001;
+	
+	/**
+	 *  Request command that can be sent to the Configuration server
+	 *   Request: "2002, QName"
+	 *   Answer: 
+	 *   RESULT, OK
+	 *   COMMENT, "The reason why it fails". This comment is not present in case of success.
+	 *   This request will stop the queue, i.e. removing the queue at the Global configuration server only.
+	 */
+	public static int BSON_CONFIG_STOP_QUEUE = 2002;
+	
+	/**
+	 *  Request command that can be sent to the Configuration server
+	 *   Request: "2003, QName, Host"
+	 *   Answer: 
+	 *   RESULT, OK
+	 *   COMMENT, "The reason why it fails". This comment is not present in case of success.
+	 *   This request will start the queue, i.e. creating the queue at the Global configuration server only.
+	 */
+	public static int BSON_CONFIG_START_QUEUE = 2003;
+	
+	/**
+	 *  Request command that can be sent to the Configuration server
+	 *   Request: "2004, QName, Host"
+	 *   Answer: 
+	 *   RESULT, OK
+	 *   COMMENT, "The reason why it fails". This comment is not present in case of success.
+	 *   This request will start an exchange on the specified host for the specified Q..
+	 */
+	public static int BSON_CONFIG_CREATE_XCHANGE = 2004;
+	
+	/**
 	 * Used by the management server to broadcast configuration.
 	 */
 	public static String BSON_QUEUES = "Queues";
