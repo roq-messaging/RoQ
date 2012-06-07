@@ -51,6 +51,7 @@ public class RoQTestCase {
 		this.launcher.setConfigFile("testGCM.properties");
 		this.launcher.setUp();
 		this.factory = new LogicalQFactory(RoQUtils.getInstance().getLocalIP().toString());
+		Thread.sleep(1000);
 	}
 
 	/**
@@ -61,6 +62,7 @@ public class RoQTestCase {
 		this.logger.info("Tear Down TEST");
 		this.factory.clean();
 		this.launcher.tearDown();
+		Thread.sleep(3000);
 	}
 
 
