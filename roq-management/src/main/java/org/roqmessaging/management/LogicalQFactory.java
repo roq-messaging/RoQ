@@ -41,7 +41,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	private boolean initialized = false;
 
 	// Config to hold
-	private GlobalConfigurationState configurationState = null;
+	private GlobalConfigurationStateClient configurationState = null;
 	// Lock
 	private Lock lockCreateQ = new ReentrantLock();
 	private Lock lockRemoveQ = new ReentrantLock();
@@ -54,7 +54,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		context = ZMQ.context(1);
 		globalConfigReq = context.socket(ZMQ.REQ);
 		globalConfigReq.connect("tcp://" + this.configServer + ":5000");
-		this.configurationState = new GlobalConfigurationState(this.configServer);
+		this.configurationState = new GlobalConfigurationStateClient(this.configServer);
 	}
 
 	/**

@@ -16,10 +16,7 @@ package org.roqmessaging.management;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
-import org.apache.log4j.Logger;
-import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.zeromq.ZMQ;
 
@@ -32,132 +29,33 @@ import org.zeromq.ZMQ;
  */
 public class GlobalConfigurationState {
 	// [Host manager address, socket>
-	private HashMap<String, ZMQ.Socket> hostManagerMap;
+	protected HashMap<String, ZMQ.Socket> hostManagerMap;
 	// QName, monitor location
-	private HashMap<String, String> queueMonitorMap = null;
+	protected HashMap<String, String> queueMonitorMap = null;
 	//QName, target host location
-	private HashMap<String, String> queueHostLocation = null;
+	protected HashMap<String, String> queueHostLocation = null;
 	//QName, stat monitor address server (ready to connect!)
-	private HashMap<String, String> queueMonitorStatMap = null;
+	protected HashMap<String, String> queueMonitorStatMap = null;
+	//Configuration data: list of host manager (1 per RoQ Host)
+	private ArrayList<String> hostManagerAddresses = null; 
 	
-	// ZMQ elements
-	private ZMQ.Socket globalConfigReq = null;
-	private ZMQ.Context context;
-	// Logger
-	private Logger logger = Logger.getLogger(GlobalConfigurationState.class);
-	
-	//The global configuration server IP address
-	private String configServer = null;
 	//utils
-	private RoQSerializationUtils serializationUtils=null;
-	//RoQ element ID
-	private String clientID = null;
+	protected RoQSerializationUtils serializationUtils=null;
 
 	/**
 	 * @param configurationServer the global configuration server address
 	 */
-	public GlobalConfigurationState(String configurationServer) {
-		this.configServer = configurationServer;
+	public GlobalConfigurationState() {
 		this.serializationUtils = new RoQSerializationUtils();
-		context = ZMQ.context(1);
-		globalConfigReq = context.socket(ZMQ.REQ);
-		globalConfigReq.connect("tcp://" + this.configServer + ":5000");
-		this.clientID =String.valueOf(System.currentTimeMillis()) + "globalconfigclientState";
 		
 		//init map
 		this.hostManagerMap = new HashMap<String, ZMQ.Socket>();
 		this.queueHostLocation = new HashMap<String, String>();
 		this.queueMonitorMap = new HashMap<String, String>();
 		this.queueMonitorStatMap = new HashMap<String, String>();
+		this.hostManagerAddresses = new ArrayList<String>();
 	}
 	
-	
-	/**
-	 * Reload cache from the global configuration server
-	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#refreshTopology()
-	 */
-	public void refreshConfiguration() {
-		// Load the topology config
-		globalConfigReq.send((Integer.toString(RoQConstant.INIT_REQ) + "," + this.clientID).getBytes(), 0);
-		// The configuration should load all information about the Local host
-		// managers = system topology
-		logger.debug("Sending global state global config request...");
-		byte[] configuration = globalConfigReq.recv(0);
-		List<String> hostManagers = this.serializationUtils.deserializeObject(configuration);
-		if (globalConfigReq.hasReceiveMore()) {
-			// The logical queue config is sent in the part 2
-			byte[] qConfiguration = globalConfigReq.recv(0);
-			queueMonitorMap = this.serializationUtils.deserializeObject(qConfiguration);
-		}
-		if (globalConfigReq.hasReceiveMore()) {
-			// The host location distribution is sent in the part 3
-			byte[] qConfiguration = globalConfigReq.recv(0);
-			queueHostLocation =this.serializationUtils.deserializeObject(qConfiguration);
-		}
-		if (globalConfigReq.hasReceiveMore()) {
-			// The stat monitor for each logical queue is sent in the part 4
-			byte[] qConfiguration = globalConfigReq.recv(0);
-			queueMonitorStatMap = this.serializationUtils.deserializeObject(qConfiguration);
-		}
-		logger.info("Getting configuration with " + hostManagers.size() + " Host managers and "
-				+ queueMonitorMap.size() + " queues");
-		updateLocalConfiguration(hostManagers);
-	}
-	
-	/**
-	 * Update the local configuration according to the refreshed list of host
-	 * managers. According to the delta it removes or adds new sockets.
-	 * <p>
-	 * This method connects directly all the host managers. If really to many
-	 * host we can imagine to connect the host only when we need, a kind a lazy
-	 * loading, but it is not yet implemented.
-	 * 
-	 * @param hostManagers
-	 *            the new list of host manager
-	 */
-	private void updateLocalConfiguration(List<String> hostManagers) {
-		// Create the socket for all host manager that are new or remove the old
-		// ones
-		logger.debug("Updating new local configuration");
-		List<String> toRemove = new ArrayList<String>();
-		List<String> toAdd = new ArrayList<String>();
-		// 1. Remove the old one
-		for (String existingHost : hostManagerMap.keySet()) {
-			if (!hostManagers.contains(existingHost)) {
-				// must be removed
-				toRemove.add(existingHost);
-			}
-		}
-		for (String hostToRemove : toRemove) {
-			logger.debug("Removing to " + hostToRemove);
-			ZMQ.Socket socket = this.hostManagerMap.remove(hostToRemove);
-			socket.close();
-		}
-		// 2. To add
-		for (String hostAddress : hostManagers) {
-			if (!this.hostManagerMap.containsKey(hostAddress)) {
-				// Must create one
-				toAdd.add(hostAddress);
-			}
-		}
-		for (String hostToadd : toAdd) {
-			try {
-				ZMQ.Socket socket = context.socket(ZMQ.REQ);
-				String address = "tcp://" + hostToadd + ":5100";
-				logger.debug("Connect to " + address);
-				socket.setSendTimeOut(3500);
-				socket.connect(address);
-				this.hostManagerMap.put(hostToadd, socket);
-				logger.debug("Added host " + hostToadd + " in the local configuration");
-			} catch (Exception e) {
-				logger.error("Error when connecting to host " + hostToadd, e);
-			}
-		}
-	}
-	
-	
-	
-
 	/**
 	 * @return the hostManagerMap
 	 */
@@ -213,12 +111,19 @@ public class GlobalConfigurationState {
 	public void setQueueMonitorStatMap(HashMap<String, String> queueMonitorStatMap) {
 		this.queueMonitorStatMap = queueMonitorStatMap;
 	}
-	
-	
-	
-	
-	
-	
-	
 
+	/**
+	 * @return the hostManagerAddresses
+	 */
+	public ArrayList<String> getHostManagerAddresses() {
+		return hostManagerAddresses;
+	}
+
+	/**
+	 * @param hostManagerAddresses the hostManagerAddresses to set
+	 */
+	public void setHostManagerAddresses(ArrayList<String> hostManagerAddresses) {
+		this.hostManagerAddresses = hostManagerAddresses;
+	}
+	
 }

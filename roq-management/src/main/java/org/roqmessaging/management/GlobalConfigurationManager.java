@@ -14,7 +14,6 @@
  */
 package org.roqmessaging.management;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Timer;
 
@@ -46,15 +45,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private ZMQ.Socket clientReqSocket = null;
 	private ZMQ.Context context;
 	private GCMPropertyDAO properties=null;
-	
-	//Configuration data: list of host manager (1 per RoQ Host)
-	private ArrayList<String> hostManagerAddresses = null;
-	//Define the location of the monitor of each queue (Name, monitor address)
-	private HashMap<String, String> queueMonitorLocations=null;
-	//Define the location of the monitor stat address for each queue (Name, monitor stat address)
-	private HashMap<String, String> queueStatLocation = null;
-	//Define the location of the Logical queue (Name, host address)
-	private HashMap<String, String> queueHostLocation = null;
+	//The GCM state
+	private GlobalConfigurationState stateDAO = null;
 	//The shutdown monitor
 	private ShutDownMonitor shutDownMonitor = null;
 	//utils
@@ -76,11 +68,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 */
 	public GlobalConfigurationManager(String configFile) {
 		try {
-			this.hostManagerAddresses = new ArrayList<String>();
+			this.stateDAO = new GlobalConfigurationState();
 			this.logger.info("Started global config Runnable");
-			this.queueMonitorLocations = new HashMap<String, String>();
-			this.queueStatLocation = new HashMap<String, String>();
-			this.queueHostLocation = new HashMap<String, String>();
 
 			// ZMQ init
 			this.context = ZMQ.context(1);
@@ -166,14 +155,14 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				logger.debug("GET HOST BY QNAME = "+ qName);
 				
 				//Get the host for this QName
-				if(this.queueMonitorLocations.containsKey(qName) && this.queueStatLocation.containsKey(qName)){
+				if(this.stateDAO.getQueueMonitorMap().containsKey(qName) && this.stateDAO.getQueueMonitorStatMap().containsKey(qName)){
 					//Replace the stat monitor port to the subscription port
-					String subscribingKPIMonitor = this.queueStatLocation.get(qName);
+					String subscribingKPIMonitor = this.stateDAO.getQueueMonitorStatMap().get(qName);
 					int basePort = this.serializationUtils.extractBasePort(subscribingKPIMonitor);
 					String portOff = subscribingKPIMonitor.substring(0, subscribingKPIMonitor.length() - "xxxx".length());
 					subscribingKPIMonitor= portOff+(basePort+1);
-					logger.debug("Answering back:"+ this.queueMonitorLocations.get(qName)+","+subscribingKPIMonitor);
-					this.clientReqSocket.send(this.serialiazer.serialiazeMonitorInfo(this.queueMonitorLocations.get(qName),subscribingKPIMonitor), 0);
+					logger.debug("Answering back:"+ this.stateDAO.getQueueMonitorMap().get(qName)+","+subscribingKPIMonitor);
+					this.clientReqSocket.send(this.serialiazer.serialiazeMonitorInfo(this.stateDAO.getQueueMonitorMap().get(qName),subscribingKPIMonitor), 0);
 				}else{
 					logger.warn(" No logical queue as:"+qName);
 					this.clientReqSocket.send(("").getBytes(), 0);
@@ -199,10 +188,10 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			// A client is asking fof the topology of all local host
 			// manager
 			logger.debug("Recieveing init request from a client ");
-			this.clientReqSocket.send( this.serializationUtils.serialiseObject(this.hostManagerAddresses), ZMQ.SNDMORE);
-			this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.queueMonitorLocations), ZMQ.SNDMORE);
-			this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.queueHostLocation), ZMQ.SNDMORE);
-			this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.queueStatLocation), 0);
+			this.clientReqSocket.send( this.serializationUtils.serialiseObject(this.stateDAO.getHostManagerAddresses()), ZMQ.SNDMORE);
+			this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.stateDAO.getQueueMonitorMap()), ZMQ.SNDMORE);
+			this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.stateDAO.getQueueHostLocation()), ZMQ.SNDMORE);
+			this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.stateDAO.getQueueMonitorStatMap()), 0);
 			logger.debug("Sending back the topology - list of local host");
 			break;
 			
@@ -269,9 +258,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			logger.debug("Recieveing GET HOST request from a client ");
 			if (info.length == 2) {
 				logger.debug("The request format is valid - Asking for translating  "+ info[1]);
-				if(this.queueMonitorLocations.containsKey(info[1])){
-					logger.debug("Answering back:"+ this.queueMonitorLocations.get(info[1])+","+this.queueStatLocation.get(info[1]));
-					this.clientReqSocket.send((this.queueMonitorLocations.get(info[1])+","+this.queueStatLocation.get(info[1])).getBytes(), 0);
+				if(this.stateDAO.getQueueMonitorMap().containsKey(info[1])){
+					logger.debug("Answering back:"+ this.stateDAO.getQueueMonitorMap().get(info[1])+","+this.stateDAO.getQueueMonitorStatMap().get(info[1]));
+					this.clientReqSocket.send((this.stateDAO.getQueueMonitorMap().get(info[1])+","+this.stateDAO.getQueueMonitorStatMap().get(info[1])).getBytes(), 0);
 				}else{
 					logger.warn(" No logical queue as:"+info[1]);
 					this.clientReqSocket.send(("").getBytes(), 0);
@@ -284,14 +273,14 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			logger.debug("Recieveing GET HOST by QNAME in BSON request from a client ");
 			if (info.length == 2) {
 				logger.debug("The request format is valid - Asking for translating  "+ info[1]);
-				if(this.queueMonitorLocations.containsKey(info[1]) && this.queueStatLocation.containsKey(info[1])){
+				if(this.stateDAO.getQueueMonitorMap().containsKey(info[1]) && this.stateDAO.getQueueMonitorStatMap().containsKey(info[1])){
 					//Replace the stat monitor port to the subscription port
-					String subscribingKPIMonitor = this.queueStatLocation.get(info[1]);
+					String subscribingKPIMonitor = this.stateDAO.getQueueMonitorStatMap().get(info[1]);
 					int basePort = this.serializationUtils.extractBasePort(subscribingKPIMonitor);
 					String portOff = subscribingKPIMonitor.substring(0, subscribingKPIMonitor.length() - "xxxx".length());
 					subscribingKPIMonitor= portOff+(basePort+1);
-					logger.debug("Answering back:"+ this.queueMonitorLocations.get(info[1])+","+subscribingKPIMonitor);
-					this.clientReqSocket.send(this.serialiazer.serialiazeMonitorInfo(this.queueMonitorLocations.get(info[1]),subscribingKPIMonitor), 0);
+					logger.debug("Answering back:"+ this.stateDAO.getQueueMonitorMap().get(info[1])+","+subscribingKPIMonitor);
+					this.clientReqSocket.send(this.serialiazer.serialiazeMonitorInfo(this.stateDAO.getQueueMonitorMap().get(info[1]),subscribingKPIMonitor), 0);
 				}else{
 					logger.warn(" No logical queue as:"+info[1]);
 					this.clientReqSocket.send(("").getBytes(), 0);
@@ -308,7 +297,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 */
 	public void addQueueLocation(String qName, String targetAddress) {
 		logger.debug("Adding the logical queue to the target address" + targetAddress);
-		this.queueHostLocation.put(qName, targetAddress);
+		this.stateDAO.getQueueHostLocation().put(qName, targetAddress);
 		
 	}
 
@@ -317,7 +306,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * @param qName the logical queue name
 	 */
 	public void removeQueue(String qName) {
-		if ((this.queueMonitorLocations.remove(qName)==null) ||  (this.queueStatLocation.remove(qName)==null) || (this.queueHostLocation.remove(qName)==null)){
+		if ((this.stateDAO.getQueueMonitorMap().remove(qName)==null) ||  (this.stateDAO.getQueueMonitorStatMap().remove(qName)==null) || (this.stateDAO.getQueueHostLocation().remove(qName)==null)){
 			logger.error("Error while removing queue", new IllegalStateException("The queue name " + qName +" is not registred in the global configuration"));
 		}else{
 			logger.info("Removing queue "+ qName + " from global configuration");
@@ -330,7 +319,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * @param statMonitorHost the stat port address of the corresponding monitor
 	 */
 	public void addQueueStatMonitor(String qName, String statMonitorHost) {
-		this.queueStatLocation.put(qName, statMonitorHost);
+		this.stateDAO.getQueueMonitorStatMap().put(qName, statMonitorHost);
 		logger.debug("Adding stat monitor address for "+ qName +" @"+ statMonitorHost +" in global configuration");
 		
 	}
@@ -340,7 +329,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * @param hosr the ip address of the host to remove.
 	 */
 	public void removeHostManager(String host) {
-		if(this.hostManagerAddresses.remove(host)) logger.info("Removed host successfully "+ host);
+		if(this.stateDAO.getHostManagerAddresses().remove(host)) logger.info("Removed host successfully "+ host);
 		else  logger.error("Removed host failed on the hashmap "+ host);
 	}
 
@@ -361,8 +350,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 */
 	public void addHostManager(String host){
 		this.logger.info("Adding new host manager reference : "+ host);
-		if (!hostManagerAddresses.contains(host)){
-			hostManagerAddresses.add(host);
+		if (!this.stateDAO.getHostManagerAddresses().contains(host)){
+			stateDAO.getHostManagerAddresses().add(host);
 		}
 	}
 	
@@ -371,7 +360,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * @param host as tcp://ip:port, tcp://ip:statport
 	 */
 	public void addQueueName(String qName, String host){
-		this.queueMonitorLocations.put(qName, host);
+		this.stateDAO.getQueueMonitorMap().put(qName, host);
 		logger.debug("Created queue "+ qName +" @"+ host +" in global configuration");
 	}
 
@@ -393,7 +382,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * @return the queueHostLocation
 	 */
 	public HashMap<String, String> getQueueHostLocation() {
-		return queueHostLocation;
+		return this.stateDAO.getQueueHostLocation();
 	}
 
 

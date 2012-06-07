@@ -103,7 +103,10 @@ public class TestMngtController extends RoQTestCase {
 		attachSUbscriber(qName);
 		IRoQPublisher publisher = attachPublisher(qName);
 		sendMsg(publisher);
-		//3. Removing the queue
+		
+		//3. TODO Create a client management & sending command request
+		
+		//4. Removing the queue
 		this.factory.removeQueue(qName);
 		//4. Let the time to remove the queue
 		this.logger.info("Removing "+qName);

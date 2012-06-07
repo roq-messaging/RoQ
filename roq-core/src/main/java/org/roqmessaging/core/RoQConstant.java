@@ -264,5 +264,14 @@ public interface RoQConstant {
 	 */
 	public static String BSON_STAT_MONITOR_HOST = "Stat_Monitor_host";
 
+	public static String CACHE_HOST_MNGER_ADDR="host.manager.address";
+	
+	public static String CACHE_HOST_MNGER_MAP="host.manager.map";
+	
+	public static String CACHE_Q_HOST_LOCATION="queue.host.location";
+	
+	public static String CACHE_Q_MONITOR_MAP="queue.monitor.map";
+	
+	public static String CACHE_Q_MONITOR_STAT_MAP="queue.monitor.stat.map";
 	
 }
