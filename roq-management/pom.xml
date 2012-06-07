@@ -92,7 +92,7 @@
 		<dependency>
 			<groupId>org.infinispan</groupId>
 			<artifactId>infinispan-spring</artifactId>
-			<version>5.1.0.BETA3</version>
+			<version>5.1.5.FINAL</version>
 		</dependency>
 	</dependencies>
 </project>

@@ -45,15 +45,6 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private ZMQ.Socket clientReqSocket = null;
 	private ZMQ.Context context;
 	private GCMPropertyDAO properties=null;
-	
-//	//Configuration data: list of host manager (1 per RoQ Host)
-//	private ArrayList<String> stateDAO.getHostManagerAddresses() = null;
-//	//Define the location of the monitor of each queue (Name, monitor address)
-//	private HashMap<String, String> queueMonitorLocations=null;
-//	//Define the location of the monitor stat address for each queue (Name, monitor stat address)
-//	private HashMap<String, String> stateDAO.getQueueMonitorStatMap() = null;
-//	//Define the location of the Logical queue (Name, host address)
-//	private HashMap<String, String> queueHostLocation = null;
 	//The GCM state
 	private GlobalConfigurationState stateDAO = null;
 	//The shutdown monitor
