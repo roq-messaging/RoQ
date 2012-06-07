@@ -45,9 +45,10 @@ public class GlobalConfigurationStateClient extends GlobalConfigurationState {
 	 */
 	public GlobalConfigurationStateClient(String configurationServer) {
 		super();
+		this.configServer = configurationServer;
 		context = ZMQ.context(1);
 		globalConfigReq = context.socket(ZMQ.REQ);
-		globalConfigReq.connect("tcp://" + this.configServer + ":5000");
+		globalConfigReq.connect("tcp://" + configurationServer + ":5000");
 		this.clientID =String.valueOf(System.currentTimeMillis()) + "globalconfigclientState";
 	}
 	

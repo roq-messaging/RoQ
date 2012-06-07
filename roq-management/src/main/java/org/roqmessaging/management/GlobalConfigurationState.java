@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.management;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.roqmessaging.core.utils.RoQSerializationUtils;
@@ -35,6 +36,9 @@ public class GlobalConfigurationState {
 	protected HashMap<String, String> queueHostLocation = null;
 	//QName, stat monitor address server (ready to connect!)
 	protected HashMap<String, String> queueMonitorStatMap = null;
+	//Configuration data: list of host manager (1 per RoQ Host)
+	private ArrayList<String> hostManagerAddresses = null; 
+	
 	//utils
 	protected RoQSerializationUtils serializationUtils=null;
 
@@ -49,6 +53,7 @@ public class GlobalConfigurationState {
 		this.queueHostLocation = new HashMap<String, String>();
 		this.queueMonitorMap = new HashMap<String, String>();
 		this.queueMonitorStatMap = new HashMap<String, String>();
+		this.hostManagerAddresses = new ArrayList<String>();
 	}
 	
 	/**
@@ -106,7 +111,19 @@ public class GlobalConfigurationState {
 	public void setQueueMonitorStatMap(HashMap<String, String> queueMonitorStatMap) {
 		this.queueMonitorStatMap = queueMonitorStatMap;
 	}
-	
-	
 
+	/**
+	 * @return the hostManagerAddresses
+	 */
+	public ArrayList<String> getHostManagerAddresses() {
+		return hostManagerAddresses;
+	}
+
+	/**
+	 * @param hostManagerAddresses the hostManagerAddresses to set
+	 */
+	public void setHostManagerAddresses(ArrayList<String> hostManagerAddresses) {
+		this.hostManagerAddresses = hostManagerAddresses;
+	}
+	
 }
