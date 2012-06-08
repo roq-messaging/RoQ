@@ -22,7 +22,6 @@ import org.infinispan.Cache;
 import org.infinispan.manager.DefaultCacheManager;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.management.GlobalConfigurationState;
-import org.roqmessaging.management.infinispan.LoggingListener;
 import org.zeromq.ZMQ.Socket;
 
 /**
@@ -45,7 +44,6 @@ public class RoQInfinispanCacheManager implements IRoQCacheManager {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
 		cache.addListener( new LoggingListener());
 	}
 
