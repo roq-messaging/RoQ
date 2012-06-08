@@ -264,14 +264,29 @@ public interface RoQConstant {
 	 */
 	public static String BSON_STAT_MONITOR_HOST = "Stat_Monitor_host";
 
+	/**
+	 * ID of the host manager address array maintained in the GCM state
+	 */
 	public static String CACHE_HOST_MNGER_ADDR="host.manager.address";
 	
+	/**
+	 * ID of the queue location  map maintained in the GCM state
+	 */
 	public static String CACHE_HOST_MNGER_MAP="host.manager.map";
 	
+	/**
+	 * ID of the host manager map maintained in the GCM state
+	 */
 	public static String CACHE_Q_HOST_LOCATION="queue.host.location";
 	
+	/**
+	 * ID of the queue  monitor map maintained in the GCM state
+	 */
 	public static String CACHE_Q_MONITOR_MAP="queue.monitor.map";
 	
+	/**
+	 * ID of the  queue  Statistic monitor map maintained in the GCM state
+	 */
 	public static String CACHE_Q_MONITOR_STAT_MAP="queue.monitor.stat.map";
 	
 }
