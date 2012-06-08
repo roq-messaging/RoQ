@@ -12,7 +12,7 @@
  * limitations under the License.
  * 
  */
-package org.roqmessaging.management.infinispan;
+package org.roqmessaging.management.cache;
 
 import org.infinispan.notifications.Listener;
 import org.infinispan.notifications.cachelistener.annotation.CacheEntryCreated;
