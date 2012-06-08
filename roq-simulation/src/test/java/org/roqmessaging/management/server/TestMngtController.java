@@ -21,6 +21,7 @@ import junit.framework.Assert;
 
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.roq.simulation.management.client.MngClient;
 import org.roq.simulation.test.RoQTestCase;
 import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.core.utils.RoQUtils;
@@ -94,23 +95,31 @@ public class TestMngtController extends RoQTestCase {
 		ZMQ.Socket mngtREQSocket = context.socket(ZMQ.REQ);
 		mngtREQSocket.connect("tcp://localhost:5003");
 		
-		//1. Create a queue
-		String qName = "queueTest";
-		this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP());
-		//Let the queue starting
-		Thread.sleep(4000);
-		//2. Subscribing and publishing a message
+		//1. define the queue
+		String qName = "testQ1";
+		
+		//2.  Create a client management & sending command request
+		MngClient client = new MngClient("localhost");
+		client.testCreate(qName);
+		
+		//3. Test the message sending
 		attachSUbscriber(qName);
 		IRoQPublisher publisher = attachPublisher(qName);
 		sendMsg(publisher);
 		
-		//3. TODO Create a client management & sending command request
+		//4. Remove the queue
+		client.testRemove(qName);
 		
-		//4. Removing the queue
-		this.factory.removeQueue(qName);
-		//4. Let the time to remove the queue
-		this.logger.info("Removing "+qName);
-		Thread.sleep(4000);
+		//Phase 2 Test the stop
+		qName = "testQ2";
+		//1.  Create a queue
+		client.testCreate(qName);
+		
+		//2. Stop the queue
+		client.testStop(qName);
+		
+		
+				
 	}
 
 }

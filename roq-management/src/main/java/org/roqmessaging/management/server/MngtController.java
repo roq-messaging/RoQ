@@ -242,6 +242,7 @@ public class MngtController implements Runnable, IStoppable {
 						break;
 
 					case RoQConstant.BSON_CONFIG_STOP_QUEUE:
+						logger.debug("Stop queue Request");
 						// Stopping a queue is just removing from the global
 						// configuration
 						// 1. Check the request
