@@ -30,7 +30,7 @@ import org.roqmessaging.management.cache.RoQInfinispanCacheManager;
  * 
  * @author sskhiri
  */
-@Ignore
+//@Ignore
 public class TestDistributedCache {
 
 	/**
