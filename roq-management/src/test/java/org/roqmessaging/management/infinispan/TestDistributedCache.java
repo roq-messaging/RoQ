@@ -17,7 +17,6 @@ package org.roqmessaging.management.infinispan;
 import org.infinispan.Cache;
 import org.infinispan.manager.DefaultCacheManager;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.roqmessaging.management.GlobalConfigurationState;
 import org.roqmessaging.management.cache.IRoQCacheManager;
@@ -30,7 +29,7 @@ import org.roqmessaging.management.cache.RoQInfinispanCacheManager;
  * 
  * @author sskhiri
  */
-@Ignore
+//@Ignore
 public class TestDistributedCache {
 
 	/**
@@ -77,7 +76,7 @@ public class TestDistributedCache {
 		IRoQCacheManager cacheManager2 = new RoQInfinispanCacheManager();
 		
 		cacheManager.cacheState(stateDAO);
-		Thread.sleep(16000);
+		Thread.sleep(10000);
 		
 		//Get the state
 		GlobalConfigurationState cached = cacheManager2.getCachedState();
@@ -87,6 +86,8 @@ public class TestDistributedCache {
 		Assert.assertEquals(stateDAO.getQueueMonitorMap().get("queue1"), cached.getQueueMonitorMap().get("queue1") );
 		Assert.assertEquals(stateDAO.getQueueMonitorStatMap().get("queue1"), cached.getQueueMonitorStatMap().get("queue1") );
 		
+		cacheManager.stopCache();
+		cacheManager2.stopCache();
 	}
 
 }

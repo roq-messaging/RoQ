@@ -34,6 +34,7 @@ import org.zeromq.ZMQ.Socket;
 public class RoQInfinispanCacheManager implements IRoQCacheManager {
 	//the infinispan cache
 	private Cache<String, Object> cache = null;
+	private LoggingListener cacheListener = null;
 	
 	/**
 	 * Init the cache
@@ -44,7 +45,8 @@ public class RoQInfinispanCacheManager implements IRoQCacheManager {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		cache.addListener( new LoggingListener());
+		cacheListener = new LoggingListener();
+		cache.addListener( cacheListener);
 	}
 
 	/**
@@ -72,4 +74,12 @@ public class RoQInfinispanCacheManager implements IRoQCacheManager {
 		this.cache.put(RoQConstant.CACHE_Q_MONITOR_STAT_MAP, state.getQueueMonitorStatMap());
 	}
 
+	/**
+	 * @see org.roqmessaging.management.cache.IRoQCacheManager#stopCache()
+	 */
+	public void stopCache() {
+		this.cache.removeListener(this.cacheListener);
+		this.cache.stop();
+		
+	}
 }

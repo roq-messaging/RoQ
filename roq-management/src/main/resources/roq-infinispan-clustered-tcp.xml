@@ -14,7 +14,10 @@
 
    <global>
       <globalJmxStatistics enabled="false" jmxDomain="RoQ" />
-      <transport>
+      <transport
+        transportClass="org.infinispan.remoting.transport.jgroups.JGroupsTransport"
+                  clusterName="roq-cache-cluster"
+        distributedSyncTimeout="20000">
          <properties>
             <property name="configurationFile" value="jgroups-tcp.xml" />
          </properties>
@@ -39,7 +42,7 @@
    </namedCache>
 
    <namedCache name="roqcache">
-      <expiration lifespan="20000" maxIdle="500" />
+<!--       <expiration lifespan="20000" maxIdle="500" /> -->
       <clustering mode="replicated">
       <sync/>
       </clustering>
