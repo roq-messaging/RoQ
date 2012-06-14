@@ -35,5 +35,10 @@ public interface IRoQCacheManager {
 	 * @param state the state to cache
 	 */
 	public void cacheState(GlobalConfigurationState state);
+	
+	/**
+	 * Stop and clean the current cache.
+	 */
+	public void stopCache();
 
 }
