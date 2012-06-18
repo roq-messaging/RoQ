@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.management.infinispan;
 
+import org.junit.Ignore;
 import org.roqmessaging.management.GlobalConfigurationState;
 import org.roqmessaging.management.cache.IRoQCacheManager;
 import org.roqmessaging.management.cache.RoQInfinispanCacheManager;
@@ -24,6 +25,7 @@ import org.roqmessaging.management.cache.RoQInfinispanCacheManager;
  * 
  * @author sskhiri
  */
+@Ignore
 public class TestCacheProcess {
 
 	/**
