@@ -41,6 +41,7 @@ public class RoQInfinispanCacheManager implements IRoQCacheManager {
 	 */
 	public RoQInfinispanCacheManager() {
 		try {
+//			DefaultCacheManager manager = new DefaultCacheManager("roq-infinispan-clustered-tcp.xml");
 			this.cache = new DefaultCacheManager("roq-infinispan-clustered-tcp.xml").getCache("roqcache");
 		} catch (IOException e) {
 			e.printStackTrace();
