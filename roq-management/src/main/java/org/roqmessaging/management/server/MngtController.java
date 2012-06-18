@@ -262,7 +262,20 @@ public class MngtController implements Runnable, IStoppable {
 						break;
 
 					case RoQConstant.BSON_CONFIG_CREATE_XCHANGE:
-						//TODO create exchange
+						logger.debug("Create Xchange request");
+						if (!checkField(request, "QName") || !checkField(request, "Host")) {
+							break;
+						}
+						// 1. Get the host
+						host = (String) request.get("Host");
+						qName = (String) request.get("QName");
+						logger.debug("Create Xchange on queue " + qName + " on " + host);
+						if(this.factory.createExchange(qName, host)){
+							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK, "SUCCESS"), 0);
+						}else{
+							mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+									"ERROR when creating Xchange check logs of the logical queue factory"), 0);
+						}
 						break;
 
 					default:

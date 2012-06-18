@@ -186,7 +186,7 @@ public interface RoQConstant {
 	/*Operations for configuration management*/
 	
 	/**
-	 * Sent by the Global config manager} to the Mngt server.
+	 * Sent by the Global config manager to the Mngt server.
 	 * Infocode
 	 * in a second message of the same envelope :  map(Q Name, host)
 	 */
