@@ -12,7 +12,7 @@
 	<meta name="viewport" content="width=device-width" />
 
 	<title>RoQ - Elastic Queue Service for the Cloud</title>
-  
+
 	<!-- Included CSS Files -->
 	<link rel="stylesheet" href="stylesheets/foundation.css">
 	<link rel="stylesheet" href="stylesheets/app.css">
@@ -36,7 +36,7 @@
 		<div class="row">
 			<div class="four columns">
 				<img src="images/logo.png" alt="RoQ logo" />
-			</div>			
+			</div>
 			<div class="five columns">
 				<h2 id="title">RoQ</h2>
         <h3>Rock solid, yet elastic!</h3>
@@ -47,7 +47,7 @@
 		<div class="row">
 			<div class="eight columns">
 				<div class="row">
-          <div id="features"> 
+          <div id="features">
              <img src="images/BannerEQS.png" alt="Discover EQS" data-caption="#discoverEQSCaption" />
              <!--
              <img src="images/BannerTemplate.png" alt="Distributed architecture" />
@@ -77,20 +77,20 @@
                     Traditionally, <abbr title="Message Oriented Middleware">MOM</abbr>s are not designed to support elastic scaling. This means that in a cloud context, they may very quickly become a bottleneck in terms of performance.
                   </p>
                   <p>
-                    RoQ has been designed from day 1 to answer this problem. It's architecture is <em>elastically scalable</em>. This includes three properties:
+                    RoQ has been designed from day 1 to answer this problem. Its architecture is <em>elastically scalable</em>. This includes three properties:
                   </p>
                   <ul>
                       <li>When required, the capacity of the system will be increased automatically</li>
                       <li>This capacity increase has no impact on the global performance</li>
-                      <li>When the load decrease, the system will scale down to avoid using unnecessary ressources</li>
+                      <li>When the load decreases, the system will scale down to avoid using unnecessary ressources</li>
                   </ul>
                 <h5>Open Source</h5>
                   <p>
-                  RoQ started as a research project within EURA NOVA (<a href="http://euranova.eu" title="EURA NOVA">http://euranova.eu</a>) and as since then evolved into an open source project. This means that anyone can download the code, see how it works, contribute or even fork the code to build upon RoQ.
+                  RoQ started as a research project within EURA NOVA (<a href="http://euranova.eu" title="EURA NOVA">http://euranova.eu</a>) and has since then evolved into an open-source project. This means that anyone can download the code, see how it works, contribute or even fork the code to build upon RoQ.
                   </p>
                 <h5>Cloud Ready</h5>
                   <p>
-                    As already explained, RoQ, with its distributed architecture and it's ability to be quickly deployed on a cloud is designed to ease the usage of <abbr title="Message Oriented Middleware">MOM</abbr> in a cloud context.
+                    As already explained, RoQ, with its distributed architecture and its ability to be quickly deployed on a cloud, is designed to ease the usage of <abbr title="Message Oriented Middleware">MOM</abbr> in a cloud context.
                   </p>
                   <p>
                     Currently, the major competitor of RoQ is Amazon SQS. However, a benchmarking article by the Cloud Computing Center (see <a href="http://db.tt/5Xbm7Gtg">the complete article</a> to learn more) points out the inability for SQS to scale properly. RoQ is there to solve this problem!
@@ -120,23 +120,23 @@
                 <p class="lead">RoQ is a message oriented middleware (<abbr title="Message Oriented Middleware">MOM</abbr>), built from the start with elastic scalability in mind.</p>
                 <h4>Introduction</h4>
                 <p>
-                In the current Message Oriented Middleware (MOM) landscape, most of the popular products allow setups distributed on a cluster of machines. However global performance in these clustered MOM is a tradeoff on the amount of node in the cluster, the amount of connected clients and the dynamic nature of the connections. Indeed, all the nodes in these messaging clusters share the state of the messaging service. As the size of the cluster grows, the overhead in managing the shared state depends on the amount of clients connected (states to maintain) and the dynamic nature of the connections (states update rate) and thus limits the message processing ability of the cluster.
+                In the current Message Oriented Middleware (MOM) landscape, most of the popular products allow setups distributed on a cluster of machines. However global performance in these clustered MOMs is a tradeoff on the amount of node in the cluster, the amount of connected clients and the dynamic nature of the connections. Indeed, all the nodes in these messaging clusters share the state of the messaging service. As the size of the cluster grows, the overhead in managing the shared state depends on the amount of clients connected (states to maintain) and the dynamic nature of the connections (states update rate) and thus limits the message processing ability of the cluster.
                 </p>
                 <img src="images/tradeoff.png" alt="Traditional Architecture Trade Off" />
-                <p>On the other side, the elastic scalability is the ability to scale by starting up new instances in the service. Cloud computing platforms enable applications to make use of elastic scalability: instances are started in an on-demand scheme when more perfomance is needed, and are shut down when the load comes back to normal. This kind applications requires stateless and distributed elements in the architecture.
+                <p>On the other side, the elastic scalability is the ability to scale by starting up new instances in the service. Cloud computing platforms enable applications to make use of elastic scalability: instances are started in an on-demand scheme when more perfomance is needed, and are shut down when the load comes back to normal. This kind of applications requires stateless and distributed elements in the architecture.
                 </p>
-                <p>RoQ is the implementation of a MOM suitable for deployment on the cloud which enables elastic scaling. It is suited for environments where a big amount of clients and message need to transit on the MOM.
+                <p>RoQ is the implementation of a MOM suitable for deployment on the cloud which enables elastic scaling. It is suited for environments where a big amount of clients and messages need to transit on the MOM.
                 </p>
                 <h4>Architecture</h4>
                 <p>At a 10,000 feet of altitude, the architecture of RoQ comprises the following distributed elements:</p>
                 <ul>
                     <li><strong>Exchanges</strong>: these are the components which transmit messages from producers to listeners. They can perform message filtering based on a routing key. Exchanges are stateless and are the elements which are elastically scalable</li>
                     <li><strong>Monitoring</strong>: this is the component which monitors the health of the exchanges</li>
-                    <li><strong>Queue Management</strong>: this component stores the meta data related too the queues</li>
-                    <li><strong>Rules and scaling Management</strong>: this is where the information on the automatic scaling of the exchanges is stored. Based on information delivered by the Monitoring, this component is able to trigger scale out (start instances) or scale in (stop instances) actions with regards to the user KPIs.</li>
+                    <li><strong>Queue Management</strong>: this component stores the meta data related to the queues</li>
+                    <li><strong>Rules and Scaling Management</strong>: this is where the information on the automatic scaling of the exchanges is stored. Based on information delivered by the Monitoring, this component is able to trigger scale out (start instances) or scale in (stop instances) actions with regards to the user KPIs.</li>
                 </ul>
                 <img src="images/RoQArch.png" alt="RoQ Architecture" />
-                <p>The Monitoring, Queue Management and Rules and Scaling Management can be architecturally positioned on the Cloud Infrastructure Management. However given the current segmentation in the API of the Cloud management tools, we also deliver these components in stand alone packages.</p>
+                <p>The Monitoring, Queue Management and Rules and Scaling Management can be architecturally positioned on the Cloud Infrastructure Management. However given the current segmentation in the API of the Cloud management tools, we also deliver these components in stand-alone packages.</p>
                 <h4>Want to go further?</h4>
                 <p>The complete, technical documentation of RoQ is hosted on our github wiki.</p>
                 <p><a href="https://github.com/roq-messaging/RoQ/wiki/Documentation" class="nice radius large green button">To the RoQ documentation!</a></p>
@@ -145,7 +145,7 @@
                 <h3>Want to test it?</h3>
                 <p class="lead">RoQ is Open Source. It is distributed under the Apache License, Version 2</p>
                 <p>To test RoQ, you can grab the <a href="https://github.com/roq-messaging/RoQ" title="RoQ code">RoQ code on GitHub</a>.</p>
-                <p>Detailled instructions to start testing quickly are available on the <a href="https://github.com/roq-messaging/RoQ/wiki/Run-the-code" title="Run RoQ">"Run The Code" page of the RoQ wiki</a>.</p>
+                <p>Detailed instructions to start testing quickly are available on the <a href="https://github.com/roq-messaging/RoQ/wiki/Run-the-code" title="Run RoQ">"Run The Code" page of the RoQ wiki</a>.</p>
                 <p><a href="https://github.com/roq-messaging/RoQ" class="nice radius large green button">Get RoQ on github...</a></p>
               </li>
               <li id="contributionTab">
@@ -168,8 +168,8 @@
                 <p>They help other users on the mailing list and send patches by mail or GitHub pull requests. The code contribution is then reviewed by one of the RoQ committers and added to the codebase if deemed relevant.</p>
                 <p>Anyone can be a RoQ Rookie.</p>
                 <h4>RoQ Committer</h4>
-                <p><em>RoQ commiters</em> are trusted RoQ developpers. They have commit access to the repository. They review pull requests, right code and patches and assist the community through the mailing list.</p>
-                <p>You can request to become a RoQ committer if you have a proven track record of fruitfull interactions with the RoQ community. Basic KPIs are the number of submitted patch, the volume and quality of activity on the mailing list, ...</p>
+                <p><em>RoQ committers</em> are trusted RoQ developpers. They have commit access to the repository. They review pull requests, write code and patches and assist the community through the mailing list.</p>
+                <p>You can request to become a RoQ committer if you have a proven track record of fruitful interactions with the RoQ community. Basic KPIs are the number of submitted patches, the volume and quality of activity on the mailing list, ...</p>
                 <p>RoQ committer role attribution is subject to approval by the RoQ Board. The decision and its motivation is published on the mailing list.</p>
                 <h4>RoQ Board</h4>
                 <p>The <em>RoQ board</em> is the leading body of the RoQ project. Its members are elected by and amongst RoQ committers. The initial board is composed of the initial project contributors. Board election is done once a year.</p>
@@ -185,14 +185,14 @@
         <div class="row">
           <div class="panel">
             <h4>EQS</h4>
-            <p>An EQS is a distributed message queue designed for clouds and that enables a linear scalability when new nodes are added to the cluster. As a result, the number of publishers-subscribers and the message load are not a limit anymore !</p>
+            <p>An EQS is a distributed message queue designed for clouds that enables a linear scalability when new nodes are added to the cluster. As a result, the number of publishers-subscribers and the message load are not a limit anymore!</p>
             <p>EQS was first presented at the <a href="http://2011.cloudcom.org/">IEEE 2011 CloudCom conference</a>.</p>
             <p><a href="docs/EQS_review4.pdf" class="nice radius medium white button">Learn more about EQS...</a></p>
            </div>
         </div>
         <div class="panel">
           <h4>Looking for support?</h4>
-          <p>The community can exchange through a mailing list hosted on google group.</p>
+          <p>The community can exchange through a mailing list hosted on Google Groups.</p>
           <p>Anyone is free to join the discussion! Find help or involve yourself in the community...</p>
           <p><a href="#" class="nice radius medium white button" data-reveal-id="MLSub">Learn more...</a></p>
         </div>
@@ -222,11 +222,11 @@
         </div>
       </div>
 		</div>
-    
+
     <div id="MLSub" class="reveal-modal">
       <h2>Want to join the discussion?</h2>
       <p class="lead">Two possibilities:</p>
-      <p><a href="http://groups.google.com/group/roq-messaging" class="nice radius large white button">Go to the google group page</a></p>
+      <p><a href="http://groups.google.com/group/roq-messaging" class="nice radius large white button">Go to the Google Groups page</a></p>
       <p>or</p>
       <form class="nice" action="http://groups.google.com/group/roq-messaging/boxsubscribe" target="_blank">
         <input type="text" name="email" placeholder="Enter Your Email" class="small input-text">
