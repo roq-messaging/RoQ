@@ -52,6 +52,7 @@ public class Exchange implements Runnable, IStoppable {
 	//the heart beat and the stat
 	private Timer timer = null;
 	private volatile boolean active=false;
+	private String ID = null;
 	
 	//Shutdown thread
 	private ShutDownMonitor shutDownMonitor = null;
@@ -80,6 +81,8 @@ public class Exchange implements Runnable, IStoppable {
 		this.context = ZMQ.context(1);
 		this.frontendSub = context.socket(ZMQ.SUB);
 		this.backendPub = context.socket(ZMQ.PUB);
+		
+		this.ID = "XChange "+System.currentTimeMillis();
 		
 		// Caution, the following method as well as setSwap must be invoked before binding
 		// Use these to (double) check if the settings were correctly set  
@@ -244,6 +247,13 @@ public class Exchange implements Runnable, IStoppable {
 	 */
 	public String getName() {
 		return "Exchange "+frontEnd+"->" + backEnd;
+	}
+
+	/**
+	 * @return the iD
+	 */
+	public String getID() {
+		return ID;
 	}
 
 

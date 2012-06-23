@@ -125,64 +125,69 @@ public class KPISubscriber implements Runnable, IStoppable{
 		ZMQ.Poller poller = context.poller(1);
 		poller.register(kpiSocket);
 		
-		while (active){
+		while (active) {
 			poller.poll(2000);
-			if(poller.pollin(0)){
-				//Stat coming from the KPI stream
-				BSONObject statObj = BSON.decode(kpiSocket.recv(0));
-				logger.debug("Start analysing info code, the use files ="+this.useFile +", code ="+ statObj.get("CMD"));
-				switch ((Integer)statObj.get("CMD")) {
-				case RoQConstant.STAT_TOTAL_SENT:
-					logger.info("1 producer finished, sent " + statObj.get("TotalSent") + " messages.");
-					try {
-						bufferedOutput.write("PROD," + RoQUtils.getInstance().getFileStamp() + ",FINISH," + statObj.get("PublisherID") 
-								+ "," +  statObj.get("TotalSent"));
-						bufferedOutput.newLine();
-						bufferedOutput.flush();
-					} catch (IOException e) {
-						logger.error("Error when writing the report in the output stream", e);
-					}
+			if (poller.pollin(0)) {
+				do {
+					// Stat coming from the KPI stream
+					BSONObject statObj = BSON.decode(kpiSocket.recv(0));
+					logger.debug("Start analysing info code, the use files =" + this.useFile + ", code ="
+							+ statObj.get("CMD"));
+					switch ((Integer) statObj.get("CMD")) {
+					case RoQConstant.STAT_EXCHANGE_ID:
+						logger.info(" Stat from Exchange  " + statObj.get("ID") + " .");
 					break;
-				case RoQConstant.STAT_PUB_MIN:
-					try {
-						bufferedOutput.write("SUB," + RoQUtils.getInstance().getFileStamp() + ",STAT," + statObj.get("SubscriberID")  + ","
-								+statObj.get("Total"));
-						bufferedOutput.newLine();
-						bufferedOutput.flush();
+					
+					case RoQConstant.STAT_TOTAL_SENT:
+						logger.info("1 producer finished, sent " + statObj.get("TotalSent") + " messages.");
+						try {
+							bufferedOutput.write("PROD," + RoQUtils.getInstance().getFileStamp() + ",FINISH,"
+									+ statObj.get("PublisherID") + "," + statObj.get("TotalSent"));
+							bufferedOutput.newLine();
+							bufferedOutput.flush();
+						} catch (IOException e) {
+							logger.error("Error when writing the report in the output stream", e);
+						}
+						break;
+					case RoQConstant.STAT_PUB_MIN:
+						try {
+							bufferedOutput.write("SUB," + RoQUtils.getInstance().getFileStamp() + ",STAT,"
+									+ statObj.get("SubscriberID") + "," + statObj.get("Total"));
+							bufferedOutput.newLine();
+							bufferedOutput.flush();
 
-					} catch (IOException e) {
-						logger.error("Error when writing the report in the output stream", e);
+						} catch (IOException e) {
+							logger.error("Error when writing the report in the output stream", e);
+						}
+						break;
+					case RoQConstant.STAT_EXCHANGE_MIN:
+						try {
+							bufferedOutput.write("EXCH," + RoQUtils.getInstance().getFileStamp() + ","
+									+ statObj.get("Minute") + "," + statObj.get("TotalProcessed") + ","
+									+ statObj.get("Processed") + "," + statObj.get("TotalThroughput") + ","
+									+ statObj.get("Throughput") + "," + statObj.get("Producers"));
+							bufferedOutput.newLine();
+							bufferedOutput.flush();
+						} catch (IOException e) {
+							logger.error("Error when writing the report in the output stream", e);
+						}
+						break;
+					case RoQConstant.STAT_TOTAL_RCVD:
+						try {
+							bufferedOutput.write("LIST," + RoQUtils.getInstance().getFileStamp() + ","
+									+ statObj.get("Minute") + "," + statObj.get("TotalReceived") + ","
+									+ statObj.get("Received") + "," + statObj.get("SubsriberID") + ","
+									+ statObj.get("MeanLat"));
+							bufferedOutput.newLine();
+							bufferedOutput.flush();
+						} catch (IOException e) {
+							logger.error("Error when writing the report in the output stream", e);
+						}
+						break;
 					}
-					break;
-				case RoQConstant.STAT_EXCHANGE_MIN:
-					try {
-						bufferedOutput.write("EXCH,"
-					+ RoQUtils.getInstance().getFileStamp() + "," +
-					statObj.get("Minute") + ","
-					+ statObj.get("TotalProcessed") + ","
-								+ statObj.get("Processed")+ "," 
-					+ statObj.get("TotalThroughput")+ ","
-								+ statObj.get("Throughput") + "," 
-					+ statObj.get("Producers"));
-						bufferedOutput.newLine();
-						bufferedOutput.flush();
-					} catch (IOException e) {
-						logger.error("Error when writing the report in the output stream", e);
-					}
-					break;
-				case RoQConstant.STAT_TOTAL_RCVD:
-					try {
-						bufferedOutput.write("LIST," + RoQUtils.getInstance().getFileStamp() + "," + statObj.get("Minute") + ","
-								+  statObj.get("TotalReceived") + "," +  statObj.get("Received")  + "," +  statObj.get("SubsriberID")  + "," +  statObj.get("MeanLat") );
-						bufferedOutput.newLine();
-						bufferedOutput.flush();
-					} catch (IOException e) {
-						logger.error("Error when writing the report in the output stream", e);
-					}
-					break;
-				}
+				} while (kpiSocket.hasReceiveMore());
 			}
-			
+
 		}
 		
 	}
