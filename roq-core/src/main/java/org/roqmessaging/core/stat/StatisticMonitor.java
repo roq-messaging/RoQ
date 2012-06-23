@@ -123,6 +123,7 @@ public class StatisticMonitor implements Runnable, IStoppable {
 			statObj = new BasicBSONObject();
 			statObj.put("CMD",RoQConstant.STAT_EXCHANGE_ID);
 			statObj.put("X_ID", info[1]);
+			logger.debug(statObj.toString());
 			return BSON.encode(statObj);
 			
 		case RoQConstant.STAT_EXCHANGE_MIN:
