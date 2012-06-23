@@ -72,6 +72,10 @@ public 	class ExchangeStatTimer extends TimerTask implements IStoppable {
 		
        this.statistic.setTotalProcessed(this.statistic.getTotalProcessed()+this.statistic.getProcessed());
        
+   	statSocket.send((
+			new Integer(RoQConstant.STAT_EXCHANGE_ID).toString()+","
+	                + this.xchange.getID() ).getBytes(), ZMQ.SNDMORE);
+       
 		statSocket.send((
 				new Integer(RoQConstant.STAT_EXCHANGE_MIN).toString()+","
 		                + minute + "," 

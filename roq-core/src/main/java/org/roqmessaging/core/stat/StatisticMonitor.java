@@ -119,6 +119,12 @@ public class StatisticMonitor implements Runnable, IStoppable {
 			logger.debug(statObj.toString());
 			return BSON.encode(statObj);
 			
+		case RoQConstant.STAT_EXCHANGE_ID:
+			statObj = new BasicBSONObject();
+			statObj.put("CMD",RoQConstant.STAT_EXCHANGE_ID);
+			statObj.put("X_ID", info[1]);
+			return BSON.encode(statObj);
+			
 		case RoQConstant.STAT_EXCHANGE_MIN:
 			//Stat send by the exchange
 			//21,minute,totalProcessed,processed,totalthroughput,throughput,nbProd
