@@ -21,6 +21,7 @@ import org.roqmessaging.core.Exchange;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.data.StatDataState;
 import org.roqmessaging.core.interfaces.IStoppable;
+import org.roqmessaging.core.monitoring.HostOSMonitoring;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
@@ -40,6 +41,7 @@ public 	class ExchangeStatTimer extends TimerTask implements IStoppable {
 	private long totalThroughput;
 	private StatDataState statistic = null;
 	private Exchange xchange = null;
+	private HostOSMonitoring hostMonitoring = null;
 
 	public ExchangeStatTimer(Exchange xChangeRef,  StatDataState stat ) {
 		this.xchange = xChangeRef;
@@ -55,6 +57,7 @@ public 	class ExchangeStatTimer extends TimerTask implements IStoppable {
 		//init
 		this.minute = 0;
 		this.totalThroughput = 0;
+		this.hostMonitoring = new HostOSMonitoring();
 	}
 
 	public void run() {
@@ -76,7 +79,15 @@ public 	class ExchangeStatTimer extends TimerTask implements IStoppable {
 					 	+ this.statistic.getProcessed() + "," 
 		                + totalThroughput + ","
 					   	+ this.statistic.getThroughput()	+ "," 
-		                + this.xchange.getKnownProd().size()).getBytes(), 0);
+		                + this.xchange.getKnownProd().size()+",").getBytes()
+		                , ZMQ.SNDMORE);
+		
+		//CPU & memory
+		statSocket.send((
+				new Integer(RoQConstant.STAT_EXCHANGE_OS_MIN).toString()+","
+		                + this.hostMonitoring.getCPUUsage() + "," 
+						+ this.hostMonitoring.getMemoryUsage()).getBytes()
+		                , 0);
 
 		for (int i = 0; i < this.xchange.getKnownProd().size(); i++) {
 			if (!this.xchange.getKnownProd().get(i).isActive()) {

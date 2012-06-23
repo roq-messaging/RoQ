@@ -116,9 +116,15 @@ public interface RoQConstant {
 	
 	/**
 	 * Stat event sent every minute from exchanges to monitor.
-	 * “12,minute,totalProcessed,processed,totalthroughput,throughput,nbProd”
+	 * “21,minute,totalProcessed,processed,totalthroughput,throughput,nbProd”
 	 */
 	public static int STAT_EXCHANGE_MIN= 21;
+	
+	/**
+	 * Stat event sent every minute from exchanges to monitor.
+	 * “22,cpu, memory”
+	 */
+	public static int STAT_EXCHANGE_OS_MIN= 22;;
 	
 	/**
 	 * Stat sent from producer to monitor.

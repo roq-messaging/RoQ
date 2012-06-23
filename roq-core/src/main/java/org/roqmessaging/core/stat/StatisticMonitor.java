@@ -121,7 +121,7 @@ public class StatisticMonitor implements Runnable, IStoppable {
 			
 		case RoQConstant.STAT_EXCHANGE_MIN:
 			//Stat send by the exchange
-			//12,minute,totalProcessed,processed,totalthroughput,throughput,nbProd
+			//21,minute,totalProcessed,processed,totalthroughput,throughput,nbProd
 			statObj = new BasicBSONObject();
 			statObj.put("CMD",RoQConstant.STAT_EXCHANGE_MIN);
 			statObj.put("Minute", info[1]);
@@ -130,6 +130,16 @@ public class StatisticMonitor implements Runnable, IStoppable {
 			statObj.put("TotalThroughput", info[4]);
 			statObj.put("Throughput", info[5]);
 			statObj.put("Producers", info[6]);
+			logger.debug(statObj.toString());
+			return BSON.encode(statObj);
+			
+		case RoQConstant.STAT_EXCHANGE_OS_MIN:
+			//Stat send by the exchange
+			//22,cpu,memory
+			statObj = new BasicBSONObject();
+			statObj.put("CMD",RoQConstant.STAT_EXCHANGE_OS_MIN);
+			statObj.put("CPU", info[1]);
+			statObj.put("MEMORY", info[2]);
 			logger.debug(statObj.toString());
 			return BSON.encode(statObj);
 
