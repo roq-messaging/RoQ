@@ -132,6 +132,12 @@ public interface RoQConstant {
 	public static int STAT_EXCHANGE_OS_MIN= 22;
 	
 	/**
+	 * Stat event sent every minute to describe the queue state.
+	 * “23,QName, number of exchange registered”
+	 */
+	public static int STAT_Q= 23;
+	
+	/**
 	 * Stat sent from producer to monitor.
 	 * “11,totalSent”
 	 */

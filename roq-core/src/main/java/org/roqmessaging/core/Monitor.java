@@ -429,5 +429,12 @@ public class Monitor implements Runnable, IStoppable {
 	public String getName() {
 		return "Monitor " + this.basePort;
 	}
+	
+	/**
+	 * @return list of registered exchanges and their current states.
+	 */
+	public ArrayList<ExchangeState> getExhcangeMetaData(){
+		return this.knownHosts;
+	}
 
 }

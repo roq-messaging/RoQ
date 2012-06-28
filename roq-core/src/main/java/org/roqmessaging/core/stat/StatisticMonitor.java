@@ -106,12 +106,15 @@ public class StatisticMonitor implements Runnable, IStoppable {
 		
 		//Check what are the stat types
 		switch (infoCode) {
+		
+		/*  Stat from Publisher and subscriber*/
 		case RoQConstant.STAT_TOTAL_SENT:
 			logger.info("1 producer finished, sent " + info[2] + " messages.");
 			statObj = new BasicBSONObject();
 			statObj.put("CMD",RoQConstant.STAT_TOTAL_SENT);
 			statObj.put("PublisherID", info[1]);
 			statObj.put("TotalSent", info[2]);
+			statObj.put("QName", this.qName);
 			logger.debug(statObj.toString());
 			return BSON.encode(statObj);
 			
@@ -120,9 +123,24 @@ public class StatisticMonitor implements Runnable, IStoppable {
 			statObj.put("CMD",RoQConstant.STAT_PUB_MIN);
 			statObj.put("SubscriberID", info[1]);
 			statObj.put("Total", info[2]);
+			statObj.put("QName", this.qName);
 			logger.debug(statObj.toString());
 			return BSON.encode(statObj);
 			
+		case RoQConstant.STAT_TOTAL_RCVD:
+			//Stat send from Subscriber 
+			//31, minute + "," + totalReceived + "," + received + "," + subsriberID + "," + meanLat)
+			statObj = new BasicBSONObject();
+			statObj.put("CMD",RoQConstant.STAT_TOTAL_RCVD);
+			statObj.put("Minute", info[1]);
+			statObj.put("TotalReceived", info[2]);
+			statObj.put("Received", info[3]);
+			statObj.put("SubsriberID", info[4]);
+			statObj.put("MeanLat", info[5]);
+			logger.debug(statObj.toString());
+			return BSON.encode(statObj);
+			
+			/*  Stat from Exchanges: these 3 messages are sent in the same message envelope*/
 		case RoQConstant.STAT_EXCHANGE_ID:
 			statObj = new BasicBSONObject();
 			statObj.put("CMD",RoQConstant.STAT_EXCHANGE_ID);
@@ -155,19 +173,10 @@ public class StatisticMonitor implements Runnable, IStoppable {
 			statObj.put("MEMORY", info[2]);
 			logger.debug(statObj.toString());
 			return BSON.encode(statObj);
-
-		case RoQConstant.STAT_TOTAL_RCVD:
-			//Stat send from Subscriber 
-			//31, minute + "," + totalReceived + "," + received + "," + subsriberID + "," + meanLat)
-			statObj = new BasicBSONObject();
-			statObj.put("CMD",RoQConstant.STAT_TOTAL_RCVD);
-			statObj.put("Minute", info[1]);
-			statObj.put("TotalReceived", info[2]);
-			statObj.put("Received", info[3]);
-			statObj.put("SubsriberID", info[4]);
-			statObj.put("MeanLat", info[5]);
-			logger.debug(statObj.toString());
-			return BSON.encode(statObj);
+			
+			/*  Stat from Logical queue*/
+			//TODO creating a monitor timer that will sends statistics 
+			//“23,QName, number of exchange registered”
 	}
 		return BSON.encode(new BasicBSONObject());
 	}
