@@ -344,7 +344,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 		ProcessBuilder pb = new ProcessBuilder("java",
 				"-Djava.library.path=" + System.getProperty("java.library.path"), "-cp",
 				System.getProperty("java.class.path"), MonitorLauncher.class.getCanonicalName(),
-				new Integer(frontPort).toString(), new Integer(statPort).toString());
+				new Integer(frontPort).toString(), new Integer(statPort).toString(), qName);
 
 		logger.debug("Starting: " + pb.command());
 		String monitorAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + frontPort;

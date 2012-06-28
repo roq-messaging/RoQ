@@ -41,6 +41,8 @@ public class StatisticMonitor implements Runnable, IStoppable {
 	private ZMQ.Socket  kpiPub= null;
 	//The port on which we start
 	private int statPort =0;
+	//The queue name
+	private String qName = null;
 	
 	//Define whether we are running
 	private volatile boolean running;
@@ -49,11 +51,13 @@ public class StatisticMonitor implements Runnable, IStoppable {
 
 	/**
 	 * Init & constructor
+	 * @param qname the name of the queue
 	 */
-	public StatisticMonitor(int statPort) {
+	public StatisticMonitor(int statPort, String qname) {
 		//init the socket
 		context = ZMQ.context(1);
 		this.statPort = statPort;
+		this.qName = qname;
 		//Start the sub socket from RoQ elements
 		statSub = context.socket(ZMQ.SUB);
 		statSub.bind("tcp://"+RoQUtils.getInstance().getLocalIP()+":"+ statPort);
@@ -123,6 +127,8 @@ public class StatisticMonitor implements Runnable, IStoppable {
 			statObj = new BasicBSONObject();
 			statObj.put("CMD",RoQConstant.STAT_EXCHANGE_ID);
 			statObj.put("X_ID", info[1]);
+			statObj.put("CMD",RoQConstant.STAT_EXCHANGE_ID);
+			statObj.put("QName", this.qName);
 			logger.debug(statObj.toString());
 			return BSON.encode(statObj);
 			

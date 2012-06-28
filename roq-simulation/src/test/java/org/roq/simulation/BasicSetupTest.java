@@ -204,7 +204,7 @@ public class BasicSetupTest {
 	 * @param basePort the base port on which the monitor starts
 	 */
 	private void startMonitor(int basePort, int statPort) {
-		this.monitor = new Monitor(basePort, statPort);
+		this.monitor = new Monitor(basePort, statPort, "queue1");
 		Thread t = new Thread(this.monitor);
 		t.start();
 		

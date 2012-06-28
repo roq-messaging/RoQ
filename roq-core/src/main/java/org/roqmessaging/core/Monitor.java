@@ -55,8 +55,9 @@ public class Monitor implements Runnable, IStoppable {
 	/**
 	 * @param basePort default value must be 5571
 	 * @param statPort default port for stat socket 5800
+	 * @param qname the logical queue from which the monitor belongs to
 	 */
-	public Monitor(int basePort, int statPort){
+	public Monitor(int basePort, int statPort, String qname){
 		this.basePort = basePort;
 		knownHosts = new ArrayList<ExchangeState>();
 		hostsToRemove = new ArrayList<Integer>();
@@ -86,7 +87,7 @@ public class Monitor implements Runnable, IStoppable {
 		logger.debug("Heart beat request socket to "+"tcp://*:"+(basePort+4));
 		
 		//Stat monitor init thread
-		this.statMonitor = new StatisticMonitor(statPort);
+		this.statMonitor = new StatisticMonitor(statPort, qname);
 		new Thread(this.statMonitor).start();
 		
 		//shutodown monitor

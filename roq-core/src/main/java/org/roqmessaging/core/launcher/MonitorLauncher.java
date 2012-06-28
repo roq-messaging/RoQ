@@ -33,15 +33,15 @@ public class MonitorLauncher {
 	 */
 	public static void main(String[] args) {
 		System.out.println("Launching Monitor process with arg "+displayArg(args));
-		if(args.length !=2){
-			System.out.println("The argument should be <int: base port> <int: stat port>");
+		if(args.length !=3){
+			System.out.println("The argument should be <int: base port> <int: stat port> <qname>");
 			return;
 		}
-		System.out.println("Starting Monitor on base port "+ args[0] + ", "+args[1]);
+		System.out.println("Starting Monitor on base port "+ args[0] + ", "+args[1] +", "+ args[2]);
 		try {
 			int basePort = Integer.parseInt(args[0]);
 			int statPort = Integer.parseInt(args[1]);
-			final Monitor monitor = new Monitor(basePort, statPort);
+			final Monitor monitor = new Monitor(basePort, statPort,  args[2]);
 			Thread t = new Thread(monitor);
 			t.start();
 			
