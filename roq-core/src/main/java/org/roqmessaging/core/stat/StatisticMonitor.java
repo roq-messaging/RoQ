@@ -176,7 +176,18 @@ public class StatisticMonitor implements Runnable, IStoppable {
 			
 			/*  Stat from Logical queue*/
 			//TODO creating a monitor timer that will sends statistics 
-			//“23,QName, number of exchange registered”
+			//23,QName, number of exchange registered, number of total producer, total througput on Q
+			
+		case RoQConstant.STAT_Q:
+			statObj = new BasicBSONObject();
+			statObj.put("CMD",RoQConstant.STAT_Q);
+			statObj.put("QName", info[1]);
+			statObj.put("XChanges", info[2]);
+			statObj.put("Producers", info[3]);
+			statObj.put("Throughput", info[4]);
+			logger.debug(statObj.toString());
+			return BSON.encode(statObj);
+			
 	}
 		return BSON.encode(new BasicBSONObject());
 	}

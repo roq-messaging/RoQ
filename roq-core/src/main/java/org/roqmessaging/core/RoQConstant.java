@@ -133,7 +133,7 @@ public interface RoQConstant {
 	
 	/**
 	 * Stat event sent every minute to describe the queue state.
-	 * “23,QName, number of exchange registered”
+	 * “23,QName, number of exchange registered, number of total producer, total througput on Q”
 	 */
 	public static int STAT_Q= 23;
 	

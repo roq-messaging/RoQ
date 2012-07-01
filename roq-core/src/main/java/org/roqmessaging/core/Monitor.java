@@ -21,6 +21,7 @@ import java.util.TimerTask;
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.stat.StatisticMonitor;
+import org.roqmessaging.core.timer.MonitorStatTimer;
 import org.roqmessaging.state.ExchangeState;
 import org.zeromq.ZMQ;
 
@@ -44,7 +45,7 @@ public class Monitor implements Runnable, IStoppable {
 	private ZMQ.Socket producersPub, brokerSub, initRep, listenersPub;
 	//Monitor heart beat socket, client can check that monitor is alive
 	private ZMQ.Socket heartBeat = null;
-	private int basePort = 0;
+	private int basePort = 0, statPort =0;
 	
 	//The handle to the statistic monitor thread
 	private StatisticMonitor statMonitor = null;
@@ -59,6 +60,7 @@ public class Monitor implements Runnable, IStoppable {
 	 */
 	public Monitor(int basePort, int statPort, String qname){
 		this.basePort = basePort;
+		this.statPort = statPort;
 		knownHosts = new ArrayList<ExchangeState>();
 		hostsToRemove = new ArrayList<Integer>();
 		maxThroughput = 75000000L; // Maximum throughput per exchange, in
@@ -244,9 +246,10 @@ public class Monitor implements Runnable, IStoppable {
 	public void run() {
 		int infoCode =0; 
 		
-		//1. Start the report timer
+		//1. Start the report timer & the queue stat timer
 		Timer reportTimer = new Timer();
 		reportTimer.schedule(new ReportExchanges(), 0, 10000);
+		reportTimer.schedule(new MonitorStatTimer(this), 0, 5000);
 
 		ZMQ.Poller items = context.poller(3);
 		items.register(brokerSub);//0
@@ -435,6 +438,20 @@ public class Monitor implements Runnable, IStoppable {
 	 */
 	public ArrayList<ExchangeState> getExhcangeMetaData(){
 		return this.knownHosts;
+	}
+
+	/**
+	 * @return the statPort
+	 */
+	public int getStatPort() {
+		return statPort;
+	}
+
+	/**
+	 * @param statPort the statPort to set
+	 */
+	public void setStatPort(int statPort) {
+		this.statPort = statPort;
 	}
 
 }
