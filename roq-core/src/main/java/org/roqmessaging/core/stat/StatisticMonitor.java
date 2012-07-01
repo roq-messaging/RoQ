@@ -41,6 +41,8 @@ public class StatisticMonitor implements Runnable, IStoppable {
 	private ZMQ.Socket  kpiPub= null;
 	//The port on which we start
 	private int statPort =0;
+	//The queue name
+	private String qName = null;
 	
 	//Define whether we are running
 	private volatile boolean running;
@@ -49,11 +51,13 @@ public class StatisticMonitor implements Runnable, IStoppable {
 
 	/**
 	 * Init & constructor
+	 * @param qname the name of the queue
 	 */
-	public StatisticMonitor(int statPort) {
+	public StatisticMonitor(int statPort, String qname) {
 		//init the socket
 		context = ZMQ.context(1);
 		this.statPort = statPort;
+		this.qName = qname;
 		//Start the sub socket from RoQ elements
 		statSub = context.socket(ZMQ.SUB);
 		statSub.bind("tcp://"+RoQUtils.getInstance().getLocalIP()+":"+ statPort);
@@ -102,12 +106,15 @@ public class StatisticMonitor implements Runnable, IStoppable {
 		
 		//Check what are the stat types
 		switch (infoCode) {
+		
+		/*  Stat from Publisher and subscriber*/
 		case RoQConstant.STAT_TOTAL_SENT:
 			logger.info("1 producer finished, sent " + info[2] + " messages.");
 			statObj = new BasicBSONObject();
 			statObj.put("CMD",RoQConstant.STAT_TOTAL_SENT);
 			statObj.put("PublisherID", info[1]);
 			statObj.put("TotalSent", info[2]);
+			statObj.put("QName", this.qName);
 			logger.debug(statObj.toString());
 			return BSON.encode(statObj);
 			
@@ -116,13 +123,31 @@ public class StatisticMonitor implements Runnable, IStoppable {
 			statObj.put("CMD",RoQConstant.STAT_PUB_MIN);
 			statObj.put("SubscriberID", info[1]);
 			statObj.put("Total", info[2]);
+			statObj.put("QName", this.qName);
 			logger.debug(statObj.toString());
 			return BSON.encode(statObj);
 			
+		case RoQConstant.STAT_TOTAL_RCVD:
+			//Stat send from Subscriber 
+			//31, minute + "," + totalReceived + "," + received + "," + subsriberID + "," + meanLat)
+			statObj = new BasicBSONObject();
+			statObj.put("CMD",RoQConstant.STAT_TOTAL_RCVD);
+			statObj.put("Minute", info[1]);
+			statObj.put("TotalReceived", info[2]);
+			statObj.put("Received", info[3]);
+			statObj.put("SubsriberID", info[4]);
+			statObj.put("MeanLat", info[5]);
+			logger.debug(statObj.toString());
+			return BSON.encode(statObj);
+			
+			/*  Stat from Exchanges: these 3 messages are sent in the same message envelope*/
 		case RoQConstant.STAT_EXCHANGE_ID:
 			statObj = new BasicBSONObject();
 			statObj.put("CMD",RoQConstant.STAT_EXCHANGE_ID);
 			statObj.put("X_ID", info[1]);
+			statObj.put("CMD",RoQConstant.STAT_EXCHANGE_ID);
+			statObj.put("QName", this.qName);
+			logger.debug(statObj.toString());
 			return BSON.encode(statObj);
 			
 		case RoQConstant.STAT_EXCHANGE_MIN:
@@ -148,19 +173,21 @@ public class StatisticMonitor implements Runnable, IStoppable {
 			statObj.put("MEMORY", info[2]);
 			logger.debug(statObj.toString());
 			return BSON.encode(statObj);
-
-		case RoQConstant.STAT_TOTAL_RCVD:
-			//Stat send from Subscriber 
-			//31, minute + "," + totalReceived + "," + received + "," + subsriberID + "," + meanLat)
+			
+			/*  Stat from Logical queue*/
+			//TODO creating a monitor timer that will sends statistics 
+			//23,QName, number of exchange registered, number of total producer, total througput on Q
+			
+		case RoQConstant.STAT_Q:
 			statObj = new BasicBSONObject();
-			statObj.put("CMD",RoQConstant.STAT_TOTAL_RCVD);
-			statObj.put("Minute", info[1]);
-			statObj.put("TotalReceived", info[2]);
-			statObj.put("Received", info[3]);
-			statObj.put("SubsriberID", info[4]);
-			statObj.put("MeanLat", info[5]);
+			statObj.put("CMD",RoQConstant.STAT_Q);
+			statObj.put("QName", info[1]);
+			statObj.put("XChanges", info[2]);
+			statObj.put("Producers", info[3]);
+			statObj.put("Throughput", info[4]);
 			logger.debug(statObj.toString());
 			return BSON.encode(statObj);
+			
 	}
 		return BSON.encode(new BasicBSONObject());
 	}

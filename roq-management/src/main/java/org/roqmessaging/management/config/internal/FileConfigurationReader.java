@@ -61,6 +61,8 @@ public class FileConfigurationReader {
 		configDao.setExchangeFrontEndPort(config.getInt("exchange.base.port"));
 		configDao.setMonitorBasePort(config.getInt("monitor.base.port"));
 		configDao.setStatMonitorBasePort(config.getInt("statmonitor.base.port"));
+		configDao.setStatPeriod(config.getInt("monitor.stat.period"));
+		
 		if (config.containsKey("network.interface"))
 			configDao.setNetworkInterface(config.getString("network.interface"));
 		return configDao;

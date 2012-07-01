@@ -26,6 +26,7 @@ public class HostConfigDAO {
 	private int statMonitorBasePort = 5800;
 	private int monitorBasePort = 5500;
 	private int exchangeFrontEndPort = 6000;
+	private int statPeriod =60000;
 	
 	/**
 	 * @return the networkInterface
@@ -94,6 +95,18 @@ public class HostConfigDAO {
 	@Override
 	public String toString() {
 		return "Host configuration manager [GCM :"+gcmAddress +"] [Exhange FE :" +exchangeFrontEndPort+"] [Monitor base port: "+ monitorBasePort+"]";
+	}
+	/**
+	 * @return the statPeriod
+	 */
+	public int getStatPeriod() {
+		return statPeriod;
+	}
+	/**
+	 * @param statPeriod the statPeriod to set
+	 */
+	public void setStatPeriod(int statPeriod) {
+		this.statPeriod = statPeriod;
 	}
 	
 

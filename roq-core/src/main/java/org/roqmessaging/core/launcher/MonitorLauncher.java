@@ -27,21 +27,23 @@ import org.roqmessaging.core.Monitor;
 public class MonitorLauncher {
 
 	/**
-	 * Example: 5571 5800
+	 * Example: 5571 5800 testQ period
 	 * @param args must be the base monitor port and the stat port, default value is 
-	 * 5571 5800
+	 * 5571 5800 qname period
+	 *
 	 */
 	public static void main(String[] args) {
 		System.out.println("Launching Monitor process with arg "+displayArg(args));
-		if(args.length !=2){
-			System.out.println("The argument should be <int: base port> <int: stat port>");
+		if(args.length !=4){
+			System.out.println("The argument should be <int: base port> <int: stat port> <qname>");
 			return;
 		}
-		System.out.println("Starting Monitor on base port "+ args[0] + ", "+args[1]);
+		//TODO for future evolution: replacing the 3rd argument by the property file location directly
+		System.out.println("Starting Monitor on base port "+ args[0] + ", "+args[1] +", "+ args[2] +" "+ args[3]) ;
 		try {
 			int basePort = Integer.parseInt(args[0]);
 			int statPort = Integer.parseInt(args[1]);
-			final Monitor monitor = new Monitor(basePort, statPort);
+			final Monitor monitor = new Monitor(basePort, statPort,  args[2], args[3]);
 			Thread t = new Thread(monitor);
 			t.start();
 			
