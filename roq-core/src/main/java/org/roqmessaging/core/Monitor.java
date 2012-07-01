@@ -62,11 +62,13 @@ public class Monitor implements Runnable, IStoppable {
 	 * @param basePort default value must be 5571
 	 * @param statPort default port for stat socket 5800
 	 * @param qname the logical queue from which the monitor belongs to
+	 * @param period the stat period for publication
 	 */
-	public Monitor(int basePort, int statPort, String qname){
+	public Monitor(int basePort, int statPort, String qname, String period){
 		this.basePort = basePort;
 		this.statPort = statPort;
 		this.qName = qname;
+		this.period = Integer.parseInt(period);
 		knownHosts = new ArrayList<ExchangeState>();
 		hostsToRemove = new ArrayList<Integer>();
 		maxThroughput = 75000000L; // Maximum throughput per exchange, in
