@@ -19,6 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.roq.simulation.stat.KPISubscriber;
+import org.roq.simulation.stat.KPISubscriberLogger;
 import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.client.IRoQSubscriber;
@@ -72,7 +73,7 @@ public class TestStatMonitor {
 			Thread.sleep(3000);
 			
 			// 2. Init the KPI subscriber
-			kpiSubscriber = new KPISubscriber(launcher.getConfigurationServer(), "queue1", false);
+			kpiSubscriber = new KPISubscriberLogger(launcher.getConfigurationServer(), "queue1", false);
 			new Thread(kpiSubscriber).start();
 
 			// 3. Create a subscriber

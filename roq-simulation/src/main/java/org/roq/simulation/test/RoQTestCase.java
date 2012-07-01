@@ -64,8 +64,6 @@ public class RoQTestCase {
 		this.launcher.tearDown();
 		Thread.sleep(3000);
 	}
-
-
 	
 
 	/**

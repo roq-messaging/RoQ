@@ -14,11 +14,6 @@
  */
 package org.roq.simulation.stat;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-
 import junit.framework.Assert;
 
 import org.apache.log4j.Logger;
@@ -27,7 +22,6 @@ import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.interfaces.IStoppable;
-import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
 /**
@@ -36,34 +30,26 @@ import org.zeromq.ZMQ;
  * 
  * @author sskhiri
  */
-public class KPISubscriber implements Runnable, IStoppable{
+public abstract class KPISubscriber implements Runnable, IStoppable{
 	//ZMQ configuration
-	private ZMQ.Context context = null;
-	
+	protected ZMQ.Context context = null;
 	//KPI socket
-	private ZMQ.Socket kpiSocket = null;
-	
+	protected ZMQ.Socket kpiSocket = null;
 	//The configuration server
-	private String configurationServer = null;
+	protected String configurationServer = null;
 	//the Qname to subscriber
-	private String qName = null;
-	
+	protected String qName = null;
 	//Define whether the thread must continue to run
-	private volatile boolean active = true;
+	protected volatile boolean active = true;
 	
-	//Define whether we need to use a file to store the data
-	private boolean useFile = false;
-	private BufferedWriter bufferedOutput;
-	
-	//the looger
-	private Logger logger = Logger.getLogger(KPISubscriber.class);
+	//the logger
+	protected Logger logger = Logger.getLogger(KPISubscriber.class);
 	
 	/**
 	 * @param globalConfiguration the IP address of the global configuration
 	 * @param qName the queue from which we want receive statistic. 
 	 */
-	public KPISubscriber(String globalConfiguration, String qName, boolean useFile) {
-		this.useFile = useFile;
+	public KPISubscriber(String globalConfiguration, String qName) {
 		//ZMQ Init
 		this.context = ZMQ.context(1);
 		//Copy parameters
@@ -72,24 +58,13 @@ public class KPISubscriber implements Runnable, IStoppable{
 		//init subscription
 		subscribe();
 		//init file if required
-		if(useFile){
-			try {
-				FileWriter output = new FileWriter(("output" + RoQUtils.getInstance().getFileStamp()), true);
-				bufferedOutput = new BufferedWriter(output);
-			} catch (IOException e) {
-				logger.error("Error when openning file", e);
-			}
-		}else{
-			//Redirect the output in the system.out
-			bufferedOutput = new BufferedWriter(new OutputStreamWriter(System.out));
-		}
 	}
 	
 	/**
 	 * Subscribe to the statistic stream got from the global configuration
 	 * @throws IllegalStateException if the monitor stat is not present in the cache
 	 */
-	private void subscribe() throws IllegalStateException {
+	protected void subscribe() throws IllegalStateException {
 		// 1. Get the location in BSON
 		// 1.1 Create the request socket
 		ZMQ.Socket globalConfigReq = context.socket(ZMQ.REQ);
@@ -131,82 +106,48 @@ public class KPISubscriber implements Runnable, IStoppable{
 				do {
 					// Stat coming from the KPI stream
 					BSONObject statObj = BSON.decode(kpiSocket.recv(0));
-					logger.debug("Start analysing info code, the use files =" + this.useFile + ", code ="
+					logger.debug("Start analysing info code "
 							+ statObj.get("CMD"));
-					switch ((Integer) statObj.get("CMD")) {
-					case RoQConstant.STAT_EXCHANGE_ID:
-						logger.info(" Stat from Exchange  " + statObj.get("ID") + " .");
-					break;
-					
-					case RoQConstant.STAT_TOTAL_SENT:
-						logger.info("1 producer finished, sent " + statObj.get("TotalSent") + " messages.");
-						try {
-							bufferedOutput.write("PROD," + RoQUtils.getInstance().getFileStamp() + ",FINISH,"
-									+ statObj.get("PublisherID") + "," + statObj.get("TotalSent"));
-							bufferedOutput.newLine();
-							bufferedOutput.flush();
-						} catch (IOException e) {
-							logger.error("Error when writing the report in the output stream", e);
-						}
-						break;
-					case RoQConstant.STAT_PUB_MIN:
-						try {
-							bufferedOutput.write("SUB," + RoQUtils.getInstance().getFileStamp() + ",STAT,"
-									+ statObj.get("SubscriberID") + "," + statObj.get("Total"));
-							bufferedOutput.newLine();
-							bufferedOutput.flush();
-
-						} catch (IOException e) {
-							logger.error("Error when writing the report in the output stream", e);
-						}
-						break;
-					case RoQConstant.STAT_EXCHANGE_MIN:
-						try {
-							bufferedOutput.write("EXCH," + RoQUtils.getInstance().getFileStamp() + ","
-									+ statObj.get("Minute") + "," + statObj.get("TotalProcessed") + ","
-									+ statObj.get("Processed") + "," + statObj.get("TotalThroughput") + ","
-									+ statObj.get("Throughput") + "," + statObj.get("Producers"));
-							bufferedOutput.newLine();
-							bufferedOutput.flush();
-						} catch (IOException e) {
-							logger.error("Error when writing the report in the output stream", e);
-						}
-						break;
-					case RoQConstant.STAT_TOTAL_RCVD:
-						try {
-							bufferedOutput.write("LIST," + RoQUtils.getInstance().getFileStamp() + ","
-									+ statObj.get("Minute") + "," + statObj.get("TotalReceived") + ","
-									+ statObj.get("Received") + "," + statObj.get("SubsriberID") + ","
-									+ statObj.get("MeanLat"));
-							bufferedOutput.newLine();
-							bufferedOutput.flush();
-						} catch (IOException e) {
-							logger.error("Error when writing the report in the output stream", e);
-						}
-						break;
-					}
+				processStat((Integer) statObj.get("CMD"), statObj);
 				} while (kpiSocket.hasReceiveMore());
 			}
-
 		}
-		
+	}
+	
+	/**
+	 * Checks whether the field is present in the BSON request
+	 * @param request the request
+	 * @param field the field to check
+	 * @return true if the field is present, false otherwise, in addition it sends a INVALI answer.
+	 */
+	protected boolean checkField(BSONObject request, String field) {
+		if(!request.containsField(field)){
+			logger.error("The "+field+"  field is not present, INVALID REQUEST");
+			logger.error("Invalid request, does not contain Host field.");
+			Assert.fail("Invalid request, does not contain "+field+ " field");
+		return false;
+	}else{
+		return true;
+	}
 	}
 
-	/* (non-Javadoc)
+	/**
+	 * In this method the client code will process the statistic.
+	 * @param CMD the command code of the statistic.
+	 * @param statObj the bson stat object
+	 */
+	abstract public void processStat(Integer CMD, BSONObject statObj);
+
+	/**
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
 	public void shutDown() {
 		this.active = false;
 		this.kpiSocket.close();
-		try {
-			this.bufferedOutput.close();
-		} catch (IOException e) {
-			logger.error("Error while closing the buffer output stream", e);
-		}
 		
 	}
 
-	/* (non-Javadoc)
+	/**
 	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
 	 */
 	public String getName() {
