@@ -27,9 +27,9 @@ import org.roqmessaging.core.Monitor;
 public class MonitorLauncher {
 
 	/**
-	 * Example: 5571 5800
+	 * Example: 5571 5800 testQ
 	 * @param args must be the base monitor port and the stat port, default value is 
-	 * 5571 5800
+	 * 5571 5800 qname
 	 */
 	public static void main(String[] args) {
 		System.out.println("Launching Monitor process with arg "+displayArg(args));

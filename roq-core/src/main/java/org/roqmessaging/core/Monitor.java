@@ -53,6 +53,7 @@ public class Monitor implements Runnable, IStoppable {
 	private ShutDownMonitor shutDownMonitor;
 	//The monitor statistic.
 	private MonitorStatTimer monitorStat;
+	private int period =60000;
 	//The queue name
 	private String qName = "name";
 
@@ -253,9 +254,9 @@ public class Monitor implements Runnable, IStoppable {
 		
 		//1. Start the report timer & the queue stat timer
 		Timer reportTimer = new Timer();
-		reportTimer.schedule(new ReportExchanges(), 0, 10000);
+		reportTimer.schedule(new ReportExchanges(), 0, period+10);
 		this.monitorStat = new MonitorStatTimer(this);
-		reportTimer.schedule(this.monitorStat, 0, 5000);
+		reportTimer.schedule(this.monitorStat, 0, period);
 
 		ZMQ.Poller items = context.poller(3);
 		items.register(brokerSub);//0
