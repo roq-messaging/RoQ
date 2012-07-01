@@ -21,6 +21,7 @@ import org.apache.log4j.Logger;
 import org.roqmessaging.core.Monitor;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.stat.StatisticMonitor;
+import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.state.ExchangeState;
 import org.zeromq.ZMQ;
 
@@ -54,7 +55,7 @@ public class MonitorStatTimer extends TimerTask {
 		this.queueMonitor = queueMonitor;
 		this.context = ZMQ.context(1);
 		this.statSocket = context.socket(ZMQ.PUB);
-		String statMonitorServer = "tcp://localhost:"+this.queueMonitor.getStatPort();
+		String statMonitorServer = "tcp://"+RoQUtils.getInstance().getLocalIP()+":"+this.queueMonitor.getStatPort();
 		this.statSocket.connect(statMonitorServer);
 		this.logger.debug("Connecting to "+statMonitorServer);
 	}
@@ -73,6 +74,14 @@ public class MonitorStatTimer extends TimerTask {
 		logger.info("Stat monitor: "+ message);
 		//3. send message
 		statSocket.send(message.getBytes(), 0);
+	}
+	
+	/** Stop the sockets.
+	 * @see java.util.TimerTask#cancel()
+	 */
+	public void shutTdown() {
+		logger.debug("Canceling the Monitor stat timer");
+		this.statSocket.close();
 	}
 
 	/**

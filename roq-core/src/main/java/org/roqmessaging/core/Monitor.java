@@ -51,6 +51,10 @@ public class Monitor implements Runnable, IStoppable {
 	private StatisticMonitor statMonitor = null;
 	//Shut down monitor
 	private ShutDownMonitor shutDownMonitor;
+	//The monitor statistic.
+	private MonitorStatTimer monitorStat;
+	//The queue name
+	private String qName = "name";
 
 	
 	/**
@@ -61,6 +65,7 @@ public class Monitor implements Runnable, IStoppable {
 	public Monitor(int basePort, int statPort, String qname){
 		this.basePort = basePort;
 		this.statPort = statPort;
+		this.qName = qname;
 		knownHosts = new ArrayList<ExchangeState>();
 		hostsToRemove = new ArrayList<Integer>();
 		maxThroughput = 75000000L; // Maximum throughput per exchange, in
@@ -249,7 +254,8 @@ public class Monitor implements Runnable, IStoppable {
 		//1. Start the report timer & the queue stat timer
 		Timer reportTimer = new Timer();
 		reportTimer.schedule(new ReportExchanges(), 0, 10000);
-		reportTimer.schedule(new MonitorStatTimer(this), 0, 5000);
+		this.monitorStat = new MonitorStatTimer(this);
+		reportTimer.schedule(this.monitorStat, 0, 5000);
 
 		ZMQ.Poller items = context.poller(3);
 		items.register(brokerSub);//0
@@ -355,6 +361,7 @@ public class Monitor implements Runnable, IStoppable {
 			}
 		}
 		// Exit running
+		this.monitorStat.shutTdown();
 		reportTimer.cancel();
 		this.knownHosts.clear();
 		closeSocket();
@@ -430,8 +437,9 @@ public class Monitor implements Runnable, IStoppable {
 	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
 	 */
 	public String getName() {
-		return "Monitor " + this.basePort;
+		return this.qName +":"+ this.basePort;
 	}
+	
 	
 	/**
 	 * @return list of registered exchanges and their current states.
