@@ -72,8 +72,10 @@ public class TestMngtStorageCreateTables {
 
 			facade.addConfiguration("Configuration1", 100000, 2000);
 			facade.addConfiguration("Configuration2", 5000, 2000);
-			facade.addQueueConfiguration("Queue1", 1, 2, true);
-			facade.addQueueConfiguration("Queue2", 2, 2, false);
+			
+			//TODO AUTO-SCALING add auto scaling config to configuration
+			facade.addQueueConfiguration("Queue1", 1, 2, true, 0);
+			facade.addQueueConfiguration("Queue2", 2, 2, false,0);
 
 			// Query example
 			ResultSet rs = statement.executeQuery("select * from Queues");
