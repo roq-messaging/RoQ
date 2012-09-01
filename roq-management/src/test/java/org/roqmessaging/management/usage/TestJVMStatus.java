@@ -14,9 +14,15 @@
  */
 package org.roqmessaging.management.usage;
 
+import java.util.HashMap;
+
+import junit.framework.Assert;
+
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.roqmessaging.core.RoQConstantInternal;
 import org.roqmessaging.core.monitoring.HostOSMonitoring;
+import org.roqmessaging.management.config.scaling.HostScalingRule;
 
 /**
  * Class TestJVMStatus
@@ -32,6 +38,28 @@ public class TestJVMStatus {
 		HostOSMonitoring monitor = new HostOSMonitoring();
 		monitor.getMemoryUsage();
 		monitor.getCPUUsage();
+	}
+	
+	@Test
+	public void testScalingCPURule() throws Exception {
+		HostScalingRule rule = new HostScalingRule(35, 2);
+		//Sumulating context
+		HashMap<String, Double> ctx = new HashMap<String, Double>();
+		ctx.put(RoQConstantInternal.CONTEXT_KPI_HOST_CPU, new Double(4));
+		ctx.put(RoQConstantInternal.CONTEXT_KPI_HOST_RAM, new Double(32));
+		Assert.assertEquals(true, rule.isOverLoaded(ctx));
+		ctx.put(RoQConstantInternal.CONTEXT_KPI_HOST_CPU, new Double(1.5));
+		ctx.put(RoQConstantInternal.CONTEXT_KPI_HOST_RAM, new Double(37));
+		Assert.assertEquals(true, rule.isOverLoaded(ctx));
+		ctx.put(RoQConstantInternal.CONTEXT_KPI_HOST_CPU, new Double(1.5));
+		ctx.put(RoQConstantInternal.CONTEXT_KPI_HOST_RAM, new Double(34.5));
+		Assert.assertEquals(false, rule.isOverLoaded(ctx));
+		//Testing 0 value
+		rule = new HostScalingRule(0, 2);
+		ctx.put(RoQConstantInternal.CONTEXT_KPI_HOST_CPU, new Double(1.5));
+		ctx.put(RoQConstantInternal.CONTEXT_KPI_HOST_RAM, new Double(37));
+		Assert.assertEquals(false, rule.isOverLoaded(ctx));
+		
 	}
 
 }
