@@ -17,10 +17,11 @@ package org.roqmessaging.management.config.scaling;
 import java.util.HashMap;
 
 import org.apache.log4j.Logger;
+import org.roqmessaging.core.RoQConstantInternal;
 
 /**
  * Class XchangeScalingRule
- * <p> Description: utoscaling rule based on physical on the Exchange load.
+ * <p> Description: autoscaling rule based on the Exchange load.
  * 
  * @author sskhiri
  */
@@ -28,16 +29,51 @@ public class XchangeScalingRule implements IAutoScalingRule {
 	//Logger
 	private Logger logger = Logger.getLogger(HostScalingRule.class);
 	//KPI on the number of message throughput the last minute
-	private int Event_Limit = 100;
+	private int Throughput_Limit = 100;
 	//KPI on Time_Spend, can be used for rampup of xchange nodes
 	private int Time_Limit = 100;
 	
-	/* (non-Javadoc)
+	/**
 	 * @see org.roqmessaging.management.config.scaling.IAutoScalingRule#isOverLoaded(java.util.HashMap)
 	 */
 	public boolean isOverLoaded(HashMap<String, Double> context) {
-		// TODO Auto-generated method stub
+		Double eventLimit = context.get(RoQConstantInternal.CONTEXT_KPI_XCHANGE_EVENTS);
+		if (this.getEvent_Limit() != 0) {
+			if (eventLimit.floatValue() > this.getEvent_Limit()) {
+				logger.info("Host Scaling rule reached [cpu: " + eventLimit.floatValue() + "]");
+				return true;
+
+			}
+		}
 		return false;
+	}
+
+	/**
+	 * @return the event_Limit
+	 */
+	public int getEvent_Limit() {
+		return Throughput_Limit;
+	}
+
+	/**
+	 * @param event_Limit the event_Limit to set
+	 */
+	public void setEvent_Limit(int event_Limit) {
+		Throughput_Limit = event_Limit;
+	}
+
+	/**
+	 * @return the time_Limit
+	 */
+	public int getTime_Limit() {
+		return Time_Limit;
+	}
+
+	/**
+	 * @param time_Limit the time_Limit to set
+	 */
+	public void setTime_Limit(int time_Limit) {
+		Time_Limit = time_Limit;
 	}
 
 }

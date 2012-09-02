@@ -87,18 +87,22 @@ public class MngtServerStorage {
 				statement.executeUpdate(createHostRuleTable);
 				
 				//Create AS_Xchange_Rule table
+				//Throughput per exchange
 				String createASXchangeTable ="CREATE  TABLE IF NOT EXISTS `AS_Xchange_Rule` ("+
 				"  `rule_id` INTEGER PRIMARY KEY AUTOINCREMENT ,"+
-				" `Event_Trg` INTEGER NULL ,"+
+				" `Throughput` INTEGER NULL ,"+
 				"  `Time_Spend` FLOAT NULL "+
 				");";
 				statement.executeUpdate(createASXchangeTable);
 				
 				//Create Auto-scaling Queue rule table
+				//Either we define the number of Exchange per producer or Exchange number per Throughput
 				String createASQTable ="CREATE  TABLE IF NOT EXISTS `AS_LogicalQueue_Rules` ("+
 				"  `rule_id` INTEGER PRIMARY KEY AUTOINCREMENT ,"+
 				" `Exchange_Number` INTEGER NULL ,"+
-				"  `Producer_Number` INTEGER NULL "+	");";
+				"  `Producer_Number` INTEGER NULL "+	
+				"  `Throughput` INTEGER NULL "+	
+				");";
 				statement.executeUpdate(createASQTable);
 				
 				//Create Auto-scaling Configuration table
