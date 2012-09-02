@@ -33,8 +33,12 @@ public interface RoQConstantInternal {
 	
 	/**
 	 * Used in the autoscaling configuration, defines the number of messages the passing through the exchange
-	 * the last minute
+	 * the last minute. 
 	 */
 	public static String CONTEXT_KPI_XCHANGE_EVENTS="context.kpi.xchange.events";
 
+	/**
+	 * Used in the autoscaling configuration, defines the time spent afterwards you need to start a nex exchange
+	 */
+	public static String CONTEXT_KPI_XCHANGE_TIME="context.kpi.xchange.time";
 }
