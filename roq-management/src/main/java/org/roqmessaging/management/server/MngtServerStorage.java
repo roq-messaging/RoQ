@@ -100,7 +100,7 @@ public class MngtServerStorage {
 				String createASQTable ="CREATE  TABLE IF NOT EXISTS `AS_LogicalQueue_Rules` ("+
 				"  `rule_id` INTEGER PRIMARY KEY AUTOINCREMENT ,"+
 				" `Exchange_Number` INTEGER NULL ,"+
-				"  `Producer_Number` INTEGER NULL "+	
+				"  `Producer_Number` INTEGER NULL, "+	
 				"  `Throughput` INTEGER NULL "+	
 				");";
 				statement.executeUpdate(createASQTable);
