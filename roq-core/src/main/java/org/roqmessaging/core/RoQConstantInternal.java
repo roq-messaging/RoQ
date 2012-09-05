@@ -38,7 +38,23 @@ public interface RoQConstantInternal {
 	public static String CONTEXT_KPI_XCHANGE_EVENTS="context.kpi.xchange.events";
 
 	/**
-	 * Used in the autoscaling configuration, defines the time spent afterwards you need to start a nex exchange
+	 * Used in the autoscaling configuration, defines the time spent afterwards you need to start a new exchange
 	 */
 	public static String CONTEXT_KPI_XCHANGE_TIME="context.kpi.xchange.time";
+	
+	/**
+	 * Used in the autoscaling configuration, defines the number of exchanges per logical queue.
+	 */
+	public static String CONTEXT_KPI_Q_XCHANGE_NUMBER="context.kpi.queue.exchange.number";
+
+	/**
+	 * Used in the autoscaling configuration, defines the number of producers per logical queue.
+	 */
+	public static String CONTEXT_KPI_Q_PRODUCER_NUMBER = "context.kpi.queue.producer.number";
+
+	/**
+	 * Used in the autoscaling configuration, defines the throuput  per logical queue.
+	 */
+	public static String CONTEXT_KPI_Q_THROUGPUT = "context.kpi.queue.througput";
+	
 }

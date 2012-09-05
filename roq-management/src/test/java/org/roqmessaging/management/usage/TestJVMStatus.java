@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.roqmessaging.core.RoQConstantInternal;
 import org.roqmessaging.core.monitoring.HostOSMonitoring;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
+import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
 
 /**
  * Class TestJVMStatus
@@ -59,7 +60,22 @@ public class TestJVMStatus {
 		ctx.put(RoQConstantInternal.CONTEXT_KPI_HOST_CPU, new Double(1.5));
 		ctx.put(RoQConstantInternal.CONTEXT_KPI_HOST_RAM, new Double(37));
 		Assert.assertEquals(false, rule.isOverLoaded(ctx));
+	}
+	
+	@Test
+	public void testLogicalQScalingRule() throws Exception {
+		LogicalQScalingRule rule = new LogicalQScalingRule(1000, 1000);
+		HashMap<String, Double> ctx = new HashMap<String, Double>();
+		ctx.put(RoQConstantInternal.CONTEXT_KPI_Q_XCHANGE_NUMBER, new Double(10));
+		ctx.put(RoQConstantInternal.CONTEXT_KPI_Q_PRODUCER_NUMBER, new Double(20000));
+		ctx.put(RoQConstantInternal.CONTEXT_KPI_Q_THROUGPUT, new Double(1000000));
+		Assert.assertEquals(true, rule.isOverLoaded(ctx));
 		
+		ctx.put(RoQConstantInternal.CONTEXT_KPI_Q_XCHANGE_NUMBER, new Double(100));
+		Assert.assertEquals(true, rule.isOverLoaded(ctx));
+		
+		ctx.put(RoQConstantInternal.CONTEXT_KPI_Q_XCHANGE_NUMBER, new Double(1000));
+		Assert.assertEquals(false, rule.isOverLoaded(ctx));
 	}
 
 }

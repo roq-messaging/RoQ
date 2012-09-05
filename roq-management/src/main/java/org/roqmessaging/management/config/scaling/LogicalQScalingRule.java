@@ -16,6 +16,9 @@ package org.roqmessaging.management.config.scaling;
 
 import java.util.HashMap;
 
+import org.apache.log4j.Logger;
+import org.roqmessaging.core.RoQConstantInternal;
+
 /**
  * Class LogicalQScalingRule
  * <p> Description: Auto-scaling rule based on the logical queue KPI. 
@@ -23,23 +26,22 @@ import java.util.HashMap;
  * @author sskhiri
  */
 public class LogicalQScalingRule implements IAutoScalingRule {
-	//Defines the max number of exchange in the logical
-	private int exchangeNumberLimit =100; 
+	private Logger log = Logger.getLogger(LogicalQScalingRule.class);
 	//Defines the max number of producer per exchange limit
-	private int producerNumber=100;
+	private int producerPerXchangeLimit=100;
 	//Defines the max throughput per exchange limit
-	private int througputNumber=100;
+	private int througputPerXchangeLimit=100;
 	
 	/**
 	 * @param exchangeNumberLimit the exchange limit
-	 * @param producerNumber the producer number limit per exchange limit
-	 * @param througputNumber the max througput per exchange limit
+	 * @param producerPerXchangeLimit the producer number limit per exchange limit
+	 * @param througputPerXchangeLimit the max througput per exchange limit
 	 */
-	public LogicalQScalingRule(int exchangeNumberLimit, int producerNumber, int througputNumber) {
+	public LogicalQScalingRule(int producerPerXchangeLimit, int througputPerXchangeLimit) {
 		super();
-		this.exchangeNumberLimit = exchangeNumberLimit;
-		this.producerNumber = producerNumber;
-		this.througputNumber = througputNumber;
+		this.producerPerXchangeLimit = producerPerXchangeLimit;
+		this.througputPerXchangeLimit = througputPerXchangeLimit;
+		log.debug("Adding Logical Q rule "+ this.toString());
 	}
 
 
@@ -47,32 +49,44 @@ public class LogicalQScalingRule implements IAutoScalingRule {
 	 * @see org.roqmessaging.management.config.scaling.IAutoScalingRule#isOverLoaded(java.util.HashMap)
 	 */
 	public boolean isOverLoaded(HashMap<String, Double> context) {
-		// TODO Auto-generated method stub
+			Double xchanges = context.get(RoQConstantInternal.CONTEXT_KPI_Q_XCHANGE_NUMBER);
+			if (this.producerPerXchangeLimit != 0) {
+				Double producer = context.get(RoQConstantInternal.CONTEXT_KPI_Q_PRODUCER_NUMBER);
+				Double prodPerExchange = producer/xchanges;
+				if(prodPerExchange>(this.producerPerXchangeLimit)){
+					log.info("Trigger the autoscaling rule because the producer per exchange ="+ prodPerExchange);
+					log.info("For the rule " +this.toString());
+					return true;
+				}
+			}
+			if (this.througputPerXchangeLimit != 0) {
+				Double througput = context.get(RoQConstantInternal.CONTEXT_KPI_Q_THROUGPUT);
+				Double througPerExchange = througput/xchanges;
+				if(througPerExchange>(this.througputPerXchangeLimit)){
+					log.info("Trigger the autoscaling rule because the througput per exchange ="+througPerExchange);
+					log.info("For the rule " +this.toString());
+					return true;
+				}
+			}
+
+
 		return false;
 	}
-
-
+	
 	/**
-	 * @return the exchangeNumberLimit
+	 * @see java.lang.Object#toString()
 	 */
-	public int getExchangeNumberLimit() {
-		return exchangeNumberLimit;
+	@Override
+	public String toString() {
+		return "Logical Q String [ Producer limit per Exchange: "+ this.producerPerXchangeLimit+", Throughput limit per exchange:"+ this.througputPerXchangeLimit+"]";
 	}
 
 
-	/**
-	 * @param exchangeNumberLimit the exchangeNumberLimit to set
-	 */
-	public void setExchangeNumberLimit(int exchangeNumberLimit) {
-		this.exchangeNumberLimit = exchangeNumberLimit;
-	}
-
-
-	/**
+		/**
 	 * @return the producerNumber
 	 */
 	public int getProducerNumber() {
-		return producerNumber;
+		return producerPerXchangeLimit;
 	}
 
 
@@ -80,7 +94,7 @@ public class LogicalQScalingRule implements IAutoScalingRule {
 	 * @param producerNumber the producerNumber to set
 	 */
 	public void setProducerNumber(int producerNumber) {
-		this.producerNumber = producerNumber;
+		this.producerPerXchangeLimit = producerNumber;
 	}
 
 
@@ -88,7 +102,7 @@ public class LogicalQScalingRule implements IAutoScalingRule {
 	 * @return the througputNumber
 	 */
 	public int getThrougputNumber() {
-		return througputNumber;
+		return througputPerXchangeLimit;
 	}
 
 
@@ -96,7 +110,7 @@ public class LogicalQScalingRule implements IAutoScalingRule {
 	 * @param througputNumber the througputNumber to set
 	 */
 	public void setThrougputNumber(int througputNumber) {
-		this.througputNumber = througputNumber;
+		this.througputPerXchangeLimit = througputNumber;
 	}
 
 }
