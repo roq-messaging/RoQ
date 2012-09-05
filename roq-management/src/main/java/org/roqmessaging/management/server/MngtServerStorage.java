@@ -99,9 +99,8 @@ public class MngtServerStorage {
 				//Either we define the number of Exchange per producer or Exchange number per Throughput
 				String createASQTable ="CREATE  TABLE IF NOT EXISTS `AS_LogicalQueue_Rules` ("+
 				"  `rule_id` INTEGER PRIMARY KEY AUTOINCREMENT ,"+
-				" `Exchange_Number` INTEGER NULL ,"+
-				"  `Producer_Number` INTEGER NULL, "+	
-				"  `Throughput` INTEGER NULL "+	
+				"  `Producer_per_exchange_limit` INTEGER NULL, "+	
+				"  `Throughput_per_exchange_limit` INTEGER NULL "+	
 				");";
 				statement.executeUpdate(createASQTable);
 				
