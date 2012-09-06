@@ -88,7 +88,7 @@ public class MngtServerStorage {
 				
 				//Create AS_Xchange_Rule table
 				//Throughput per exchange
-				String createASXchangeTable ="CREATE  TABLE IF NOT EXISTS `AS_Xchange_Rule` ("+
+				String createASXchangeTable ="CREATE  TABLE IF NOT EXISTS `AS_Xchange_Rules` ("+
 				"  `rule_id` INTEGER PRIMARY KEY AUTOINCREMENT ,"+
 				" `Throughput` INTEGER NULL ,"+
 				"  `Time_Spend` FLOAT NULL "+
