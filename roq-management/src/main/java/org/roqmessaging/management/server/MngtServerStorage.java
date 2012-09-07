@@ -21,12 +21,17 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.HostConfigManager;
+import org.roqmessaging.management.config.scaling.HostScalingRule;
+import org.roqmessaging.management.config.scaling.IAutoScalingRule;
+import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
+import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.server.state.QueueManagementState;
 
 /**
@@ -44,12 +49,15 @@ public class MngtServerStorage {
 	private Connection connection = null;
 	// Prevent reetrant code
 	private Lock lock = new ReentrantLock();
+	//Autoscaling storage manager
+	private AutoScalingRuleStorageManager ruleManager = null;
 
 	/**
-	 * 
+	 * Constructor.
 	 */
 	public MngtServerStorage(Connection connection) {
 		this.connection = connection;
+		ruleManager = new AutoScalingRuleStorageManager();
 		initSchema();
 	}
 
@@ -149,6 +157,9 @@ public class MngtServerStorage {
 			statement.executeUpdate("drop table if exists Hosts");
 			statement.executeUpdate("drop table if exists Configuration");
 			statement.executeUpdate("drop table if exists Queues");
+			statement.executeUpdate("drop table if exists AS_Host_Rules");
+			statement.executeUpdate("drop table if exists AS_Xchange_Rule");
+			statement.executeUpdate("drop table if exists AS_LogicalQueue_Rules");
 			statement.close();
 			//Re-build schema
 			initSchema();
@@ -432,7 +443,7 @@ public class MngtServerStorage {
 	/**
 	 * Removes the queue defined by the qName
 	 * @param qName the queue to remove
-	 * @throws SQLException if an exception occured when removing the record
+	 * @throws SQLException if an exception occurred when removing the record
 	 */
 	public void removeQueue(String qName) throws SQLException {
 		logger.debug("Delete the queue "+ qName);
@@ -444,6 +455,35 @@ public class MngtServerStorage {
 			statement.executeUpdate("DELETE  from Queues where idQueues="+rs.getInt("idQueues")+";");
 		}
 		statement.close();
+	}
+	
+	/**
+	 * Store the auto scaling rule.
+	 * @param rule the auto scaling rule to add.
+	 * @throws SQLException if an exception occurred when removing the record
+	 */
+	public void addAutoScalingRule(IAutoScalingRule rule) throws SQLException{
+		if (rule instanceof XchangeScalingRule) {
+			ruleManager.addExchangeRule(connection.createStatement(), (XchangeScalingRule) rule);
+		}
+		if (rule instanceof LogicalQScalingRule) {
+			ruleManager.addQueueRule(connection.createStatement(), (LogicalQScalingRule) rule);
+		}
+		if (rule instanceof HostScalingRule) {
+			ruleManager.addHostRule(connection.createStatement(),  (HostScalingRule) rule);
+		}
+	}
+	
+	/**
+	 * @return the aggregated list of auto scaling rules.
+	 * @throws SQLException in case of SQL errors during reading.
+	 */
+	public List<IAutoScalingRule> getAllAutoScalingRules() throws SQLException{
+		List<IAutoScalingRule> rules = new ArrayList<IAutoScalingRule>();
+		rules.addAll(ruleManager.getAllLogicalQScalingRule(connection.createStatement()));
+		rules.addAll(ruleManager.getAllExchangeScalingRule(connection.createStatement()));
+		rules.addAll(ruleManager.getAllHostScalingRule(connection.createStatement()));
+		return rules;
 	}
 
 }

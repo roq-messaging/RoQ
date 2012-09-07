@@ -37,23 +37,6 @@ public class AutoScalingRuleStorageManager {
 	private Logger logger = Logger.getLogger(AutoScalingRuleStorageManager.class);
 	
 	/**
-	 * Add an autoscaling rule in the management DB.
-	 * @param statement the SQL statement
-	 * @param rule the auto scaling rule
-	 */
-	public void addExchangeRule(Statement statement, XchangeScalingRule rule){
-		logger.info("Inserting 1 new Exchange Auto scaling  configuration: "+ rule.toString());
-		try {
-			// set timeout to 10 sec.
-			statement.setQueryTimeout(10);
-			statement.execute("insert into AS_Xchange_Rules  values(null, '" + rule.getEvent_Limit() + "'," + rule.getTime_Limit() + ")");
-			statement.close();
-		} catch (Exception e) {
-			logger.error("Error whil inserting new configuration", e);
-		}
-	}
-	
-	/**
 	 * @return all the exchange auto scaling rules.
 	 * @throws SQLException  in case of SQL error
 	 */
@@ -70,6 +53,63 @@ public class AutoScalingRuleStorageManager {
 		}
 		statement.close();
 		return result;
+	}
+	
+	/**
+	 * Get all the scaling rule related to logical queue KPI.
+	 * @return all the queue auto scaling rules.
+	 * @throws SQLException  in case of SQL error
+	 */
+	public List<IAutoScalingRule> getAllLogicalQScalingRule(Statement statement) throws SQLException{
+		List<IAutoScalingRule> result = new ArrayList<IAutoScalingRule>();
+		// set timeout to 5 sec.
+		statement.setQueryTimeout(5);
+		ResultSet rs = statement.executeQuery("select Producer_per_exchange_limit, Throughput_per_exchange_limit" +
+		" from AS_LogicalQueue_Rules;");
+		while (rs.next()) {
+			IAutoScalingRule rule = new LogicalQScalingRule(rs.getInt("Producer_per_exchange_limit"), rs.getInt("Throughput_per_exchange_limit"));
+			logger.debug("Reading rule: "+ rule.toString());
+			result.add(rule);
+		}
+		statement.close();
+		return result;
+	}
+	
+	/**
+	 * Get all the scaling rule related to host KPI.
+	 * @return all the host auto scaling rules.
+	 * @throws SQLException  in case of SQL error
+	 */
+	public List<IAutoScalingRule> getAllHostScalingRule(Statement statement) throws SQLException{
+		List<IAutoScalingRule> result = new ArrayList<IAutoScalingRule>();
+		// set timeout to 5 sec.
+		statement.setQueryTimeout(5);
+		ResultSet rs = statement.executeQuery("select Producer_per_exchange_limit, Throughput_per_exchange_limit" +
+		" from AS_LogicalQueue_Rules;");
+		while (rs.next()) {
+			IAutoScalingRule rule = new HostScalingRule(rs.getInt("CPU_Limit"), rs.getInt("RAM_Limit"));
+			logger.debug("Reading rule: "+ rule.toString());
+			result.add(rule);
+		}
+		statement.close();
+		return result;
+	}	
+	
+	/**
+	 * Add an autoscaling rule in the management DB.
+	 * @param statement the SQL statement
+	 * @param rule the auto scaling rule
+	 */
+	public void addExchangeRule(Statement statement, XchangeScalingRule rule){
+		logger.info("Inserting 1 new Exchange Auto scaling  configuration: "+ rule.toString());
+		try {
+			// set timeout to 10 sec.
+			statement.setQueryTimeout(10);
+			statement.execute("insert into AS_Xchange_Rules  values(null, '" + rule.getEvent_Limit() + "'," + rule.getTime_Limit() + ")");
+			statement.close();
+		} catch (Exception e) {
+			logger.error("Error whil inserting new configuration", e);
+		}
 	}
 	
 	/**

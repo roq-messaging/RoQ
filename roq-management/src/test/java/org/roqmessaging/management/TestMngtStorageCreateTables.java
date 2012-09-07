@@ -26,6 +26,9 @@ import junit.framework.Assert;
 
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.roqmessaging.management.config.scaling.HostScalingRule;
+import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
+import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.server.MngtServerStorage;
 import org.roqmessaging.management.server.state.QueueManagementState;
 
@@ -58,12 +61,10 @@ public class TestMngtStorageCreateTables {
 			Statement statement = connection.createStatement();
 			statement.setQueryTimeout(10);  // set timeout to 30 sec.
 
-			// Drop table if exist - clean the file
-			statement.executeUpdate("drop table if exists Hosts");
-			statement.executeUpdate("drop table if exists Configuration");
-			statement.executeUpdate("drop table if exists Queues");
 			// insert tuples
 			MngtServerStorage facade = new MngtServerStorage(connection);
+			// Drop table if exist - clean the file
+			facade.formatDB();
 
 			facade.addRoQHost("127.0.0.1");
 			facade.addRoQHost("127.0.0.2");
@@ -76,6 +77,12 @@ public class TestMngtStorageCreateTables {
 			//TODO AUTO-SCALING add auto scaling config to configuration
 			facade.addQueueConfiguration("Queue1", 1, 2, true, 0);
 			facade.addQueueConfiguration("Queue2", 2, 2, false,0);
+			
+			//Test the auto scaling rule storage
+			facade.addAutoScalingRule(new HostScalingRule(50, 40));
+			facade.addAutoScalingRule(new LogicalQScalingRule(10000, 0));
+			facade.addAutoScalingRule(new XchangeScalingRule(10000, 0));
+			Assert.assertEquals(3, facade.getAllAutoScalingRules());
 
 			// Query example
 			ResultSet rs = statement.executeQuery("select * from Queues");
