@@ -34,6 +34,8 @@ public class HostScalingRule implements IAutoScalingRule {
 	private int RAM_Limit = 100;
 	//KPI on CPU
 	private int CPU_Limit = 100;
+	//The key ID
+	private long ID = 0;
 	
 	/**
 	 * @param rAM_Limit the ram memory to not over load. if 0 it will  not be considered. The value 
@@ -96,7 +98,20 @@ public class HostScalingRule implements IAutoScalingRule {
 		}
 		return false;
 	}
-	
+
+	/**
+	 * @see org.roqmessaging.management.config.scaling.IAutoScalingRule#getID()
+	 */
+	public long getID() {
+		return this.ID;
+	}
+
+	/**
+	 * @param iD the iD to set
+	 */
+	public void setID(long iD) {
+		ID = iD;
+	}
 	
 
 }

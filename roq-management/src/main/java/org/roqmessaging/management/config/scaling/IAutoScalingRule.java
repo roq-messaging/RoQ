@@ -28,8 +28,18 @@ public interface IAutoScalingRule {
 	
 	/**
 	 * @param context the current queue context
-	 * @return
+	 * @return true if the rule is triggered. 
 	 */
 	public boolean isOverLoaded(HashMap<String, Double> context);
-
+	
+	/**
+	 * @return the rule ID
+	 */
+	public long getID();
+	
+	/**
+	 * @param ID the rule ID
+	 */
+	public void setID(long ID);
+	
 }

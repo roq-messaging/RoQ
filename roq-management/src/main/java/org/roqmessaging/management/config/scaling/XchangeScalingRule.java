@@ -28,10 +28,12 @@ import org.roqmessaging.core.RoQConstantInternal;
 public class XchangeScalingRule implements IAutoScalingRule {
 	//Logger
 	private Logger logger = Logger.getLogger(HostScalingRule.class);
+	//The key ID
+	private long ID = 0;
 	//KPI on the number of message throughput the last minute
-	private int Throughput_Limit = 100;
+	private int Throughput_Limit = 0;
 	//KPI on Time_Spend, can be used for rampup of xchange nodes
-	private int Time_Limit = 100;
+	private float Time_Limit = 0;
 	
 	/**
 	 * @see org.roqmessaging.management.config.scaling.IAutoScalingRule#isOverLoaded(java.util.HashMap)
@@ -47,6 +49,20 @@ public class XchangeScalingRule implements IAutoScalingRule {
 		}
 		return false;
 	}
+	
+
+	/**
+	 * Constructor
+	 * @param throughput_Limit the max event limit at an exchange
+	 * @param time_Limit the time limit
+	 */
+	public XchangeScalingRule(int throughput_Limit, float time_Limit) {
+		super();
+		Throughput_Limit = throughput_Limit;
+		Time_Limit = time_Limit;
+	}
+
+
 
 	/**
 	 * @return the event_Limit
@@ -65,15 +81,29 @@ public class XchangeScalingRule implements IAutoScalingRule {
 	/**
 	 * @return the time_Limit
 	 */
-	public int getTime_Limit() {
+	public float getTime_Limit() {
 		return Time_Limit;
 	}
 
 	/**
 	 * @param time_Limit the time_Limit to set
 	 */
-	public void setTime_Limit(int time_Limit) {
+	public void setTime_Limit(float time_Limit) {
 		Time_Limit = time_Limit;
+	}
+
+	/**
+	 * @see org.roqmessaging.management.config.scaling.IAutoScalingRule#getID()
+	 */
+	public long getID() {
+		return this.ID;
+	}
+
+	/**
+	 * @param iD the iD to set
+	 */
+	public void setID(long iD) {
+		ID = iD;
 	}
 
 }

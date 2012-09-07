@@ -27,6 +27,8 @@ import org.roqmessaging.core.RoQConstantInternal;
  */
 public class LogicalQScalingRule implements IAutoScalingRule {
 	private Logger log = Logger.getLogger(LogicalQScalingRule.class);
+	//The key ID
+	private long ID = 0;
 	//Defines the max number of producer per exchange limit
 	private int producerPerXchangeLimit=100;
 	//Defines the max throughput per exchange limit
@@ -111,6 +113,22 @@ public class LogicalQScalingRule implements IAutoScalingRule {
 	 */
 	public void setThrougputNumber(int througputNumber) {
 		this.througputPerXchangeLimit = througputNumber;
+	}
+
+
+	/**
+	 * @see org.roqmessaging.management.config.scaling.IAutoScalingRule#getID()
+	 */
+	public long getID() {
+		return this.ID;
+	}
+
+
+	/**
+	 * @param iD the iD to set
+	 */
+	public void setID(long iD) {
+		ID = iD;
 	}
 
 }
