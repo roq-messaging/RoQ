@@ -158,7 +158,7 @@ public class MngtServerStorage {
 			statement.executeUpdate("drop table if exists Configuration");
 			statement.executeUpdate("drop table if exists Queues");
 			statement.executeUpdate("drop table if exists AS_Host_Rules");
-			statement.executeUpdate("drop table if exists AS_Xchange_Rule");
+			statement.executeUpdate("drop table if exists AS_Xchange_Rules");
 			statement.executeUpdate("drop table if exists AS_LogicalQueue_Rules");
 			statement.close();
 			//Re-build schema
@@ -471,6 +471,23 @@ public class MngtServerStorage {
 		}
 		if (rule instanceof HostScalingRule) {
 			ruleManager.addHostRule(connection.createStatement(),  (HostScalingRule) rule);
+		}
+	}
+	
+	/**
+	 * Remove the auto scaling rule.
+	 * @param rule the auto scaling rule to add.
+	 * @throws SQLException if an exception occurred when removing the record
+	 */
+	public void removeAutoScalingRule(IAutoScalingRule rule) throws SQLException{
+		if (rule instanceof XchangeScalingRule) {
+			ruleManager.removeXChangeRule(connection.createStatement(), rule.getID());
+		}
+		if (rule instanceof LogicalQScalingRule) {
+			ruleManager.removeQRule(connection.createStatement(), rule.getID());
+		}
+		if (rule instanceof HostScalingRule) {
+			ruleManager.removeHostRule(connection.createStatement(), rule.getID());
 		}
 	}
 	

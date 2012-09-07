@@ -21,12 +21,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import junit.framework.Assert;
 
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
+import org.roqmessaging.management.config.scaling.IAutoScalingRule;
 import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
 import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.server.MngtServerStorage;
@@ -82,7 +84,16 @@ public class TestMngtStorageCreateTables {
 			facade.addAutoScalingRule(new HostScalingRule(50, 40));
 			facade.addAutoScalingRule(new LogicalQScalingRule(10000, 0));
 			facade.addAutoScalingRule(new XchangeScalingRule(10000, 0));
-			Assert.assertEquals(3, facade.getAllAutoScalingRules());
+			List<IAutoScalingRule> rules =  facade.getAllAutoScalingRules();
+			Assert.assertEquals(3, rules.size());
+			
+			facade.removeAutoScalingRule(rules.get(0));
+			 rules =  facade.getAllAutoScalingRules();
+			Assert.assertEquals(2, rules.size());
+			
+			facade.removeAutoScalingRule(rules.get(0));
+			rules =  facade.getAllAutoScalingRules();
+			Assert.assertEquals(1, rules.size());
 
 			// Query example
 			ResultSet rs = statement.executeQuery("select * from Queues");

@@ -44,10 +44,11 @@ public class AutoScalingRuleStorageManager {
 		List<IAutoScalingRule> result = new ArrayList<IAutoScalingRule>();
 		// set timeout to 5 sec.
 		statement.setQueryTimeout(5);
-		ResultSet rs = statement.executeQuery("select Throughput, Time_Spend" +
+		ResultSet rs = statement.executeQuery("select rule_id, Throughput, Time_Spend" +
 		" from AS_Xchange_Rules;");
 		while (rs.next()) {
 			IAutoScalingRule rule = new XchangeScalingRule(rs.getInt("Throughput"), rs.getFloat("Time_Spend"));
+			rule.setID(rs.getInt("rule_id"));
 			logger.debug("Reading rule: "+ rule.toString());
 			result.add(rule);
 		}
@@ -64,10 +65,11 @@ public class AutoScalingRuleStorageManager {
 		List<IAutoScalingRule> result = new ArrayList<IAutoScalingRule>();
 		// set timeout to 5 sec.
 		statement.setQueryTimeout(5);
-		ResultSet rs = statement.executeQuery("select Producer_per_exchange_limit, Throughput_per_exchange_limit" +
+		ResultSet rs = statement.executeQuery("select rule_id, Producer_per_exchange_limit, Throughput_per_exchange_limit" +
 		" from AS_LogicalQueue_Rules;");
 		while (rs.next()) {
 			IAutoScalingRule rule = new LogicalQScalingRule(rs.getInt("Producer_per_exchange_limit"), rs.getInt("Throughput_per_exchange_limit"));
+			rule.setID(rs.getInt("rule_id"));
 			logger.debug("Reading rule: "+ rule.toString());
 			result.add(rule);
 		}
@@ -84,10 +86,11 @@ public class AutoScalingRuleStorageManager {
 		List<IAutoScalingRule> result = new ArrayList<IAutoScalingRule>();
 		// set timeout to 5 sec.
 		statement.setQueryTimeout(5);
-		ResultSet rs = statement.executeQuery("select Producer_per_exchange_limit, Throughput_per_exchange_limit" +
-		" from AS_LogicalQueue_Rules;");
+		ResultSet rs = statement.executeQuery("select rule_id, CPU_Limit, RAM_Limit" +
+		" from AS_Host_Rules;");
 		while (rs.next()) {
 			IAutoScalingRule rule = new HostScalingRule(rs.getInt("CPU_Limit"), rs.getInt("RAM_Limit"));
+			rule.setID(rs.getInt("rule_id"));
 			logger.debug("Reading rule: "+ rule.toString());
 			result.add(rule);
 		}
@@ -113,6 +116,20 @@ public class AutoScalingRuleStorageManager {
 	}
 	
 	/**
+	 * Remove the specified auto scaling rule.
+	 * @param statement the SQL statement from a SQL connection.
+	 * @param ruleID the rule identifying the rule to remove.
+	 * @throws SQLException  in case of SQL error during the removal
+	 */
+	public void removeXChangeRule(Statement statement, long ruleID) throws SQLException{
+		logger.debug("Deleting the rule "+ ruleID);
+		// set timeout to 5 sec.
+		statement.setQueryTimeout(5);
+		statement.executeUpdate("DELETE  from AS_Xchange_Rules where rule_id="+ruleID+";");
+		statement.close();
+	}
+	
+	/**
 	 * Add an autoscaling rule in the management DB. The auto scaling rule is define at the logical Q level.
 	 * @param statement the SQL statement
 	 * @param rule the auto scaling rule
@@ -130,6 +147,20 @@ public class AutoScalingRuleStorageManager {
 	}
 	
 	/**
+	 * Remove the specified auto scaling rule.
+	 * @param statement the SQL statement from a SQL connection.
+	 * @param ruleID the rule identifying the rule to remove.
+	 * @throws SQLException  in case of SQL error during the removal
+	 */
+	public void removeQRule(Statement statement, long ruleID) throws SQLException{
+		logger.debug("Deleting the rule "+ ruleID);
+		// set timeout to 5 sec.
+		statement.setQueryTimeout(5);
+		statement.executeUpdate("DELETE  from AS_LogicalQueue_Rules where rule_id="+ruleID+";");
+		statement.close();
+	}
+	
+	/**
 	 * Add an autoscaling rule in the management DB. The auto scaling rule is define at the Physical host level.
 	 * @param statement the SQL statement
 	 * @param rule the auto scaling rule
@@ -144,6 +175,20 @@ public class AutoScalingRuleStorageManager {
 		} catch (Exception e) {
 			logger.error("Error whil inserting new configuration", e);
 		}
+	}
+	
+	/**
+	 * Remove the specified auto scaling rule.
+	 * @param statement the SQL statement from a SQL connection.
+	 * @param ruleID the rule identifying the rule to remove.
+	 * @throws SQLException  in case of SQL error during the removal
+	 */
+	public void removeHostRule(Statement statement, long ruleID) throws SQLException{
+		logger.debug("Deleting the rule "+ ruleID);
+		// set timeout to 5 sec.
+		statement.setQueryTimeout(5);
+		statement.executeUpdate("DELETE  from AS_Host_Rules where rule_id="+ruleID+";");
+		statement.close();
 	}
 
 }
