@@ -115,6 +115,7 @@ public class MngtServerStorage {
 				//Create Auto-scaling Configuration table
 				String createASConfigTable ="CREATE  TABLE IF NOT EXISTS `AutoScaling_Cfg` ("+
 				"  `idConfig` INTEGER PRIMARY KEY AUTOINCREMENT ,"+
+				 "`Name` VARCHAR(45) NOT NULL UNIQUE ,	 " +
 				" `HostRuleID` INT NULL ,"+
 				" `XchangeRuleID` INT NULL ,"+
 				" `QueueRuleID` INT NULL ,"+
@@ -262,6 +263,51 @@ public class MngtServerStorage {
 			this.lock.unlock();
 		}
 	}
+	
+	/**Creates a rule in the autoscaling config table
+	 * @param name the configuration name
+	 * @param hostRuleRef the reference to the host rule, 0  if it is null
+	 * @param qRuleRef the reference to Q rule,  0  if it is null
+	 * @param xchangeRuleRef the reference to the xchange rule,  0  if it is null
+	 */
+	public void addAutoScalingConfig(String cfgName, int hostRuleRef, int qhostRuleRef, int xchangeRuleRef){
+		try {
+			this.lock.lock();
+			logger.info("Inserting 1 new  autoscaling configuration");
+			logger.info("Inserting " + hostRuleRef + " " + qhostRuleRef + " " + xchangeRuleRef );
+			try {
+				Statement statement = connection.createStatement();
+				// set timeout to 10 sec.
+				statement.setQueryTimeout(10);
+				statement.execute("insert into AutoScaling_Cfg  values(null, '" + 
+				         cfgName+","+
+						(hostRuleRef==0?null:hostRuleRef) + "'," + 
+						(xchangeRuleRef==0?null:xchangeRuleRef) +  ", " + 
+						(qhostRuleRef==0?null:qhostRuleRef)  +
+						")");
+				statement.close();
+			} catch (Exception e) {
+				logger.error("Error while inserting new configuration", e);
+			}
+		} finally {
+			this.lock.unlock();
+		}
+	}
+	
+	/**
+	 * Return the specified configuration or null if it does not exist.
+	 * TODO implment & test  the method
+	 * @param name the configuration name
+	 */
+	public void getAutoScalingCfg(String name){};
+	
+	/**
+	 * remove the specified configuration or null if it does not exist.
+	 * TODO implment & test  the method
+	 * @param name the configuration name
+	 */
+	public void removeAutoScalingScg(String name){};
+	
 
 	/**
 	 * Read all queues definition in DB
