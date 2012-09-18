@@ -281,8 +281,8 @@ public class MngtServerStorage {
 				// set timeout to 10 sec.
 				statement.setQueryTimeout(10);
 				statement.execute("insert into AutoScaling_Cfg  values(null, '" + 
-				         cfgName+","+
-						(hostRuleRef==0?null:hostRuleRef) + "'," + 
+						cfgName + "',"+
+						(hostRuleRef==0?null:hostRuleRef) + "," + 
 						(xchangeRuleRef==0?null:xchangeRuleRef) +  ", " + 
 						(qhostRuleRef==0?null:qhostRuleRef)  +
 						")");
@@ -306,7 +306,7 @@ public class MngtServerStorage {
 		// set timeout to 5 sec.
 		statement.setQueryTimeout(5);
 		ResultSet rs = statement.executeQuery("select Name, HostRuleID, XchangeRuleID, QueueRuleID" + " from AutoScaling_Cfg "
-				+ "where AutoScaling_Cfg.Name="+ name + "';");
+				+ "where Name='"+ name+"';" );
 		if (!rs.next()) {
 			logger.warn("The auto scaling configuration named "+ name +" does not exist in DB.");
 			return null;

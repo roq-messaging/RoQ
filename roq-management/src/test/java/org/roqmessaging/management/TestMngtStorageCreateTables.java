@@ -27,6 +27,7 @@ import junit.framework.Assert;
 
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
 import org.roqmessaging.management.config.scaling.IAutoScalingRule;
 import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
@@ -94,6 +95,21 @@ public class TestMngtStorageCreateTables {
 			facade.removeAutoScalingRule(rules.get(0));
 			rules =  facade.getAllAutoScalingRules();
 			Assert.assertEquals(1, rules.size());
+			
+			//Test the auto scaling config storage
+			facade.addAutoScalingRule(new LogicalQScalingRule(10000, 0));
+			facade.addAutoScalingRule(new XchangeScalingRule(10000, 0));
+			facade.addAutoScalingRule(new LogicalQScalingRule(20000, 0));
+			facade.addAutoScalingRule(new XchangeScalingRule(20000, 0));
+			facade.addAutoScalingRule(new LogicalQScalingRule(30000, 0));
+			facade.addAutoScalingRule(new XchangeScalingRule(30000, 0));
+			facade.addAutoScalingConfig("conf1", 1, 2, 3);//host1, queue 2, xchange 3
+			facade.addAutoScalingConfig("conf2", 1, 1, 3);
+			facade.addAutoScalingConfig("conf3", 0, 0, 3);
+			AutoScalingConfig autoScalingConfig1 = facade.getAutoScalingCfg("conf1");
+			Assert.assertEquals(1, autoScalingConfig1.getHostRule().getID());
+			Assert.assertEquals(2, autoScalingConfig1.getqRule().getID());
+			Assert.assertEquals(3, autoScalingConfig1.getXgRule().getID());
 
 			// Query example
 			ResultSet rs = statement.executeQuery("select * from Queues");

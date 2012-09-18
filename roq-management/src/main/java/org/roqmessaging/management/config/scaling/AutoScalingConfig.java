@@ -26,6 +26,8 @@ public class AutoScalingConfig {
 	private HostScalingRule hostRule = null;
 	private LogicalQScalingRule qRule = null;
 	private XchangeScalingRule xgRule=null;
+	//the configuration name
+	private String name = null;
 	
 	/**
 	 * @param hostRule the rule at the host level
@@ -84,6 +86,20 @@ public class AutoScalingConfig {
 	 */
 	public void setXgRule(XchangeScalingRule xgRule) {
 		this.xgRule = xgRule;
+	}
+
+	/**
+	 * @return the name
+	 */
+	public String getName() {
+		return name;
+	}
+
+	/**
+	 * @param name the name to set
+	 */
+	public void setName(String name) {
+		this.name = name;
 	}
 	
 	
