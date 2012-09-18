@@ -28,6 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.log4j.Logger;
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.HostConfigManager;
+import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
 import org.roqmessaging.management.config.scaling.IAutoScalingRule;
 import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
@@ -296,14 +297,50 @@ public class MngtServerStorage {
 	
 	/**
 	 * Return the specified configuration or null if it does not exist.
-	 * TODO implment & test  the method
+	 * TODO implement & test  the method && return config object.
 	 * @param name the configuration name
+	 * @throws SQLException  in case od SQL issue
 	 */
-	public void getAutoScalingCfg(String name){};
+	public AutoScalingConfig getAutoScalingCfg(String name) throws SQLException{
+		Statement statement = connection.createStatement();
+		// set timeout to 5 sec.
+		statement.setQueryTimeout(5);
+		ResultSet rs = statement.executeQuery("select Name, HostRuleID, XchangeRuleID, QueueRuleID" + " from AutoScaling_Cfg "
+				+ "where AutoScaling_Cfg.Name="+ name + "';");
+		if (!rs.next()) {
+			logger.warn("The auto scaling configuration named "+ name +" does not exist in DB.");
+			return null;
+		} else {
+			//1. Extract the Reference 
+			int hostRID = rs.getInt("HostRuleID");
+			int xchangeRID =   rs.getInt("XchangeRuleID");
+			int qRID =   rs.getInt("QueueRuleID");
+			logger.debug("Getting Autoscaling FK ID" + rs.getString("name") + ": " + 
+					hostRID+", "+
+					xchangeRID+", "+
+					qRID);
+			statement.close();
+			
+			//2. Look for each FK the corresponding rule
+			AutoScalingConfig autoScalingConfig =new AutoScalingConfig();
+			if(hostRID!=0){
+				autoScalingConfig.setHostRule(this.ruleManager.getHostScalingRule( connection.createStatement(),hostRID));
+			}
+			if(xchangeRID!=0){
+				autoScalingConfig.setXgRule(this.ruleManager.getExchangeScalingRule( connection.createStatement(),xchangeRID));
+			}
+			if(qRID!=0){
+				autoScalingConfig.setqRule(this.ruleManager.getQScalingRule( connection.createStatement(),qRID));
+			}
+			return autoScalingConfig;
+				
+		}
+	
+	}
 	
 	/**
 	 * remove the specified configuration or null if it does not exist.
-	 * TODO implment & test  the method
+	 * TODO implement & test  the method
 	 * @param name the configuration name
 	 */
 	public void removeAutoScalingScg(String name){};
