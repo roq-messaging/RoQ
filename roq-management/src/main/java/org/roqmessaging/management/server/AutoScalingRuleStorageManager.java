@@ -63,6 +63,7 @@ public class AutoScalingRuleStorageManager {
 	 * @throws SQLException  in case of SQL error
 	 */
 	public XchangeScalingRule getExchangeScalingRule(Statement statement, int ruleID) throws SQLException{
+		logger.debug("Reading  Xchange Scaling rule with ID ="+ ruleID);
 		// set timeout to 5 sec.
 		statement.setQueryTimeout(5);
 		ResultSet rs = statement.executeQuery("select rule_id, Throughput, Time_Spend" +
@@ -74,6 +75,7 @@ public class AutoScalingRuleStorageManager {
 			statement.close();
 			return rule;
 		}
+		logger.debug("No rule were found with this ID");
 		return null;
 	}
 	
@@ -105,6 +107,7 @@ public class AutoScalingRuleStorageManager {
 	 * @throws SQLException  in case of SQL error
 	 */
 	public LogicalQScalingRule getQScalingRule(Statement statement, int ruleID) throws SQLException{
+		logger.debug("Reading  Q Scaling rule with ID ="+ ruleID);
 		// set timeout to 5 sec.
 		statement.setQueryTimeout(5);
 		ResultSet rs = statement.executeQuery("select rule_id, Producer_per_exchange_limit, Throughput_per_exchange_limit" +
@@ -116,6 +119,7 @@ public class AutoScalingRuleStorageManager {
 			statement.close();
 			return rule;
 		}
+		logger.debug("No rule were found with this ID");
 		return null;
 	}
 	
@@ -147,17 +151,19 @@ public class AutoScalingRuleStorageManager {
 	 * @throws SQLException  in case of SQL error
 	 */
 	public HostScalingRule getHostScalingRule(Statement statement, int ruleID) throws SQLException{
+		logger.debug("Reading  Host Scaling rule with ID ="+ ruleID);
 		// set timeout to 5 sec.
 		statement.setQueryTimeout(5);
 		ResultSet rs = statement.executeQuery("select rule_id, CPU_Limit, RAM_Limit" +
 				" from AS_Host_Rules where rule_id="+ruleID+";");
 		if (rs.next()) {
-			HostScalingRule rule = new HostScalingRule(rs.getInt("Producer_per_exchange_limit"), rs.getInt("Throughput_per_exchange_limit"));
+			HostScalingRule rule = new HostScalingRule(rs.getInt("RAM_Limit"), rs.getInt("CPU_Limit"));
 			rule.setID(rs.getInt("rule_id"));
 			logger.debug("Reading rule: "+ rule.toString());
 			statement.close();
 			return rule;
 		}
+		logger.debug("No rule were found with this ID");
 		return null;
 	}
 	

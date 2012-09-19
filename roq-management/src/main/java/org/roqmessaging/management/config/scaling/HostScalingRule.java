@@ -113,5 +113,14 @@ public class HostScalingRule implements IAutoScalingRule {
 		ID = iD;
 	}
 	
+	/**
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return "Host scaling rule [cpu:"+this.getCPU_Limit() +", ram:"+ this.getRAM_Limit()+"]";
+	}
+	
 
 }
