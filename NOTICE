@@ -23,4 +23,5 @@ the "Université Libre de Bruxelles" (ULB) in Brussels, Belgium.
 This software built upon the ZeroMQ library, developed a.o. by Pieter Hintjens,
 the sqlite-jdbc developed by xerial, 
 the BSON encoder/decoder provided by the mongo-DB driver and developed by Mongo DB, 
+the INFINISPAN data grid from Red Hat (used in the Active standbye configuration of the management server)
 and finally Maven2 for the build and Jenkins for the continous integration.
