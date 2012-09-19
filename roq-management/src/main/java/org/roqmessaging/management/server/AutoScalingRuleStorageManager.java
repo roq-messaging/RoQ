@@ -57,6 +57,29 @@ public class AutoScalingRuleStorageManager {
 	}
 	
 	/**
+	 * @param statement the SQL statement from the DB connexion
+	 * @param ruleID the rule ID in DB
+	 * @return  the exchange auto scaling rules.
+	 * @throws SQLException  in case of SQL error
+	 */
+	public XchangeScalingRule getExchangeScalingRule(Statement statement, int ruleID) throws SQLException{
+		logger.debug("Reading  Xchange Scaling rule with ID ="+ ruleID);
+		// set timeout to 5 sec.
+		statement.setQueryTimeout(5);
+		ResultSet rs = statement.executeQuery("select rule_id, Throughput, Time_Spend" +
+		" from AS_Xchange_Rules where rule_id="+ruleID+";");
+		if (rs.next()) {
+			XchangeScalingRule rule = new XchangeScalingRule(rs.getInt("Throughput"), rs.getFloat("Time_Spend"));
+			rule.setID(rs.getInt("rule_id"));
+			logger.debug("Reading rule: "+ rule.toString());
+			statement.close();
+			return rule;
+		}
+		logger.debug("No rule were found with this ID");
+		return null;
+	}
+	
+	/**
 	 * Get all the scaling rule related to logical queue KPI.
 	 * @return all the queue auto scaling rules.
 	 * @throws SQLException  in case of SQL error
@@ -75,6 +98,29 @@ public class AutoScalingRuleStorageManager {
 		}
 		statement.close();
 		return result;
+	}
+	
+	/**
+	 * @param statement the SQL statement from the DB connexion
+	 * @param ruleID the rule ID in DB
+	 * @return  the logical Q  auto scaling rules.
+	 * @throws SQLException  in case of SQL error
+	 */
+	public LogicalQScalingRule getQScalingRule(Statement statement, int ruleID) throws SQLException{
+		logger.debug("Reading  Q Scaling rule with ID ="+ ruleID);
+		// set timeout to 5 sec.
+		statement.setQueryTimeout(5);
+		ResultSet rs = statement.executeQuery("select rule_id, Producer_per_exchange_limit, Throughput_per_exchange_limit" +
+				" from AS_LogicalQueue_Rules where rule_id="+ruleID+";");
+		if (rs.next()) {
+			LogicalQScalingRule rule = new LogicalQScalingRule(rs.getInt("Producer_per_exchange_limit"), rs.getInt("Throughput_per_exchange_limit"));
+			rule.setID(rs.getInt("rule_id"));
+			logger.debug("Reading rule: "+ rule.toString());
+			statement.close();
+			return rule;
+		}
+		logger.debug("No rule were found with this ID");
+		return null;
 	}
 	
 	/**
@@ -97,6 +143,29 @@ public class AutoScalingRuleStorageManager {
 		statement.close();
 		return result;
 	}	
+	
+	/**
+	 * @param statement the SQL statement from the DB connexion
+	 * @param ruleID the rule ID in DB
+	 * @return  the  Host auto scaling rules.
+	 * @throws SQLException  in case of SQL error
+	 */
+	public HostScalingRule getHostScalingRule(Statement statement, int ruleID) throws SQLException{
+		logger.debug("Reading  Host Scaling rule with ID ="+ ruleID);
+		// set timeout to 5 sec.
+		statement.setQueryTimeout(5);
+		ResultSet rs = statement.executeQuery("select rule_id, CPU_Limit, RAM_Limit" +
+				" from AS_Host_Rules where rule_id="+ruleID+";");
+		if (rs.next()) {
+			HostScalingRule rule = new HostScalingRule(rs.getInt("RAM_Limit"), rs.getInt("CPU_Limit"));
+			rule.setID(rs.getInt("rule_id"));
+			logger.debug("Reading rule: "+ rule.toString());
+			statement.close();
+			return rule;
+		}
+		logger.debug("No rule were found with this ID");
+		return null;
+	}
 	
 	/**
 	 * Add an autoscaling rule in the management DB.

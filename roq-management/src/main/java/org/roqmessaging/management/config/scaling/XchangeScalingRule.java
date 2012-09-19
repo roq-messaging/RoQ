@@ -105,5 +105,13 @@ public class XchangeScalingRule implements IAutoScalingRule {
 	public void setID(long iD) {
 		ID = iD;
 	}
+	
+	/**
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "Exchange scaling rule ["+ this.getID()+", "+ this.getEvent_Limit()+", "+ this.Time_Limit+"]";
+	}
 
 }

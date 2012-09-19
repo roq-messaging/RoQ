@@ -43,7 +43,6 @@ public class LogicalQScalingRule implements IAutoScalingRule {
 		super();
 		this.producerPerXchangeLimit = producerPerXchangeLimit;
 		this.througputPerXchangeLimit = througputPerXchangeLimit;
-		log.debug("Adding Logical Q rule "+ this.toString());
 	}
 
 

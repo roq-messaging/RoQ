@@ -27,6 +27,7 @@ import junit.framework.Assert;
 
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
 import org.roqmessaging.management.config.scaling.IAutoScalingRule;
 import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
@@ -76,10 +77,6 @@ public class TestMngtStorageCreateTables {
 			facade.addConfiguration("Configuration1", 100000, 2000);
 			facade.addConfiguration("Configuration2", 5000, 2000);
 			
-			//TODO AUTO-SCALING add auto scaling config to configuration
-			facade.addQueueConfiguration("Queue1", 1, 2, true, 0);
-			facade.addQueueConfiguration("Queue2", 2, 2, false,0);
-			
 			//Test the auto scaling rule storage
 			facade.addAutoScalingRule(new HostScalingRule(50, 40));
 			facade.addAutoScalingRule(new LogicalQScalingRule(10000, 0));
@@ -94,7 +91,27 @@ public class TestMngtStorageCreateTables {
 			facade.removeAutoScalingRule(rules.get(0));
 			rules =  facade.getAllAutoScalingRules();
 			Assert.assertEquals(1, rules.size());
-
+			
+			//Test the auto scaling config storage
+			logger.info("Testing auto scaling storage");
+			facade.addAutoScalingRule(new LogicalQScalingRule(10000, 0));
+			facade.addAutoScalingRule(new XchangeScalingRule(10000, 0));
+			facade.addAutoScalingRule(new LogicalQScalingRule(20000, 0));
+			facade.addAutoScalingRule(new XchangeScalingRule(20000, 0));
+			facade.addAutoScalingRule(new LogicalQScalingRule(30000, 0));
+			facade.addAutoScalingRule(new XchangeScalingRule(30000, 0));
+			facade.addAutoScalingConfig("conf1", 1, 2, 3);//host1, queue 2, xchange 3
+			facade.addAutoScalingConfig("conf2", 1, 1, 3);
+			facade.addAutoScalingConfig("conf3", 0, 0, 3);
+			AutoScalingConfig autoScalingConfig1 = facade.getAutoScalingCfg("conf1");
+			Assert.assertEquals(1, autoScalingConfig1.getHostRule().getID());
+			Assert.assertEquals(2, autoScalingConfig1.getqRule().getID());
+			Assert.assertEquals(3, autoScalingConfig1.getXgRule().getID());
+			
+			//TODO AUTO-SCALING add auto scaling config to configuration
+			facade.addQueueConfiguration("Queue1", 1, 2, true, "conf1");
+			facade.addQueueConfiguration("Queue2", 2, 2, false,"conf2");
+			
 			// Query example
 			ResultSet rs = statement.executeQuery("select * from Queues");
 			while (rs.next()) {
@@ -130,8 +147,7 @@ public class TestMngtStorageCreateTables {
 				logger.debug("name = " + rs.getString("name"));
 			}
 		} catch (SQLException e) {
-			// if the error message is "out of memory",
-			// it probably means no database file is found
+			logger.error("Error during storage test", e);
 			System.err.println(e.getMessage());
 		} finally {
 			try {
@@ -162,6 +178,7 @@ public class TestMngtStorageCreateTables {
 		QueueManagementState q2State = facade.getQueue("Queue2");
 		Assert.assertNotNull(q2State);
 		Assert.assertEquals(true, q2State.isRunning());
+		Assert.assertEquals("conf2", q2State.getAutoScalingCfgRef());
 		// Check whether the Queue3 has been added
 		QueueManagementState q3State = facade.getQueue("Queue3");
 		Assert.assertNotNull(q3State);

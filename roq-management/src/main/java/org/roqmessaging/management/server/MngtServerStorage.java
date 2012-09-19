@@ -28,6 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.log4j.Logger;
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.HostConfigManager;
+import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
 import org.roqmessaging.management.config.scaling.IAutoScalingRule;
 import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
@@ -115,6 +116,7 @@ public class MngtServerStorage {
 				//Create Auto-scaling Configuration table
 				String createASConfigTable ="CREATE  TABLE IF NOT EXISTS `AutoScaling_Cfg` ("+
 				"  `idConfig` INTEGER PRIMARY KEY AUTOINCREMENT ,"+
+				 "`Name` VARCHAR(45) NOT NULL UNIQUE ,	 " +
 				" `HostRuleID` INT NULL ,"+
 				" `XchangeRuleID` INT NULL ,"+
 				" `QueueRuleID` INT NULL ,"+
@@ -131,10 +133,10 @@ public class MngtServerStorage {
 					    "`MainhostRef`  INT NOT NULL, " + 
 						"`ConfigRef`  INT NOT NULL,  " + 
 					    "`State` INT NOT NULL,"+
-					    "`autoscalingCfg` INT NULL,"+
+					    "`autoscalingCfg` VARCHAR(45) NULL,"+
 						"  FOREIGN KEY(`MainhostRef`) REFERENCES `Hosts` (idHosts),"+
 					    " FOREIGN KEY(`ConfigRef`) REFERENCES `Configuration` (idConfiguration)," +
-					    " FOREIGN KEY(`autoscalingCfg`) REFERENCES `AutoScaling_Cfg` (idConfig)" +
+					    " FOREIGN KEY(`autoscalingCfg`) REFERENCES `AutoScaling_Cfg` (Name)" +
 						")");
 				logger.info("DB Created and initiated.");
 				statement.close();
@@ -160,6 +162,7 @@ public class MngtServerStorage {
 			statement.executeUpdate("drop table if exists AS_Host_Rules");
 			statement.executeUpdate("drop table if exists AS_Xchange_Rules");
 			statement.executeUpdate("drop table if exists AS_LogicalQueue_Rules");
+			statement.executeUpdate("drop table if exists AutoScaling_Cfg");
 			statement.close();
 			//Re-build schema
 			initSchema();
@@ -236,9 +239,9 @@ public class MngtServerStorage {
 	 *            the configuration reference (FK)
 	 * @param state
 	 *            define whether the queue is running or not
-	 *  @param autoScalingRef the autoscaling configuration reference
+	 *  @param autoScalingConfigName the autoscaling configuration reference
 	 */
-	public void addQueueConfiguration(String name, int hostRef, int configRef, boolean state, int autoScalingRef) {
+	public void addQueueConfiguration(String name, int hostRef, int configRef, boolean state, String autoScalingConfigName) {
 		try {
 			this.lock.lock();
 			logger.info("Inserting 1 new logical Q configuration");
@@ -251,8 +254,8 @@ public class MngtServerStorage {
 						name + "'," + 
 						hostRef + ", " + 
 						configRef + ", " +
-						(state ? 1 : 0) +","+ 
-						(autoScalingRef==0?null:autoScalingRef)+
+						(state ? 1 : 0) +", '"+ 
+						 autoScalingConfigName+ "'" + 
 						")");
 				statement.close();
 			} catch (Exception e) {
@@ -262,6 +265,88 @@ public class MngtServerStorage {
 			this.lock.unlock();
 		}
 	}
+	
+	/**Creates a rule in the autoscaling config table
+	 * @param name the configuration name
+	 * @param hostRuleRef the reference to the host rule, 0  if it is null
+	 * @param qRuleRef the reference to Q rule,  0  if it is null
+	 * @param xchangeRuleRef the reference to the xchange rule,  0  if it is null
+	 */
+	public void addAutoScalingConfig(String cfgName, int hostRuleRef, int qhostRuleRef, int xchangeRuleRef){
+		try {
+			this.lock.lock();
+			logger.info("Inserting 1 new  autoscaling configuration");
+			logger.info("Inserting " + hostRuleRef + " " + qhostRuleRef + " " + xchangeRuleRef );
+			try {
+				Statement statement = connection.createStatement();
+				// set timeout to 10 sec.
+				statement.setQueryTimeout(10);
+				statement.execute("insert into AutoScaling_Cfg  values(null, '" + 
+						cfgName + "',"+
+						(hostRuleRef==0?null:hostRuleRef) + "," + 
+						(xchangeRuleRef==0?null:xchangeRuleRef) +  ", " + 
+						(qhostRuleRef==0?null:qhostRuleRef)  +
+						")");
+				statement.close();
+			} catch (Exception e) {
+				logger.error("Error while inserting new configuration", e);
+			}
+		} finally {
+			this.lock.unlock();
+		}
+	}
+	
+	/**
+	 * Return the specified configuration or null if it does not exist.
+	 * TODO implement & test  the method && return config object.
+	 * @param name the configuration name
+	 * @throws SQLException  in case od SQL issue
+	 */
+	public AutoScalingConfig getAutoScalingCfg(String name) throws SQLException{
+		Statement statement = connection.createStatement();
+		// set timeout to 5 sec.
+		statement.setQueryTimeout(5);
+		ResultSet rs = statement.executeQuery("select Name, HostRuleID, XchangeRuleID, QueueRuleID" + " from AutoScaling_Cfg "
+				+ "where Name='"+ name+"';" );
+		if (!rs.next()) {
+			logger.warn("The auto scaling configuration named "+ name +" does not exist in DB.");
+			return null;
+		} else {
+			//1. Extract the Reference 
+			int hostRID = rs.getInt("HostRuleID");
+			int xchangeRID =   rs.getInt("XchangeRuleID");
+			int qRID =   rs.getInt("QueueRuleID");
+			logger.debug("Getting Autoscaling FK ID " + rs.getString("name") + ": " + 
+					hostRID+", "+
+					xchangeRID+", "+
+					qRID);
+			statement.close();
+			
+			//2. Look for each FK the corresponding rule
+			AutoScalingConfig autoScalingConfig =new AutoScalingConfig();
+			autoScalingConfig.setName(name);
+			if(hostRID!=0){
+				autoScalingConfig.setHostRule(this.ruleManager.getHostScalingRule( connection.createStatement(),hostRID));
+			}
+			if(xchangeRID!=0){
+				autoScalingConfig.setXgRule(this.ruleManager.getExchangeScalingRule( connection.createStatement(),xchangeRID));
+			}
+			if(qRID!=0){
+				autoScalingConfig.setqRule(this.ruleManager.getQScalingRule( connection.createStatement(),qRID));
+			}
+			return autoScalingConfig;
+				
+		}
+	
+	}
+	
+	/**
+	 * remove the specified configuration or null if it does not exist.
+	 * TODO implement & test  the method
+	 * @param name the configuration name
+	 */
+	public void removeAutoScalingScg(String name){};
+	
 
 	/**
 	 * Read all queues definition in DB
@@ -279,7 +364,7 @@ public class MngtServerStorage {
 				+ "where Queues.MainhostRef=Hosts.idHosts;");
 		while (rs.next()) {
 			QueueManagementState state = new QueueManagementState(rs.getString("name"), rs.getString("IP_Address"),
-					rs.getBoolean("State"), rs.getInt("autoscalingCfg"));
+					rs.getBoolean("State"), rs.getString("autoscalingCfg"));
 			logger.debug("name = " + state.getName() + ", State = " + state.isRunning() + " IP = " + state.getHost() +" AS config: "+rs.getInt("autoscalingCfg"));
 			result.add(state);
 		}
@@ -288,6 +373,7 @@ public class MngtServerStorage {
 	}
 
 	/**
+	 * TODO update the autoscaling config as well
 	 * @param newConfig
 	 *            the updated configuration recieved each minute
 	 * @throws SQLException
@@ -366,7 +452,7 @@ public class MngtServerStorage {
 					rowID = addRoQHost(newConfig.get(qName));
 				}
 				// Add the queue with default configuration
-				this.addQueueConfiguration(qName, rowID, 1, true, 0);
+				this.addQueueConfiguration(qName, rowID, 1, true, null);
 			}
 		} catch (Exception e) {
 			logger.error("Error while updating configuration", e);
@@ -395,7 +481,7 @@ public class MngtServerStorage {
 			logger.debug("Getting Q " + rs.getString("name") + ": " + rs.getString("IP_Address")
 					+ " "+(rs.getInt("State") == 0 ? false : true) +" AS config  "+rs.getInt("autoscalingCfg"));
 			QueueManagementState result = new QueueManagementState(rs.getString("name"), rs.getString("IP_Address"),
-					rs.getInt("State") == 0 ? false : true, rs.getInt("autoscalingCfg"));
+					rs.getInt("State") == 0 ? false : true, rs.getString("autoscalingCfg"));
 			statement.close();
 			return result;
 		}
