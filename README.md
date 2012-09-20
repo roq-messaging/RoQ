@@ -78,6 +78,18 @@ cd /home/username/RoQ
 mvn install
 ```
 
+To launch a release or the RoQ nightly build just check out the last build archive on http://dev.roq-messaging.org/ci/
+```sh
+cd roq/bin
+./startGCM.sh
+```
+
+In other terminal you can start the hosts deamons:
+```sh
+cd roq/bin
+./startHost.sh
+```
+
 To test the code locally on 1 VM, we have created a simple launcher which instantiates the complete RoQ stack. To start this class just open a terminal:
 
 ```
