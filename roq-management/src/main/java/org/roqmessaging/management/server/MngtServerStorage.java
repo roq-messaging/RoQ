@@ -373,7 +373,6 @@ public class MngtServerStorage {
 	}
 
 	/**
-	 * TODO update the autoscaling config as well
 	 * @param newConfig
 	 *            the updated configuration recieved each minute
 	 * @throws SQLException
