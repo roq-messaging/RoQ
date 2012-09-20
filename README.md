@@ -2,6 +2,7 @@ RoQ Messaging
 =============
 
 RoQ, Elastically scalable MOM.
+Release-0.2 "Valerie"
 
 Building & installing
 ---------------------
