@@ -248,7 +248,7 @@ public interface RoQConstant {
 	 *   COMMENT, "The reason why it fails". This comment is not present in case of success.
 	 *   This request will start the queue, i.e. creating the queue at the Global configuration server only.
 	 */
-	public static int BSON_CONFIG_START_QUEUE = 2003;
+	public static int BSON_CONFIG_START_QUEUE = 2005;
 	
 	/**
 	 *  Request command that can be sent to the Configuration server
@@ -259,6 +259,16 @@ public interface RoQConstant {
 	 *   This request will start an exchange on the specified host for the specified Q..
 	 */
 	public static int BSON_CONFIG_CREATE_XCHANGE = 2004;
+	
+	/**
+	 *  Request command that can be sent to the Configuration server
+	 *   Request: "2005, QName, Host"
+	 *   Answer: 
+	 *   RESULT, OK
+	 *   COMMENT, "The reason why it fails". This comment is not present in case of success.
+	 *   This request will start the queue, i.e. creating the queue at the Global configuration server only.
+	 */
+	public static int BSON_CONFIG_CREATE_QUEUE = 2003;
 	
 	/**
 	 * Used by the management server to broadcast configuration.

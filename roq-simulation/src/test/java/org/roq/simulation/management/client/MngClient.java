@@ -64,7 +64,7 @@ public class MngClient {
 			HashMap<String, String> fields = new HashMap<String, String>();
 			fields.put("QName", qName);
 			fields.put("Host", RoQUtils.getInstance().getLocalIP());
-			byte[] encoded = serializer.serialiazeConfigRequest(RoQConstant.BSON_CONFIG_START_QUEUE, fields);
+			byte[] encoded = serializer.serialiazeConfigRequest(RoQConstant.BSON_CONFIG_CREATE_QUEUE, fields);
 			requestSocket.send(encoded, 0);
 			byte[] bres = requestSocket.recv(0);
 			BSONObject answer = BSON.decode(bres);
@@ -119,6 +119,29 @@ public class MngClient {
 		} catch (Exception e) {
 			logger.error("Error when testing client ", e);
 		}
+	}
+		/**
+		 * Test the start method on the queue
+		 * @param qName the queue under test
+		 */
+		public void testStart(String qName) {
+			try {
+				logger.debug("Start Queue Test");
+				IRoQSerializer serializer = new RoQBSONSerializer();
+				// 1. Init the request
+				HashMap<String, String> fields = new HashMap<String, String>();
+				fields.put("QName", qName);
+				// Encode in BSON & send
+				byte[] eStartRqs = serializer.serialiazeConfigRequest(RoQConstant.BSON_CONFIG_START_QUEUE, fields);
+				requestSocket.send(eStartRqs, 0);
+				// Get the result and check
+				byte[] eStartAnswer = requestSocket.recv(0);
+				BSONObject removeAnswer = BSON.decode(eStartAnswer);
+				Assert.assertEquals(RoQConstant.OK, removeAnswer.get("RESULT"));
+				Thread.sleep(4000);
+			} catch (Exception e) {
+				logger.error("Error when testing client ", e);
+			}
 	
 		
 	}
