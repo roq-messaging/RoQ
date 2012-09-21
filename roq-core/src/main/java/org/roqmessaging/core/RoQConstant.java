@@ -242,13 +242,13 @@ public interface RoQConstant {
 	
 	/**
 	 *  Request command that can be sent to the Configuration server
-	 *   Request: "2003, QName, Host"
+	 *   Request: "2005, QName, Host"
 	 *   Answer: 
 	 *   RESULT, OK
 	 *   COMMENT, "The reason why it fails". This comment is not present in case of success.
 	 *   This request will start the queue, i.e. creating the queue at the Global configuration server only.
 	 */
-	public static int BSON_CONFIG_START_QUEUE = 2005;
+	public static int BSON_CONFIG_CREATE_QUEUE = 2003;
 	
 	/**
 	 *  Request command that can be sent to the Configuration server
@@ -260,15 +260,29 @@ public interface RoQConstant {
 	 */
 	public static int BSON_CONFIG_CREATE_XCHANGE = 2004;
 	
+	
 	/**
 	 *  Request command that can be sent to the Configuration server
-	 *   Request: "2005, QName, Host"
+	 *   Request: "2003, QName, Host"
 	 *   Answer: 
 	 *   RESULT, OK
 	 *   COMMENT, "The reason why it fails". This comment is not present in case of success.
 	 *   This request will start the queue, i.e. creating the queue at the Global configuration server only.
 	 */
-	public static int BSON_CONFIG_CREATE_QUEUE = 2003;
+	public static int BSON_CONFIG_START_QUEUE = 2005;
+	
+	
+	/**
+	 *  Request command that can be sent to the Configuration server
+	 *   Request: "2006, QName, Host"
+	 *   Answer: 
+	 *   RESULT, OK
+	 *   COMMENT, "The reason why it fails". This comment is not present in case of success.
+	 *   This request will start the queue, i.e. creating the queue at the Global configuration server only.
+	 */
+	public static int BSON_CONFIG_ADD_AUTOSCALING_RULE = 2006;
+	
+
 	
 	/**
 	 * Used by the management server to broadcast configuration.
@@ -290,6 +304,51 @@ public interface RoQConstant {
 * Used by the Global  management  to answer the get host by QName request.
 	 */
 	public static String BSON_STAT_MONITOR_HOST = "Stat_Monitor_host";
+	
+	/**
+	 * Used by the Global  management  to associate an auto scaling config to a config name.
+	 */
+	public static String BSON_AUTOSCALING_CFG_NAME = "AUTOSCALING_NAME";
+	
+	/**
+	 * Used by the Global  management  to write an auto scaling request.
+	 */
+	public static String BSON_AUTOSCALING_HOST = "AUTOSCALING_HOST";
+	
+	/**
+	 * Used by the Global  management  to write an auto scaling request.
+	 */
+	public static String BSON_AUTOSCALING_HOST_CPU = "AUTOSCALING_HOST_CPU";
+	
+	/**
+	 * Used by the Global  management  to write an auto scaling request.
+	 */
+	public static String BSON_AUTOSCALING_HOST_RAM = "AUTOSCALING_HOST_RAM";
+	
+	/**
+	 * Used by the Global  management  to write an auto scaling request.
+	 */
+	public static String BSON_AUTOSCALING_XCHANGE = "AUTOSCALING_XCHANGE";
+	
+	/**
+	 * Used by the Global  management  to write an auto scaling request.
+	 */
+	public static String BSON_AUTOSCALING_XCHANGE_THR = "AUTOSCALING_XCHANGE_THR";
+	
+	/**
+	 * Used by the Global  management  to write an auto scaling request.
+	 */
+	public static String BSON_AUTOSCALING_QUEUE = "AUTOSCALING_Q";
+	
+	/**
+	 * Used by the Global  management  to write an auto scaling request.
+	 */
+	public static String BSON_AUTOSCALING_Q_PROD_EXCH = "AUTOSCALING_Q_PROD_EXCH";
+	
+	/**
+	 * Used by the Global  management  to write an auto scaling request.
+	 */
+	public static String BSON_AUTOSCALING_Q_THR_EXCH = "AUTOSCALING_THR_PROD_EXCH";
 
 	/**
 	 * ID of the host manager address array maintained in the GCM state
