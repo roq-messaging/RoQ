@@ -38,7 +38,7 @@ public class TestMngtController extends RoQTestCase {
 	private Logger logger = Logger.getLogger(TestMngtController.class);
 	private MngtController mngtController = null;
 
-	@Test
+//	@Test
 	public void test() {
 		try {
 			this.mngtController = this.launcher.getMngtController();
@@ -117,6 +117,12 @@ public class TestMngtController extends RoQTestCase {
 		
 		//2. Stop the queue
 		client.testStop(qName);
+		
+		//3. Stop the queue
+		client.testStart(qName);
+		
+		//4. Remove the queue
+		client.testRemove(qName);
 		
 		
 				

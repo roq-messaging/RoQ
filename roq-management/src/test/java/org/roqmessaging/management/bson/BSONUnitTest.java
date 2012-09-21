@@ -27,6 +27,9 @@ import org.bson.BasicBSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.management.config.scaling.AutoScalingConfig;
+import org.roqmessaging.management.config.scaling.HostScalingRule;
+import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
@@ -206,7 +209,19 @@ public class BSONUnitTest {
 		BSONObject decodedAnswer = BSON.decode(encodedAnswer);
 		Assert.assertEquals("The queue does not exist", decodedAnswer.get("COMMENT"));
 		
-		
+	}
+	
+	@Test
+	public void testBSONScalingRule() throws Exception {
+		AutoScalingConfig config = new AutoScalingConfig(new HostScalingRule(30, 25), 
+				new LogicalQScalingRule(10000, 1000), null);
+		config.setName("Myconfig1");
+		RoQBSONSerializer serializer = new RoQBSONSerializer();
+		byte[] encoded = serializer.serialiazeAutoScalingRequest("queue1", config);
+		AutoScalingConfig configDecoded = serializer.unserializeConfig(encoded);
+		Assert.assertEquals(config.getHostRule().getCPU_Limit(), configDecoded.getHostRule().getCPU_Limit());
+		Assert.assertEquals(config.getqRule().getProducerNumber(), configDecoded.getqRule().getProducerNumber());
+		Assert.assertEquals(config.getqRule().getThrougputNumber(), configDecoded.getqRule().getThrougputNumber());
 		
 	}
 
