@@ -312,6 +312,25 @@ public class MngtController implements Runnable, IStoppable {
 										"ERROR when creating Xchange check logs of the logical queue factory"), 0);
 							}
 							break;
+							
+						case RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE:
+							logger.debug("ADD autoscaling rule request received ...");
+							if (!checkField(request, "QName") ||
+									( (!request.containsField(RoQConstant.BSON_AUTOSCALING_HOST))&&(!request.containsField(RoQConstant.BSON_QUEUES))
+											&&(!request.containsField(RoQConstant.BSON_QUEUES)))) {
+								break;
+							}
+							// 1. Get the host
+							host = (String) request.get("Host");
+							qName = (String) request.get("QName");
+							logger.debug("Create Xchange on queue " + qName + " on " + host);
+							if (this.factory.createExchange(qName, host)) {
+								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK, "SUCCESS"), 0);
+							} else {
+								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+										"ERROR when creating Xchange check logs of the logical queue factory"), 0);
+							}
+							break;
 
 						default:
 							mngtRepSocket.send(
@@ -353,6 +372,7 @@ public class MngtController implements Runnable, IStoppable {
 			return true;
 		}
 	}
+	
 
 	/**
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
