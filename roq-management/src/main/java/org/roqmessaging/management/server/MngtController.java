@@ -320,15 +320,19 @@ public class MngtController implements Runnable, IStoppable {
 											&&(!request.containsField(RoQConstant.BSON_QUEUES)))) {
 								break;
 							}
-							// 1. Get the host
-							host = (String) request.get("Host");
+							// 1. Get the qname
 							qName = (String) request.get("QName");
-							logger.debug("Create Xchange on queue " + qName + " on " + host);
-							if (this.factory.createExchange(qName, host)) {
-								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK, "SUCCESS"), 0);
-							} else {
+							logger.debug("Adding autoscaling configuration for " + qName);
+							//2. Check if the q exist
+							QueueManagementState queueState = this.storage.getQueue(qName);
+							if(queueState == null){
 								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-										"ERROR when creating Xchange check logs of the logical queue factory"), 0);
+										"ERROR when creating autoscaling rule, the queue name does not exist in DB"), 0);
+							}else{
+								//3.1. Create the auto scaling configuration
+								//3.2. Add each auto scaling rule in its table
+								//3.3. Create an auto scaling rule config
+								//3.3. Update the queue to point to this configuration
 							}
 							break;
 
