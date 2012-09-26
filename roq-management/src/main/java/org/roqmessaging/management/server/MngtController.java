@@ -33,6 +33,7 @@ import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Socket;
 
 /**
  * Class MngtController
@@ -183,6 +184,14 @@ public class MngtController implements Runnable, IStoppable {
 				try {
 					// 1. Checking the command ID
 					BSONObject request = BSON.decode(mngtRepSocket.recv(0));
+					if(isMultiPart(mngtRepSocket)){
+						//Send an error message
+						mngtRepSocket
+						.send(serializer
+								.serialiazeConfigAnswer(RoQConstant.FAIL,
+										"ERROR the client used a multi part ZMQ message while only on is required."),
+								0);
+					}
 					if (checkField(request, "CMD")) {
 						// Variables
 						String qName = "?";
@@ -353,6 +362,18 @@ public class MngtController implements Runnable, IStoppable {
 		this.mngtSubSocket.close();
 		this.mngtRepSocket.close();
 		controllerTimer.cancel();
+	}
+
+	/**
+	 * @param socket the socket to check
+	 * @return true if a mutli part is recieved.
+	 */
+	private boolean isMultiPart(Socket socket) {
+		boolean isMulti = false;
+		while (socket.hasReceiveMore() && this.active) {
+			isMulti = true;
+		}
+		return isMulti;
 	}
 
 	/**
