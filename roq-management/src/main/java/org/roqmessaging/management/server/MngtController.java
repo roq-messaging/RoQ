@@ -29,10 +29,15 @@ import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.LogicalQFactory;
+import org.roqmessaging.management.config.scaling.AutoScalingConfig;
+import org.roqmessaging.management.config.scaling.HostScalingRule;
+import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
+import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Socket;
 
 /**
  * Class MngtController
@@ -183,6 +188,14 @@ public class MngtController implements Runnable, IStoppable {
 				try {
 					// 1. Checking the command ID
 					BSONObject request = BSON.decode(mngtRepSocket.recv(0));
+					if(isMultiPart(mngtRepSocket)){
+						//Send an error message
+						mngtRepSocket
+						.send(serializer
+								.serialiazeConfigAnswer(RoQConstant.FAIL,
+										"ERROR the client used a multi part ZMQ message while only on is required."),
+								0);
+					}
 					if (checkField(request, "CMD")) {
 						// Variables
 						String qName = "?";
@@ -312,6 +325,56 @@ public class MngtController implements Runnable, IStoppable {
 										"ERROR when creating Xchange check logs of the logical queue factory"), 0);
 							}
 							break;
+							
+							/*
+							 * Auto scaling configuration requests
+							 */
+							
+						case RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE:
+							logger.debug("ADD autoscaling rule request received ...");
+							if (!checkField(request, "QName") ||
+									( (!request.containsField(RoQConstant.BSON_AUTOSCALING_HOST))&&(!request.containsField(RoQConstant.BSON_QUEUES))
+											&&(!request.containsField(RoQConstant.BSON_QUEUES)))) {
+								break;
+							}
+							// 1. Get the qname
+							qName = (String) request.get("QName");
+							logger.debug("Adding autoscaling configuration for " + qName);
+							//2. Check if the q exist
+							QueueManagementState queueState = this.storage.getQueue(qName);
+							if(queueState == null){
+								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+										"ERROR when creating autoscaling rule, the queue name does not exist in DB"), 0);
+							}else{
+								//For the Host scaling rule
+								AutoScalingConfig config = new AutoScalingConfig();
+								//Decode host rule
+								BSONObject hRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_HOST);
+								if(hRule!=null){
+									config.setHostRule(new HostScalingRule(((Integer)hRule.get(RoQConstant.BSON_AUTOSCALING_HOST_RAM)).intValue(), 
+											((Integer)hRule.get(RoQConstant.BSON_AUTOSCALING_HOST_CPU)).intValue()));
+									logger.debug("Host scaling rule decoded : "+ config.getHostRule().toString());
+								}
+								//Decode Xchange rule
+								BSONObject xRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_XCHANGE);
+								if(xRule!=null){
+									config.setXgRule(new XchangeScalingRule(((Integer)xRule.get(RoQConstant.BSON_AUTOSCALING_XCHANGE_THR)).intValue(), 
+											 0f));
+									logger.debug("Xchange scaling rule : "+ config.getHostRule().toString());
+								}
+								//decode Q rule
+								BSONObject qRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_QUEUE);
+								if(qRule!=null){
+									config.setqRule(new LogicalQScalingRule(((Integer)qRule.get(RoQConstant.BSON_AUTOSCALING_Q_PROD_EXCH)).intValue(), 
+											((Integer)qRule.get(RoQConstant.BSON_AUTOSCALING_Q_THR_EXCH)).intValue()));
+									logger.debug("Host scaling rule : "+ config.getHostRule().toString());
+								}
+								//3.1. Create the auto scaling configuration
+								//3.2. Add each auto scaling rule in its table
+								//3.3. Create an auto scaling rule config
+								//3.3. Update the queue to point to this configuration
+							}
+							break;
 
 						default:
 							mngtRepSocket.send(
@@ -330,6 +393,19 @@ public class MngtController implements Runnable, IStoppable {
 		this.mngtSubSocket.close();
 		this.mngtRepSocket.close();
 		controllerTimer.cancel();
+	}
+
+	/**
+	 * @param socket the socket to check
+	 * @return true if a mutli part is recieved.
+	 */
+	private boolean isMultiPart(Socket socket) {
+		boolean isMulti = false;
+		while (socket.hasReceiveMore() && this.active) {
+			logger.info("WAITING FOR Multi part message ...");
+			isMulti = true;
+		}
+		return isMulti;
 	}
 
 	/**
@@ -353,6 +429,7 @@ public class MngtController implements Runnable, IStoppable {
 			return true;
 		}
 	}
+	
 
 	/**
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()

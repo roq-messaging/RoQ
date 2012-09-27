@@ -80,7 +80,8 @@ public class TestMngtStorageCreateTables {
 			//Test the auto scaling rule storage
 			facade.addAutoScalingRule(new HostScalingRule(50, 40));
 			facade.addAutoScalingRule(new LogicalQScalingRule(10000, 0));
-			facade.addAutoScalingRule(new XchangeScalingRule(10000, 0));
+			int ruleXchange1 =facade.addAutoScalingRule(new XchangeScalingRule(10000, 0));
+			logger.debug("inserted a rule exchange with ID ="+ruleXchange1);
 			List<IAutoScalingRule> rules =  facade.getAllAutoScalingRules();
 			Assert.assertEquals(3, rules.size());
 			
