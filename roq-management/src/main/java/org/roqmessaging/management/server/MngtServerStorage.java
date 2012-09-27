@@ -547,16 +547,24 @@ public class MngtServerStorage {
 	 * @param rule the auto scaling rule to add.
 	 * @throws SQLException if an exception occurred when removing the record
 	 */
-	public void addAutoScalingRule(IAutoScalingRule rule) throws SQLException{
-		if (rule instanceof XchangeScalingRule) {
-			ruleManager.addExchangeRule(connection.createStatement(), (XchangeScalingRule) rule);
+	public int addAutoScalingRule(IAutoScalingRule rule) throws SQLException {
+		try {
+			this.lock.lock();
+			if (rule instanceof XchangeScalingRule) {
+				return ruleManager.addExchangeRule(connection.createStatement(), (XchangeScalingRule) rule);
+			}
+			if (rule instanceof LogicalQScalingRule) {
+				return ruleManager.addQueueRule(connection.createStatement(), (LogicalQScalingRule) rule);
+			}
+			if (rule instanceof HostScalingRule) {
+				return ruleManager.addHostRule(connection.createStatement(), (HostScalingRule) rule);
+			}
+		} catch (Exception e) {
+			logger.error("Error while creating autoscaling rule in db", e);
+		} finally {
+			this.lock.unlock();
 		}
-		if (rule instanceof LogicalQScalingRule) {
-			ruleManager.addQueueRule(connection.createStatement(), (LogicalQScalingRule) rule);
-		}
-		if (rule instanceof HostScalingRule) {
-			ruleManager.addHostRule(connection.createStatement(),  (HostScalingRule) rule);
-		}
+		return -1;
 	}
 	
 	/**
@@ -587,5 +595,5 @@ public class MngtServerStorage {
 		rules.addAll(ruleManager.getAllHostScalingRule(connection.createStatement()));
 		return rules;
 	}
-
+	
 }

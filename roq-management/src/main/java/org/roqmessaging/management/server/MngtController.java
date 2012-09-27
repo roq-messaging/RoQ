@@ -29,6 +29,10 @@ import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.LogicalQFactory;
+import org.roqmessaging.management.config.scaling.AutoScalingConfig;
+import org.roqmessaging.management.config.scaling.HostScalingRule;
+import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
+import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
@@ -322,6 +326,10 @@ public class MngtController implements Runnable, IStoppable {
 							}
 							break;
 							
+							/*
+							 * Auto scaling configuration requests
+							 */
+							
 						case RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE:
 							logger.debug("ADD autoscaling rule request received ...");
 							if (!checkField(request, "QName") ||
@@ -338,6 +346,29 @@ public class MngtController implements Runnable, IStoppable {
 								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
 										"ERROR when creating autoscaling rule, the queue name does not exist in DB"), 0);
 							}else{
+								//For the Host scaling rule
+								AutoScalingConfig config = new AutoScalingConfig();
+								//Decode host rule
+								BSONObject hRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_HOST);
+								if(hRule!=null){
+									config.setHostRule(new HostScalingRule(((Integer)hRule.get(RoQConstant.BSON_AUTOSCALING_HOST_RAM)).intValue(), 
+											((Integer)hRule.get(RoQConstant.BSON_AUTOSCALING_HOST_CPU)).intValue()));
+									logger.debug("Host scaling rule decoded : "+ config.getHostRule().toString());
+								}
+								//Decode Xchange rule
+								BSONObject xRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_XCHANGE);
+								if(xRule!=null){
+									config.setXgRule(new XchangeScalingRule(((Integer)xRule.get(RoQConstant.BSON_AUTOSCALING_XCHANGE_THR)).intValue(), 
+											 0f));
+									logger.debug("Xchange scaling rule : "+ config.getHostRule().toString());
+								}
+								//decode Q rule
+								BSONObject qRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_QUEUE);
+								if(qRule!=null){
+									config.setqRule(new LogicalQScalingRule(((Integer)qRule.get(RoQConstant.BSON_AUTOSCALING_Q_PROD_EXCH)).intValue(), 
+											((Integer)qRule.get(RoQConstant.BSON_AUTOSCALING_Q_THR_EXCH)).intValue()));
+									logger.debug("Host scaling rule : "+ config.getHostRule().toString());
+								}
 								//3.1. Create the auto scaling configuration
 								//3.2. Add each auto scaling rule in its table
 								//3.3. Create an auto scaling rule config
