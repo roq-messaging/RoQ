@@ -371,6 +371,7 @@ public class MngtController implements Runnable, IStoppable {
 	private boolean isMultiPart(Socket socket) {
 		boolean isMulti = false;
 		while (socket.hasReceiveMore() && this.active) {
+			logger.info("WAITING FOR Multi part message ...");
 			isMulti = true;
 		}
 		return isMulti;
