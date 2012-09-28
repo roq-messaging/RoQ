@@ -112,6 +112,8 @@ public class TestMngtStorageCreateTables {
 			//TODO AUTO-SCALING add auto scaling config to configuration
 			facade.addQueueConfiguration("Queue1", 1, 2, true, "conf1");
 			facade.addQueueConfiguration("Queue2", 2, 2, false,"conf2");
+			facade.updateAutoscalingQueueConfig("Queue2", "conf1");
+			facade.updateAutoscalingQueueConfig("Queue1", "conf2");
 			
 			// Query example
 			ResultSet rs = statement.executeQuery("select * from Queues");
@@ -179,7 +181,7 @@ public class TestMngtStorageCreateTables {
 		QueueManagementState q2State = facade.getQueue("Queue2");
 		Assert.assertNotNull(q2State);
 		Assert.assertEquals(true, q2State.isRunning());
-		Assert.assertEquals("conf2", q2State.getAutoScalingCfgRef());
+		Assert.assertEquals("conf1", q2State.getAutoScalingCfgRef());
 		// Check whether the Queue3 has been added
 		QueueManagementState q3State = facade.getQueue("Queue3");
 		Assert.assertNotNull(q3State);
