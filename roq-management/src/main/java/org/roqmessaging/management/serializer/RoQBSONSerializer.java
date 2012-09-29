@@ -104,6 +104,7 @@ public class RoQBSONSerializer implements IRoQSerializer {
 		BSONObject bsonObject = new BasicBSONObject();
 		bsonObject.put("CMD", RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE);
 		bsonObject.put("QName", qName);
+		bsonObject.put(RoQConstant.BSON_AUTOSCALING_CFG_NAME, scalingCfg.getName());
 		if(scalingCfg.getHostRule()!=null){
 			BSONObject hostObject = new BasicBSONObject();
 			hostObject.put(RoQConstant.BSON_AUTOSCALING_HOST_CPU, scalingCfg.getHostRule().getCPU_Limit());
@@ -223,6 +224,7 @@ public class RoQBSONSerializer implements IRoQSerializer {
 		BSONObject answer = new BasicBSONObject();
 		answer.put("RESULT",result);
 		answer.put("COMMENT", comment);
+		logger.debug(answer.toString());
 		return	BSON.encode(answer);
 	}
 

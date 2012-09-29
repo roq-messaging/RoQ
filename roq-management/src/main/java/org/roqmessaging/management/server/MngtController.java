@@ -328,9 +328,7 @@ public class MngtController implements Runnable, IStoppable {
 							
 							/*
 							 * Auto scaling configuration requests
-							 * TODO to be tested from the stat client
 							 */
-							
 						case RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE:
 							logger.debug("ADD autoscaling rule request received ...");
 							if (!checkField(request, "QName") ||
@@ -365,6 +363,7 @@ public class MngtController implements Runnable, IStoppable {
 									config.setHostRule(new HostScalingRule(((Integer)hRule.get(RoQConstant.BSON_AUTOSCALING_HOST_RAM)).intValue(), 
 											((Integer)hRule.get(RoQConstant.BSON_AUTOSCALING_HOST_CPU)).intValue()));
 									logger.debug("Host scaling rule decoded : "+ config.getHostRule().toString());
+									hRuleID = this.storage.addAutoScalingRule(config.getHostRule());
 									if(hRuleID!=-1){
 										config.getHostRule().setID(hRuleID);
 									}else{

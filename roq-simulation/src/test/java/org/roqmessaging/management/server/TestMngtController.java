@@ -25,6 +25,9 @@ import org.roq.simulation.management.client.MngClient;
 import org.roq.simulation.test.RoQTestCase;
 import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.management.config.scaling.AutoScalingConfig;
+import org.roqmessaging.management.config.scaling.HostScalingRule;
+import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.server.state.QueueManagementState;
 import org.zeromq.ZMQ;
 
@@ -89,7 +92,7 @@ public class TestMngtController extends RoQTestCase {
 	 * Test the BSON interface exposed by the management controller
 	 * @throws Exception
 	 */
-	@Test
+//	@Test
 	public void testBsonRequest() throws Exception {
 		ZMQ.Context context = ZMQ.context(1);
 		ZMQ.Socket mngtREQSocket = context.socket(ZMQ.REQ);
@@ -123,9 +126,43 @@ public class TestMngtController extends RoQTestCase {
 		
 		//4. Remove the queue
 		client.testRemove(qName);
-		
-		
 				
+	}
+	
+	/**
+	 * Test the auto scaling configuration creation at the management controller level.
+	 * @throws Exception
+	 */
+	@Test
+	public void testAutoScalingRequest() throws Exception {
+		MngClient client = new MngClient("localhost");
+		//1. Test the queue creation
+		//Phase 2 Test the stop
+		String qName = "testQ2";
+		
+		//1.  Create a queue
+		client.testCreate(qName);
+		
+		//2. Test the auto scaling configuration
+		AutoScalingConfig config = new AutoScalingConfig();
+		config.setName("confTest");
+		HostScalingRule hRule = new HostScalingRule(30, 40);
+		config.setHostRule(hRule);
+		XchangeScalingRule xRule =  new XchangeScalingRule(20000, 0);
+		config.setXgRule(xRule);
+		client.testAutoScaling(qName, config);
+		
+		//TODO test the configuration check by asking back the configuration for testQ2
+		
+		//3. Stop the queue
+		client.testStop(qName);
+		
+		//4. Stop the queue
+		client.testStart(qName);
+		
+		//5. Remove the queue
+		client.testRemove(qName);
+		
 	}
 
 }

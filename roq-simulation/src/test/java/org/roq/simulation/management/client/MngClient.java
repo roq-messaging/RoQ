@@ -23,6 +23,7 @@ import org.bson.BSON;
 import org.bson.BSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.zeromq.ZMQ;
@@ -74,7 +75,7 @@ public class MngClient {
 			logger.error("Error when testing client ", e);
 		}
 	}
-
+	
 	/**
 	 * Test the removal of a queue by the BSON interface.
 	 * @param qName the queue under test
@@ -142,8 +143,26 @@ public class MngClient {
 			} catch (Exception e) {
 				logger.error("Error when testing client ", e);
 			}
-	
-		
 	}
+		/**
+		 * @param qName the queue name on which we are creating the auto scaling configuration
+		 * @param config the configuration for the auto scaling policies.
+		 */
+		public void testAutoScaling(String qName, AutoScalingConfig config) {
+			try {
+				IRoQSerializer serializer = new RoQBSONSerializer();
+				// 1. Launch a create Queue request
+				byte[] encoded = serializer.serialiazeAutoScalingRequest(qName, config);
+				//2. Send the request
+				requestSocket.send(encoded, 0);
+				//3. Check the result
+				byte[] bres = requestSocket.recv(0);
+				BSONObject answer = BSON.decode(bres);
+				Assert.assertEquals(RoQConstant.OK, answer.get("RESULT"));
+				Thread.sleep(4000);
+			} catch (Exception e) {
+				logger.error("Error when testing client ", e);
+			}
+		}
 
 }
