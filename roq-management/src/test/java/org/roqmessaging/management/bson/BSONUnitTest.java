@@ -217,7 +217,7 @@ public class BSONUnitTest {
 				new LogicalQScalingRule(10000, 1000), null);
 		config.setName("Myconfig1");
 		RoQBSONSerializer serializer = new RoQBSONSerializer();
-		byte[] encoded = serializer.serialiazeAutoScalingRequest("queue1", config);
+		byte[] encoded = serializer.serialiazeAutoScalingRequest("queue1", config, RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE);
 		AutoScalingConfig configDecoded = serializer.unserializeConfig(encoded);
 		Assert.assertEquals(config.getHostRule().getCPU_Limit(), configDecoded.getHostRule().getCPU_Limit());
 		Assert.assertEquals(config.getqRule().getProducerNumber(), configDecoded.getqRule().getProducerNumber());

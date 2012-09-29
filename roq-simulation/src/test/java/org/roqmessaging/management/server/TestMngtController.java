@@ -27,6 +27,7 @@ import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
+import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
 import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.server.state.QueueManagementState;
 import org.zeromq.ZMQ;
@@ -41,7 +42,7 @@ public class TestMngtController extends RoQTestCase {
 	private Logger logger = Logger.getLogger(TestMngtController.class);
 	private MngtController mngtController = null;
 
-//	@Test
+	@Test
 	public void test() {
 		try {
 			this.mngtController = this.launcher.getMngtController();
@@ -92,7 +93,7 @@ public class TestMngtController extends RoQTestCase {
 	 * Test the BSON interface exposed by the management controller
 	 * @throws Exception
 	 */
-//	@Test
+	@Test
 	public void testBsonRequest() throws Exception {
 		ZMQ.Context context = ZMQ.context(1);
 		ZMQ.Socket mngtREQSocket = context.socket(ZMQ.REQ);
@@ -150,9 +151,9 @@ public class TestMngtController extends RoQTestCase {
 		config.setHostRule(hRule);
 		XchangeScalingRule xRule =  new XchangeScalingRule(20000, 0);
 		config.setXgRule(xRule);
+		LogicalQScalingRule qRule = new LogicalQScalingRule(10000, 100000);
+		config.setqRule(qRule);
 		client.testAutoScaling(qName, config);
-		
-		//TODO test the configuration check by asking back the configuration for testQ2
 		
 		//3. Stop the queue
 		client.testStop(qName);

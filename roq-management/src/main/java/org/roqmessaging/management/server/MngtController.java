@@ -329,6 +329,33 @@ public class MngtController implements Runnable, IStoppable {
 							/*
 							 * Auto scaling configuration requests
 							 */
+						case  RoQConstant.BSON_CONFIG_GET_AUTOSCALING_RULE:
+							logger.debug("GET autoscaling rule request received ...");
+							if (!checkField(request, "QName"))
+								break;
+							// 1. Get the qname
+							qName = (String) request.get("QName");
+							logger.debug("Getting autoscaling configuration for " + qName);
+							//2. Get the queue management state
+							QueueManagementState queueS = this.storage.getQueue(qName);
+							if(queueS == null){
+								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+										"ERROR when creating autoscaling rule, the queue name does not exist in DB"), 0);
+							}else{
+								//3. If the reference exist get the auto scaling config
+								if(queueS.getAutoScalingCfgRef()!=null){
+									AutoScalingConfig config = this.storage.getAutoScalingCfg(queueS.getAutoScalingCfgRef());
+									if(config!=null){
+										mngtRepSocket.send(this.serializer.serialiazeAutoScalingRequest(qName, config, RoQConstant.BSON_CONFIG_GET_AUTOSCALING_RULE), 0);
+									}else{
+										mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+												"ERROR NO auto scaling rule defined for this queue"), 0);
+									}
+								}
+								queueS=null;
+							}
+							break;
+							
 						case RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE:
 							logger.debug("ADD autoscaling rule request received ...");
 							if (!checkField(request, "QName") ||
