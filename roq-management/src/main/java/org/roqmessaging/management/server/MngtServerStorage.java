@@ -266,6 +266,30 @@ public class MngtServerStorage {
 		}
 	}
 	
+	/**
+	 * @param qName the queue name to update the configuration
+	 * @param autscalingConfigName the auto scaling configuration to point to.
+	 */
+	public void updateAutoscalingQueueConfig(String qName, String autscalingConfigName) {
+		try {
+			this.lock.lock();
+			logger.info("updateing 1 new logical Q configuration with auto scaling configuration name");
+			logger.info("Inserting in  " + qName + " config:" + autscalingConfigName);
+			try {
+				Statement statement = connection.createStatement();
+				// set timeout to 10 sec.
+				statement.setQueryTimeout(10);
+				statement.execute("UPDATE Queues SET autoscalingCfg='"  + autscalingConfigName  +"' where name='"
+						+ qName + "' ;");
+				statement.close();
+			} catch (Exception e) {
+				logger.error("Error while inserting new configuration", e);
+			}
+		} finally {
+			this.lock.unlock();
+		}
+	}
+	
 	/**Creates a rule in the autoscaling config table
 	 * @param name the configuration name
 	 * @param hostRuleRef the reference to the host rule, 0  if it is null

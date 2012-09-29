@@ -329,6 +329,32 @@ public class MngtController implements Runnable, IStoppable {
 							/*
 							 * Auto scaling configuration requests
 							 */
+						case  RoQConstant.BSON_CONFIG_GET_AUTOSCALING_RULE:
+							logger.debug("GET autoscaling rule request received ...");
+							if (!checkField(request, "QName"))
+								break;
+							// 1. Get the qname
+							qName = (String) request.get("QName");
+							logger.debug("Getting autoscaling configuration for " + qName);
+							//2. Get the queue management state
+							QueueManagementState queueS = this.storage.getQueue(qName);
+							if(queueS == null){
+								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+										"ERROR when creating autoscaling rule, the queue name does not exist in DB"), 0);
+							}else{
+								//3. If the reference exist get the auto scaling config
+								if(queueS.getAutoScalingCfgRef()!=null){
+									AutoScalingConfig config = this.storage.getAutoScalingCfg(queueS.getAutoScalingCfgRef());
+									if(config!=null){
+										mngtRepSocket.send(this.serializer.serialiazeAutoScalingRequest(qName, config, RoQConstant.BSON_CONFIG_GET_AUTOSCALING_RULE), 0);
+									}else{
+										mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+												"ERROR NO auto scaling rule defined for this queue"), 0);
+									}
+								}
+								queueS=null;
+							}
+							break;
 							
 						case RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE:
 							logger.debug("ADD autoscaling rule request received ...");
@@ -348,12 +374,30 @@ public class MngtController implements Runnable, IStoppable {
 							}else{
 								//For the Host scaling rule
 								AutoScalingConfig config = new AutoScalingConfig();
+								config.setName((String) request.get(RoQConstant.BSON_AUTOSCALING_CFG_NAME));
+								if(config.getName()==null){
+									mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+											"ERROR when creating autoscaling rule, the configuration name in BSON msg is NULL"), 0);
+									break;
+								}
+								//Init the FK id
+								int qRuleID=-1, xRuleID=-1, hRuleID =-1;
+								
+								//3.1. Decoding all rules and storing them in DB
 								//Decode host rule
 								BSONObject hRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_HOST);
 								if(hRule!=null){
 									config.setHostRule(new HostScalingRule(((Integer)hRule.get(RoQConstant.BSON_AUTOSCALING_HOST_RAM)).intValue(), 
 											((Integer)hRule.get(RoQConstant.BSON_AUTOSCALING_HOST_CPU)).intValue()));
 									logger.debug("Host scaling rule decoded : "+ config.getHostRule().toString());
+									hRuleID = this.storage.addAutoScalingRule(config.getHostRule());
+									if(hRuleID!=-1){
+										config.getHostRule().setID(hRuleID);
+									}else{
+										mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+												"ERROR when creating autoscaling rule in DB - the Row ID has been returned as -1"), 0);
+										break;
+									}
 								}
 								//Decode Xchange rule
 								BSONObject xRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_XCHANGE);
@@ -361,6 +405,14 @@ public class MngtController implements Runnable, IStoppable {
 									config.setXgRule(new XchangeScalingRule(((Integer)xRule.get(RoQConstant.BSON_AUTOSCALING_XCHANGE_THR)).intValue(), 
 											 0f));
 									logger.debug("Xchange scaling rule : "+ config.getHostRule().toString());
+									xRuleID = this.storage.addAutoScalingRule(config.getXgRule());
+									if(xRuleID!=-1){
+										config.getXgRule().setID(xRuleID);
+									}else{
+										mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+												"ERROR when creating autoscaling rule in DB - the Row ID has been returned as -1"), 0);
+										break;
+									}
 								}
 								//decode Q rule
 								BSONObject qRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_QUEUE);
@@ -368,11 +420,26 @@ public class MngtController implements Runnable, IStoppable {
 									config.setqRule(new LogicalQScalingRule(((Integer)qRule.get(RoQConstant.BSON_AUTOSCALING_Q_PROD_EXCH)).intValue(), 
 											((Integer)qRule.get(RoQConstant.BSON_AUTOSCALING_Q_THR_EXCH)).intValue()));
 									logger.debug("Host scaling rule : "+ config.getHostRule().toString());
+									//3.1. Create the auto scaling configuration
+									qRuleID = this.storage.addAutoScalingRule(config.getqRule());
+									if(qRuleID!=-1){
+										config.getqRule().setID(qRuleID);
+									}else{
+										mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+												"ERROR when creating autoscaling rule in DB - the Row ID has been returned as -1"), 0);
+										break;
+									}
 								}
-								//3.1. Create the auto scaling configuration
-								//3.2. Add each auto scaling rule in its table
-								//3.3. Create an auto scaling rule config
-								//3.3. Update the queue to point to this configuration
+								//3.2. Create an auto scaling rule config
+								if((qRuleID!=-1) || (xRuleID!=-1) || (hRuleID!=-1)){
+									this.storage.addAutoScalingConfig(config.getName(), hRuleID==-1?0:hRuleID, qRuleID==-1?0:qRuleID, xRuleID==-1?0:xRuleID);
+									//3.3.  Update the queue to point to this configuration
+									this.storage.updateAutoscalingQueueConfig(qName, config.getName());
+								}else{
+									logger.warn("Huum strange, no rules has been defined for this scaling rule.");
+								}
+								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK,
+										"The autoscaling "+ config.getName()+ " has been created for the Q "+ qName), 0);
 							}
 							break;
 

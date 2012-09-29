@@ -25,6 +25,10 @@ import org.roq.simulation.management.client.MngClient;
 import org.roq.simulation.test.RoQTestCase;
 import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.management.config.scaling.AutoScalingConfig;
+import org.roqmessaging.management.config.scaling.HostScalingRule;
+import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
+import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.server.state.QueueManagementState;
 import org.zeromq.ZMQ;
 
@@ -38,7 +42,7 @@ public class TestMngtController extends RoQTestCase {
 	private Logger logger = Logger.getLogger(TestMngtController.class);
 	private MngtController mngtController = null;
 
-//	@Test
+	@Test
 	public void test() {
 		try {
 			this.mngtController = this.launcher.getMngtController();
@@ -123,9 +127,43 @@ public class TestMngtController extends RoQTestCase {
 		
 		//4. Remove the queue
 		client.testRemove(qName);
-		
-		
 				
+	}
+	
+	/**
+	 * Test the auto scaling configuration creation at the management controller level.
+	 * @throws Exception
+	 */
+	@Test
+	public void testAutoScalingRequest() throws Exception {
+		MngClient client = new MngClient("localhost");
+		//1. Test the queue creation
+		//Phase 2 Test the stop
+		String qName = "testQ2";
+		
+		//1.  Create a queue
+		client.testCreate(qName);
+		
+		//2. Test the auto scaling configuration
+		AutoScalingConfig config = new AutoScalingConfig();
+		config.setName("confTest");
+		HostScalingRule hRule = new HostScalingRule(30, 40);
+		config.setHostRule(hRule);
+		XchangeScalingRule xRule =  new XchangeScalingRule(20000, 0);
+		config.setXgRule(xRule);
+		LogicalQScalingRule qRule = new LogicalQScalingRule(10000, 100000);
+		config.setqRule(qRule);
+		client.testAutoScaling(qName, config);
+		
+		//3. Stop the queue
+		client.testStop(qName);
+		
+		//4. Stop the queue
+		client.testStart(qName);
+		
+		//5. Remove the queue
+		client.testRemove(qName);
+		
 	}
 
 }

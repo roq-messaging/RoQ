@@ -98,12 +98,14 @@ public class RoQBSONSerializer implements IRoQSerializer {
 	 * Serialize the autoscaling configuration
 	 * @param qName the queue name on which the auto scaling configuration will be associated.
 	 * @param scalingCfg the autoscaling configuration notice that the queue name must be set to the auto scaling configuration.
+	 * @param cmd the command to play either RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE or RoQConstant.BSON_CONFIG_GET_AUTOSCALING_RULE
 	 * @return the encoded request in BSON
 	 */
-	public byte[] serialiazeAutoScalingRequest(String qName, AutoScalingConfig scalingCfg ){
+	public byte[] serialiazeAutoScalingRequest(String qName, AutoScalingConfig scalingCfg, int cmd ){
 		BSONObject bsonObject = new BasicBSONObject();
-		bsonObject.put("CMD", RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE);
+		bsonObject.put("CMD",cmd );
 		bsonObject.put("QName", qName);
+		bsonObject.put(RoQConstant.BSON_AUTOSCALING_CFG_NAME, scalingCfg.getName());
 		if(scalingCfg.getHostRule()!=null){
 			BSONObject hostObject = new BasicBSONObject();
 			hostObject.put(RoQConstant.BSON_AUTOSCALING_HOST_CPU, scalingCfg.getHostRule().getCPU_Limit());
@@ -223,6 +225,7 @@ public class RoQBSONSerializer implements IRoQSerializer {
 		BSONObject answer = new BasicBSONObject();
 		answer.put("RESULT",result);
 		answer.put("COMMENT", comment);
+		logger.debug(answer.toString());
 		return	BSON.encode(answer);
 	}
 

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.server.state.QueueManagementState;
 
 /**
@@ -79,5 +80,21 @@ public interface IRoQSerializer {
 	 * @return the serialized byte array
 	 */
 	public byte[] serialiazeConfigAnswer(int result, String comment);
+
+	/**
+	 * Notice that the configuration should not exist yet.
+	 * @param qName the queue name on which we will create the auto scaling configuration
+	 * @param scalingCfg the auto scaling configuration
+	 * @param cmd the command to play either RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE or RoQConstant.BSON_CONFIG_GET_AUTOSCALING_RULE
+	 * @return the encoded auto scaling configuration create request
+	 */
+	public byte[] serialiazeAutoScalingRequest(String qName, AutoScalingConfig scalingCfg, int cmd );
+	
+	/**
+	 * Decode an autoscaling request in BSON
+	 * @param encodedCfg the encoded auto scaling rule
+	 * @return the autoscaling rule model
+	 */
+	public AutoScalingConfig unserializeConfig(byte[] encodedCfg);
 	
 }
