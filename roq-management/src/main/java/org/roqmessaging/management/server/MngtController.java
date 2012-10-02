@@ -455,11 +455,25 @@ public class MngtController implements Runnable, IStoppable {
 			}
 
 		}// END OF THE LOOP
-
+		this.cleanMngtConfig();
 		logger.info("Stopping " + this.getClass().getName() + " cleaning sockets");
 		this.mngtSubSocket.close();
 		this.mngtRepSocket.close();
 		controllerTimer.cancel();
+	}
+	
+
+
+	/**
+	 * Clean the management configuration by removing non persistant information such as the 
+	 * host name that must be dynamic when hosts starts.
+	 */
+	private void cleanMngtConfig() {
+		try {
+			this.storage.removeHosts();
+		} catch (SQLException e) {
+			logger.error("Error when deleting the hosts from configuration",e);
+		}		
 	}
 
 	/**

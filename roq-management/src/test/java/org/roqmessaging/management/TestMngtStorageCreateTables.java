@@ -109,9 +109,8 @@ public class TestMngtStorageCreateTables {
 			Assert.assertEquals(2, autoScalingConfig1.getqRule().getID());
 			Assert.assertEquals(3, autoScalingConfig1.getXgRule().getID());
 			
-			//TODO AUTO-SCALING add auto scaling config to configuration
-			facade.addQueueConfiguration("Queue1", 1, 2, true, "conf1");
-			facade.addQueueConfiguration("Queue2", 2, 2, false,"conf2");
+			facade.addQueueConfiguration("Queue1", "127.0.0.1", 2, true, "conf1");
+			facade.addQueueConfiguration("Queue2", "127.0.0.2", 2, false,"conf2");
 			facade.updateAutoscalingQueueConfig("Queue2", "conf1");
 			facade.updateAutoscalingQueueConfig("Queue1", "conf2");
 			
@@ -120,7 +119,7 @@ public class TestMngtStorageCreateTables {
 			while (rs.next()) {
 				// read the result set
 				logger.debug("name = " + rs.getString("name") + ", id = " + rs.getInt("idQueues") + ", Config = "
-						+ rs.getInt("ConfigRef") + ", State = " + rs.getString("State"));
+						+ rs.getInt("ConfigRef") + ", State = " + rs.getString("State") +", IP Ref: "+rs.getString("MainhostRef"));
 				Assert.assertNotNull(rs.getString("name"));
 				Assert.assertNotNull(rs.getString("State"));
 				Assert.assertNotNull(rs.getInt("ConfigRef"));
@@ -141,13 +140,13 @@ public class TestMngtStorageCreateTables {
 				Assert.assertNotNull(rs.getInt("idConfiguration"));
 			}
 			String name = "Queue2";
-			rs = statement.executeQuery("select name, State, IP_Address" + " from Queues, Hosts "
-					+ "where Queues.MainhostRef=Hosts.idHosts AND name='" + name + "';");
+			rs = statement.executeQuery("select name, State, IP_Address, MainhostRef" + " from Queues, Hosts "
+					+ "where Queues.MainhostRef=Hosts.IP_Address AND name='" + name + "';");
 			logger.debug(("select name, State, IP_Address" + " from Queues, Hosts "
 					+ "where Queues.MainhostRef=Hosts.idHosts AND Queues.name='" + name + "';"));
 			while (rs.next()) {
 				// read the result set
-				logger.debug("name = " + rs.getString("name"));
+				logger.debug("name = " + rs.getString("name")+", IP: "+ rs.getString("MainhostRef"));
 			}
 		} catch (SQLException e) {
 			logger.error("Error during storage test", e);
@@ -173,8 +172,8 @@ public class TestMngtStorageCreateTables {
 		// Test update new configuration
 		// Test 1 the queues 2 has restarted and Queue3 has been added by code
 		HashMap<String, String> newConfig = new HashMap<String, String>();
-		newConfig.put("Queue2", "127.0.1.2");
-		newConfig.put("Queue3", "127.0.1.1");
+		newConfig.put("Queue2", "127.0.0.2");
+		newConfig.put("Queue3", "127.0.0.1");
 		facade.updateConfiguration(newConfig);
 
 		// Check whether the Queue2 is running
@@ -185,7 +184,7 @@ public class TestMngtStorageCreateTables {
 		// Check whether the Queue3 has been added
 		QueueManagementState q3State = facade.getQueue("Queue3");
 		Assert.assertNotNull(q3State);
-		Assert.assertEquals("127.0.1.1", q3State.getHost());
+		Assert.assertEquals("127.0.0.1", q3State.getHost());
 		Assert.assertEquals(true, q3State.isRunning());
 		// Check whether the Queue1 has been set to stop
 		QueueManagementState q1State = facade.getQueue("Queue1");
@@ -206,6 +205,10 @@ public class TestMngtStorageCreateTables {
 		facade.removeQueue("Queue3");
 		ArrayList<QueueManagementState> queues = facade.getQueues();
 		Assert.assertEquals(1, queues.size());
+		//rest remove
+		facade.removeHosts();
+		//Check get hosts
+		Assert.assertEquals(0, facade.getHosts().size());
 	}
 
 }
