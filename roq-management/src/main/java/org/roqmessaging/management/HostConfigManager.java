@@ -196,9 +196,27 @@ public class HostConfigManager implements Runnable, IStoppable {
 				}
 			}
 		}
+		unregisterHostFromConfig();
 		this.clientReqSocket.close();
 		this.globalConfigSocket.close();
 		logger.info("Closing the client & global config sockets.");
+	}
+
+	/**
+	 * Unregister the host from the configuration management when shutdown.
+	 */
+	private void unregisterHostFromConfig() {
+		logger.info("UN-Registration process started");
+		if(useNif)Assert.assertNotNull(this.properties.getNetworkInterface());
+		this.globalConfigSocket.send((new Integer(RoQConstant.CONFIG_REMOVE_HOST).toString()+"," +
+				(!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()))).getBytes(),0);
+		String   info[] = new String (this.globalConfigSocket.recv(0)).split(",");
+		int infoCode = Integer.parseInt(info[0]);
+		logger.debug("Start analysing info code = "+ infoCode);
+		if(infoCode != RoQConstant.OK){
+			throw new IllegalStateException("The global config manager cannot register us ..");
+		}
+		logger.info("UN-Registration process sucessfull");
 	}
 
 	/**

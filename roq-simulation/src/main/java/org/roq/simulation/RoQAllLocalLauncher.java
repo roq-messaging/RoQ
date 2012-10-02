@@ -66,8 +66,9 @@ public class RoQAllLocalLauncher {
 	 * @throws java.lang.Exception
 	 */
 	public void tearDown() throws Exception {
-		this.configurationManager.getShutDownMonitor().shutDown();
 		this.hostConfigManager.getShutDownMonitor().shutDown();
+		Thread.sleep(2000);
+		this.configurationManager.getShutDownMonitor().shutDown();
 		Thread.sleep(4000);
 	}
 

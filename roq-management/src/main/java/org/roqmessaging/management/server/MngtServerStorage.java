@@ -130,11 +130,11 @@ public class MngtServerStorage {
 				statement.executeUpdate("CREATE  TABLE IF NOT EXISTS `Queues` "
 						+ "( `idQueues`INTEGER PRIMARY KEY AUTOINCREMENT ," + 
 						" `Name` VARCHAR(45) NOT NULL UNIQUE ,  "+
-					    "`MainhostRef`  INT NOT NULL, " + 
+					    "`MainhostRef`  VARCHAR(45)  NOT NULL, " + 
 						"`ConfigRef`  INT NOT NULL,  " + 
 					    "`State` INT NOT NULL,"+
 					    "`autoscalingCfg` VARCHAR(45) NULL,"+
-						"  FOREIGN KEY(`MainhostRef`) REFERENCES `Hosts` (idHosts),"+
+						"  FOREIGN KEY(`MainhostRef`) REFERENCES `Hosts` (IP_Address),"+
 					    " FOREIGN KEY(`ConfigRef`) REFERENCES `Configuration` (idConfiguration)," +
 					    " FOREIGN KEY(`autoscalingCfg`) REFERENCES `AutoScaling_Cfg` (Name)" +
 						")");
@@ -177,7 +177,7 @@ public class MngtServerStorage {
 	 *            {@linkplain HostConfigManager} is running.
 	 * @return the row id of the inserted tuple
 	 */
-	public int addRoQHost(String serverAddress) {
+	public String addRoQHost(String serverAddress) {
 		try {
 			this.lock.lock();
 			logger.info("Inserting 1 new host in configuration " + serverAddress);
@@ -188,11 +188,11 @@ public class MngtServerStorage {
 				statement.setQueryTimeout(10);
 				statement.execute("insert into Hosts  values(null, '" + serverAddress + "')");
 				statement.close();
-				return getHost(serverAddress);
+				return serverAddress;
 			} catch (Exception e) {
 				logger.error("Error while inserting new host", e);
 			}
-			return -1;
+			return null;
 		} finally {
 			this.lock.lock();
 		}
@@ -241,18 +241,18 @@ public class MngtServerStorage {
 	 *            define whether the queue is running or not
 	 *  @param autoScalingConfigName the autoscaling configuration reference
 	 */
-	public void addQueueConfiguration(String name, int hostRef, int configRef, boolean state, String autoScalingConfigName) {
+	public void addQueueConfiguration(String name, String ipRef, int configRef, boolean state, String autoScalingConfigName) {
 		try {
 			this.lock.lock();
 			logger.info("Inserting 1 new logical Q configuration");
-			logger.info("Inserting " + name + " " + hostRef + " " + configRef + " " + state);
+			logger.info("Inserting " + name + " " + ipRef + " " + configRef + " " + state);
 			try {
 				Statement statement = connection.createStatement();
 				// set timeout to 10 sec.
 				statement.setQueryTimeout(10);
 				statement.execute("insert into Queues  values(null, '" + 
-						name + "'," + 
-						hostRef + ", " + 
+						name + "','" + 
+						ipRef + "', " + 
 						configRef + ", " +
 						(state ? 1 : 0) +", '"+ 
 						 autoScalingConfigName+ "'" + 
@@ -385,7 +385,7 @@ public class MngtServerStorage {
 		// set timeout to 10 sec.
 		statement.setQueryTimeout(5);
 		ResultSet rs = statement.executeQuery("select name, State, IP_Address, autoscalingCfg" + " from Queues, Hosts "
-				+ "where Queues.MainhostRef=Hosts.idHosts;");
+				+ "where Queues.MainhostRef=Hosts.IP_Address;");
 		while (rs.next()) {
 			QueueManagementState state = new QueueManagementState(rs.getString("name"), rs.getString("IP_Address"),
 					rs.getBoolean("State"), rs.getString("autoscalingCfg"));
@@ -423,16 +423,16 @@ public class MngtServerStorage {
 						if (!state_i.getHost().equals(newConfig.get(qName))) {
 							// The queue was known but the host changed-> update
 							// the host in management DB
-							int rowID = this.getHost(newConfig.get(qName));
-							if (rowID == -1) {
+							String ip = this.getHost(newConfig.get(qName));
+							if (ip == null) {
 								// The host on the new configuration is unknown
 								// Add the host
-								rowID = addRoQHost(newConfig.get(qName));
+								ip = addRoQHost(newConfig.get(qName));
 							}
-							logger.debug("Update DB: update Queue " + state_i.getName() + " with host to " + rowID);
+							logger.debug("Update DB: update Queue " + state_i.getName() + " with host to " + ip);
 							Statement statement = connection.createStatement();
 							statement.setQueryTimeout(10);
-							statement.executeUpdate("UPDATE Queues SET MainhostRef=" + rowID + " where name='"
+							statement.executeUpdate("UPDATE Queues SET MainhostRef=" + ip + " where name='"
 									+ state_i.getName() + "' ;");
 							statement.close();
 						}
@@ -468,14 +468,14 @@ public class MngtServerStorage {
 			// 4. Check whether there is a new Q (created by code)
 			for (String qName : newQueues) {
 				// Check whether the host is known
-				int rowID = this.getHost(newConfig.get(qName));
-				if (rowID == -1) {
+				String IP = this.getHost(newConfig.get(qName));
+				if (IP == null) {
 					// The host on the new configuration is unknown
 					// Add the host
-					rowID = addRoQHost(newConfig.get(qName));
+					IP = addRoQHost(newConfig.get(qName));
 				}
 				// Add the queue with default configuration
-				this.addQueueConfiguration(qName, rowID, 1, true, null);
+				this.addQueueConfiguration(qName, IP, 1, true, null);
 			}
 		} catch (Exception e) {
 			logger.error("Error while updating configuration", e);
@@ -497,7 +497,7 @@ public class MngtServerStorage {
 		// set timeout to 5 sec.
 		statement.setQueryTimeout(5);
 		ResultSet rs = statement.executeQuery("select name, State, IP_Address, autoscalingCfg" + " from Queues, Hosts "
-				+ "where Queues.MainhostRef=Hosts.idHosts AND Queues.name='" + name + "';");
+				+ "where Queues.MainhostRef=Hosts.IP_Address AND Queues.name='" + name + "';");
 		if (!rs.next()) {
 			return null;
 		} else {
@@ -511,22 +511,22 @@ public class MngtServerStorage {
 	}
 
 	/**
+	 * Just check whether the IP address is present in DB. Now the IP address is used as FK in the queue table.
 	 * @param ipAddress
 	 *            the IP address of the host
 	 * @return the row id of the host or -1 if unknown
 	 * @throws SQLException
 	 */
-	public int getHost(String ipAddress) throws SQLException {
+	public String getHost(String ipAddress) throws SQLException {
 		Statement statement = connection.createStatement();
 		// set timeout to 5 sec.
 		statement.setQueryTimeout(5);
 		ResultSet rs = statement.executeQuery("select idHosts from Hosts " + "WHERE IP_Address='" + ipAddress + "';");
 		if (!rs.next())
-			return -1;
+			return null;
 		else {
-			int result = rs.getInt("idHosts");
 			statement.close();
-			return result;
+			return ipAddress;
 		}
 	}
 
@@ -618,6 +618,25 @@ public class MngtServerStorage {
 		rules.addAll(ruleManager.getAllExchangeScalingRule(connection.createStatement()));
 		rules.addAll(ruleManager.getAllHostScalingRule(connection.createStatement()));
 		return rules;
+	}
+
+	/**
+	 * Remove all hosts from configuration
+	 * @throws SQLException  in case of SQL error
+	 */
+	public void removeHosts() throws SQLException {
+		try {
+			this.lock.lock();
+			logger.debug("Removing all hosts from table");
+			Statement statement = connection.createStatement();
+			// set timeout to 5 sec.
+			statement.setQueryTimeout(5);
+			statement.executeUpdate("DELETE  from Hosts;");
+			statement.close();
+		} finally {
+			this.lock.unlock();
+		}
+
 	}
 	
 }

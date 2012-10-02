@@ -136,7 +136,6 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		mngtTimer.cancel();
 	}
 	
-	
 	/**
 	 * Processes the BSON requests
 	 * @param encoded the encoded BSON object request
@@ -250,6 +249,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				logger.debug("The request format is valid ");
 				// The logical queue config is sent int the part 2
 				removeHostManager(info[1]);
+				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
 			}
 			break;
 			
@@ -326,7 +326,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 
 
 	/**
-	 * @param hosr the ip address of the host to remove.
+	 * @param host the ip address of the host to remove.
 	 */
 	public void removeHostManager(String host) {
 		if(this.stateDAO.getHostManagerAddresses().remove(host)) logger.info("Removed host successfully "+ host);
