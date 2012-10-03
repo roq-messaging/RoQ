@@ -398,17 +398,21 @@ public class MngtServerStorage {
 
 	/**
 	 * @param newConfig
-	 *            the updated configuration recieved each minute
+	 *            the updated configuration received each minute
+	 * @param hosts  the list of host manager deployed
 	 * @throws SQLException
 	 */
-	public void updateConfiguration(HashMap<String, String> newConfig) throws SQLException {
+	public void updateConfiguration(HashMap<String, String> newConfig, List<String> hosts) throws SQLException {
 		try {
 			this.lock.lock();
+			logger.debug("Updating configuration tables ...");
 			// This will define the set of new queues that are not known yet by
 			// the management
 			ArrayList<String> newQueues = new ArrayList<String>();
 			// 1. Select name from Queues
 			ArrayList<QueueManagementState> queueStates = this.getQueues();
+			//Get all defined hosts
+			ArrayList<String > hostStates = getHosts();
 
 			// 2. Check whether an existing Q is now running
 			for (String qName : newConfig.keySet()) {
@@ -476,6 +480,21 @@ public class MngtServerStorage {
 				}
 				// Add the queue with default configuration
 				this.addQueueConfiguration(qName, IP, 1, true, null);
+			}
+			
+			//5. Check wether a new host has been added
+			for (Iterator<String> iterator = hosts.iterator(); iterator.hasNext();) {
+				String hosts_i = (String) iterator.next();
+				if(!hostStates.contains(hosts_i)){
+					this.addRoQHost(hosts_i);
+				}
+			}
+			
+			for (Iterator<String> iterator = hostStates.iterator(); iterator.hasNext();) {
+				String hostState_i = (String) iterator.next();
+				if(!hosts.contains(hostState_i)){
+					this.removeHost(hostState_i);
+				}
 			}
 		} catch (Exception e) {
 			logger.error("Error while updating configuration", e);
@@ -636,7 +655,27 @@ public class MngtServerStorage {
 		} finally {
 			this.lock.unlock();
 		}
-
+	}
+	
+	/**
+	 * Remove the specified host address from the host table
+	 * @param host the host to remove
+	 */
+	private void removeHost(String host) {
+		try {
+			this.lock.lock();
+			logger.debug("Removing host " + host + " from table");
+			Statement statement = connection.createStatement();
+			// set timeout to 5 sec.
+			statement.setQueryTimeout(5);
+			statement.executeUpdate("DELETE  from Hosts where IP_Address='" + host + "' ;");
+			statement.close();
+			statement = connection.createStatement();
+		} catch (SQLException e) {
+			logger.error("ERROR when deleting host " + host + " from hosts table", e);
+		} finally {
+			this.lock.unlock();
+		}
 	}
 	
 }

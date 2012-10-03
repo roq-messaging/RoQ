@@ -36,6 +36,8 @@ import org.zeromq.ZMQ;
  * Class GlobalConfigurationManager
  * <p> Description: responsible for handling the global configuration. This class must run 
  * within a thread. In the future this class will share its data through a data grid.
+ * Notice that the configuration is maintain through a state DAO, this object is ready to be shared on data grid. 
+ * This state is persisted at the configuration manager level.
  * 
  * @author sskhiri
  */
@@ -399,7 +401,14 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	public MngtController getMngtController() {
 		return mngtController;
 	}
-	
+
+
+	/**
+	 * @return the list of host manager addresses
+	 */
+	public Object getHostManagerAddresses() {
+		return this.stateDAO.getHostManagerAddresses();
+	}
 	
 
 }

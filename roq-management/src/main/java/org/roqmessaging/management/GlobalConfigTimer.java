@@ -49,7 +49,7 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 	private Lock lock = new ReentrantLock();
 
 	/**
-	 * 
+	 * Constructor
 	 */
 	public GlobalConfigTimer(GlobalConfigurationManager manager) {
 		this.context = ZMQ.context(1);
@@ -72,7 +72,9 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 			// 2. Publish the configuration
 			this.mngtPubSocket.send(new Integer(RoQConstant.MNGT_UPDATE_CONFIG).toString().getBytes(), ZMQ.SNDMORE);
 			this.mngtPubSocket.send(
-					serializationUtils.serialiseObject(this.configurationManager.getQueueHostLocation()), 0);
+					serializationUtils.serialiseObject(this.configurationManager.getQueueHostLocation()), ZMQ.SNDMORE);
+			this.mngtPubSocket.send( 
+					serializationUtils.serialiseObject(this.configurationManager.getHostManagerAddresses()), 0);
 		} finally {
 			lock.unlock();
 		}

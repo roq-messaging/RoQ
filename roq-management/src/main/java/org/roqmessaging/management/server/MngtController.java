@@ -17,6 +17,7 @@ package org.roqmessaging.management.server;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Timer;
 
 import org.apache.log4j.Logger;
@@ -166,10 +167,14 @@ public class MngtController implements Runnable, IStoppable {
 					// Infocode, map(Q Name, host)
 					logger.debug("Recieving update configuration message");
 					if (mngtSubSocket.hasReceiveMore()) {
+						//The new hashmap QName, target host location
 						HashMap<String, String> newConfig = this.serializationUtils.deserializeObject(mngtSubSocket
 								.recv(0));
+						//The lis of hosts
+						 List<String> hosts = this.serializationUtils.deserializeObject(mngtSubSocket
+									.recv(0));
 						try {
-							storage.updateConfiguration(newConfig);
+							storage.updateConfiguration(newConfig, hosts);
 						} catch (SQLException e) {
 							logger.error("Error while updating the configuration", e);
 						}

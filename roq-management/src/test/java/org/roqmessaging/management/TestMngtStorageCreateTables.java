@@ -69,8 +69,17 @@ public class TestMngtStorageCreateTables {
 			// Drop table if exist - clean the file
 			facade.formatDB();
 
-			facade.addRoQHost("127.0.0.1");
-			facade.addRoQHost("127.0.0.2");
+			//Create an empty configuration with 2 hosts
+			HashMap<String, String> emptyCfg = new HashMap<String, String>();
+			//Host config
+			List<String> hosts = new ArrayList<String>();
+			hosts.add("127.0.0.2");
+			hosts.add("127.0.0.1");
+			hosts.add("127.0.0.3");
+			facade.updateConfiguration(emptyCfg, hosts);
+			
+//			facade.addRoQHost("127.0.0.1");
+//			facade.addRoQHost("127.0.0.2");
 			// Assert.assertEquals(1, facade.addRoQHost("127.0.0.1"));
 			// Assert.assertEquals(2, facade.addRoQHost("127.0.1.2"));
 
@@ -174,8 +183,19 @@ public class TestMngtStorageCreateTables {
 		HashMap<String, String> newConfig = new HashMap<String, String>();
 		newConfig.put("Queue2", "127.0.0.2");
 		newConfig.put("Queue3", "127.0.0.1");
-		facade.updateConfiguration(newConfig);
-
+		//Host config
+		List<String> hosts = new ArrayList<String>();
+		hosts.add("127.0.0.2");
+		hosts.add("127.0.0.1");
+		hosts.add("127.0.0.4");
+		//The host 3 should have been removed
+		facade.updateConfiguration(newConfig, hosts);
+		
+		// Check whether the host 3 has been created
+		Assert.assertNotNull(facade.getHost("127.0.0.4"));
+		Assert.assertNull(facade.getHost("127.0.0.3"));
+		Assert.assertEquals(3, facade.getHosts().size());
+		
 		// Check whether the Queue2 is running
 		QueueManagementState q2State = facade.getQueue("Queue2");
 		Assert.assertNotNull(q2State);
