@@ -386,7 +386,7 @@ public class MngtController implements Runnable, IStoppable {
 											"ERROR when creating autoscaling rule, the configuration name in BSON msg is NULL"), 0);
 									break;
 								}
-								//Check if it exist
+								//Check if it exist- security check for avoiding rollbacking
 								if(storage.getAutoScalingCfg(config.getName()) !=null){
 									mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
 											"ERROR when creating autoscaling rule, the auto scaling configuration name already exist and must be unique."), 0);
