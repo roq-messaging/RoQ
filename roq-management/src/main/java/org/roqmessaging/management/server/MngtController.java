@@ -351,7 +351,7 @@ public class MngtController implements Runnable, IStoppable {
 								if(queueS.getAutoScalingCfgRef()!=null){
 									AutoScalingConfig config = this.storage.getAutoScalingCfg(queueS.getAutoScalingCfgRef());
 									if(config!=null){
-										mngtRepSocket.send(this.serializer.serialiazeAutoScalingRequest(qName, config, RoQConstant.BSON_CONFIG_GET_AUTOSCALING_RULE), 0);
+										mngtRepSocket.send(this.serializer.serialiazeAutoScalingConfigAnswer(qName, config), 0);
 									}else{
 										mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
 												"ERROR NO auto scaling rule defined for this queue"), 0);

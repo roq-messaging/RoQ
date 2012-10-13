@@ -57,7 +57,9 @@ public class MngClient {
 
 	/**
 	 * Test the creation of a queue by the BSON interface.
-	 * @param qName the queue under test
+	 * 
+	 * @param qName
+	 *            the queue under test
 	 */
 	public void testCreate(String qName) {
 		try {
@@ -76,10 +78,12 @@ public class MngClient {
 			logger.error("Error when testing client ", e);
 		}
 	}
-	
+
 	/**
 	 * Test the removal of a queue by the BSON interface.
-	 * @param qName the queue under test
+	 * 
+	 * @param qName
+	 *            the queue under test
 	 */
 	public void testRemove(String qName) {
 		try {
@@ -102,7 +106,9 @@ public class MngClient {
 
 	/**
 	 * Test the stop method on the queue
-	 * @param qName the queue under test
+	 * 
+	 * @param qName
+	 *            the queue under test
 	 */
 	public void testStop(String qName) {
 		try {
@@ -122,103 +128,108 @@ public class MngClient {
 			logger.error("Error when testing client ", e);
 		}
 	}
-		/**
-		 * Test the start method on the queue
-		 * @param qName the queue under test
-		 */
-		public void testStart(String qName) {
-			try {
-				logger.debug("Start Queue Test");
-				IRoQSerializer serializer = new RoQBSONSerializer();
-				// 1. Init the request
-				HashMap<String, String> fields = new HashMap<String, String>();
-				fields.put("QName", qName);
-				// Encode in BSON & send
-				byte[] eStartRqs = serializer.serialiazeConfigRequest(RoQConstant.BSON_CONFIG_START_QUEUE, fields);
-				requestSocket.send(eStartRqs, 0);
-				// Get the result and check
-				byte[] eStartAnswer = requestSocket.recv(0);
-				BSONObject removeAnswer = BSON.decode(eStartAnswer);
-				Assert.assertEquals(RoQConstant.OK, removeAnswer.get("RESULT"));
-				Thread.sleep(4000);
-			} catch (Exception e) {
-				logger.error("Error when testing client ", e);
-			}
-	}
-		/**
-		 * @param qName the queue name on which we are creating the auto scaling configuration
-		 * @param config the configuration for the auto scaling policies.
-		 */
-		public void testAutoScaling(String qName, AutoScalingConfig config) {
-			try {
-				IRoQSerializer serializer = new RoQBSONSerializer();
-				// 1. Launch a create Queue request
-				byte[] encoded = serializer.serialiazeAutoScalingRequest(qName, config, RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE);
-				//2. Send the request
-				requestSocket.send(encoded, 0);
-				//3. Check the result
-				byte[] bres = requestSocket.recv(0);
-				BSONObject answer = BSON.decode(bres);
-				Assert.assertEquals(RoQConstant.OK, answer.get("RESULT"));
-				//4. Check the auto scaling configuration
-				Assert.assertEquals(true, this.checkAutoScalingConfig(qName, config));
-				Thread.sleep(4000);
-			} catch (Exception e) {
-				logger.error("Error when testing client ", e);
-			}
+
+	/**
+	 * Test the start method on the queue
+	 * 
+	 * @param qName
+	 *            the queue under test
+	 */
+	public void testStart(String qName) {
+		try {
+			logger.debug("Start Queue Test");
+			IRoQSerializer serializer = new RoQBSONSerializer();
+			// 1. Init the request
+			HashMap<String, String> fields = new HashMap<String, String>();
+			fields.put("QName", qName);
+			// Encode in BSON & send
+			byte[] eStartRqs = serializer.serialiazeConfigRequest(RoQConstant.BSON_CONFIG_START_QUEUE, fields);
+			requestSocket.send(eStartRqs, 0);
+			// Get the result and check
+			byte[] eStartAnswer = requestSocket.recv(0);
+			BSONObject removeAnswer = BSON.decode(eStartAnswer);
+			Assert.assertEquals(RoQConstant.OK, removeAnswer.get("RESULT"));
+			Thread.sleep(4000);
+		} catch (Exception e) {
+			logger.error("Error when testing client ", e);
 		}
-		
-		/**
-		 * @param qName the queue name on which we are creating the auto scaling configuration
-		 * @param config the configuration for the auto scaling policies.
-		 */
-		public boolean checkAutoScalingConfig(String qName, AutoScalingConfig expecteConfig) {
-			try {
-				IRoQSerializer serializer = new RoQBSONSerializer();
-				// 1. Launch a get autoscaling Queue request
-				BSONObject bsonObject = new BasicBSONObject();
-				bsonObject.put("CMD", RoQConstant.BSON_CONFIG_GET_AUTOSCALING_RULE);
-				bsonObject.put("QName", qName);
-				logger.info("Request get Auto scaling info");
-				logger.info(bsonObject.toString());
-				byte[] encoded = BSON.encode(bsonObject);
-				
-				//2. Send the request
-				requestSocket.send(encoded, 0);
-				
-				//3. Check the result
-				byte[] bres = requestSocket.recv(0);
-				BSONObject answer = BSON.decode(bres);
-				if(answer.containsField("RESULT")) {
-					//Should contain a bson object
-					return false;
-				}else{
-					AutoScalingConfig config = serializer.unserializeConfig(bres);
-					if(!config.getName().equals(expecteConfig.getName())){
+	}
+
+	/**
+	 * @param qName
+	 *            the queue name on which we are creating the auto scaling
+	 *            configuration
+	 * @param config
+	 *            the configuration for the auto scaling policies.
+	 */
+	public void testAutoScaling(String qName, AutoScalingConfig config) {
+		try {
+			IRoQSerializer serializer = new RoQBSONSerializer();
+			// 1. Launch a create Queue request
+			byte[] encoded = serializer.serialiazeAutoScalingRequest(qName, config,
+					RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE);
+			// 2. Send the request
+			requestSocket.send(encoded, 0);
+			// 3. Check the result
+			byte[] bres = requestSocket.recv(0);
+			BSONObject answer = BSON.decode(bres);
+			Assert.assertEquals(RoQConstant.OK, answer.get("RESULT"));
+			// 4. Check the auto scaling configuration
+			Assert.assertEquals(true, this.checkAutoScalingConfig(qName, config));
+			Thread.sleep(4000);
+		} catch (Exception e) {
+			logger.error("Error when testing client ", e);
+		}
+	}
+
+	/**
+	 * @param qName
+	 *            the queue name on which we are creating the auto scaling
+	 *            configuration
+	 * @param config
+	 *            the configuration for the auto scaling policies.
+	 */
+	public boolean checkAutoScalingConfig(String qName, AutoScalingConfig expecteConfig) {
+		try {
+			IRoQSerializer serializer = new RoQBSONSerializer();
+			// 1. Launch a get autoscaling Queue request
+			BSONObject bsonObject = new BasicBSONObject();
+			bsonObject.put("CMD", RoQConstant.BSON_CONFIG_GET_AUTOSCALING_RULE);
+			bsonObject.put("QName", qName);
+			logger.info("Request get Auto scaling info");
+			logger.info(bsonObject.toString());
+			byte[] encoded = BSON.encode(bsonObject);
+
+			// 2. Send the request
+			requestSocket.send(encoded, 0);
+
+			// 3. Check the result
+			byte[] bres = requestSocket.recv(0);
+			AutoScalingConfig config = serializer.unserializeConfig(bres);
+			if (!config.getName().equals(expecteConfig.getName())) {
+				return false;
+			} else {
+				if (expecteConfig.getHostRule() != null) {
+					if (expecteConfig.getHostRule().getCPU_Limit() != config.getHostRule().getCPU_Limit()) {
 						return false;
-					}else{
-						if(expecteConfig.getHostRule()!=null){
-							if(expecteConfig.getHostRule().getCPU_Limit() != config.getHostRule().getCPU_Limit()){
-								return false;
-							}
-						}
-						if(expecteConfig.getXgRule()!=null){
-							if(expecteConfig.getXgRule().getEvent_Limit()!= config.getXgRule().getEvent_Limit()){
-								return false;
-							}
-						}
-						if(expecteConfig.getqRule()!=null){
-							if(expecteConfig.getqRule().getProducerNumber()!= config.getqRule().getProducerNumber()){
-								return false;
-							}
-						}
-						return true;
 					}
 				}
-			} catch (Exception e) {
-				logger.error("Error when testing client ", e);
+				if (expecteConfig.getXgRule() != null) {
+					if (expecteConfig.getXgRule().getEvent_Limit() != config.getXgRule().getEvent_Limit()) {
+						return false;
+					}
+				}
+				if (expecteConfig.getqRule() != null) {
+					if (expecteConfig.getqRule().getProducerNumber() != config.getqRule().getProducerNumber()) {
+						return false;
+					}
+				}
+				return true;
 			}
-			return false;
+		} catch (Exception e) {
+			logger.error("Error when testing client ", e);
 		}
+		return false;
+	}
 
 }
