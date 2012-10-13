@@ -269,8 +269,9 @@ public class MngtServerStorage {
 	/**
 	 * @param qName the queue name to update the configuration
 	 * @param autscalingConfigName the auto scaling configuration to point to.
+	 * @return false if an problem occured during the transaction
 	 */
-	public void updateAutoscalingQueueConfig(String qName, String autscalingConfigName) {
+	public boolean updateAutoscalingQueueConfig(String qName, String autscalingConfigName) {
 		try {
 			this.lock.lock();
 			logger.info("updateing 1 new logical Q configuration with auto scaling configuration name");
@@ -284,10 +285,12 @@ public class MngtServerStorage {
 				statement.close();
 			} catch (Exception e) {
 				logger.error("Error while inserting new configuration", e);
+				return false;
 			}
 		} finally {
 			this.lock.unlock();
 		}
+		return true;
 	}
 	
 	/**Creates a rule in the autoscaling config table
@@ -295,8 +298,9 @@ public class MngtServerStorage {
 	 * @param hostRuleRef the reference to the host rule, 0  if it is null
 	 * @param qRuleRef the reference to Q rule,  0  if it is null
 	 * @param xchangeRuleRef the reference to the xchange rule,  0  if it is null
+	 * @return true if the operation were correct, false if an exception is thrown 
 	 */
-	public void addAutoScalingConfig(String cfgName, int hostRuleRef, int qhostRuleRef, int xchangeRuleRef){
+	public boolean addAutoScalingConfig(String cfgName, int hostRuleRef, int qhostRuleRef, int xchangeRuleRef){
 		try {
 			this.lock.lock();
 			logger.info("Inserting 1 new  autoscaling configuration");
@@ -314,10 +318,12 @@ public class MngtServerStorage {
 				statement.close();
 			} catch (Exception e) {
 				logger.error("Error while inserting new configuration", e);
+				return false;
 			}
 		} finally {
 			this.lock.unlock();
 		}
+		return true;
 	}
 	
 	/**
@@ -625,6 +631,33 @@ public class MngtServerStorage {
 		if (rule instanceof HostScalingRule) {
 			ruleManager.removeHostRule(connection.createStatement(), rule.getID());
 		}
+	}
+	
+	/**
+	 * @param id the rule ID to remove
+	 * @throws SQLException in case of SQL exception
+	 */
+	public void removeHostcalingRuleByID(long id) throws SQLException {
+		logger.debug("Removing Rule ID from Host rule");
+		ruleManager.removeHostRule(connection.createStatement(), id);
+	}
+
+	/**
+	 * @param id the rule ID to remove
+	 * @throws SQLException in case of SQL exception
+	 */
+	public void removeQScalingRuleByID(long id) throws SQLException {
+		logger.debug("Removing Rule ID from QRule");
+		ruleManager.removeQRule(connection.createStatement(), id);
+	}
+
+	/**
+	 * @param id the rule ID to remove
+	 * @throws SQLException in case of SQL exception
+	 */
+	public void removeXchangeScalingRuleByID(long id) throws SQLException {
+		logger.debug("Removing Rule ID from Xchange rules");
+		ruleManager.removeXChangeRule(connection.createStatement(), id);
 	}
 	
 	/**

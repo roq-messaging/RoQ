@@ -232,4 +232,29 @@ public class MngClient {
 		return false;
 	}
 
+	/**
+	 * @param qName the qname
+	 * @param config the already existing configuration
+	 */
+	public void testSameAutoScaling(String qName, AutoScalingConfig config) {
+		try {
+			//We are going to send a configuration that already exist
+			IRoQSerializer serializer = new RoQBSONSerializer();
+			// 1. Launch a create Queue request
+			byte[] encoded = serializer.serialiazeAutoScalingRequest(qName, config,
+					RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE);
+			// 2. Send the request
+			requestSocket.send(encoded, 0);
+			// 3. Check the result
+			byte[] bres = requestSocket.recv(0);
+			BSONObject answer = BSON.decode(bres);
+			Assert.assertEquals(RoQConstant.FAIL, answer.get("RESULT"));
+			Thread.sleep(000);
+		} catch (Exception e) {
+			logger.error("Error when testing client ", e);
+		}
+	
+		
+	}
+
 }

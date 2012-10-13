@@ -154,6 +154,7 @@ public class TestMngtController extends RoQTestCase {
 		LogicalQScalingRule qRule = new LogicalQScalingRule(10000, 100000);
 		config.setqRule(qRule);
 		client.testAutoScaling(qName, config);
+		client.testSameAutoScaling(qName, config);
 		
 		//3. Stop the queue
 		client.testStop(qName);

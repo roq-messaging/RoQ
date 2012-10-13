@@ -376,6 +376,7 @@ public class MngtController implements Runnable, IStoppable {
 							if(queueState == null){
 								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
 										"ERROR when creating autoscaling rule, the queue name does not exist in DB"), 0);
+								break;
 							}else{
 								//For the Host scaling rule
 								AutoScalingConfig config = new AutoScalingConfig();
@@ -383,6 +384,12 @@ public class MngtController implements Runnable, IStoppable {
 								if(config.getName()==null){
 									mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
 											"ERROR when creating autoscaling rule, the configuration name in BSON msg is NULL"), 0);
+									break;
+								}
+								//Check if it exist
+								if(storage.getAutoScalingCfg(config.getName()) !=null){
+									mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+											"ERROR when creating autoscaling rule, the auto scaling configuration name already exist and must be unique."), 0);
 									break;
 								}
 								//Init the FK id
@@ -414,6 +421,7 @@ public class MngtController implements Runnable, IStoppable {
 									if(xRuleID!=-1){
 										config.getXgRule().setID(xRuleID);
 									}else{
+										rollbacklHrule(hRule, hRuleID);
 										mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
 												"ERROR when creating autoscaling rule in DB - the Row ID has been returned as -1"), 0);
 										break;
@@ -430,6 +438,8 @@ public class MngtController implements Runnable, IStoppable {
 									if(qRuleID!=-1){
 										config.getqRule().setID(qRuleID);
 									}else{
+										rollbacklHrule(hRule, hRuleID);
+										rollbacklXrule(xRule, xRuleID);
 										mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
 												"ERROR when creating autoscaling rule in DB - the Row ID has been returned as -1"), 0);
 										break;
@@ -437,9 +447,24 @@ public class MngtController implements Runnable, IStoppable {
 								}
 								//3.2. Create an auto scaling rule config
 								if((qRuleID!=-1) || (xRuleID!=-1) || (hRuleID!=-1)){
-									this.storage.addAutoScalingConfig(config.getName(), hRuleID==-1?0:hRuleID, qRuleID==-1?0:qRuleID, xRuleID==-1?0:xRuleID);
+									if(this.storage.addAutoScalingConfig(config.getName(), hRuleID==-1?0:hRuleID, qRuleID==-1?0:qRuleID, xRuleID==-1?0:xRuleID) ==false){
+										//this means we did not manage to create the configuration=> rollback
+										rollbacklHrule(hRule, hRuleID);
+										rollbacklXrule(xRule, xRuleID);
+										rollbacklQrule(qRule, qRuleID);
+										mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+												"ERROR when creating autoscaling rule in DB - the rule name and configuration cannot be created. See log files."), 0);
+										break;
+									}
 									//3.3.  Update the queue to point to this configuration
-									this.storage.updateAutoscalingQueueConfig(qName, config.getName());
+									if(this.storage.updateAutoscalingQueueConfig(qName, config.getName())==false){
+										rollbacklHrule(hRule, hRuleID);
+										rollbacklXrule(xRule, xRuleID);
+										rollbacklQrule(qRule, qRuleID);
+										mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+												"ERROR when creating autoscaling rule in DB - the auto scaling rule cannot be associated with the queue. See log files."), 0);
+										break;
+									}
 								}else{
 									logger.warn("Huum strange, no rules has been defined for this scaling rule.");
 								}
@@ -468,6 +493,50 @@ public class MngtController implements Runnable, IStoppable {
 	}
 	
 
+	/**
+	 * @param qRule the bson object representing the rule
+	 * @param qRuleID the rule ID
+	 */
+	private void rollbacklQrule(BSONObject qRule, int qRuleID) {
+		if(qRule!=null){
+			logger.debug("Rolling back q rule");
+			try {
+				this.storage.removeQScalingRuleByID(qRuleID);
+			} catch (SQLException e) {
+				logger.error("Error while rollbacking Qrule", e);
+			}
+		}
+	}
+
+	/**
+	 * @param xRule the bson object representing the rule
+	 * @param xRuleID the rule ID
+	 */
+	private void rollbacklXrule(BSONObject xRule, int xRuleID) {
+		if(xRule!=null){
+			logger.debug("Rolling back Xchange  rule");
+			try {
+				this.storage.removeXchangeScalingRuleByID(xRuleID);
+			} catch (SQLException e) {
+				logger.error("Error while rollbacking Xchange rule", e);
+			}
+		}
+	}
+
+	/**
+	 * @param hRule the bson host rule 
+	 * @param hRuleID the rule ID
+	 */
+	private void rollbacklHrule(BSONObject hRule, int hRuleID) {
+		if(hRule!=null){
+			logger.debug("Rolling back Xchange  rule");
+			try {
+				this.storage.removeHostcalingRuleByID(hRuleID);
+			} catch (SQLException e) {
+				logger.error("Error while rollbacking Xchange rule", e);
+			}
+		}
+	}
 
 	/**
 	 * Clean the management configuration by removing non persistant information such as the 
