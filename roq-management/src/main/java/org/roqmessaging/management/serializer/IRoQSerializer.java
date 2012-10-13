@@ -97,4 +97,11 @@ public interface IRoQSerializer {
 	 */
 	public AutoScalingConfig unserializeConfig(byte[] encodedCfg);
 	
+	/**
+	 * @param qName the queue name 
+	 * @param scalingCfg the scaling configuration
+	 * @return the serialization of the get auto scaling configuration answers.
+	 */
+	public byte[] serialiazeAutoScalingConfigAnswer(String qName, AutoScalingConfig scalingCfg);
+	
 }

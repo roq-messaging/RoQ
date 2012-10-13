@@ -16,6 +16,8 @@ package org.roqmessaging.management.server;
 
 import java.util.ArrayList;
 import java.util.TimerTask;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
@@ -44,6 +46,8 @@ public class MngtControllerTimer extends TimerTask {
 	private IRoQSerializer serializer = null;
 	//logger
 	private Logger logger = Logger.getLogger(MngtControllerTimer.class);
+	//lock to avoid race condition when closing
+	private Lock lock =null;
 	
 	/**
 	 * Init variable and open a pub socket on the 5004 port
@@ -61,6 +65,8 @@ public class MngtControllerTimer extends TimerTask {
 		this.mngtPubSocket = context.socket(ZMQ.PUB);
 		this.port = (port==0?this.port:port);
 		this.mngtPubSocket.bind("tcp://*:"+this.port);
+		//Lock init
+		this.lock = new ReentrantLock();
 	}
 
 	/**
@@ -70,6 +76,7 @@ public class MngtControllerTimer extends TimerTask {
 	public void run() {
 		logger.debug("Sending Global configuration update to Management console broad" + " cast on port..." + this.port);
 		try {
+			this.lock.lock();
 			// 1. Get the configuration
 			ArrayList<QueueManagementState> queues =  this.controller.getStorage().getQueues();
 			ArrayList<String> hosts = this.controller.getStorage().getHosts();
@@ -81,16 +88,26 @@ public class MngtControllerTimer extends TimerTask {
 			
 		} catch (Exception e) {
 			logger.error("Error while sending MNGT config to management console", e);
+		}finally{
+			this.lock.unlock();
 		}
 	}
 	
-	/* (non-Javadoc)
+	/**
+	 * Uses a lock becuase we risk to cancel just when sending update.
 	 * @see java.util.TimerTask#cancel()
 	 */
 	@Override
 	public boolean cancel() {
 		logger.info("Stopping the Management controller publisher");
-		this.mngtPubSocket.close();
+		try {
+			this.lock.lock();
+			this.mngtPubSocket.close();
+		} catch (Exception e) {
+			logger.error("Error when closing socket", e);
+		}finally{
+			this.lock.unlock();
+		}
 		return super.cancel();
 	}
 }

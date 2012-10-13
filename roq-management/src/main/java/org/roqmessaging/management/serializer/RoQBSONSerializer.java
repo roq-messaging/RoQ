@@ -95,6 +95,20 @@ public class RoQBSONSerializer implements IRoQSerializer {
 	}
 	
 	/**
+	 * @param qName the queue name 
+	 * @param scalingCfg the scaling configuration
+	 * @return the serialization of the get auto scaling configuration answers.
+	 */
+	public byte[] serialiazeAutoScalingConfigAnswer(String qName, AutoScalingConfig scalingCfg){
+		BSONObject bsonObject = new BasicBSONObject();
+		bsonObject.put("RESULT",RoQConstant.OK );
+		bsonObject.put("COMMENT", "The auto scaling configuration for queue "+ qName);
+		bsonObject = serializeASConfig(bsonObject, scalingCfg);
+		logger.debug("Encoding autoscaling answer in BSON= "+bsonObject.toString());
+		return BSON.encode(bsonObject);
+	}
+	
+	/**
 	 * Serialize the autoscaling configuration
 	 * @param qName the queue name on which the auto scaling configuration will be associated.
 	 * @param scalingCfg the autoscaling configuration notice that the queue name must be set to the auto scaling configuration.
@@ -105,6 +119,16 @@ public class RoQBSONSerializer implements IRoQSerializer {
 		BSONObject bsonObject = new BasicBSONObject();
 		bsonObject.put("CMD",cmd );
 		bsonObject.put("QName", qName);
+		bsonObject = serializeASConfig(bsonObject, scalingCfg);
+		logger.debug("Encoding autoscaling request in BSON= "+bsonObject.toString());
+		return BSON.encode(bsonObject);
+	}
+	
+	/**
+	 * @param bsonObject the bson object used for the encoding
+	 * @param scalingCfg the scaling cofiguration
+	 */
+	private BSONObject serializeASConfig(BSONObject bsonObject, AutoScalingConfig scalingCfg) {
 		bsonObject.put(RoQConstant.BSON_AUTOSCALING_CFG_NAME, scalingCfg.getName());
 		if(scalingCfg.getHostRule()!=null){
 			BSONObject hostObject = new BasicBSONObject();
@@ -123,10 +147,9 @@ public class RoQBSONSerializer implements IRoQSerializer {
 			qObject.put(RoQConstant.BSON_AUTOSCALING_Q_PROD_EXCH , scalingCfg.getqRule().getProducerNumber());
 			bsonObject.put(RoQConstant.BSON_AUTOSCALING_QUEUE, qObject);
 		}
-		logger.debug("Encoding autoscaling request in BSON= "+bsonObject.toString());
-		return BSON.encode(bsonObject);
+		return bsonObject;
 	}
-	
+
 	/**
 	 * Decode an autoscaling request in BSON
 	 * @param encodedCfg the encoded auto scaling rule
