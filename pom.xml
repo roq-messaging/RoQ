@@ -17,5 +17,6 @@
       <module>roq-simulation</module>
     <module>roq-management</module>
     <module>roq-clientlib</module>
+    <module>roq-scaling</module>
   </modules>
 </project>
