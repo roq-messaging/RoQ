@@ -1,0 +1,12 @@
+org.opennebula.client
+org.opennebula.client.acl
+org.opennebula.client.cluster
+org.opennebula.client.datastore
+org.opennebula.client.document
+org.opennebula.client.group
+org.opennebula.client.host
+org.opennebula.client.image
+org.opennebula.client.template
+org.opennebula.client.user
+org.opennebula.client.vm
+org.opennebula.client.vnet
