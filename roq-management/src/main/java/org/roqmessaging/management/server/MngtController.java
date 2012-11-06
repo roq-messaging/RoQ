@@ -219,18 +219,23 @@ public class MngtController implements Runnable, IStoppable {
 							// 1. Check whether the queue is running
 							try {
 								QueueManagementState state = this.storage.getQueue(qName);
-								if (state.isRunning()) {
-									// 2. if running ask the global
-									// configuration
-									// manager to remove it
-									if (!this.factory.removeQueue(qName)) {
-										mngtRepSocket
-												.send(serializer
-														.serialiazeConfigAnswer(RoQConstant.FAIL,
-																"ERROR when stopping Running queue, check logs of the logical queue factory"),
-														0);
+								if (state != null) {
+									if (state.isRunning()) {
+										// 2. if running ask the global
+										// configuration
+										// manager to remove it
+										if (!this.factory.removeQueue(qName)) {
+											mngtRepSocket
+													.send(serializer
+															.serialiazeConfigAnswer(RoQConstant.FAIL,
+																	"ERROR when stopping Running queue, check logs of the logical queue factory"),
+															0);
+										} 
 										break;
 									}
+								}else {
+									mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
+											"ERROR when stopping Running queue, the name does not exist"), 0);
 								}
 								// 3. ask the storage manager to remove it
 								this.storage.removeQueue(qName);
