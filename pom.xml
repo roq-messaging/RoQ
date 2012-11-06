@@ -1,22 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  
-  <groupId>org.roqmessaging</groupId>
-  <artifactId>roq-modules</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  
-  <name>RoQ modules POM</name>
-  <packaging>pom</packaging>
-  
-  <url>https://github.com/roq-messaging/RoQ</url>
-    
-  <modules>
-      <module>roq-parent</module>
-      <module>roq-core</module>
-      <module>roq-simulation</module>
-    <module>roq-management</module>
-    <module>roq-clientlib</module>
-    <module>roq-scaling</module>
-  </modules>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>org.roqmessaging</groupId>
+	<artifactId>roq-modules</artifactId>
+	<version>1.0-SNAPSHOT</version>
+
+	<name>RoQ modules POM</name>
+	<packaging>pom</packaging>
+
+	<url>https://github.com/roq-messaging/RoQ</url>
+
+	<modules>
+		<module>roq-parent</module>
+		<module>roq-core</module>
+		<module>roq-simulation</module>
+		<module>roq-management</module>
+		<module>roq-clientlib</module>
+		<module>roq-scaling</module>
+		<module>roq-IaaS</module>
+	</modules>
 </project>
