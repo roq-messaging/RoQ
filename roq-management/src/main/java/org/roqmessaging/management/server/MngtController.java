@@ -236,6 +236,7 @@ public class MngtController implements Runnable, IStoppable {
 								}else {
 									mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
 											"ERROR when stopping Running queue, the name does not exist"), 0);
+									break;
 								}
 								// 3. ask the storage manager to remove it
 								this.storage.removeQueue(qName);
