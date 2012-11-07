@@ -493,7 +493,10 @@ public class MngtController implements Runnable, IStoppable {
 		}// END OF THE LOOP
 		this.cleanMngtConfig();
 		logger.info("Stopping " + this.getClass().getName() + " cleaning sockets");
+		poller.unregister(mngtSubSocket);
+		poller.unregister(mngtRepSocket);
 		this.mngtSubSocket.setLinger(0);
+		this.mngtRepSocket.setLinger(0);
 		this.mngtSubSocket.close();
 		this.mngtRepSocket.close();
 		controllerTimer.cancel();

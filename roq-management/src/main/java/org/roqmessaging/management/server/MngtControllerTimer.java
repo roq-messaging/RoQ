@@ -102,7 +102,6 @@ public class MngtControllerTimer extends TimerTask {
 		logger.info("Stopping the Management controller publisher");
 		try {
 			this.lock.lock();
-			this.mngtPubSocket.setLinger(0);
 			this.mngtPubSocket.close();
 		} catch (Exception e) {
 			logger.error("Error when closing socket", e);

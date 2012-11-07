@@ -117,6 +117,8 @@ public 	class ExchangeStatTimer extends TimerTask implements IStoppable {
 	 */
 	public void shutDown() {
 		logger.info("Closing  socket");
+		this.monitorSocket.setLinger(0);
+		this.statSocket.setLinger(0);
 		this.monitorSocket.close();
 		this.statSocket.close();
 		

@@ -112,6 +112,9 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 				} while (kpiSocket.hasReceiveMore());
 			}
 		}
+		poller.unregister(kpiSocket);
+		this.kpiSocket.setLinger(0);
+		this.kpiSocket.close();
 	}
 	
 	/**
@@ -142,8 +145,8 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
 	public void shutDown() {
+		logger.info("Closing socket at the KPI subscriber side");
 		this.active = false;
-		this.kpiSocket.close();
 		
 	}
 
