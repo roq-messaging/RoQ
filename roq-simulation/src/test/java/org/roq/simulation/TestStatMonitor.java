@@ -63,6 +63,7 @@ public class TestStatMonitor {
 	@Test
 	public void test() {
 		try {
+			logger.info("Main test stat monitor test");
 			// Let the host self register to the global configuration
 			Thread.sleep(3000);
 			// 1. Create a Queue

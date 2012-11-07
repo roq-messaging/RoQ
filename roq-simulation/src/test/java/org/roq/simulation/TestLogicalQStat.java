@@ -14,6 +14,7 @@
  */
 package org.roq.simulation;
 
+import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.roq.simulation.stat.KPILogicalQSubscriber;
 import org.roq.simulation.test.RoQTestCase;
@@ -32,6 +33,7 @@ public class TestLogicalQStat extends RoQTestCase {
 	public void test() {
 		String qName ="queueTestStat";
 		try {
+			Logger.getLogger(this.getClass().getName()).info("Starting main test in Test logical queue");
 			//1. Create a queue
 			this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP());
 			//2. Attach subscriber
