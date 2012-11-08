@@ -24,7 +24,6 @@ import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.monitoring.HostOSMonitoring;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
-import org.zeromq.ZMQException;
 
 /**
  * Class StatTimer
@@ -120,20 +119,12 @@ public 	class ExchangeStatTimer extends TimerTask implements IStoppable {
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
 	public void shutDown() {
-		try {
 			this.open = false;
 			logger.info("Closing  socket");
 			this.monitorSocket.setLinger(0);
 			this.statSocket.setLinger(0);
 			this.monitorSocket.close();
 			this.statSocket.close();
-		} catch (ZMQException e) {
-			// context destroyed, exit
-			if (ZMQ.Error.ETERM.getCode() == e.getErrorCode()) {
-				return;
-			}
-			throw e;
-		}
 	}
 
 	/**
