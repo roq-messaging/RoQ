@@ -24,6 +24,7 @@ import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.management.server.MngtController;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQException;
 
 /**
  * Class GlobalConfigTImer
@@ -91,6 +92,11 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 			logger.debug("Closing Sockets");
 			this.mngtPubSocket.setLinger(0);
 			this.mngtPubSocket.close();
+		} catch (ZMQException e) {
+			// context destroyed, exit
+			if (ZMQ.Error.ETERM.getCode() != e.getErrorCode()) {
+				throw e;
+			}
 		} finally {
 			lock.unlock();
 		}
