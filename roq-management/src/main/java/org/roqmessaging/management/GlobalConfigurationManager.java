@@ -186,7 +186,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		
 		//init request from client that want to receive a local cache of configuration
 		case RoQConstant.INIT_REQ:
-			// A client is asking fof the topology of all local host
+			// A client is asking for the topology of all local host
 			// manager
 			logger.debug("Recieveing init request from a client ");
 			this.clientReqSocket.send( this.serializationUtils.serialiseObject(this.stateDAO.getHostManagerAddresses()), ZMQ.SNDMORE);

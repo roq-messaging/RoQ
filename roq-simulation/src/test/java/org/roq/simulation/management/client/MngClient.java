@@ -87,6 +87,7 @@ public class MngClient {
 	 */
 	public void testRemove(String qName) {
 		try {
+			logger.debug("Removing Queue "+ qName);
 			IRoQSerializer serializer = new RoQBSONSerializer();
 			// 1. Init the request
 			HashMap<String, String> fields = new HashMap<String, String>();
@@ -98,6 +99,7 @@ public class MngClient {
 			byte[] eEemoveAnswer = requestSocket.recv(0);
 			BSONObject removeAnswer = BSON.decode(eEemoveAnswer);
 			Assert.assertEquals(RoQConstant.OK, removeAnswer.get("RESULT"));
+			logger.debug("Removed correctly Queue "+ qName);
 			Thread.sleep(4000);
 		} catch (Exception e) {
 			logger.error("Error when testing client ", e);

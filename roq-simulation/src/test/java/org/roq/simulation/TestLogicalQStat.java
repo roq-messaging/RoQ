@@ -22,7 +22,7 @@ import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.core.utils.RoQUtils;
 
 /**
- * Class TestLogicalQStat
+ * Class TestLogicalQStat 
  * <p> Description: Test the statistic sent by the logical queue.
  * 
  * @author sskhiri

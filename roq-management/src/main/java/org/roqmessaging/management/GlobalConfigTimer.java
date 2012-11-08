@@ -91,13 +91,9 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 			this.cancel();
 			logger.debug("Closing Sockets");
 			this.mngtPubSocket.setLinger(0);
-			this.mngtPubSocket.setHWM(0);
 			this.mngtPubSocket.close();
 		} catch (ZMQException e) {
-			// context destroyed, exit
-			if (ZMQ.Error.ETERM.getCode() != e.getErrorCode()) {
-				throw e;
-			}
+			logger.debug( "ERROR when closing sockets.",e);
 		} finally {
 			lock.unlock();
 		}

@@ -109,14 +109,17 @@ public class TestMngtController extends RoQTestCase {
 		//3. Test the message sending
 		attachSUbscriber(qName);
 		IRoQPublisher publisher = attachPublisher(qName);
+		logger.debug("Send message");
 		sendMsg(publisher);
 		
 		//4. Remove the queue
+		logger.debug("Debug Queue");
 		client.testRemove(qName);
 		
 		//Phase 2 Test the stop
 		qName = "testQ2";
 		//1.  Create a queue
+		logger.debug("Create queue");
 		client.testCreate(qName);
 		
 		//2. Stop the queue
