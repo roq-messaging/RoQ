@@ -42,6 +42,7 @@ public 	class ExchangeStatTimer extends TimerTask implements IStoppable {
 	private StatDataState statistic = null;
 	private Exchange xchange = null;
 	private HostOSMonitoring hostMonitoring = null;
+	private volatile boolean open = true;
 
 	public ExchangeStatTimer(Exchange xChangeRef,  StatDataState stat ) {
 		this.xchange = xChangeRef;
@@ -61,6 +62,7 @@ public 	class ExchangeStatTimer extends TimerTask implements IStoppable {
 	}
 
 	public void run() {
+		if(open){
 		monitorSocket.send((new Integer(RoQConstant.EVENT_MOST_PRODUCTIVE).toString()+"," + RoQUtils.getInstance().getLocalIP() + "," + this.xchange.getMostProducer()
 				+ "," + this.statistic.getThroughput() + "," + this.statistic.getMax_bw() + "," + this.xchange.getKnownProd().size())
 				.getBytes(), 0);
@@ -110,12 +112,14 @@ public 	class ExchangeStatTimer extends TimerTask implements IStoppable {
 		
 		this.statistic.setThroughput(0);
 		this.statistic.setProcessed(0);
+		}
 	}
 	
 	/**
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
 	public void shutDown() {
+		this.open=false;
 		logger.info("Closing  socket");
 		this.monitorSocket.setLinger(0);
 		this.statSocket.setLinger(0);

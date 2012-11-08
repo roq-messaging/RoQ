@@ -23,6 +23,7 @@ import org.bson.BasicBSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQException;
 
 /**
  * Class KPISubscriber
@@ -99,7 +100,8 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	public void run() {
 		ZMQ.Poller poller = context.poller(1);
 		poller.register(kpiSocket);
-		
+		try{
+			
 		while (active) {
 			poller.poll(2000);
 			if (poller.pollin(0)) {
@@ -112,9 +114,17 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 				} while (kpiSocket.hasReceiveMore());
 			}
 		}
-		poller.unregister(kpiSocket);
 		this.kpiSocket.setLinger(0);
+		poller.unregister(kpiSocket);
 		this.kpiSocket.close();
+		
+		}catch (ZMQException e) {
+            // context destroyed, exit
+            if (ZMQ.Error.ETERM.getCode() == e.getErrorCode()) {
+            	return;
+            }
+            throw e;
+        }
 	}
 	
 	/**
