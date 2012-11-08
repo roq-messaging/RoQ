@@ -497,6 +497,8 @@ public class MngtController implements Runnable, IStoppable {
 		poller.unregister(mngtRepSocket);
 		this.mngtSubSocket.setLinger(0);
 		this.mngtRepSocket.setLinger(0);
+		this.mngtRepSocket.setHWM(0);
+		this.mngtSubSocket.setHWM(0);
 		this.mngtSubSocket.close();
 		this.mngtRepSocket.close();
 		controllerTimer.cancel();
