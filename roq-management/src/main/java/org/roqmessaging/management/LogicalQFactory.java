@@ -234,6 +234,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 			logger.info("Cleaning the local cache");
 			for (String host : this.configurationState.getHostManagerMap().keySet()) {
 				ZMQ.Socket socket = this.configurationState.getHostManagerMap().get(host);
+				socket.setLinger(0);
 				socket.close();
 			}
 			this.configurationState.getHostManagerMap().clear();

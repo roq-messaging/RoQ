@@ -99,6 +99,8 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	 * Removes the socket connection to the global config manager
 	 */
 	private void closeSocketConnection() {
+		this.logger.debug("Closing factory socket");
+		this.globalConfigReq.setLinger(0);
 		this.globalConfigReq.close();
 		
 	}

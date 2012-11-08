@@ -197,9 +197,11 @@ public class HostConfigManager implements Runnable, IStoppable {
 			}
 		}
 		unregisterHostFromConfig();
+		logger.info("Closing the client & global config sockets.");
+		this.clientReqSocket.setLinger(0);
+		this.globalConfigSocket.setLinger(0);
 		this.clientReqSocket.close();
 		this.globalConfigSocket.close();
-		logger.info("Closing the client & global config sockets.");
 	}
 
 	/**
@@ -263,6 +265,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 			shutDownMonitor.setSendTimeOut(0);
 			shutDownMonitor.connect(portOff + (basePort + 5));
 			shutDownMonitor.send((Integer.toString(RoQConstant.SHUTDOWN_REQUEST)).getBytes(), 0);
+			shutDownMonitor.setLinger(0);
 			shutDownMonitor.close();
 		} finally {
 			this.lockRemoveQ.unlock();
