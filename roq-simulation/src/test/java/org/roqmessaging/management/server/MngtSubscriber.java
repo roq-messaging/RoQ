@@ -19,9 +19,9 @@ import junit.framework.Assert;
 import org.apache.log4j.Logger;
 import org.bson.BSON;
 import org.bson.BSONObject;
-import org.roq.simulation.stat.KPISubscriber;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.management.stat.KPISubscriber;
 import org.zeromq.ZMQ;
 
 /**

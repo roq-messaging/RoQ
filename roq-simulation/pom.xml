@@ -30,6 +30,11 @@
 			<version>1.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
+			<groupId>org.roqmessaging.core</groupId>
+			<artifactId>roq-scaling</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
 			<groupId>org.roqmessaging</groupId>
 			<artifactId>roq-clientlib</artifactId>
 			<version>1.0-SNAPSHOT</version>

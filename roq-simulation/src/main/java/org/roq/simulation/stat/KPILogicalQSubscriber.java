@@ -17,6 +17,7 @@ package org.roq.simulation.stat;
 import org.bson.BSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.timer.MonitorStatTimer;
+import org.roqmessaging.management.stat.KPISubscriber;
 
 /**
  * Class KPIQSubscriber
@@ -44,7 +45,7 @@ public class KPILogicalQSubscriber extends KPISubscriber {
 	}
 
 	/**
-	 * @see org.roq.simulation.stat.KPISubscriber#processStat(java.lang.Integer)
+	 * @see org.roqmessaging.management.stat.KPISubscriber#processStat(java.lang.Integer)
 	 */
 	@Override
 	public void processStat(Integer CMD, BSONObject statObj) {
