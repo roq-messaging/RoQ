@@ -168,6 +168,8 @@ public class PublisherConnectionManager implements Runnable {
 	 */
 	private void closeConnection() {
 		try {
+			this.logger.debug("Closing publisher sockets ...");
+			this.configState.getExchPub().setLinger(0);
 			this.configState.getLock().lock();
 			this.configState.getExchPub().close();
 			this.configState.setValid(false);
@@ -183,7 +185,9 @@ public class PublisherConnectionManager implements Runnable {
 	 */
 	private void rellocateExchange(String exchange) {
 		try{
+			this.logger.debug("Closing sockets when re-locate the exchange");
 			this.configState.getLock().lock();
+			this.configState.getExchPub().setLinger(0);
 			this.configState.getExchPub().close();
 			this.configState.setExchPub(context.socket(ZMQ.PUB));
 			this.configState.getExchPub().connect("tcp://" + exchange);

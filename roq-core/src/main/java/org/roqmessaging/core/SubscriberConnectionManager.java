@@ -250,10 +250,13 @@ public class SubscriberConnectionManager implements Runnable {
 				received++;
 			}
 		}
+		this.logger.debug("Closing subscriber sockets");
 		timer.cancel();
 		timer.purge();
 		knownHosts.clear();
+		this.exchSub.setLinger(0);
 		this.exchSub.close();
+		this.initReq.setLinger(0);
 		this.initReq.close();
 		logger.info("Closed.");
 	}

@@ -112,6 +112,7 @@ public class GlobalConfigurationStateClient extends GlobalConfigurationState {
 		for (String hostToRemove : toRemove) {
 			logger.debug("Removing to " + hostToRemove);
 			ZMQ.Socket socket = this.hostManagerMap.remove(hostToRemove);
+			socket.setLinger(0);
 			socket.close();
 		}
 		// 2. To add

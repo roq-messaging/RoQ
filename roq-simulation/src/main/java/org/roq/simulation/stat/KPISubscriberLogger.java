@@ -23,6 +23,7 @@ import org.apache.log4j.Logger;
 import org.bson.BSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.management.stat.KPISubscriber;
 
 /**
  * Class KPISubscriberLogger

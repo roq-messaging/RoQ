@@ -15,10 +15,7 @@
 package org.roq.simulation;
 
 import org.apache.log4j.Logger;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import org.roq.simulation.stat.KPISubscriberLogger;
 import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.client.IRoQSubscriber;
@@ -28,37 +25,16 @@ import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.LogicalQFactory;
-import org.roqmessaging.management.stat.KPISubscriber;
+import org.roqmessaging.scaling.ScalingProcess;
 
 /**
- * Class TestStatMonitor
- * <p> Description: Test the Statistic monitor behavior
+ * Class TestScalingStatMonitor
+ * <p> Description: Test the scaling monitor and its stat subscription.
  * 
  * @author sskhiri
  */
-public class TestStatMonitor {
-	protected RoQAllLocalLauncher launcher = null;
-	protected 	KPISubscriber kpiSubscriber = null;
-	private Logger logger = Logger.getLogger(TestStatMonitor.class);
-	
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@Before
-	public void setUp() throws Exception {
-		this.launcher = new RoQAllLocalLauncher();
-		this.launcher.setConfigFile("testGCM.properties");
-		this.launcher.setUp();
-	}
-
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@After
-	public void tearDown() throws Exception {
-		this.launcher.tearDown();
-		this.kpiSubscriber.shutDown();
-	}
+public class TestScalingStatMonitor extends TestStatMonitor {
+	private Logger logger = Logger.getLogger(this.getClass().getName());
 
 	@Test
 	public void test() {
@@ -74,7 +50,7 @@ public class TestStatMonitor {
 			Thread.sleep(3000);
 			
 			// 2. Init the KPI subscriber
-			kpiSubscriber = new KPISubscriberLogger(launcher.getConfigurationServer(), "queue1", false);
+			kpiSubscriber = new ScalingProcess(launcher.getConfigurationServer(), "queue1");
 			new Thread(kpiSubscriber).start();
 
 			// 3. Create a subscriber
@@ -132,5 +108,4 @@ public class TestStatMonitor {
 		}
 
 	}
-
 }
