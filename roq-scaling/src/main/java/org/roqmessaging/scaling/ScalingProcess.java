@@ -21,6 +21,10 @@ import org.roqmessaging.management.stat.KPISubscriber;
  * Class ScalingProcess
  * <p> Description: Subscriber to the Statistic channel and process specific stat in order 
  * to evaluate auto scaling rules.
+ * TODO:
+ * 1. Spawning the Scaling process at the monitor stat level - later we will add a new process creation API at the host manager
+ * 2. Push/Pull reuquest or Req/Resp to get the last auto scaling rule associated to this queue - later a real pub/sub system must be put in place
+ * 3. Evaluation of the rule
  * 
  * @author sskhiri
  */
