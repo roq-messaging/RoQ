@@ -48,6 +48,8 @@ public class StatisticMonitor implements Runnable, IStoppable {
 	private volatile boolean running;
 	
 	private Logger logger = Logger.getLogger(StatisticMonitor.class);
+	
+	//Scaling process, this position should not be definitive - this must be an indep process
 
 	/**
 	 * Init & constructor

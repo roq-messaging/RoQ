@@ -23,6 +23,7 @@ import org.bson.BasicBSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Socket;
 
 /**
  * Class KPISubscriber
@@ -112,7 +113,7 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 						// Stat coming from the KPI stream
 						BSONObject statObj = BSON.decode(kpiSocket.recv(0));
 						logger.debug("Start analysing info code " + statObj.get("CMD"));
-						processStat((Integer) statObj.get("CMD"), statObj);
+						processStat((Integer) statObj.get("CMD"), statObj, kpiSocket);
 					} while (kpiSocket.hasReceiveMore());
 				}
 			}
@@ -142,8 +143,9 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	 * In this method the client code will process the statistic.
 	 * @param CMD the command code of the statistic.
 	 * @param statObj the bson stat object
+	 * @param statSocket the socket by which we receive the message
 	 */
-	abstract public void processStat(Integer CMD, BSONObject statObj);
+	abstract public void processStat(Integer CMD, BSONObject statObj, Socket statSocket);
 
 	/**
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
