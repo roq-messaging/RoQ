@@ -158,6 +158,8 @@ public class RoQBSONSerializer implements IRoQSerializer {
 	public AutoScalingConfig unserializeConfig(byte[] encodedCfg){
 		logger.debug("Unserializing encoded Q");
 		AutoScalingConfig result = new AutoScalingConfig();
+		//Defines whether there is at least one rule.
+		boolean  ruleSet = false;
 		BSONObject decodedCfg = decoder.readObject(encodedCfg);
 		//1. Set the configuration name
 		result.setName((String) decodedCfg.get(RoQConstant.BSON_AUTOSCALING_CFG_NAME));
@@ -166,6 +168,7 @@ public class RoQBSONSerializer implements IRoQSerializer {
 			result.setHostRule(new HostScalingRule(((Integer)hRule.get(RoQConstant.BSON_AUTOSCALING_HOST_RAM)).intValue(), 
 					((Integer)hRule.get(RoQConstant.BSON_AUTOSCALING_HOST_CPU)).intValue()));
 			logger.debug("Host scaling rule : "+ result.getHostRule().toString());
+			ruleSet= true;
 		}
 		//2. Extract the xchange rule
 		BSONObject xRule = (BSONObject) decodedCfg.get(RoQConstant.BSON_AUTOSCALING_XCHANGE);
@@ -173,6 +176,7 @@ public class RoQBSONSerializer implements IRoQSerializer {
 			result.setXgRule(new XchangeScalingRule(((Integer)xRule.get(RoQConstant.BSON_AUTOSCALING_XCHANGE_THR)).intValue(), 
 					 0f));
 			logger.debug("Host scaling rule : "+ result.getHostRule().toString());
+			ruleSet= true;
 		}
 		
 		//3. Extract the Q-level rule
@@ -181,8 +185,9 @@ public class RoQBSONSerializer implements IRoQSerializer {
 			result.setqRule(new LogicalQScalingRule(((Integer)qRule.get(RoQConstant.BSON_AUTOSCALING_Q_PROD_EXCH)).intValue(), 
 					((Integer)qRule.get(RoQConstant.BSON_AUTOSCALING_Q_THR_EXCH)).intValue()));
 			logger.debug("Host scaling rule : "+ result.getHostRule().toString());
+			ruleSet= true;
 		}
-		return result;
+		return ruleSet==false? null:  result;
 	}
 	
 

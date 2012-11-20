@@ -48,7 +48,7 @@ public class KPILogicalQSubscriber extends KPISubscriber {
 	 * @see org.roqmessaging.management.stat.KPISubscriber#processStat(java.lang.Integer)
 	 */
 	@Override
-	public void processStat(Integer CMD, BSONObject statObj) {
+	public void processStat(Integer CMD, BSONObject statObj, org.zeromq.ZMQ.Socket rcv) {
 		switch (CMD.intValue()) {
 		case RoQConstant.STAT_Q:
 			super.logger.debug("Got stat for Logical Q");

@@ -14,7 +14,6 @@
  */
 package org.roqmessaging.scaling;
 
-import java.net.Socket;
 import java.util.HashMap;
 
 import org.apache.log4j.Logger;
@@ -118,27 +117,34 @@ public class ScalingProcess extends KPISubscriber {
 				 */
 				//Building Exchange context
 				HashMap<String, Double> xchangeCtx = new HashMap<String, Double>();
-				int xchangeID = (Integer) statObj.get("X_ID");
+				String xchangeID = (String) statObj.get("X_ID");
 				while(statSocket.hasReceiveMore()){
 					statObj = BSON.decode(statSocket.recv(0));
 					logger.debug("In the Exchange stat message  " + statObj.toString());
 					Integer cmd = (Integer) statObj.get("CMD");
 					if(cmd.intValue() ==21){
-						xchangeCtx.put(RoQConstantInternal.CONTEXT_KPI_XCHANGE_EVENTS, (Double) statObj.get("Throughput"));
+						if(checkField(statObj, "Throughput"))
+							xchangeCtx.put(RoQConstantInternal.CONTEXT_KPI_XCHANGE_EVENTS, Double.parseDouble((String) statObj.get("Throughput")));
 					}
 					if(cmd.intValue() ==22){
-						xchangeCtx.put(RoQConstantInternal.CONTEXT_KPI_HOST_CPU, (Double) statObj.get("CPU"));
-						xchangeCtx.put(RoQConstantInternal.CONTEXT_KPI_HOST_RAM, (Double) statObj.get("MEMORY"));
+						if(checkField(statObj, "MEMORY") && checkField(statObj, "CPU")){
+							xchangeCtx.put(RoQConstantInternal.CONTEXT_KPI_HOST_CPU, Double.parseDouble((String) statObj.get("CPU")));
+							xchangeCtx.put(RoQConstantInternal.CONTEXT_KPI_HOST_RAM,Double.parseDouble((String) statObj.get("MEMORY")));
+						}
 					}
 					//Rule evaluation
 					boolean overloaded = false;
-					if(this.scalingConfig.getXgRule().isOverLoaded(xchangeCtx)){
-						overloaded= true;
-						logger.info("Xchange auto scaling rule triggered "+ this.scalingConfig.getXgRule().toString() + "for exchange "+ xchangeID);
+					if(this.scalingConfig.getXgRule()!=null){
+						if(this.scalingConfig.getXgRule().isOverLoaded(xchangeCtx)){
+							overloaded= true;
+							logger.info("Xchange auto scaling rule triggered "+ this.scalingConfig.getXgRule().toString() + "for exchange "+ xchangeID);
+						}
 					}
-					if(this.scalingConfig.getHostRule().isOverLoaded(xchangeCtx)){
-						overloaded= true;
-						logger.info("Host auto scaling rule triggered "+ this.scalingConfig.getHostRule().toString()+ "for exchange "+ xchangeID + " Host");
+					if(this.scalingConfig.getHostRule()!=null){
+						if(this.scalingConfig.getHostRule().isOverLoaded(xchangeCtx)){
+							overloaded= true;
+							logger.info("Host auto scaling rule triggered "+ this.scalingConfig.getHostRule().toString()+ "for exchange "+ xchangeID + " Host");
+						}
 					}
 				}
 				break;

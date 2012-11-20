@@ -15,6 +15,7 @@
 package org.roqmessaging.management.stat;
 
 import junit.framework.Assert;
+import junit.framework.AssertionFailedError;
 
 import org.apache.log4j.Logger;
 import org.bson.BSON;
@@ -132,7 +133,12 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 		if (!request.containsField(field)) {
 			logger.error("The " + field + "  field is not present, INVALID REQUEST");
 			logger.error("Invalid request, does not contain Host field.");
-			Assert.fail("Invalid request, does not contain " + field + " field");
+			try {
+				Assert.fail("Invalid request, does not contain " + field + " field");
+			} catch (AssertionFailedError e) {
+				logger.error("The field is not present", e);
+			}
+			
 			return false;
 		} else {
 			return true;

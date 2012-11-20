@@ -169,7 +169,7 @@ public class Exchange implements Runnable, IStoppable {
 			part = 0;
 			//Set the poll time out, it returns either when someting arrive or when it time out
 			poller.poll(this.timeout);
-			if (poller.pollin(0)) {
+			if (this.active && poller.pollin(0)) {
 				do {
 					/*
 					 *  ** Message multi part construction ** 1: routing key 2:
