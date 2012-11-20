@@ -15,6 +15,7 @@
 package org.roqmessaging.management.stat;
 
 import junit.framework.Assert;
+import junit.framework.AssertionFailedError;
 
 import org.apache.log4j.Logger;
 import org.bson.BSON;
@@ -23,6 +24,7 @@ import org.bson.BasicBSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Socket;
 
 /**
  * Class KPISubscriber
@@ -107,12 +109,12 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 		poller.register(kpiSocket);
 			while (active) {
 				poller.poll(2000);
-				if (poller.pollin(0)) {
+				if (active & poller.pollin(0)) {
 					do {
 						// Stat coming from the KPI stream
 						BSONObject statObj = BSON.decode(kpiSocket.recv(0));
 						logger.debug("Start analysing info code " + statObj.get("CMD"));
-						processStat((Integer) statObj.get("CMD"), statObj);
+						processStat((Integer) statObj.get("CMD"), statObj, kpiSocket);
 					} while (kpiSocket.hasReceiveMore());
 				}
 			}
@@ -131,7 +133,12 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 		if (!request.containsField(field)) {
 			logger.error("The " + field + "  field is not present, INVALID REQUEST");
 			logger.error("Invalid request, does not contain Host field.");
-			Assert.fail("Invalid request, does not contain " + field + " field");
+			try {
+				Assert.fail("Invalid request, does not contain " + field + " field");
+			} catch (AssertionFailedError e) {
+				logger.error("The field is not present", e);
+			}
+			
 			return false;
 		} else {
 			return true;
@@ -142,8 +149,9 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	 * In this method the client code will process the statistic.
 	 * @param CMD the command code of the statistic.
 	 * @param statObj the bson stat object
+	 * @param statSocket the socket by which we receive the message
 	 */
-	abstract public void processStat(Integer CMD, BSONObject statObj);
+	abstract public void processStat(Integer CMD, BSONObject statObj, Socket statSocket);
 
 	/**
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()

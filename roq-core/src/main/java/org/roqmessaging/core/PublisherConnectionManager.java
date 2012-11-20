@@ -127,7 +127,7 @@ public class PublisherConnectionManager implements Runnable {
 		logger.info("Producer online");
 		while (running) {
 			items.poll(10000);
-			if (items.pollin(0)) { // Info from Monitor
+			if (this.running && items.pollin(0)) { // Info from Monitor
 				String info[] = new String(monitorSub.recv(0)).split(",");
 				int infoCode = Integer.parseInt(info[0]);
 

@@ -141,8 +141,8 @@ public class PubClientLib implements Runnable {
 		timer.schedule(new RateLimiter(), 3000, 60000);
 		logger.info("Producer online");
 		while (running) {
-			items.poll(1);
-			if (items.pollin(0)) { // Info from Monitor
+			items.poll(200);
+			if (running && items.pollin(0)) { // Info from Monitor
 				String info[] = new String(monitorSub.recv(0)).split(",");
 				int infoCode = Integer.parseInt(info[0]);
 
