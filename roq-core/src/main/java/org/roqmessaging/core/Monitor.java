@@ -268,7 +268,7 @@ public class Monitor implements Runnable, IStoppable {
 		long lastPublish = System.currentTimeMillis();
 		
 		//2. Start the main run of the monitor
-		while (this.active & !Thread.currentThread().isInterrupted()) {
+		while (!Thread.currentThread().isInterrupted()) {
 			//not really clean, workaround to the fact thats sockets cannot be shared between threads
 			if (System.currentTimeMillis() - lastPublish > 10000) { 
 				listenersPub.send(("2," + bcastExchg()).getBytes(), 0);
