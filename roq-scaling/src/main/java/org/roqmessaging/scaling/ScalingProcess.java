@@ -161,9 +161,10 @@ public class ScalingProcess extends KPISubscriber {
 	 */
 	@Override
 	public void shutDown() {
+		this.requestSocket.setLinger(0);
+		this.requestSocket.close();
 		super.shutDown();
 		logger.debug("Closing request socket");
-		this.requestSocket.close();
 	}
 
 }

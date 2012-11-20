@@ -108,7 +108,7 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 		poller.register(kpiSocket);
 			while (active) {
 				poller.poll(2000);
-				if (poller.pollin(0)) {
+				if (active & poller.pollin(0)) {
 					do {
 						// Stat coming from the KPI stream
 						BSONObject statObj = BSON.decode(kpiSocket.recv(0));
