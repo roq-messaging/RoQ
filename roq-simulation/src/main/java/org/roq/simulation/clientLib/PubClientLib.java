@@ -142,7 +142,7 @@ public class PubClientLib implements Runnable {
 		logger.info("Producer online");
 		while (running) {
 			items.poll(200);
-			if (running && items.pollin(0)) { // Info from Monitor
+			if (items.pollin(0)) { // Info from Monitor
 				String info[] = new String(monitorSub.recv(0)).split(",");
 				int infoCode = Integer.parseInt(info[0]);
 

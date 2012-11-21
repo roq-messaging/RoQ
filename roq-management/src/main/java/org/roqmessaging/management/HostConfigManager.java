@@ -265,7 +265,6 @@ public class HostConfigManager implements Runnable, IStoppable {
 			shutDownMonitor.setSendTimeOut(0);
 			shutDownMonitor.connect(portOff + (basePort + 5));
 			shutDownMonitor.send((Integer.toString(RoQConstant.SHUTDOWN_REQUEST)).getBytes(), 0);
-			shutDownMonitor.setLinger(0);
 			shutDownMonitor.close();
 		} finally {
 			this.lockRemoveQ.unlock();

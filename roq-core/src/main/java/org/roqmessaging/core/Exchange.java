@@ -155,7 +155,8 @@ public class Exchange implements Runnable, IStoppable {
 	public void run() {
 		logger.info("Exchange Started");
 		timer = new Timer();
-		timer.schedule(new Heartbeat(this.s_monitor, this.frontEnd, this.backEnd ), 0, 5000);
+		Heartbeat heartBeatTimer = new Heartbeat(this.s_monitor, this.frontEnd, this.backEnd );
+		timer.schedule(heartBeatTimer, 0, 5000);
 		ExchangeStatTimer exchStatTimer = new ExchangeStatTimer(this, this.statistic);
 		timer.schedule(exchStatTimer, 10, 6000);
 		int part;
@@ -169,7 +170,7 @@ public class Exchange implements Runnable, IStoppable {
 			part = 0;
 			//Set the poll time out, it returns either when someting arrive or when it time out
 			poller.poll(this.timeout);
-			if (this.active && poller.pollin(0)) {
+			if (poller.pollin(0)) {
 				do {
 					/*
 					 *  ** Message multi part construction ** 1: routing key 2:
@@ -194,6 +195,9 @@ public class Exchange implements Runnable, IStoppable {
 		}
 		closeSockets();
 		exchStatTimer.shutDown();
+		heartBeatTimer.shutDown();
+		timer.purge();
+		timer.cancel();
 		logger.info("Stopping Exchange "+frontEnd+"->"+backEnd);
 	}
 

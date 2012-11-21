@@ -56,11 +56,13 @@ public class TestLogicalQStat extends RoQTestCase {
 			//6. Add exchange
 			factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
 			subscriber.setXchangeToCheck(2);
-			Thread.sleep(6000);
+			Thread.sleep(5000);
 			
 			//7. Shutdown
 			factory.removeQueue(qName);
 			subscriber.shutDown();
+			Thread.sleep(5000);
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
