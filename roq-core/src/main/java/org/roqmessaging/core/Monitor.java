@@ -171,7 +171,6 @@ public class Monitor implements Runnable, IStoppable {
 	private int logHost(String address, String frontPort, String backPort) {
 		if(!this.shuttingDown){
 			logger.debug("Log host procedure for "+ address +": "+ frontPort +"->"+ backPort);
-			logger.debug("KNowhost size "+knownHosts.size() );
 			if (!knownHosts.isEmpty()) {
 				for (ExchangeState exchange_i : knownHosts) {
 					if(exchange_i.match(address, frontPort, backPort)){
