@@ -81,6 +81,7 @@ public class MonitorStatTimer extends TimerTask {
 	 */
 	public void shutTdown() {
 		logger.debug("Canceling the Monitor stat timer");
+		this.cancel();
 		this.statSocket.close();
 	}
 

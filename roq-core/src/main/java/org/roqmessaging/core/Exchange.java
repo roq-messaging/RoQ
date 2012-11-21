@@ -155,7 +155,8 @@ public class Exchange implements Runnable, IStoppable {
 	public void run() {
 		logger.info("Exchange Started");
 		timer = new Timer();
-		timer.schedule(new Heartbeat(this.s_monitor, this.frontEnd, this.backEnd ), 0, 5000);
+		Heartbeat heartBeatTimer = new Heartbeat(this.s_monitor, this.frontEnd, this.backEnd );
+		timer.schedule(heartBeatTimer, 0, 5000);
 		ExchangeStatTimer exchStatTimer = new ExchangeStatTimer(this, this.statistic);
 		timer.schedule(exchStatTimer, 10, 6000);
 		int part;
@@ -194,6 +195,9 @@ public class Exchange implements Runnable, IStoppable {
 		}
 		closeSockets();
 		exchStatTimer.shutDown();
+		heartBeatTimer.shutDown();
+		timer.purge();
+		timer.cancel();
 		logger.info("Stopping Exchange "+frontEnd+"->"+backEnd);
 	}
 
