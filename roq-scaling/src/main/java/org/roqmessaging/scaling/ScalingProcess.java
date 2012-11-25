@@ -22,6 +22,7 @@ import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.RoQConstantInternal;
+import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
@@ -35,6 +36,7 @@ import org.zeromq.ZMQ;
  * TODO:
  * 1. Spawning the Scaling process at the host monitor level in order to let the module indep
  * 2. Push/Pull request or Req/Resp to get the last auto scaling rule associated to this queue - later a real pub/sub system must be put in place
+ * DONE:
  * 3. Evaluation of the rule
  * 
  * @author sskhiri
@@ -44,6 +46,8 @@ public class ScalingProcess extends KPISubscriber {
 	private ZMQ.Context context = null;
 	//Management controller socket - enables to get the auto scaling  configuration
 	private ZMQ.Socket requestSocket = null;
+	//Pull socket that will listen for configuration update
+	private ZMQ.Socket pullListnerConfigSocket = null;
 	//The queue name on which the scaling process is bound
 	private String qName = null;
 	//The auto scaling config got from the mngt server
@@ -56,8 +60,10 @@ public class ScalingProcess extends KPISubscriber {
 	/**
 	 * @param globalConfiguration the GCM IP address
 	 * @param qName the name of the queue we want to connect.
+	 * @param listnerPort is the port on which the scaling process will listen for push request when a new configuration will
+	 * be published
 	 */
-	public ScalingProcess(String globalConfiguration, String qName) {
+	public ScalingProcess(String globalConfiguration, String qName, int listnerPort) {
 		super(globalConfiguration, qName);
 		this.qName = qName;
 		this.serializer = new RoQBSONSerializer();
@@ -71,6 +77,43 @@ public class ScalingProcess extends KPISubscriber {
 		if(this.scalingConfig==null){
 			this.logger.info("Autoscaling process for queue "+ qName + " is innactive - no auto scaling rules");
 		}
+		//Prepare the push listener registration
+		this.pullListnerConfigSocket=  this.context.socket(ZMQ.PULL);
+		String localListenerAddress = "tcp://"+RoQUtils.getInstance().getLocalIP()+":"+listnerPort;
+		this.pullListnerConfigSocket.bind(localListenerAddress);
+		//Start the registration operation
+		this.registerListener( localListenerAddress);
+		
+	}
+
+	/**
+	 * @param localListenerAddress
+	 */
+	private void registerListener( String localListenerAddress) {
+		try {
+			// 1. Launch aregister listener request
+			BSONObject bsonObject = new BasicBSONObject();
+			bsonObject.put("CMD", RoQConstant.BSON_CONFIG_REGISTER_FOR_AUTOSCALING_RULE_UPDATE);
+			bsonObject.put("QName", qName);
+			bsonObject.put("Address", localListenerAddress);
+			logger.info("Request Register for Auto scaling UPDATES");
+			logger.info(bsonObject.toString());
+			byte[] encoded = BSON.encode(bsonObject);
+
+			// 2. Send the request
+			requestSocket.send(encoded, 0);
+
+			// 3. Check the result
+			byte[] bres = requestSocket.recv(0);
+			
+			BSONObject result = BSON.decode(bres);
+			if ((Integer)result.get("RESULT")==RoQConstant.FAIL){
+				throw new IllegalStateException("The request failed: "+ result.get("COMMENT"));
+			}
+		} catch (Exception e) {
+			logger.error("Error when testing client ", e);
+		}
+		
 	}
 
 	/**
@@ -202,6 +245,8 @@ public class ScalingProcess extends KPISubscriber {
 	public void shutDown() {
 		this.requestSocket.setLinger(0);
 		this.requestSocket.close();
+		this.pullListnerConfigSocket.setLinger(0);
+		this.pullListnerConfigSocket.close();
 		super.shutDown();
 		logger.debug("Closing request socket");
 	}

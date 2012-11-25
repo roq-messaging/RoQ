@@ -50,7 +50,7 @@ public class TestScalingStatMonitor extends TestStatMonitor {
 			Thread.sleep(3000);
 			
 			// 2. Init the KPI subscriber
-			kpiSubscriber = new ScalingProcess(launcher.getConfigurationServer(), "queue1");
+			kpiSubscriber = new ScalingProcess(launcher.getConfigurationServer(), "queue1", 7001);
 			new Thread(kpiSubscriber).start();
 
 			// 3. Create a subscriber
@@ -94,6 +94,10 @@ public class TestScalingStatMonitor extends TestStatMonitor {
 				publisher.sendMessage("key".getBytes(), ("hello" + i).getBytes());
 			}
 			Thread.sleep(3000);
+			
+			//TODO Testing AUTOSCALING UPDATE:
+			//ADD an autoscaling rule for this queue
+			//Check that the autocaling process is notified on his pull socket
 
 			// End close connection
 			connection.close();
