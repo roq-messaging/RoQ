@@ -77,21 +77,22 @@ public class ScalingProcess extends KPISubscriber {
 		if(this.scalingConfig==null){
 			this.logger.info("Autoscaling process for queue "+ qName + " is innactive - no auto scaling rules");
 		}
+		
 		//Prepare the push listener registration
 		this.pullListnerConfigSocket=  this.context.socket(ZMQ.PULL);
 		String localListenerAddress = "tcp://"+RoQUtils.getInstance().getLocalIP()+":"+listnerPort;
 		this.pullListnerConfigSocket.bind(localListenerAddress);
 		//Start the registration operation
 		this.registerListener( localListenerAddress);
-		
 	}
 
 	/**
-	 * @param localListenerAddress
+	 * Ask the management controller to register the listener for auto scaling update.
+	 * @param localListenerAddress the address on which the auto scaling update arrive
 	 */
 	private void registerListener( String localListenerAddress) {
 		try {
-			// 1. Launch aregister listener request
+			// 1. Launch a register listener request
 			BSONObject bsonObject = new BasicBSONObject();
 			bsonObject.put("CMD", RoQConstant.BSON_CONFIG_REGISTER_FOR_AUTOSCALING_RULE_UPDATE);
 			bsonObject.put("QName", qName);
@@ -140,6 +141,40 @@ public class ScalingProcess extends KPISubscriber {
 			logger.error("Error when testing client ", e);
 		}
 		return null;
+	}
+
+/**
+ * @see org.roqmessaging.management.stat.KPISubscriber#run()
+ */
+@Override
+	public void run() {
+		ZMQ.Poller poller = context.poller(1);
+		poller.register(kpiSocket);
+		poller.register(pullListnerConfigSocket);
+		while (active) {
+			poller.poll(2000);
+			if (active & poller.pollin(0)) {
+				do {
+					// Stat coming from the KPI stream
+					BSONObject statObj = BSON.decode(kpiSocket.recv(0));
+					logger.debug("Start analysing info code " + statObj.get("CMD"));
+					processStat((Integer) statObj.get("CMD"), statObj, kpiSocket);
+				} while (kpiSocket.hasReceiveMore());
+			}
+			if (active & poller.pollin(1)) {
+				// New auto scaling config update
+				logger.debug("Receiving autoscaling update ");
+				this.scalingConfig = serializer.unserializeConfig(pullListnerConfigSocket.recv(0));
+			}
+		}
+		//Closing sockets
+		this.kpiSocket.setLinger(0);
+		this.pullListnerConfigSocket.setLinger(0);
+		poller.unregister(kpiSocket);
+		poller.unregister(pullListnerConfigSocket);
+		this.pullListnerConfigSocket.close();
+		this.kpiSocket.close();
+
 	}
 
 	/**
@@ -245,8 +280,6 @@ public class ScalingProcess extends KPISubscriber {
 	public void shutDown() {
 		this.requestSocket.setLinger(0);
 		this.requestSocket.close();
-		this.pullListnerConfigSocket.setLinger(0);
-		this.pullListnerConfigSocket.close();
 		super.shutDown();
 		logger.debug("Closing request socket");
 	}

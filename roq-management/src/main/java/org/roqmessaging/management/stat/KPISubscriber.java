@@ -127,7 +127,7 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	 * Checks whether the field is present in the BSON request
 	 * @param request the request
 	 * @param field the field to check
-	 * @return true if the field is present, false otherwise, in addition it sends a INVALI answer.
+	 * @return true if the field is present, false otherwise, in addition it sends a INVALID answer.
 	 */
 	protected boolean checkField(BSONObject request, String field) throws AssertionError {
 		if (!request.containsField(field)) {
