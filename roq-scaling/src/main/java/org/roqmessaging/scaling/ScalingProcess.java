@@ -34,7 +34,7 @@ import org.zeromq.ZMQ;
  * to evaluate auto scaling rules.
  * TODO:
  * 1. Spawning the Scaling process at the host monitor level in order to let the module indep
- * 2. Push/Pull reuquest or Req/Resp to get the last auto scaling rule associated to this queue - later a real pub/sub system must be put in place
+ * 2. Push/Pull request or Req/Resp to get the last auto scaling rule associated to this queue - later a real pub/sub system must be put in place
  * 3. Evaluation of the rule
  * 
  * @author sskhiri
@@ -105,7 +105,9 @@ public class ScalingProcess extends KPISubscriber {
 	@Override
 	public void processStat(Integer CMD, BSONObject statObj, org.zeromq.ZMQ.Socket statSocket) {
 		if(this.scalingConfig!=null){
-			this.logger.info(" Processing in AUTO SCALING process Stat "+ CMD);
+			this.logger.info(" Processing in AUTO SCALING process Stat "+ CMD + " : ");
+			this.logger.debug(statObj.toString());
+			boolean overloaded = false;
 			switch (CMD.intValue()) {
 			case 20:
 			    //Receiving statistic from an exchange
@@ -116,7 +118,7 @@ public class ScalingProcess extends KPISubscriber {
 				 *  { "CMD" : 22 , "CPU" : "1.12" , "MEMORY" : "4.6083984375"}
 				 */
 				//Building Exchange context
-				HashMap<String, Double> xchangeCtx = new HashMap<String, Double>();
+				HashMap<String, Double> context = new HashMap<String, Double>();
 				String xchangeID = (String) statObj.get("X_ID");
 				while(statSocket.hasReceiveMore()){
 					statObj = BSON.decode(statSocket.recv(0));
@@ -124,28 +126,34 @@ public class ScalingProcess extends KPISubscriber {
 					Integer cmd = (Integer) statObj.get("CMD");
 					if(cmd.intValue() ==21){
 						if(checkField(statObj, "Throughput"))
-							xchangeCtx.put(RoQConstantInternal.CONTEXT_KPI_XCHANGE_EVENTS, Double.parseDouble((String) statObj.get("Throughput")));
+							context.put(RoQConstantInternal.CONTEXT_KPI_XCHANGE_EVENTS, Double.parseDouble((String) statObj.get("Throughput")));
 					}
 					if(cmd.intValue() ==22){
 						if(checkField(statObj, "MEMORY") && checkField(statObj, "CPU")){
-							xchangeCtx.put(RoQConstantInternal.CONTEXT_KPI_HOST_CPU, Double.parseDouble((String) statObj.get("CPU")));
-							xchangeCtx.put(RoQConstantInternal.CONTEXT_KPI_HOST_RAM,Double.parseDouble((String) statObj.get("MEMORY")));
+							context.put(RoQConstantInternal.CONTEXT_KPI_HOST_CPU, Double.parseDouble((String) statObj.get("CPU")));
+							context.put(RoQConstantInternal.CONTEXT_KPI_HOST_RAM,Double.parseDouble((String) statObj.get("MEMORY")));
 						}
 					}
 					//Rule evaluation
-					boolean overloaded = false;
 					if(this.scalingConfig.getXgRule()!=null){
-						if(this.scalingConfig.getXgRule().isOverLoaded(xchangeCtx)){
+						if(this.scalingConfig.getXgRule().isOverLoaded(context)){
 							overloaded= true;
 							logger.info("Xchange auto scaling rule triggered "+ this.scalingConfig.getXgRule().toString() + "for exchange "+ xchangeID);
+						}else{
+							logger.debug("Xchange auto scaling rule NOT triggered "+ this.scalingConfig.getXgRule().toString() + "for exchange "+ xchangeID);
 						}
 					}
 					if(this.scalingConfig.getHostRule()!=null){
-						if(this.scalingConfig.getHostRule().isOverLoaded(xchangeCtx)){
+						if(this.scalingConfig.getHostRule().isOverLoaded(context)){
 							overloaded= true;
 							logger.info("Host auto scaling rule triggered "+ this.scalingConfig.getHostRule().toString()+ "for exchange "+ xchangeID + " Host");
+						}else{
+							logger.debug("Host auto scaling rule NOT triggered "+ this.scalingConfig.getHostRule().toString()+ "for exchange "+ xchangeID + " Host");
 						}
 					}
+				}
+				if(overloaded){
+					//TODO Autoscaling action
 				}
 				break;
 				
@@ -154,7 +162,32 @@ public class ScalingProcess extends KPISubscriber {
 				/**
 				 * { "CMD" : 23 , "QName" : "queueTestStat:5500" , "XChanges" : "1" , "Producers" : "0" , "Throughput" : "0"}
 				 * */
-				//TODO
+				context = new HashMap<String, Double>();
+				String qName =(String) statObj.get("QName");
+				logger.debug("Evaluating auto scaling rule for logical queue  " + qName);
+				if(checkField(statObj, "XChanges")
+						&& checkField(statObj, "Producers")
+						&& checkField(statObj, "Throughput")){
+					//Context creation
+					context.put("XChanges", Double.valueOf((String) statObj.get("XChanges")));
+					context.put("Producers", Double.valueOf((String) statObj.get("Producers")));
+					context.put("Throughput", Double.valueOf((String) statObj.get("Throughput")));
+					//Autoscaling rule checking
+					if(this.scalingConfig.getqRule()!=null){
+						if(this.scalingConfig.getqRule().isOverLoaded(context)){
+							overloaded= true;
+							logger.info("Logical Queue  auto scaling rule triggered "+ this.scalingConfig.getqRule().toString() + "for Q  "+ qName);
+						}else{
+							logger.info("Logical Queue  auto scaling rule  NOT triggered "+ this.scalingConfig.getqRule().toString() + "for Q  "+ qName);
+						}
+					}
+				}else{
+					logger.warn("The Queue level stat does not contain the mandatory attributes to create the context");
+				}
+				if(overloaded){
+					//TODO autoscaling action
+				}
+			break;
 
 			default:
 				break;
