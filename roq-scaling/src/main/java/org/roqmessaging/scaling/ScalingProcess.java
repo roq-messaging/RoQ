@@ -35,8 +35,10 @@ import org.zeromq.ZMQ;
  * to evaluate auto scaling rules.
  * TODO:
  * 1. Spawning the Scaling process at the host monitor level in order to let the module indep
- * 2. Push/Pull request or Req/Resp to get the last auto scaling rule associated to this queue - later a real pub/sub system must be put in place
+ * TEST the addition of a new sclaing rule from the tests
+ * 
  * DONE:
+ * 2. Push/Pull request or Req/Resp to get the last auto scaling rule associated to this queue - later a real pub/sub system must be put in place
  * 3. Evaluation of the rule
  * 
  * @author sskhiri
@@ -144,6 +146,8 @@ public class ScalingProcess extends KPISubscriber {
 	}
 
 /**
+ * Override the run in order to add a socket (for the update config listener) to the poller.
+ * 
  * @see org.roqmessaging.management.stat.KPISubscriber#run()
  */
 @Override
