@@ -27,6 +27,8 @@ import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.stat.KPISubscriber;
+import org.roqmessaging.scaling.policy.NullScalingPolicy;
+import org.roqmessaging.scaling.policy.IScalingPolicy;
 import org.zeromq.ZMQ;
 
 /**
@@ -35,7 +37,6 @@ import org.zeromq.ZMQ;
  * to evaluate auto scaling rules.
  * TODO:
  * 1. Spawning the Scaling process at the host monitor level in order to let the module indep
- * TEST the addition of a new sclaing rule from the tests
  * 
  * DONE:
  * 2. Push/Pull request or Req/Resp to get the last auto scaling rule associated to this queue - later a real pub/sub system must be put in place
@@ -58,6 +59,8 @@ public class ScalingProcess extends KPISubscriber {
 	private IRoQSerializer serializer =null;
 	//Logger
 	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
+	//The scaling policy
+	private IScalingPolicy scalingPolicy = null;
 
 	/**
 	 * @param globalConfiguration the GCM IP address
@@ -79,6 +82,8 @@ public class ScalingProcess extends KPISubscriber {
 		if(this.scalingConfig==null){
 			this.logger.info("Autoscaling process for queue "+ qName + " is innactive - no auto scaling rules");
 		}
+		//Init the scaling policy
+		this.scalingPolicy= new NullScalingPolicy();
 		
 		//Prepare the push listener registration
 		this.pullListnerConfigSocket=  this.context.socket(ZMQ.PULL);
@@ -230,7 +235,7 @@ public class ScalingProcess extends KPISubscriber {
 					}
 				}
 				if(overloaded){
-					//TODO Autoscaling action
+					this.scalingPolicy.scaleOut(context);
 				}
 				break;
 				
@@ -312,6 +317,20 @@ public class ScalingProcess extends KPISubscriber {
 		this.requestSocket.close();
 		super.shutDown();
 		logger.debug("Closing request socket");
+	}
+
+	/**
+	 * @return the scalingPolicy
+	 */
+	public IScalingPolicy getScalingPolicy() {
+		return scalingPolicy;
+	}
+
+	/**
+	 * @param scalingPolicy the scalingPolicy to set
+	 */
+	public void setScalingPolicy(IScalingPolicy scalingPolicy) {
+		this.scalingPolicy = scalingPolicy;
 	}
 
 }
