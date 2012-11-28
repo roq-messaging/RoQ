@@ -83,14 +83,14 @@ public class HostScalingRule implements IAutoScalingRule {
 	public boolean isOverLoaded(HashMap<String, Double> context) {
 		Double cpu = context.get(RoQConstantInternal.CONTEXT_KPI_HOST_CPU);
 		Double ram = context.get(RoQConstantInternal.CONTEXT_KPI_HOST_RAM);
-		if (this.getCPU_Limit() != 0) {
+		if (this.getCPU_Limit() != 0 && cpu!=null) {
 			if (cpu.floatValue() > this.getCPU_Limit()) {
 				logger.info("Host Scaling rule reached [cpu: " + cpu.floatValue() + "]");
 				return true;
 
 			}
 		}
-		if (this.getRAM_Limit() != 0) {
+		if (this.getRAM_Limit() != 0 && ram!=null) {
 			if (ram.floatValue() > this.getRAM_Limit()) {
 				logger.info("Host Scaling rule reached [ram:" + ram.floatValue() + "]");
 				return true;

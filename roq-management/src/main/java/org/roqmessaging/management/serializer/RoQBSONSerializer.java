@@ -175,7 +175,7 @@ public class RoQBSONSerializer implements IRoQSerializer {
 		if(xRule!=null){
 			result.setXgRule(new XchangeScalingRule(((Integer)xRule.get(RoQConstant.BSON_AUTOSCALING_XCHANGE_THR)).intValue(), 
 					 0f));
-			logger.debug("Host scaling rule : "+ result.getHostRule().toString());
+			logger.debug("Host Xchange rule : "+ result.getXgRule().toString());
 			ruleSet= true;
 		}
 		
@@ -184,7 +184,7 @@ public class RoQBSONSerializer implements IRoQSerializer {
 		if(qRule!=null){
 			result.setqRule(new LogicalQScalingRule(((Integer)qRule.get(RoQConstant.BSON_AUTOSCALING_Q_PROD_EXCH)).intValue(), 
 					((Integer)qRule.get(RoQConstant.BSON_AUTOSCALING_Q_THR_EXCH)).intValue()));
-			logger.debug("Host scaling rule : "+ result.getHostRule().toString());
+			logger.debug("Host Q rule : "+ result.getqRule().toString());
 			ruleSet= true;
 		}
 		return ruleSet==false? null:  result;

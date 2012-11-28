@@ -292,7 +292,17 @@ public interface RoQConstant {
 	 *   This request will start the queue, i.e. creating the queue at the Global configuration server only.
 	 */
 	public static int BSON_CONFIG_GET_AUTOSCALING_RULE = 2007;
-
+	
+	/**
+	 *  Request command that must be sent to the management controller server to register the address to push 
+	 *  when a new configuration for a queue must be published
+	 *   Request: "2008, QName:Name, Address:<address:port>"
+	 *   Answer: 
+	 *   RESULT, OK
+	 *   COMMENT, "The reason why it fails". This comment is not present in case of success.
+	 *   This request will start the queue, i.e. creating the queue at the Global configuration server only.
+	 */
+	public static int BSON_CONFIG_REGISTER_FOR_AUTOSCALING_RULE_UPDATE = 2008;
 	
 	/**
 	 * Used by the management server to broadcast configuration.

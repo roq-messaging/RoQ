@@ -193,7 +193,6 @@ public class Monitor implements Runnable, IStoppable {
 	 * @return the concatenate list of exchanged registered at the monitor
 	 */
 	private String bcastExchg() {
-		logger.debug("bcastExchg");
 		String exchList = "";
 		if (!knownHosts.isEmpty()) {
 			for (int i = 0; i < knownHosts.size(); i++) {
