@@ -548,7 +548,7 @@ public class MngtController implements Runnable, IStoppable {
 										break;
 									}else{
 										//The scaling rule has been updated need to check whether there was a listener for this Q
-										if(this.scalingConfigListener.equals(qName)){
+										if(this.scalingConfigListener.containsKey(qName)){
 											this.logger.info("New scaling rule have been defined for "+ qName +": notifying the listener");
 											this.scalingConfigListener.get(qName).send(this.serializer.serialiazeAutoScalingConfigAnswer(qName, config), 0);
 										}

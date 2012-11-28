@@ -16,6 +16,7 @@ package org.roq.simulation;
 
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.roq.simulation.management.client.MngClient;
 import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.client.IRoQSubscriber;
@@ -25,6 +26,10 @@ import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.LogicalQFactory;
+import org.roqmessaging.management.config.scaling.AutoScalingConfig;
+import org.roqmessaging.management.config.scaling.HostScalingRule;
+import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
+import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.scaling.ScalingProcess;
 
 /**
@@ -35,11 +40,16 @@ import org.roqmessaging.scaling.ScalingProcess;
  */
 public class TestScalingStatMonitor extends TestStatMonitor {
 	private Logger logger = Logger.getLogger(this.getClass().getName());
-
+	private MngClient mngClient = null;
+	
 	@Test
 	public void test() {
 		try {
-			logger.info("Main test stat monitor test");
+			logger.info("Main test Scaling process");
+			
+			//Init the management client
+			this.mngClient = new MngClient(RoQUtils.getInstance().getLocalIP());
+			
 			// Let the host self register to the global configuration
 			Thread.sleep(3000);
 			// 1. Create a Queue
@@ -95,13 +105,25 @@ public class TestScalingStatMonitor extends TestStatMonitor {
 			}
 			Thread.sleep(3000);
 			
-			//TODO Testing AUTOSCALING UPDATE:
 			//ADD an autoscaling rule for this queue
+			AutoScalingConfig cfg = createAutoscalingRules("testConfg");
 			//Check that the autocaling process is notified on his pull socket
+			mngClient.testAutoScaling("queue1", cfg);
+			
+			logger.info("ON  WAIT 2...");
+			Thread.sleep(3000);
 
+			// 3 b. Wait &. Check the content
+			logger.info("Sending MESSAGES ...");
+			for (int i = 0; i < 1000; i++) {
+				publisher.sendMessage("key".getBytes(), ("hello V2" + i).getBytes());
+			}
+			Thread.sleep(3000);
+			
 			// End close connection
 			connection.close();
 			subConnection.close();
+			
 
 			// Delete the queue
 			logicalQFactory.removeQueue("queue1");
@@ -111,5 +133,21 @@ public class TestScalingStatMonitor extends TestStatMonitor {
 			e.printStackTrace();
 		}
 
+	}
+
+	/**
+	 * @param cfgName the configuration name
+	 * @return dummy auto scaling rule with the specified name
+	 */
+	private AutoScalingConfig createAutoscalingRules(String cfgName) {
+		AutoScalingConfig config = new AutoScalingConfig();
+		config.setName(cfgName);
+		HostScalingRule hRule = new HostScalingRule(30, 40);
+		config.setHostRule(hRule);
+		XchangeScalingRule xRule =  new XchangeScalingRule(20000, 0);
+		config.setXgRule(xRule);
+		LogicalQScalingRule qRule = new LogicalQScalingRule(10000, 100000);
+		config.setqRule(qRule);
+		return config;
 	}
 }

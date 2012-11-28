@@ -209,28 +209,23 @@ public class ScalingProcess extends KPISubscriber {
 					if(cmd.intValue() ==21){
 						if(checkField(statObj, "Throughput"))
 							context.put(RoQConstantInternal.CONTEXT_KPI_XCHANGE_EVENTS, Double.parseDouble((String) statObj.get("Throughput")));
+						if(evaluateXchangeRule(context)){
+							overloaded = true;
+							logger.info("Xchange auto scaling rule triggered "+ this.scalingConfig.getXgRule().toString() + "for exchange "+ xchangeID);
+						}else{
+							logger.info("Xchange auto scaling rule NOT triggered "+ this.scalingConfig.getXgRule().toString() + "for exchange "+ xchangeID);
+						}
 					}
 					if(cmd.intValue() ==22){
 						if(checkField(statObj, "MEMORY") && checkField(statObj, "CPU")){
 							context.put(RoQConstantInternal.CONTEXT_KPI_HOST_CPU, Double.parseDouble((String) statObj.get("CPU")));
 							context.put(RoQConstantInternal.CONTEXT_KPI_HOST_RAM,Double.parseDouble((String) statObj.get("MEMORY")));
-						}
-					}
-					//Rule evaluation
-					if(this.scalingConfig.getXgRule()!=null){
-						if(this.scalingConfig.getXgRule().isOverLoaded(context)){
-							overloaded= true;
-							logger.info("Xchange auto scaling rule triggered "+ this.scalingConfig.getXgRule().toString() + "for exchange "+ xchangeID);
-						}else{
-							logger.debug("Xchange auto scaling rule NOT triggered "+ this.scalingConfig.getXgRule().toString() + "for exchange "+ xchangeID);
-						}
-					}
-					if(this.scalingConfig.getHostRule()!=null){
-						if(this.scalingConfig.getHostRule().isOverLoaded(context)){
-							overloaded= true;
-							logger.info("Host auto scaling rule triggered "+ this.scalingConfig.getHostRule().toString()+ "for exchange "+ xchangeID + " Host");
-						}else{
-							logger.debug("Host auto scaling rule NOT triggered "+ this.scalingConfig.getHostRule().toString()+ "for exchange "+ xchangeID + " Host");
+							if(evaluateHostRule(context)){
+								overloaded=true;
+								logger.info("Host auto scaling rule triggered "+ this.scalingConfig.getHostRule().toString()+ "for exchange "+ xchangeID + " Host");
+							}else{
+								logger.info("Host auto scaling rule NOT  triggered "+ this.scalingConfig.getHostRule().toString()+ "for exchange "+ xchangeID + " Host");
+							}
 						}
 					}
 				}
@@ -251,9 +246,9 @@ public class ScalingProcess extends KPISubscriber {
 						&& checkField(statObj, "Producers")
 						&& checkField(statObj, "Throughput")){
 					//Context creation
-					context.put("XChanges", Double.valueOf((String) statObj.get("XChanges")));
-					context.put("Producers", Double.valueOf((String) statObj.get("Producers")));
-					context.put("Throughput", Double.valueOf((String) statObj.get("Throughput")));
+					context.put(RoQConstantInternal.CONTEXT_KPI_Q_XCHANGE_NUMBER, Double.valueOf((String) statObj.get("XChanges")));
+					context.put(RoQConstantInternal.CONTEXT_KPI_Q_PRODUCER_NUMBER, Double.valueOf((String) statObj.get("Producers")));
+					context.put(RoQConstantInternal.CONTEXT_KPI_Q_THROUGPUT, Double.valueOf((String) statObj.get("Throughput")));
 					//Autoscaling rule checking
 					if(this.scalingConfig.getqRule()!=null){
 						if(this.scalingConfig.getqRule().isOverLoaded(context)){
@@ -277,6 +272,37 @@ public class ScalingProcess extends KPISubscriber {
 		}
 	}
 	
+	/**
+	 * @param context the topology context fed by stat
+	 * @return true when the rule is activated
+	 */
+	private boolean evaluateXchangeRule(HashMap<String, Double> context) {
+		//Rule evaluation
+		if (this.scalingConfig.getXgRule() != null) {
+			if (this.scalingConfig.getXgRule().isOverLoaded(context)) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @param context the current context of the topology
+	 * @return true if the rule is activated
+	 */
+	private boolean evaluateHostRule(HashMap<String, Double> context) {
+		if(this.scalingConfig.getHostRule()!=null){
+			if(this.scalingConfig.getHostRule().isOverLoaded(context)){
+				return true;
+			}else{
+				return false;
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * @see org.roqmessaging.management.stat.KPISubscriber#shutDown()
 	 */
