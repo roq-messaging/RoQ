@@ -193,6 +193,14 @@ public class HostConfigManager implements Runnable, IStoppable {
 								(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) ).getBytes(), 0);
 					}
 					break;
+				case RoQConstant.CONFIG_INFO_EXCHANGE:
+					logger.debug("Recieveing  get XChange INFO from a client ");
+					//Answer in3 parts
+					//[OK or FAIL], [Number of exchange on host], [max limit of exchange defined in property]
+					this.clientReqSocket.send((Integer.toString(RoQConstant.OK) ).getBytes(), ZMQ.SNDMORE);
+					this.clientReqSocket.send((Integer.toString(this.getExchangeNumber()) ).getBytes(), ZMQ.SNDMORE);
+					this.clientReqSocket.send((Integer.toString(this.properties.getMaxNumberEchanges()) ).getBytes(), 0);
+					break;
 				}
 			}
 		}
@@ -202,6 +210,17 @@ public class HostConfigManager implements Runnable, IStoppable {
 		this.globalConfigSocket.setLinger(0);
 		this.clientReqSocket.close();
 		this.globalConfigSocket.close();
+	}
+
+	/**
+	 * @return the total number of exchanges on the host
+	 */
+	private int getExchangeNumber() {
+		int total =0;
+		for (String  queue : this.qExchangeMap.keySet()) {
+			total+=this.qExchangeMap.get(queue).size();
+		}
+		return total;
 	}
 
 	/**

@@ -189,6 +189,15 @@ public interface RoQConstant {
 	 */
 	public static int CONFIG_REMOVE_EXCHANGE = 1010;
 	
+	/**
+	 * Get Exchange info request.
+	 * This request is sent to the Host config manager in order to know the number of exchange already 
+	 * there. Answer in 3 parts:
+	 * [OK or FAIL], [Number of exchange on host], [max limit of exchange defined in property]
+	 * 
+	 */
+	public static int CONFIG_INFO_EXCHANGE = 1011;
+	
 	
 	/**
 	 * Send to shut donw a {@linkplain IStoppable} element
