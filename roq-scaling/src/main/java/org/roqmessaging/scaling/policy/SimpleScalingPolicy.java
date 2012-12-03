@@ -50,6 +50,7 @@ public class SimpleScalingPolicy implements IScalingPolicy {
 		//2. for each host ask the host the number of exchanges
 		for (String host : this.configurationState.getHostManagerMap().keySet()) {
 			ZMQ.Socket hostSocket = 	this.configurationState.getHostManagerMap().get(host);
+			//Need to be able to send a getExchangeInfo() on each host as defined by #98
 		}
 		//3. If one has a few number we can create a new exchanges otherwise we need to spawn a new host with a brand new exchange.
 		return false;
