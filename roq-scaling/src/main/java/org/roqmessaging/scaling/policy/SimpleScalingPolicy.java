@@ -16,6 +16,9 @@ package org.roqmessaging.scaling.policy;
 
 import java.util.HashMap;
 
+import org.roqmessaging.management.GlobalConfigurationStateClient;
+import org.zeromq.ZMQ;
+
 /**
  * Class SimpleScalingPolicy
  * <p> Description: a simple scaling policy that first looks whether we need to create an exchange 
@@ -24,13 +27,30 @@ import java.util.HashMap;
  * @author sskhiri
  */
 public class SimpleScalingPolicy implements IScalingPolicy {
+	// Config to hold toknow the topology
+	private GlobalConfigurationStateClient configurationState = null;
+	
+	
+
+	/**
+	 * @param gCMAddress the address of the global configuration server.
+	 */
+	public SimpleScalingPolicy(String gCMAddress) {
+		this.configurationState = new GlobalConfigurationStateClient(gCMAddress);
+	}
+
+
 
 	/**
 	 * @see org.roqmessaging.scaling.policy.IScalingPolicy#scaleOut(java.util.HashMap)
 	 */
 	public boolean scaleOut(HashMap<String, Double> context) {
 		//1. Get the list of host from the GCM
+		this.configurationState.refreshConfiguration();
 		//2. for each host ask the host the number of exchanges
+		for (String host : this.configurationState.getHostManagerMap().keySet()) {
+			ZMQ.Socket hostSocket = 	this.configurationState.getHostManagerMap().get(host);
+		}
 		//3. If one has a few number we can create a new exchanges otherwise we need to spawn a new host with a brand new exchange.
 		return false;
 	}
