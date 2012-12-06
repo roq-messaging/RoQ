@@ -195,11 +195,16 @@ public class HostConfigManager implements Runnable, IStoppable {
 					break;
 				case RoQConstant.CONFIG_INFO_EXCHANGE:
 					logger.debug("Recieveing  get XChange INFO from a client ");
-					//Answer in3 parts
-					//[OK or FAIL], [Number of exchange on host], [max limit of exchange defined in property]
-					this.clientReqSocket.send((Integer.toString(RoQConstant.OK) ).getBytes(), ZMQ.SNDMORE);
-					this.clientReqSocket.send((Integer.toString(this.getExchangeNumber()) ).getBytes(), ZMQ.SNDMORE);
-					this.clientReqSocket.send((Integer.toString(this.properties.getMaxNumberEchanges()) ).getBytes(), 0);
+					try {
+						//Answer in3 parts
+						//[OK or FAIL], [Number of exchange on host], [max limit of exchange defined in property]
+						this.clientReqSocket.send((Integer.toString(RoQConstant.OK) ).getBytes(), ZMQ.SNDMORE);
+						this.clientReqSocket.send((Integer.toString(this.getExchangeNumber()) ).getBytes(), ZMQ.SNDMORE);
+						this.clientReqSocket.send((Integer.toString(this.properties.getMaxNumberEchanges()) ).getBytes(), 0);
+					} catch (Exception e) {
+						this.clientReqSocket.send((Integer.toString(RoQConstant.FAIL) ).getBytes(), 0);
+					}
+				
 					break;
 				}
 			}

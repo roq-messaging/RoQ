@@ -29,7 +29,7 @@ public class NullScalingPolicy implements IScalingPolicy {
 	/**
 	 * @see org.roqmessaging.scaling.policy.IScalingPolicy#scaleOut(java.util.HashMap)
 	 */
-	public boolean scaleOut(HashMap<String, Double> context) {
+	public boolean scaleOut(HashMap<String, Double> context, String qName) {
 		Logger.getLogger(this.getClass().getCanonicalName()).info("In Null Scaling policy");
 		return true;
 	}

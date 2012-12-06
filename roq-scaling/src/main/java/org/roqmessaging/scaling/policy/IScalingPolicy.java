@@ -27,7 +27,8 @@ public interface IScalingPolicy {
 	
 	/**
 	 * @param context the topology context at that moment
+	 * @param qName the name of the queue fpr which we need to scale
 	 * @return true if the autoscaling request has been correctly launched.
 	 */
-	public boolean scaleOut(HashMap<String, Double> context); 
+	public boolean scaleOut(HashMap<String, Double> context, String qName); 
 }

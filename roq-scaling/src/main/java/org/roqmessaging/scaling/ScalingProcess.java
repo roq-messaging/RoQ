@@ -235,7 +235,7 @@ public class ScalingProcess extends KPISubscriber {
 					}
 				}
 				if(overloaded){
-					this.scalingPolicy.scaleOut(context);
+					this.scalingPolicy.scaleOut(context, this.qName);
 				}
 				break;
 				

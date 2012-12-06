@@ -16,7 +16,11 @@ package org.roqmessaging.scaling.policy;
 
 import java.util.HashMap;
 
+import org.apache.log4j.Logger;
+import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
+import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.management.GlobalConfigurationStateClient;
+import org.roqmessaging.management.LogicalQFactory;
 import org.zeromq.ZMQ;
 
 /**
@@ -29,6 +33,10 @@ import org.zeromq.ZMQ;
 public class SimpleScalingPolicy implements IScalingPolicy {
 	// Config to hold toknow the topology
 	private GlobalConfigurationStateClient configurationState = null;
+	//Log
+	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
+	//Queue factory
+	private IRoQLogicalQueueFactory qFactory = null;
 	
 	
 
@@ -37,20 +45,53 @@ public class SimpleScalingPolicy implements IScalingPolicy {
 	 */
 	public SimpleScalingPolicy(String gCMAddress) {
 		this.configurationState = new GlobalConfigurationStateClient(gCMAddress);
+		this.qFactory = new LogicalQFactory(gCMAddress);
 	}
 
 
-
 	/**
+	 * 1. Get the list of host from the GCM
+	 * 2. for each host ask the host the number of exchanges to the host directly
+	 * 3. Check the limit and assign a candidate host
 	 * @see org.roqmessaging.scaling.policy.IScalingPolicy#scaleOut(java.util.HashMap)
 	 */
-	public boolean scaleOut(HashMap<String, Double> context) {
+	public boolean scaleOut(HashMap<String, Double> context, String qName) {
+		//0. Init the candidate host to null
+		String candidate = null;
+		int bestFreeSlot=0;
 		//1. Get the list of host from the GCM
 		this.configurationState.refreshConfiguration();
 		//2. for each host ask the host the number of exchanges
 		for (String host : this.configurationState.getHostManagerMap().keySet()) {
 			ZMQ.Socket hostSocket = 	this.configurationState.getHostManagerMap().get(host);
 			//Need to be able to send a getExchangeInfo() on each host as defined by #98
+			hostSocket.send(Integer.toString(RoQConstant.CONFIG_INFO_EXCHANGE).getBytes(), 0);
+			//Answer contains
+			//[OK or FAIL], [Number of exchange on host], [max limit of exchange defined in property]
+			String resultHost = new String(hostSocket.recv(0));
+			if(Integer.getInteger(resultHost).intValue()== RoQConstant.OK){
+				//[Number of exchange on host]
+				resultHost = new String(hostSocket.recv(0));
+				int exchange = Integer.getInteger(resultHost).intValue();
+				resultHost = new String(hostSocket.recv(0));
+				int limit = Integer.getInteger(resultHost).intValue();
+				logger.info("Host "+ host+ " has already "+ host +" and the limit is "+ limit);
+				int freeSlot = limit-exchange;
+				if(freeSlot>bestFreeSlot){
+					bestFreeSlot = freeSlot;
+					candidate = host;
+					logger.debug("Host "+ host+ " is a potential candidate");
+				}
+			}else{
+				logger.error("The host located on "+ host +" cannot send back the exchange information");
+			}
+			if(candidate==null){
+				logger.info("No candidate have been found : need to provision a new VM");
+			}else{
+				//Provision a new exchange on host
+				this.qFactory.createExchange(qName, host);
+			}
+			//TODO test the host request for exchange info
 		}
 		//3. If one has a few number we can create a new exchanges otherwise we need to spawn a new host with a brand new exchange.
 		return false;
