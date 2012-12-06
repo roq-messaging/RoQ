@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -66,6 +67,9 @@ public class HostConfigManager implements Runnable, IStoppable {
 	private HashMap<String, String> qMonitorStatMap = null;
 	// [qName, list of Xchanges]
 	private HashMap<String, List<String>> qExchangeMap = null;
+	//[qName, Scaling process shutdown address] 
+	//TODO starting the process, register it and deleting it when stoping
+	private HashMap<String, String> qScalingProcessAddr = null;
 	//The shutdown monitor
 	private ShutDownMonitor shutDownMonitor = null;
 	//The lock to avoid any race condition
@@ -209,12 +213,25 @@ public class HostConfigManager implements Runnable, IStoppable {
 				}
 			}
 		}
+		stopAllRunningQueueOnHost();
 		unregisterHostFromConfig();
 		logger.info("Closing the client & global config sockets.");
 		this.clientReqSocket.setLinger(0);
 		this.globalConfigSocket.setLinger(0);
 		this.clientReqSocket.close();
 		this.globalConfigSocket.close();
+	}
+
+	/**
+	 * Remove all queues delcared on this host. This operation is part of the cleaning 
+	 * house before closing the host.
+	 */
+	private void stopAllRunningQueueOnHost() {
+		for (String qName : this.qMonitorMap.keySet()) {
+			logger.info("Cleaning host - removing  "+qName);
+			this.removingQueue(qName);
+		}
+		
 	}
 
 	/**
@@ -290,6 +307,11 @@ public class HostConfigManager implements Runnable, IStoppable {
 			shutDownMonitor.connect(portOff + (basePort + 5));
 			shutDownMonitor.send((Integer.toString(RoQConstant.SHUTDOWN_REQUEST)).getBytes(), 0);
 			shutDownMonitor.close();
+			//Removing Q information
+			this.qExchangeMap.remove(qName);
+			this.qMonitorMap.remove(qName);
+			this.qMonitorStatMap.remove(qName);
+			//this.qScalingProcessAddr.remove(qName);
 		} finally {
 			this.lockRemoveQ.unlock();
 		}
