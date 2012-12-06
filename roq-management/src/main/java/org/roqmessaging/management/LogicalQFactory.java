@@ -275,4 +275,11 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		//3. Sends to the global config Manager - > no needs.
 		return true;
 	}
+
+	/**
+	 * @return the configurationState
+	 */
+	public GlobalConfigurationStateClient getConfigurationState() {
+		return configurationState;
+	}
 }

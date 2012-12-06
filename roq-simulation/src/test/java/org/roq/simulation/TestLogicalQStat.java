@@ -58,6 +58,7 @@ public class TestLogicalQStat extends RoQTestCase {
 			subscriber.setXchangeToCheck(2);
 			Thread.sleep(5000);
 			
+			
 			//7. Shutdown
 			factory.removeQueue(qName);
 			subscriber.shutDown();

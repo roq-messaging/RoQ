@@ -86,15 +86,13 @@ echo "----Installing Back-End Management----"
 
 			        git checkout develop >> $INSTALLDIR/roq.log 2>&1
 
-				git submodule init >> $INSTALLDIR/roq.log 2>&1
-				
-				git submodule update --recursive >> $INSTALLDIR/roq.log 2>&1
+				git submodule update --init --recursive >> $INSTALLDIR/roq.log 2>&1
 
-				cd roq-web-console
+				#cd roq-web-console
 
-				git submodule init >> $INSTALLDIR/roq.log 2>&1
+				#git submodule init >> $INSTALLDIR/roq.log 2>&1
 				
-				git submodule update $INSTALLDIR/roq.log 2>&1
+				#git submodule update $INSTALLDIR/roq.log 2>&1
 
 		        	#Node Packages installation
 			        npm install >> $INSTALLDIR/roq.log 2>&1
@@ -124,19 +122,17 @@ echo "----Installing Back-End Management----"
                                 cd roq-backend
 
                                 git checkout develop >> $INSTALLDIR/roq.log 2>&1
-
-				git submodule init >> $INSTALLDIR/roq.log 2>&1
 				
-				git submodule update --recursive >> $INSTALLDIR/roq.log 2>&1
+				git submodule update --init --recursive >> $INSTALLDIR/roq.log 2>&1
 
                                 #Node Packages installation
                                 npm install >> $INSTALLDIR/roq.log 2>&1
 
-				cd roq-web-console
+				#cd roq-web-console
 
-				git submodule init >> $INSTALLDIR/roq.log 2>&1
+				#git submodule init >> $INSTALLDIR/roq.log 2>&1
 				
-				git submodule update $INSTALLDIR/roq.log 2>&1
+				#git submodule update $INSTALLDIR/roq.log 2>&1
 
 echo "Installation log available at $INSTALLDIR/roq.log"
 echo "Congratulations ! RoQ has been successfully installed on your system in $INSTALLDIR/RoQ/ !!!"
