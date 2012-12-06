@@ -30,7 +30,6 @@ import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
 import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
 import org.roqmessaging.management.config.scaling.XchangeScalingRule;
-import org.roqmessaging.scaling.ScalingProcess;
 
 /**
  * Class TestScalingStatMonitor
@@ -60,8 +59,8 @@ public class TestScalingStatMonitor extends TestStatMonitor {
 			Thread.sleep(3000);
 			
 			// 2. Init the KPI subscriber
-			kpiSubscriber = new ScalingProcess(launcher.getConfigurationServer(), "queue1", 7001);
-			new Thread(kpiSubscriber).start();
+//			kpiSubscriber = new ScalingProcess(launcher.getConfigurationServer(), "queue1", 7001);
+//			new Thread(kpiSubscriber).start();
 
 			// 3. Create a subscriber
 			IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getConfigurationServer());

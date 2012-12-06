@@ -12,34 +12,33 @@
  * limitations under the License.
  * 
  */
-package org.roqmessaging.core.launcher;
+package org.roqmessaging.scaling.launcher;
 
-import org.roqmessaging.core.Exchange;
-import org.zeromq.ZMQ;
+import org.roqmessaging.scaling.ScalingProcess;
 
 /**
- * Class ExchangeLauncher
- * <p>
- * Description: Launch an exchange instance with the specified configuration.
+ * Class ScalingProcessLauncher
+ * <p> Description: Launches the process of the scaling monitor.
  * 
  * @author sskhiri
  */
-public class ExchangeLauncher {
+public class ScalingProcessLauncher {
+
 
 	/**
-	 * Must contain 4 attributes: 1. The front port <br>
-	 * 2. The back port <br>
-	 * 3. the address of the monitor to bind tcp:// monitor:monitorPort<br>
-	 * 4. The address of the stat monitor to bind tcp://monitor:statport<br>
+	 * Must contain 3 attributes: 
+	 * 1. The GCM IP address <br>
+	 * 2. The qName <br>
+	 * 3. The port on which the process will subscribe to queue configuration update<br>
 	 * 
-	 * example: 5559 5560 tcp://localhost:5571, tcp://localhost:5800
+	 * example: "127.0.0.1 queueTest 5802 
 	 * 
 	 * <p>
 	 * Notice that this process must be stopped by the shutdown monitor process
 	 * by using <code>
 	 *     ZMQ.Socket shutDownExChange = ZMQ.context(1).socket(ZMQ.REQ);
 			shutDownExChange.setSendTimeOut(0);
-			shutDownExChange.connect("tcp://"+address+":"+(backport+1));
+			shutDownExChange.connect("tcp://"+address+":"+(listenerPort+1));
 			shutDownExChange.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
 			shutDownExChange.close();
 	 * </code>
@@ -47,30 +46,20 @@ public class ExchangeLauncher {
 	 * @throws InterruptedException
 	 */
 	public static void main(String[] args) throws InterruptedException {
-		System.out.println("Launching Exchange process with arg "+displayArg(args));
-		if (args.length != 4) {
+		System.out.println("Launching Scaling process with arg "+displayArg(args));
+		if (args.length != 3) {
 			System.out
-					.println("The argument should be <int front port> <int back port> < tcp:// monitor:monitorPort>  <tcp:// monitor:statport>");
+					.println("The argument should be <GCM IP addresse> <Queue Name> < Listener port>  ");
 			return;
 		}
-		System.out.println("Starting Exchange with monitor " + args[2] + ", stat= " + args[3]);
-		System.out.println("Front  port  " + args[0] + ", Back port= " + args[1]);
+		System.out.println("Starting Scaling process for queue " + args[1] + ", using a listener port= " + args[2]);
 		
 		try {
-			int frontPort = Integer.parseInt(args[0]);
-			int backPort = Integer.parseInt(args[1]);
-			// Add a communication socket that will notify the monitor that this
-			// instance stops
-			final ZMQ.Context shutDownContext;
-			final ZMQ.Socket shutDownSocket;
-			shutDownContext = ZMQ.context(1);
-			shutDownSocket = shutDownContext.socket(ZMQ.PUB);
-			shutDownSocket.connect(args[2]);
-			shutDownSocket.setLinger(3500);
+			int listenerPort = Integer.parseInt(args[2]);
 			// Instanciate the exchange
-			final Exchange exchange = new Exchange(frontPort, backPort, args[2], args[3]);
+			final ScalingProcess scalingProcess = new ScalingProcess(args[0], args[1], listenerPort);
 			// Launch the thread
-			Thread t = new Thread(exchange);
+			Thread t = new Thread(scalingProcess);
 			t.start();
 		} catch (NumberFormatException e) {
 			System.out.println(" The arguments are not valid, must: <int: front port> <int: back port>");
@@ -89,6 +78,8 @@ public class ExchangeLauncher {
 		}
 		return result;
 	}
+
+
 
 
 }
