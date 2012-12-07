@@ -36,10 +36,7 @@ import org.zeromq.ZMQ;
  * Class ScalingProcess
  * <p> Description: Subscriber to the Statistic channel and process specific stat in order 
  * to evaluate auto scaling rules.
- * TODO:
  * 1. Spawning the Scaling process at the host monitor level in order to let the module indep
- * 
- * DONE:
  * 2. Push/Pull request or Req/Resp to get the last auto scaling rule associated to this queue - later a real pub/sub system must be put in place
  * 3. Evaluation of the rule
  * 

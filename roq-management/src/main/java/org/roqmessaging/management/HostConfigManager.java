@@ -234,7 +234,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 		//1. Compute the stat monitor port+2
 		if(this.qMonitorStatMap.containsKey(qName)){
 			int basePort = this.serializationUtils.extractBasePort(this.qMonitorStatMap.get(qName));
-			basePort=+2;
+			basePort+=2;
 			// 2. Launch script
 			try {
 				ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
@@ -426,7 +426,9 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * @return the monitor stat port
 	 */
 	private int getStatMonitorPort() {
-		return (this.properties.getStatMonitorBasePort() + this.qMonitorMap.size()*3);
+		//By for because the stat monitor starts on port, its shutdown on port+1, the scaling process on 
+		//port+2 and its shuto down process on port +3.
+		return (this.properties.getStatMonitorBasePort() + this.qMonitorMap.size()*4);
 	}
 
 	/**
