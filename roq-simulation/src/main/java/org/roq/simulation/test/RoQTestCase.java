@@ -29,7 +29,13 @@ import org.roqmessaging.management.LogicalQFactory;
 
 /**
  * Class RoQTestCase
- * <p> Description: Thest case that provides methods for popluating a queue for test.
+ * <p> Description: Thest case that provides methods for populating a queue for test.
+ * In the setup we launch the RoQ all launcher that will instantiate a complete RoQ infra,
+ *  in addition we set the configuration file with the testGCM.properties.
+ *  Finally we initiate a factory in case of queue or exchange creation. 
+ *  
+ *  Going further the case provides facility method to initiate queue and automatically
+ *  attaching subscriber. Publisher can also be created easily. 
  * 
  * @author sskhiri
  */
@@ -117,7 +123,8 @@ public class RoQTestCase {
 	}
 
 	/**
-	 * Attach a subscriber to the queue
+	 * Attach a subscriber to the queue on the topic "key". The test must send 
+	 * a java-encoded verison of "hello".
 	 * @param qName the queue to attach the subs.
 	 */
 	protected void attachSUbscriber(String qName) {

@@ -36,6 +36,7 @@ import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.config.internal.FileConfigurationReader;
 import org.roqmessaging.management.config.internal.HostConfigDAO;
+import org.roqmessaging.scaling.launcher.ScalingProcessLauncher;
 import org.zeromq.ZMQ;
 
 /**
@@ -66,6 +67,9 @@ public class HostConfigManager implements Runnable, IStoppable {
 	private HashMap<String, String> qMonitorStatMap = null;
 	// [qName, list of Xchanges]
 	private HashMap<String, List<String>> qExchangeMap = null;
+	//[qName, Scaling process shutdown port (on the same machine as host)] 
+	//TODO starting the process, register it and deleting it when stoping
+	private HashMap<String, Integer> qScalingProcessAddr = null;
 	//The shutdown monitor
 	private ShutDownMonitor shutDownMonitor = null;
 	//The lock to avoid any race condition
@@ -100,6 +104,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 			this.qExchangeMap = new HashMap<String, List<String>>();
 			this.qMonitorMap = new HashMap<String, String>();
 			this.qMonitorStatMap = new HashMap<String, String>();
+			this.qScalingProcessAddr = new HashMap<String, Integer>();
 			// Init the shutdown monitor
 			this.shutDownMonitor = new ShutDownMonitor(5101, this);
 			new Thread(this.shutDownMonitor).start();
@@ -144,9 +149,11 @@ public class HostConfigManager implements Runnable, IStoppable {
 						// 2.2. Start the exchange
 						boolean xChangeOK = startNewExchangeProcess(qName, this.qMonitorMap.get(qName),
 								this.qMonitorStatMap.get(qName));
+						//2.3. Start the scaling process
+						boolean scalingOK = startNewScalingProcess(qName);
 						
 						// if OK send OK
-						if (monitorAddress != null & xChangeOK) {
+						if (monitorAddress != null & xChangeOK && scalingOK) {
 							logger.info("Successfully created new Q for " + qName + "@" + monitorAddress);
 							this.clientReqSocket.send(
 									(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK) + "," + monitorAddress)
@@ -209,12 +216,58 @@ public class HostConfigManager implements Runnable, IStoppable {
 				}
 			}
 		}
+		stopAllRunningQueueOnHost();
 		unregisterHostFromConfig();
 		logger.info("Closing the client & global config sockets.");
 		this.clientReqSocket.setLinger(0);
 		this.globalConfigSocket.setLinger(0);
 		this.clientReqSocket.close();
 		this.globalConfigSocket.close();
+	}
+
+	/**
+	 * @param qName the name of queue for which we need to create the scaling process
+	 * @param port the listener port on wich the sclaing process will scubscribe to configuration update
+	 * @return true if the creation was OK
+	 */
+	private boolean startNewScalingProcess(String qName) {
+		//1. Compute the stat monitor port+2
+		if(this.qMonitorStatMap.containsKey(qName)){
+			int basePort = this.serializationUtils.extractBasePort(this.qMonitorStatMap.get(qName));
+			basePort+=2;
+			// 2. Launch script
+			try {
+				ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
+						+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),
+						ScalingProcessLauncher.class.getCanonicalName(), this.properties.getGcmAddress(),
+						qName, new Integer((basePort)).toString());
+				logger.debug("Starting: " + pb.command());
+				final Process process = pb.start();
+				pipe(process.getErrorStream(), System.err);
+				pipe(process.getInputStream(), System.out);
+				logger.debug("Storing scaling process information");
+				this.qScalingProcessAddr.put(qName, (basePort+1));
+			} catch (IOException e) {
+				logger.error("Error while executing script", e);
+				return false;
+			}	
+		}else{
+			return false;
+		}
+		
+		return true;
+	}
+
+	/**
+	 * Remove all queues delcared on this host. This operation is part of the cleaning 
+	 * house before closing the host.
+	 */
+	private void stopAllRunningQueueOnHost() {
+		for (String qName : this.qMonitorMap.keySet()) {
+			logger.info("Cleaning host - removing  "+qName);
+			this.removingQueue(qName);
+		}
+		
 	}
 
 	/**
@@ -290,6 +343,19 @@ public class HostConfigManager implements Runnable, IStoppable {
 			shutDownMonitor.connect(portOff + (basePort + 5));
 			shutDownMonitor.send((Integer.toString(RoQConstant.SHUTDOWN_REQUEST)).getBytes(), 0);
 			shutDownMonitor.close();
+			//3. Stopping the scaling process
+			if(this.qScalingProcessAddr.containsKey(qName)){
+				ZMQ.Socket shutDownScaling = ZMQ.context(1).socket(ZMQ.REQ);
+				shutDownScaling.setSendTimeOut(0);
+				shutDownScaling.connect(portOff + this.qScalingProcessAddr.get(qName).toString());
+				shutDownScaling.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
+				shutDownScaling.close();
+			}
+			//4. Removing Q information
+			this.qExchangeMap.remove(qName);
+			this.qMonitorMap.remove(qName);
+			this.qMonitorStatMap.remove(qName);
+			this.qScalingProcessAddr.remove(qName);
 		} finally {
 			this.lockRemoveQ.unlock();
 		}
@@ -360,7 +426,9 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * @return the monitor stat port
 	 */
 	private int getStatMonitorPort() {
-		return (this.properties.getStatMonitorBasePort() + this.qMonitorMap.size()*2);
+		//By for because the stat monitor starts on port, its shutdown on port+1, the scaling process on 
+		//port+2 and its shuto down process on port +3.
+		return (this.properties.getStatMonitorBasePort() + this.qMonitorMap.size()*4);
 	}
 
 	/**

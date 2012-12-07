@@ -17,6 +17,7 @@ package org.roq.simulation;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.roq.simulation.management.client.MngClient;
+import org.roq.simulation.test.RoQTestCase;
 import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.client.IRoQSubscriber;
@@ -30,7 +31,6 @@ import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
 import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
 import org.roqmessaging.management.config.scaling.XchangeScalingRule;
-import org.roqmessaging.scaling.ScalingProcess;
 
 /**
  * Class TestScalingStatMonitor
@@ -38,7 +38,7 @@ import org.roqmessaging.scaling.ScalingProcess;
  * 
  * @author sskhiri
  */
-public class TestScalingStatMonitor extends TestStatMonitor {
+public class TestScalingStatMonitor extends RoQTestCase {
 	private Logger logger = Logger.getLogger(this.getClass().getName());
 	private MngClient mngClient = null;
 	
@@ -56,12 +56,8 @@ public class TestScalingStatMonitor extends TestStatMonitor {
 			IRoQLogicalQueueFactory logicalQFactory = new LogicalQFactory(launcher.getConfigurationServer());
 			logicalQFactory.createQueue("queue1", RoQUtils.getInstance().getLocalIP());
 			
-			// Let the Process start and binding port
+			// 2.Let the Process start and binding port
 			Thread.sleep(3000);
-			
-			// 2. Init the KPI subscriber
-			kpiSubscriber = new ScalingProcess(launcher.getConfigurationServer(), "queue1", 7001);
-			new Thread(kpiSubscriber).start();
 
 			// 3. Create a subscriber
 			IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getConfigurationServer());
@@ -98,7 +94,6 @@ public class TestScalingStatMonitor extends TestStatMonitor {
 			Thread.sleep(3000);
 
 			// 3 Wait &. Check the content
-
 			logger.info("Sending MESSAGES ...");
 			for (int i = 0; i < 1000; i++) {
 				publisher.sendMessage("key".getBytes(), ("hello" + i).getBytes());

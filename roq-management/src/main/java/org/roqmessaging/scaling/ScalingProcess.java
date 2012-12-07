@@ -22,6 +22,7 @@ import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.RoQConstantInternal;
+import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.serializer.IRoQSerializer;
@@ -35,10 +36,7 @@ import org.zeromq.ZMQ;
  * Class ScalingProcess
  * <p> Description: Subscriber to the Statistic channel and process specific stat in order 
  * to evaluate auto scaling rules.
- * TODO:
  * 1. Spawning the Scaling process at the host monitor level in order to let the module indep
- * 
- * DONE:
  * 2. Push/Pull request or Req/Resp to get the last auto scaling rule associated to this queue - later a real pub/sub system must be put in place
  * 3. Evaluation of the rule
  * 
@@ -61,8 +59,11 @@ public class ScalingProcess extends KPISubscriber {
 	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
 	//The scaling policy
 	private IScalingPolicy scalingPolicy = null;
+	//The shut down monitor
+	private ShutDownMonitor shutDownMonitor = null;
 
 	/**
+	 * Notice the scaling process starts a shutdown monitor on the listener port +1. We advice to start it on port 5802. 
 	 * @param globalConfiguration the GCM IP address
 	 * @param qName the name of the queue we want to connect.
 	 * @param listnerPort is the port on which the scaling process will listen for push request when a new configuration will
@@ -91,6 +92,11 @@ public class ScalingProcess extends KPISubscriber {
 		this.pullListnerConfigSocket.bind(localListenerAddress);
 		//Start the registration operation
 		this.registerListener( localListenerAddress);
+		
+		//initiatlisation of the shutdown thread
+		this.shutDownMonitor = new ShutDownMonitor(listnerPort+1, this);
+		new Thread(shutDownMonitor).start();
+		logger.debug("Started  scaling shutdown monitor on "+ (listnerPort+1));
 	}
 
 	/**
@@ -313,6 +319,7 @@ public class ScalingProcess extends KPISubscriber {
 	 */
 	@Override
 	public void shutDown() {
+		logger.debug("Stopping the Scaling process for Q " +this.qName);
 		this.requestSocket.setLinger(0);
 		this.requestSocket.close();
 		super.shutDown();
