@@ -61,7 +61,8 @@ public class ScalingProcess extends KPISubscriber {
 	private IScalingPolicy scalingPolicy = null;
 	//The shut down monitor
 	private ShutDownMonitor shutDownMonitor = null;
-
+	//The cloud properties
+	//TODO 
 	/**
 	 * Notice the scaling process starts a shutdown monitor on the listener port +1. We advice to start it on port 5802. 
 	 * @param globalConfiguration the GCM IP address

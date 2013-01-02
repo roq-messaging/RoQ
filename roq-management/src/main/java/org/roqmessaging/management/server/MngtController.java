@@ -23,6 +23,7 @@ import java.util.Timer;
 import org.apache.log4j.Logger;
 import org.bson.BSON;
 import org.bson.BSONObject;
+import org.bson.BasicBSONObject;
 import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
@@ -30,6 +31,7 @@ import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.LogicalQFactory;
+import org.roqmessaging.management.config.internal.GCMPropertyDAO;
 import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
 import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
@@ -79,6 +81,8 @@ public class MngtController implements Runnable, IStoppable {
 	// The map that register for a queue the configuration listener [Qname, Push
 	// pull address]
 	private HashMap<String, ZMQ.Socket> scalingConfigListener = null;
+	//The HCM properties
+	private GCMPropertyDAO properties = null;
 
 	/**
 	 * Constructor.
@@ -86,10 +90,11 @@ public class MngtController implements Runnable, IStoppable {
 	 * @param globalConfigAddress
 	 *            the address on which the global config server runs.
 	 */
-	public MngtController(String globalConfigAddress, String dbName, int period) {
+	public MngtController(String globalConfigAddress, String dbName, int period, GCMPropertyDAO properties) {
 		try {
 			this.period = period;
 			this.dbName = dbName;
+			this.properties= properties;
 			this.scalingConfigListener = new HashMap<String, ZMQ.Socket>();
 			init(globalConfigAddress, 5004);
 		} catch (SQLException e) {
@@ -562,7 +567,26 @@ public class MngtController implements Runnable, IStoppable {
 														+ qName), 0);
 							}
 							break;
-
+							
+							//Request for getting the properties of the cloud user
+							//TODO Testing GET_CLOUD_PROPERTIES in Mng Client
+						case RoQConstant.BSON_CONFIG_GET_CLOUD_PROPERTIES:
+							logger.debug("GET Cloud properties request...");
+							if(this.properties!=null){
+								BSONObject prop = new BasicBSONObject();
+								prop.put("cloud.user", this.properties.getCloudUser());
+								prop.put("cloud.password", this.properties.getCloudPasswd());
+								prop.put("cloud.endpoint", this.properties.getCloudEndPoint());
+								prop.put("cloud.gateway", this.properties.getCloudGateWay());
+								prop.put("cloud.use", this.properties.isUseCloud());
+								prop.put("RESULT",RoQConstant.OK );
+								mngtRepSocket.send(
+										BSON.encode(prop), 0);
+							}else{
+								mngtRepSocket.send(
+										serializer.serialiazeConfigAnswer(RoQConstant.FAIL, "The property object is null"), 0);
+							}
+							
 						default:
 							mngtRepSocket.send(
 									serializer.serialiazeConfigAnswer(RoQConstant.FAIL, "INVALID CMD Value"), 0);

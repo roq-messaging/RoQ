@@ -93,7 +93,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 
 			// The Management controller - the start is in the run to take the
 			// period attribute
-			this.mngtController = new MngtController("localhost", dbName, (properties.getPeriod() + 500));
+			this.mngtController = new MngtController("localhost", dbName, (properties.getPeriod() + 500), this.properties);
 			if (properties.isFormatDB())
 				this.mngtController.getStorage().formatDB();
 			new Thread(mngtController).start();
