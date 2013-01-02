@@ -15,20 +15,28 @@ public class OpenNebulaAPI {
 	//maintain a list of vm allocated
 	private List<VirtualMachine> vmAllocated =null;
 
-	public OpenNebulaAPI() {
+	/**
+	 * Create a link to the OpenNebula Infrastructure
+	 * @param user User to connect on OpenNebula RPC
+	 * @param password Password to connect on OpenNebula RPC 
+	 * @param endpoint URL of the RPC endpoint
+	 */
+	public OpenNebulaAPI(String user, String password, String endpoint) {
 		try {
 			this.vmAllocated=new ArrayList<VirtualMachine>();
-			this.oneConnection = new Client("roq:roq",
-					"http://inferno.local:2633/RPC2");
+			this.oneConnection = new Client(user + ":" + password,
+					endpoint);
 		} catch (ClientConfigurationException e) {
 			logger.error("Error when trying to connect to inferno.local", e);
 		}
 	}
 
+	
 	/**
-	 * @return 
- * 
- */
+	 * This function allows you to create VM with the template specified
+	 * @param gcmadress Address of the Global Configuration Manager
+	 * @return vm VM is the just created VM
+	 */
 	public int createInstance(String gcmadress) {
 
 		String vmTemplate = "NAME=vm-4-RoQ\n" + "CONTEXT=[\n"
@@ -62,15 +70,32 @@ public class OpenNebulaAPI {
 		
 	}
 	/**
-	 * 
+	 * This function allows you to delete one VM at a time
+	 * @param vmID ID of the VM to delete
+	 * @throws IllegalStateException sent when unable to delete the VM
 	 */
 	public void deleteInstance(int vmID) throws IllegalStateException{
 		VirtualMachine vm = new VirtualMachine(vmID, oneConnection);
 		logger.info("\nTrying to delete the VM : " + vm.getId());
-		OneResponse rc = vm.finalizeVM();
+		try {
+			this.deleteInstanceByVM(vm);
+		} catch (IllegalStateException e) {
+			throw e;
+		}
 		
+	}
+	
+	
+	/**
+	 * This function is generic and used to delete the VM in parameter 
+	 * @param vm is the VM representation created by the allocation of a VM
+	 * @throws IllegalStateException 
+	 */
+	private void deleteInstanceByVM(VirtualMachine vm) throws IllegalStateException {
+		OneResponse rc = vm.finalizeVM();
 		if (rc.isError()) {
-			logger.error("Failed to delete " + vm.getId() + " : " + rc.getErrorMessage() + "\n");
+			logger.error("Failed to delete " + vm.getId() + " : "
+					+ rc.getErrorMessage() + "\n");
 			throw new IllegalStateException("Failed to delete " + vm.getId());
 		} else {
 			// No response message from the API if successful !
@@ -80,4 +105,28 @@ public class OpenNebulaAPI {
 	}
 	
 	
+	/**
+	 * This function delete all the VMs previously allocated
+	 * @throws IllegalStateException
+	 */
+	public void cleanAllInstances() throws IllegalStateException{
+		for (VirtualMachine vm : this.getVmToDelete()) {
+			try {
+				this.deleteInstanceByVM(vm);
+			} catch (IllegalStateException e) {
+				throw e;
+			}
+		}
+	}
+	
+	/**
+	 * @return a working copy of the array containing the same vm objects.
+	 */
+	private List<VirtualMachine> getVmToDelete(){
+		List<VirtualMachine> vmCopy = new ArrayList<VirtualMachine>();
+		for (VirtualMachine vm : this.vmAllocated) {
+			vmCopy.add(vm);
+		}
+		return vmCopy;
+	}
 }
