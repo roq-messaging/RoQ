@@ -314,6 +314,11 @@ public interface RoQConstant {
 	public static int BSON_CONFIG_REGISTER_FOR_AUTOSCALING_RULE_UPDATE = 2008;
 	
 	/**
+	 * used by client to get the cloud properties set in the GCM.properties
+	 */
+	public static int BSON_CONFIG_GET_CLOUD_PROPERTIES = 2009;
+	
+	/**
 	 * Used by the management server to broadcast configuration.
 	 */
 	public static String BSON_QUEUES = "Queues";
@@ -403,5 +408,6 @@ public interface RoQConstant {
 	 * ID of the  queue  Statistic monitor map maintained in the GCM state
 	 */
 	public static String CACHE_Q_MONITOR_STAT_MAP="queue.monitor.stat.map";
+
 	
 }

@@ -41,6 +41,10 @@ public class FileConfigurationReader {
 		// 3. Set the properties
 		configDao.setPeriod(config.getInt("period"));
 		configDao.setFormatDB(config.getBoolean("formatDB"));
+		configDao.setUseCloud(config.getBoolean("use.cloud"));
+		configDao.setCloudUser(config.getString("cloud.user"));
+		configDao.setCloudPasswd(config.getString("cloud.password"));
+		configDao.setCloudEndPoint(config.getString("cloud.endpoint"));
 		return configDao;
 	}
 
