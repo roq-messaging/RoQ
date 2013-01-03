@@ -98,7 +98,8 @@ public class TestMngtController extends RoQTestCase {
 		ZMQ.Context context = ZMQ.context(1);
 		ZMQ.Socket mngtREQSocket = context.socket(ZMQ.REQ);
 		mngtREQSocket.connect("tcp://localhost:5003");
-		
+		try {
+			
 		//1. define the queue
 		String qName = "testQ1";
 		
@@ -130,6 +131,13 @@ public class TestMngtController extends RoQTestCase {
 		
 		//4. Remove the queue
 		client.testRemove(qName);
+		
+		//5. Test the get cloud property API
+		client.testCloudPropertiesAPI();
+		
+		} catch (Exception e) {
+			logger.error("Error when testing BSON request ", e);
+		}
 				
 	}
 	

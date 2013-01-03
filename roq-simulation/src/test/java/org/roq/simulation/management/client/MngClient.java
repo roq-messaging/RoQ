@@ -255,8 +255,39 @@ public class MngClient {
 		} catch (Exception e) {
 			logger.error("Error when testing client ", e);
 		}
-	
 		
+	}
+	
+	/**
+	 * Test whether the get cloud property API is working properly
+	 * @throws Exception
+	 */
+	public void testCloudPropertiesAPI()  {
+		logger.info("Testing Cloud properties");
+		try {
+			// 1. Launch a get autoscaling Queue request
+			BSONObject bsonObject = new BasicBSONObject();
+			bsonObject.put("CMD", RoQConstant.BSON_CONFIG_GET_CLOUD_PROPERTIES);
+			logger.info("Request get cloud properties from Mngt client");
+			logger.info(bsonObject.toString());
+			byte[] encoded = BSON.encode(bsonObject);
+
+			// 2. Send the request
+			requestSocket.send(encoded, 0);
+
+			// 3. Check the result
+			BSONObject props= BSON.decode(requestSocket.recv(0));
+			logger.debug(props.toString());
+			if((Boolean) props.get("cloud.use")){
+				logger.info("A cloud configuration has been provided");
+			}else{
+				//No cloud configuration has been defined
+				logger.info("No cloud configuration has been provided");
+			}
+		} catch (Exception e) {
+			logger.error("Error when getting cloud properties from the GCM ", e);
+		}
+	
 	}
 
 }

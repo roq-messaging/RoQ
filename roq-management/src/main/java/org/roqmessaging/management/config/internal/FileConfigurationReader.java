@@ -16,6 +16,7 @@ package org.roqmessaging.management.config.internal;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.log4j.Logger;
 
 /**
  * Class FileConfigurationReader
@@ -25,6 +26,7 @@ import org.apache.commons.configuration.PropertiesConfiguration;
  * @author sskhiri
  */
 public class FileConfigurationReader {
+	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
 
 	/**
 	 * @param file
@@ -36,15 +38,23 @@ public class FileConfigurationReader {
 		// 1. Define the DAO
 		GCMPropertyDAO configDao = new GCMPropertyDAO();
 		// 2. Load the file
-		PropertiesConfiguration config = new PropertiesConfiguration();
-		config.load(file);
-		// 3. Set the properties
-		configDao.setPeriod(config.getInt("period"));
-		configDao.setFormatDB(config.getBoolean("formatDB"));
-		configDao.setUseCloud(config.getBoolean("use.cloud"));
-		configDao.setCloudUser(config.getString("cloud.user"));
-		configDao.setCloudPasswd(config.getString("cloud.password"));
-		configDao.setCloudEndPoint(config.getString("cloud.endpoint"));
+		try {
+			PropertiesConfiguration config = new PropertiesConfiguration();
+			config.load(file);
+			// 3. Set the properties
+			configDao.setPeriod(config.getInt("period"));
+			configDao.setFormatDB(config.getBoolean("formatDB"));
+			configDao.setUseCloud(config.getBoolean("cloud.use"));
+			if(configDao.isUseCloud()){
+				configDao.setCloudEndPoint(config.getString("cloud.endpoint"));
+				configDao.setCloudUser(config.getString("cloud.user"));
+				configDao.setCloudPasswd(config.getString("cloud.password"));
+				configDao.setCloudGateWay(config.getString("cloud.gateway"));
+			}
+		} catch (Exception configE) {
+			logger.error("Error while reading configuration file - skipped but set the default configuration", configE);
+		}
+		
 		return configDao;
 	}
 
@@ -58,18 +68,22 @@ public class FileConfigurationReader {
 		// 1. Define the DAO
 		HostConfigDAO configDao = new HostConfigDAO();
 		// 2. Load the file
-		PropertiesConfiguration config = new PropertiesConfiguration();
-		config.load(file);
-		// 3. Set the properties
-		configDao.setGcmAddress(config.getString("gcm.address"));
-		configDao.setExchangeFrontEndPort(config.getInt("exchange.base.port"));
-		configDao.setMonitorBasePort(config.getInt("monitor.base.port"));
-		configDao.setStatMonitorBasePort(config.getInt("statmonitor.base.port"));
-		configDao.setStatPeriod(config.getInt("monitor.stat.period"));
-		configDao.setMaxNumberEchanges(config.getInt("exchange.max.perhost"));
-		
-		if (config.containsKey("network.interface"))
-			configDao.setNetworkInterface(config.getString("network.interface"));
+		try {
+			PropertiesConfiguration config = new PropertiesConfiguration();
+			config.load(file);
+			// 3. Set the properties
+			configDao.setGcmAddress(config.getString("gcm.address"));
+			configDao.setExchangeFrontEndPort(config.getInt("exchange.base.port"));
+			configDao.setMonitorBasePort(config.getInt("monitor.base.port"));
+			configDao.setStatMonitorBasePort(config.getInt("statmonitor.base.port"));
+			configDao.setStatPeriod(config.getInt("monitor.stat.period"));
+			configDao.setMaxNumberEchanges(config.getInt("exchange.max.perhost"));
+
+			if (config.containsKey("network.interface"))
+				configDao.setNetworkInterface(config.getString("network.interface"));
+		} catch (Exception configE) {
+			logger.error("Error while reading configuration file - skipped but set the default configuration", configE);
+		}
 		return configDao;
 	}
 

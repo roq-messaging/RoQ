@@ -62,13 +62,13 @@ public class TestCommonsApacheConfiguration {
 			Assert.assertEquals(false, dao.isFormatDB());
 			
 			logger.info("use cloud  = "+ dao.isUseCloud());
-			Assert.assertEquals(false, dao.isUseCloud());
+			Assert.assertEquals(true, dao.isUseCloud());
 			
 			logger.info("user cloud  = "+ dao.getCloudUser());
-			Assert.assertEquals("roq", dao.getCloudUser());
+			Assert.assertEquals("sabri", dao.getCloudUser());
 			
-			logger.info("user cloud  = "+ dao.getCloudPasswd());
-			Assert.assertEquals("roq", dao.getCloudPasswd());
+			logger.info("user Passwd  = "+ dao.getCloudPasswd());
+			Assert.assertEquals("sabsab", dao.getCloudPasswd());
 			
 			logger.info("End point cloud  = "+ dao.getCloudEndPoint());
 			Assert.assertEquals("http://inferno.local:2633/RPC2", dao.getCloudEndPoint());

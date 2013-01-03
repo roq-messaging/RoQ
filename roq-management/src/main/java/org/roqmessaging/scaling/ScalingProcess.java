@@ -24,12 +24,13 @@ import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.RoQConstantInternal;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.management.config.internal.GCMPropertyDAO;
 import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.stat.KPISubscriber;
-import org.roqmessaging.scaling.policy.NullScalingPolicy;
 import org.roqmessaging.scaling.policy.IScalingPolicy;
+import org.roqmessaging.scaling.policy.NullScalingPolicy;
 import org.zeromq.ZMQ;
 
 /**
@@ -62,7 +63,7 @@ public class ScalingProcess extends KPISubscriber {
 	//The shut down monitor
 	private ShutDownMonitor shutDownMonitor = null;
 	//The cloud properties
-	//TODO 
+	private GCMPropertyDAO cloudProps = null;
 	/**
 	 * Notice the scaling process starts a shutdown monitor on the listener port +1. We advice to start it on port 5802. 
 	 * @param globalConfiguration the GCM IP address
@@ -84,6 +85,9 @@ public class ScalingProcess extends KPISubscriber {
 		if(this.scalingConfig==null){
 			this.logger.info("Autoscaling process for queue "+ qName + " is innactive - no auto scaling rules");
 		}
+		//Get the cloud props
+		this.cloudProps = getCloudConfigProperties();
+
 		//Init the scaling policy
 		this.scalingPolicy= new NullScalingPolicy();
 		
@@ -153,6 +157,43 @@ public class ScalingProcess extends KPISubscriber {
 			return  serializer.unserializeConfig(bres);
 		} catch (Exception e) {
 			logger.error("Error when testing client ", e);
+		}
+		return null;
+	}
+	
+	/**
+	 * @return the configuration properties for cloud endpoint.
+	 */
+	private GCMPropertyDAO getCloudConfigProperties() {
+		try {
+			// 1. Launch a get autoscaling Queue request
+			BSONObject bsonObject = new BasicBSONObject();
+			bsonObject.put("CMD", RoQConstant.BSON_CONFIG_GET_CLOUD_PROPERTIES);
+			logger.info("Request get cloud properties from auto scaling process");
+			logger.info(bsonObject.toString());
+			byte[] encoded = BSON.encode(bsonObject);
+
+			// 2. Send the request
+			requestSocket.send(encoded, 0);
+
+			// 3. Check the result
+			BSONObject props= BSON.decode(requestSocket.recv(0));
+			GCMPropertyDAO result = new GCMPropertyDAO();
+			if((Boolean) props.get("cloud.use")){
+				logger.info("A cloud configuration has been provided");
+				result.setUseCloud(true);
+				result.setCloudGateWay( (String) props.get("cloud.gateway"));
+				result.setCloudUser( (String) props.get("cloud.user"));
+				result.setCloudPasswd( (String) props.get("cloud.password"));
+				result.setCloudEndPoint( (String) props.get("cloud.endpoint"));
+			}else{
+				//No cloud configuration has been defined
+				logger.info("No cloud configuration has been provided");
+				result.setUseCloud(false);
+			}
+			return  result;
+		} catch (Exception e) {
+			logger.error("Error when getting cloud properties from the GCM ", e);
 		}
 		return null;
 	}
