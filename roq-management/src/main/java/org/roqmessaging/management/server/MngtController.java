@@ -90,11 +90,11 @@ public class MngtController implements Runnable, IStoppable {
 	 * @param globalConfigAddress
 	 *            the address on which the global config server runs.
 	 */
-	public MngtController(String globalConfigAddress, String dbName, int period, GCMPropertyDAO properties) {
+	public MngtController(String globalConfigAddress, String dbName, int period, GCMPropertyDAO props) {
 		try {
 			this.period = period;
 			this.dbName = dbName;
-			this.properties= properties;
+			this.properties= props;
 			this.scalingConfigListener = new HashMap<String, ZMQ.Socket>();
 			init(globalConfigAddress, 5004);
 		} catch (SQLException e) {
@@ -569,17 +569,19 @@ public class MngtController implements Runnable, IStoppable {
 							break;
 							
 							//Request for getting the properties of the cloud user
-							//TODO Testing GET_CLOUD_PROPERTIES in Mng Client
 						case RoQConstant.BSON_CONFIG_GET_CLOUD_PROPERTIES:
 							logger.debug("GET Cloud properties request...");
 							if(this.properties!=null){
 								BSONObject prop = new BasicBSONObject();
-								prop.put("cloud.user", this.properties.getCloudUser());
-								prop.put("cloud.password", this.properties.getCloudPasswd());
-								prop.put("cloud.endpoint", this.properties.getCloudEndPoint());
-								prop.put("cloud.gateway", this.properties.getCloudGateWay());
 								prop.put("cloud.use", this.properties.isUseCloud());
-								prop.put("RESULT",RoQConstant.OK );
+								if(this.properties.isUseCloud()){
+									prop.put("cloud.user", this.properties.getCloudUser());
+									prop.put("cloud.password", this.properties.getCloudPasswd());
+									prop.put("cloud.endpoint", this.properties.getCloudEndPoint());
+									prop.put("cloud.gateway", this.properties.getCloudGateWay());
+									prop.put("RESULT",RoQConstant.OK );
+								}
+								logger.debug("Sending cloud properties to client :"+ prop.toString());
 								mngtRepSocket.send(
 										BSON.encode(prop), 0);
 							}else{
@@ -587,6 +589,7 @@ public class MngtController implements Runnable, IStoppable {
 										serializer.serialiazeConfigAnswer(RoQConstant.FAIL, "The property object is null"), 0);
 							}
 							
+							break;
 						default:
 							mngtRepSocket.send(
 									serializer.serialiazeConfigAnswer(RoQConstant.FAIL, "INVALID CMD Value"), 0);

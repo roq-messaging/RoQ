@@ -44,11 +44,12 @@ public class FileConfigurationReader {
 			// 3. Set the properties
 			configDao.setPeriod(config.getInt("period"));
 			configDao.setFormatDB(config.getBoolean("formatDB"));
-			configDao.setUseCloud(config.getBoolean("use.cloud"));
+			configDao.setUseCloud(config.getBoolean("cloud.use"));
 			if(configDao.isUseCloud()){
 				configDao.setCloudEndPoint(config.getString("cloud.endpoint"));
 				configDao.setCloudUser(config.getString("cloud.user"));
 				configDao.setCloudPasswd(config.getString("cloud.password"));
+				configDao.setCloudGateWay(config.getString("cloud.gateway"));
 			}
 		} catch (Exception configE) {
 			logger.error("Error while reading configuration file - skipped but set the default configuration", configE);

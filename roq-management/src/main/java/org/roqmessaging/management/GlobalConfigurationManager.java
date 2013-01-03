@@ -88,7 +88,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 
 			// Read configuration from file
 			FileConfigurationReader reader = new FileConfigurationReader();
-			properties = reader.loadGCMConfiguration(configFile);
+			this.properties = reader.loadGCMConfiguration(configFile);
 			logger.info("Configuration from props: "+properties.toString());
 
 			// The Management controller - the start is in the run to take the
