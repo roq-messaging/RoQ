@@ -24,6 +24,7 @@ import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.roqmessaging.core.utils.RoQUtils;
 
 /**
  * Class TestByteSerialisation
@@ -137,6 +138,17 @@ public class TestByteSerialisation {
 			logger.error("Error when unserialiasing the array", e);
 		}
 		return null;
+	}
+	
+	/**
+	 * Test the utils method for IP V6 check
+	 * @throws Exception
+	 */
+	@Test
+	public void testIPV6CHeck() throws Exception {
+		String address = "2001:470:0000:0000:0000:0000:fe7c:60b2%2";
+		logger.debug("Address = " + address);
+		logger.debug("Check IP V6 =" + RoQUtils.getInstance().checkIPV6(address));
 	}
 
 }
