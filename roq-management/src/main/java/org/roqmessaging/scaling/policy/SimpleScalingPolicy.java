@@ -77,13 +77,14 @@ public class SimpleScalingPolicy implements IScalingPolicy {
 			}else{
 				logger.error("The host located on "+ host +" cannot send back the exchange information");
 			}
-			if(candidate==null){
-				logger.info("No candidate have been found : need to provision a new VM");
-			}else{
-				//Provision a new exchange on host
-				if(!this.qFactory.createExchange(qName, host))
-					logger.error("The scaling exchange command failed on host "+ host);
-			}
+		}//enf of loop for
+		
+		if(candidate==null){
+			logger.info("No candidate have been found : need to provision a new VM");
+		}else{
+			//Provision a new exchange on host
+			if(!this.qFactory.createExchange(qName, candidate))
+				logger.error("The scaling exchange command failed on host "+ candidate);
 		}
 		//3. If one has a few number we can create a new exchanges otherwise we need to spawn a new host with a brand new exchange.
 		return false;
