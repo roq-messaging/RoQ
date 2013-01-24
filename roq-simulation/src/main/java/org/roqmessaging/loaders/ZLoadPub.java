@@ -7,9 +7,13 @@ import org.roq.simulation.clientLib.PubClientLib;
 public class ZLoadPub {
 
 	/* Arguments:
-	 * spawn rate (seconds), max prods,
-	 * monitor, msg/min, duration
-	 * (min), payload, delay 
+	 * 0 spawn rate (seconds),
+	 * 1  max prods,
+	 * 2 monitor,
+	 * 3  msg/min,
+	 * 4  duration (min), 
+	 * 5 payload,
+	 * 6  delay 
 	*/
 	public static void main(String[] args) { 
 		int rate = Integer.parseInt(args[0]);

@@ -137,7 +137,6 @@ public class RoQTestCase {
 		IRoQSubscriber subs = new IRoQSubscriber() {
 			public void onEvent(byte[] msg) {
 				String content = new String(msg, 0, msg.length);
-				assert content.startsWith("hello");
 			}
 		};
 		subscriberConnection.setMessageSubscriber(subs);
