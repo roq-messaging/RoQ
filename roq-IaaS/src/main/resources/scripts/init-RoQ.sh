@@ -1,5 +1,7 @@
 #!/bin/bash
- 
+
+date >> /tmp/log-init.log
+
 if [ -f /mnt/context/context.sh ]
 then
   . /mnt/context/context.sh
@@ -39,6 +41,9 @@ if [ -n "$GATEWAY" ]; then
 fi
 
 #RoQ Start
-#if [ -n "$GCM" ]; then
-	#TODO
-#fi
+if [ -n "$GCM" ]; then
+	sed -i "/period=60000/a GCM.address=$GCM" /var/lib/RoQ/RoQ/roq/config/GCM.properties
+	#cd /var/lib/RoQ/RoQ/roq/bin/
+	#sh /var/lib/RoQ/RoQ/roq/bin/startGCM.sh >> /var/log/RoQ-GCM.log
+	#sh /var/lib/RoQ/RoQ/roq/bin/startHost.sh >> /var/log/RoQ-HCM.log
+fi
