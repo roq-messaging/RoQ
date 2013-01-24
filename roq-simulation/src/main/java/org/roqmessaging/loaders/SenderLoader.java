@@ -68,13 +68,14 @@ public class SenderLoader extends TimerTask {
 	private void initRoQpublisher() {
 		//1. Creating the connection
 		IRoQConnectionFactory factory = new RoQConnectionFactory(configServerAddress);
-		IRoQConnection connection = factory.createRoQConnection(this.queueOnTest);
+		connection = factory.createRoQConnection(this.queueOnTest);
 		connection.open();
 		//2. Creating the publisher and sending message
 		publisher = connection.createPublisher();
 	}
 
 	/**
+	 * Just send the message payload as fast possible.
 	 * @see java.util.TimerTask#run()
 	 */
 	@Override
