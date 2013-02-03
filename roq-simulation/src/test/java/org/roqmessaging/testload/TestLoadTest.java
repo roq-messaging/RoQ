@@ -47,7 +47,7 @@ public class TestLoadTest extends RoQTestCase {
 		// 1. Create the queue
 		this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP());
 		// 2. Create the sender: rate, payload, GCM, q name 
-		TimerTask sender = new SenderLoader(300, 1, RoQUtils.getInstance().getLocalIP(), qName);
+		TimerTask sender = new SenderLoader(10, 1, RoQUtils.getInstance().getLocalIP(), qName);
 		//3. Attach 1 subscriber
 		this.attachSUbscriber(qName);
 		// 4. Launch the sender
