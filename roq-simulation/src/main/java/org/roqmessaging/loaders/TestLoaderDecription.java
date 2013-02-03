@@ -15,6 +15,7 @@
 package org.roqmessaging.loaders;
 
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 /**
  * Class TestLoaderDecription
@@ -142,6 +143,14 @@ public class TestLoaderDecription {
 		jsonObj.put("spawnRate", this.getSpawnRate());
 		return jsonObj.toJSONString();
 
+	}
+	
+	/**
+	 * 
+	 */
+	private void load(String jsonDescription) {
+		JSONParser parser = new JSONParser();
+		//TODO load a JSON description string in a test description
 	}
 
 }
