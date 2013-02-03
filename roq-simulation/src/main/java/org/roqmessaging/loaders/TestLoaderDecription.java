@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.loaders;
 
+import org.json.simple.JSONObject;
+
 /**
  * Class TestLoaderDecription
  * <p> Description: Description of the test load. This is a data object that will be use by the Load controller
@@ -27,7 +29,8 @@ package org.roqmessaging.loaders;
  * <br>     Number of subscribers s: the maximum number of producers to spawn . Default =1
  * <br>     Delay (s) de: the waiting time before starting the test.  Default = 5s
 
- * 
+ * TODO using a JSON parser and developing a wrapper for creating a description from a JSON 
+ * file http://www.mkyong.com/java/json-simple-example-read-and-write-json/
  * @author sskhiri
  */
 public class TestLoaderDecription {
@@ -121,6 +124,24 @@ public class TestLoaderDecription {
 	 */
 	public void setDelay(int delay) {
 		this.delay = delay;
+	}
+	
+	/**
+	 * Serialize the test description in a JSON format
+	 * @return the JSON serialization of the test description
+	 */
+	@SuppressWarnings("unchecked")
+	public String  serializeInJason() {
+		JSONObject jsonObj = new JSONObject();
+		jsonObj.put("delay", this.getDelay());
+		jsonObj.put("duration", this.getDuration());
+		jsonObj.put("maxSub", this.getMaxSub());
+		jsonObj.put("maxPub", this.getMaxProd());
+		jsonObj.put("payload", this.getPayload());
+		jsonObj.put("rate", this.getRate());
+		jsonObj.put("spawnRate", this.getSpawnRate());
+		return jsonObj.toJSONString();
+
 	}
 
 }
