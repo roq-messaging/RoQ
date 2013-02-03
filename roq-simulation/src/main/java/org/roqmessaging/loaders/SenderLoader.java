@@ -16,6 +16,7 @@ package org.roqmessaging.loaders;
 
 import java.util.TimerTask;
 
+import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
@@ -44,6 +45,8 @@ public class SenderLoader extends TimerTask {
 	private String queueOnTest = "?";
 	//The number of messages sent on this timer cycle
 	private int sentMsg = 0;
+	//The logger 
+	private Logger logger = Logger.getLogger(SenderLoader.class.getCanonicalName());
 	
 	/**
 	 * @param rate The load rate for this sender in [msg/s]
@@ -80,6 +83,7 @@ public class SenderLoader extends TimerTask {
 	 */
 	@Override
 	public void run() {
+		logger.debug("Starting load sender at a rate of "+ this.rate+"msg/s of "+this.payload+"kb");
 		//Check if the connection is ready
 		connection.blockTillReady(10000);
 		//Reset the sent message
@@ -87,6 +91,7 @@ public class SenderLoader extends TimerTask {
 		//Send while reaching the rate
 		while(this.sentMsg<this.rate){
 			publisher.sendMessage("test".getBytes(), this.payload);
+			this.sentMsg++;
 		}
 	}
 
