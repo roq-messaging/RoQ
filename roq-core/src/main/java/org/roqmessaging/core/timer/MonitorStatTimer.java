@@ -92,6 +92,7 @@ public class MonitorStatTimer extends TimerTask {
 	private void getALlProcuders(ArrayList<ExchangeState> exhcangeMetaData) {
 		this.totalThroughput=0;
 		this.numberProducers =0;
+		logger.debug("Get all producer method: "+exhcangeMetaData.size()+ " Exchange registred");
 		for (ExchangeState exchangeState : exhcangeMetaData) {
 			numberProducers+=exchangeState.getNbProd();
 			totalThroughput+=exchangeState.getThroughput();
