@@ -32,7 +32,7 @@ import org.json.simple.parser.ParseException;
  * <br>     Number of subscribers s: the maximum number of producers to spawn . Default =1
  * <br>     Delay (s) de: the waiting time before starting the test.  Default = 5s
 
- * TODO using a JSON parser and developing a wrapper for creating a description from a JSON 
+ * Uses  a JSON parser and developing a wrapper for creating a description from a JSON 
  * file http://www.mkyong.com/java/json-simple-example-read-and-write-json/
  * @author sskhiri
  */
@@ -156,7 +156,6 @@ public class TestLoaderDecription {
 	public void load(final String jsonDescription) throws ParseException {
 		JSONParser parser = new JSONParser();
 		JSONObject jsonObject = (JSONObject) parser.parse(jsonDescription);
-		
 		this.setDelay(
 				jsonObject.get("delay")!=null?((Long)jsonObject.get("delay")).intValue():5);
 		this.setDuration(
