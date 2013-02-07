@@ -25,6 +25,7 @@ import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.loaders.SenderLoader;
+import org.roqmessaging.loaders.TestLoaderDecription;
 
 /**
  * Class TestLoadTest
@@ -61,6 +62,7 @@ public class TestLoadTest extends RoQTestCase {
 		//KIll the timer
 		timerLoad.cancel();
 	}
+	
 	
 	/**
 	 * Attach a subscriber to the queue on the topic "key". The test must send 

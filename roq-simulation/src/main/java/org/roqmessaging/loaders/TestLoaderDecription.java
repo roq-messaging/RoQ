@@ -14,8 +14,10 @@
  */
 package org.roqmessaging.loaders;
 
+import org.apache.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  * Class TestLoaderDecription
@@ -23,7 +25,7 @@ import org.json.simple.parser.JSONParser;
  * to launch the tests.
  *
  * <br>  The Spawn rate x: every x second we start a producer. This is similar as a warm-up period. Default =1 prod every second
- * <br>      Max producers y: the maximum number of producers to spawn. Default =1
+ * <br>     Max producers y: the maximum number of producers to spawn. Default =1
  * <br>     Rate (msg/s) r: the number of messages per minute to be sent by each spawned producer. Default =1msg/s
  * <br>     Duration (min) d: the test duration.  Default =1 min
  * <br>     Payload (kb) p: the message content size, simulated by an array of px1000 size of byte. Default =1 kb
@@ -42,6 +44,7 @@ public class TestLoaderDecription {
 	private int payload = 1;
 	private int maxSub = 1;
 	private int delay = 5;
+	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
 	/**
 	 * @return the spawnRate
 	 */
@@ -146,11 +149,46 @@ public class TestLoaderDecription {
 	}
 	
 	/**
+	 * Reads a JSON description of the test load.
+	 * @throws ParseException a problem occurs when parsing the incoming json
 	 * 
 	 */
-	private void load(String jsonDescription) {
+	public void load(final String jsonDescription) throws ParseException {
 		JSONParser parser = new JSONParser();
-		//TODO load a JSON description string in a test description
+		JSONObject jsonObject = (JSONObject) parser.parse(jsonDescription);
+		
+		this.setDelay(
+				jsonObject.get("delay")!=null?((Long)jsonObject.get("delay")).intValue():5);
+		this.setDuration(
+				jsonObject.get("duration")!=null?((Double)jsonObject.get("duration")).intValue():1.0f);
+		this.setMaxProd(
+				jsonObject.get("maxPub")!=null?((Long)jsonObject.get("maxPub")).intValue():1);
+		this.setMaxSub(
+				jsonObject.get("maxSub")!=null?((Long)jsonObject.get("maxSub")).intValue():1);
+		this.setPayload(
+				jsonObject.get("payload")!=null?((Long)jsonObject.get("payload")).intValue():1);
+		this.setRate(
+				jsonObject.get("rate")!=null?((Long)jsonObject.get("rate")).intValue():1);
+		this.setSpawnRate(
+				jsonObject.get("spawnRate")!=null?((Long)jsonObject.get("spawnRate")).intValue():1);
+		
+		logger.info("The Test load description is :");
+		logger.info(this.toString());
 	}
-
+	
+	/**
+	 * Print the description of the test load.
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "[\nDuration of the test:" + this.getDuration()+"min\n" +
+				"Delay before starting:" + this.getDelay()+ "s\n" +
+				"Load Rate:" + this.getRate()+ "msg/s\n" +
+				"Publishers:" + this.getMaxProd()+ "\n" +
+				"Subscribers:" + this.getMaxSub()+ "\n" +
+				"Payload:" + this.getPayload()+ "kb\n" +
+				"Spawn Rate:" + this.getSpawnRate()+ "producer/s\n" +
+				"]";
+	}
 }
