@@ -50,6 +50,8 @@ public class TestLoadController {
 	private List<IStoppable> publisherConnections = null;
 	//handles on the timers that launch the publisher processes
 	private List<Timer> timerHandles = null;
+	//Define how many message we must rcv befor logging them
+	private int logMsg = 200;
 	//The logger
 	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
 	
@@ -84,11 +86,13 @@ public class TestLoadController {
 			// senders
 			spawnPublisher(this.testDesc.getSpawnRate(), this.testDesc.getMaxProd());
 			// 3. Wait for the test duration (min)
+			logger.info("Waiting for end of the test in "+ this.testDesc.getDuration() +" min...");
 			Thread.sleep((long) this.testDesc.getDuration() * 1000 * 60);
 			// 4. Clean all
 			stopTest();
 		} catch (InterruptedException e) {
 			logger.error("Error when starting the load test", e);
+			stopTest();
 		}
 	}
 
@@ -108,7 +112,9 @@ public class TestLoadController {
 		}
 		this.subscriberConnections.clear();
 		//Clear the publisher
-		//TODO check if well canceled when the timer is cleaned
+		for (IStoppable publisher_i: this.publisherConnections	) {
+			publisher_i.shutDown();
+		}
 		this.publisherConnections.clear();
 	}
 
@@ -131,7 +137,7 @@ public class TestLoadController {
 					//Create a publisher process
 					Timer timerLoad = new Timer("Loader "+i+" -"+System.currentTimeMillis());
 					//Schedule it, the run will be called soon
-					timerLoad.schedule(loader, 50,(long) this.testDesc.getDuration()*60*1000);
+					timerLoad.schedule(loader, 50,1000);
 					//Keep an handle on the timer
 					this.timerHandles.add(timerLoad);
 					logger.info("Starting "+ timerLoad.toString());
@@ -160,8 +166,8 @@ public class TestLoadController {
 				private int count = 0;
 				public void onEvent(byte[] msg) {
 					count++;
-					if(count>1000){
-						logger.debug("Got 1000 message of "+msg.length +" byte" );
+					if(count>logMsg){
+						logger.debug("Got "+logMsg+" message of "+msg.length +" byte" );
 						count =0;
 					}
 				}
