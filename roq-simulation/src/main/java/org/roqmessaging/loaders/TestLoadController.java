@@ -67,7 +67,7 @@ public class TestLoadController {
 		//Init 0: create the logical Q factory
 		this.factory = new LogicalQFactory(gcmAddress);
 		this.conFactory = new RoQConnectionFactory(this.gcmAddress);
-		//Init 1. create the test queue
+		//Init 1. create the test queue TODO this part must be removed as it cannot be created by the different process
 		this.factory.createQueue(this.qName, queueHost);
 	}
 	
