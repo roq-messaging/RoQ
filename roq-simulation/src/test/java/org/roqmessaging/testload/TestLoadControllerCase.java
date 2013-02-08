@@ -34,7 +34,7 @@ public class TestLoadControllerCase extends RoQTestCase {
 	@Test
 	public void testEnd2EndTestLoad() {
 		TestLoaderDecription desc = new TestLoaderDecription();
-		String description = "{\"maxPub\":5,\"duration\":2,\"rate\":10,\"maxSub\":5,\"payload\":1,\"delay\":5,\"spawnRate\":1}";
+		String description = "{\"maxPub\":5,\"duration\":1,\"rate\":10,\"maxSub\":5,\"payload\":1,\"delay\":5,\"spawnRate\":1}";
 		try {
 			desc.load(description);
 			TestLoadController controller = new TestLoadController(desc, RoQUtils.getInstance().getLocalIP(), RoQUtils
