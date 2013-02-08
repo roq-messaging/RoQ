@@ -71,7 +71,7 @@ public class MonitorStatTimer extends TimerTask {
 		String message= RoQConstant.STAT_Q +","+this.queueMonitor.getName()+","
 	+this.queueMonitor.getExhcangeMetaData().size()
 	+","+numberProducers+","+ totalThroughput;
-		logger.info("Stat monitor: "+ message);
+		logger.debug("Stat monitor: "+ message);
 		//3. send message
 		statSocket.send(message.getBytes(), 0);
 	}

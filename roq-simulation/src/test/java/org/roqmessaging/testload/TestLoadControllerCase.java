@@ -15,7 +15,6 @@
 package org.roqmessaging.testload;
 
 import org.json.simple.parser.ParseException;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.roq.simulation.test.RoQTestCase;
 import org.roqmessaging.core.utils.RoQUtils;
@@ -28,13 +27,13 @@ import org.roqmessaging.loaders.TestLoaderDecription;
  * 
  * @author sskhiri
  */
-@Ignore
 public class TestLoadControllerCase extends RoQTestCase {
 
 	@Test
 	public void testEnd2EndTestLoad() {
 		TestLoaderDecription desc = new TestLoaderDecription();
-		String description = "{\"maxPub\":5,\"duration\":1,\"rate\":10,\"maxSub\":5,\"payload\":1,\"delay\":5,\"spawnRate\":1}";
+		//Warning the diration must have a ".0" otherwise it will be considered as a Long not a double.
+		String description = "{\"maxPub\":5,\"duration\":1.0,\"rate\":10,\"maxSub\":5,\"payload\":1,\"delay\":5,\"spawnRate\":1}";
 		try {
 			desc.load(description);
 			TestLoadController controller = new TestLoadController(desc, RoQUtils.getInstance().getLocalIP(), RoQUtils

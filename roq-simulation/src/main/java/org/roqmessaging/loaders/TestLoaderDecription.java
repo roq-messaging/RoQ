@@ -159,7 +159,7 @@ public class TestLoaderDecription {
 		this.setDelay(
 				jsonObject.get("delay")!=null?((Long)jsonObject.get("delay")).intValue():5);
 		this.setDuration(
-				jsonObject.get("duration")!=null?((Long)jsonObject.get("duration")).intValue():1.0f);
+				jsonObject.get("duration")!=null?((Double)jsonObject.get("duration")).intValue():1.0f);
 		this.setMaxProd(
 				jsonObject.get("maxPub")!=null?((Long)jsonObject.get("maxPub")).intValue():1);
 		this.setMaxSub(

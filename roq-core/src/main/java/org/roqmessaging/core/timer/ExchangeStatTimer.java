@@ -69,7 +69,7 @@ public 	class ExchangeStatTimer extends TimerTask implements IStoppable {
 		logger.info(RoQUtils.getInstance().getLocalIP() + " : minute " + minute + " : "
 				+ this.statistic.getThroughput() + " bytes/min, " + this.xchange.getKnownProd().size()
 				+ " producers connected");
-		logger.info(RoQUtils.getInstance().getLocalIP() + " : minute " + minute + " : "
+		logger.debug(RoQUtils.getInstance().getLocalIP() + " : minute " + minute + " : "
 				+ this.xchange.getMostProducer());
 		
        this.statistic.setTotalProcessed(this.statistic.getTotalProcessed()+this.statistic.getProcessed());
