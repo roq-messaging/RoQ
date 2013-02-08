@@ -25,7 +25,6 @@ import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.loaders.SenderLoader;
-import org.roqmessaging.loaders.TestLoaderDecription;
 
 /**
  * Class TestLoadTest
@@ -35,8 +34,8 @@ import org.roqmessaging.loaders.TestLoaderDecription;
  * 
  * @author sskhiri
  */
-public class TestLoadTest extends RoQTestCase {
-	private Logger logger = Logger.getLogger(TestLoadTest.class);
+public class TestLoadSender extends RoQTestCase {
+	private Logger logger = Logger.getLogger(TestLoadSender.class);
 	
 	/**
 	 * Test the sender loader by creating one and checking the message sent.
