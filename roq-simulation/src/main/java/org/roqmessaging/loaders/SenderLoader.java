@@ -21,6 +21,7 @@ import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
+import org.roqmessaging.core.interfaces.IStoppable;
 
 /**
  * Class SenderLoader
@@ -30,7 +31,7 @@ import org.roqmessaging.core.factory.RoQConnectionFactory;
  * 
  * @author sskhiri
  */
-public class SenderLoader extends TimerTask {
+public class SenderLoader extends TimerTask implements IStoppable {
 	//The load rate for this sender in [msg/s]
 	private int rate =0;
 	//Payload of message in [kb]
@@ -49,6 +50,7 @@ public class SenderLoader extends TimerTask {
 	private Logger logger = Logger.getLogger(SenderLoader.class.getCanonicalName());
 	
 	/**
+	 * Create a sender process regulated for sending specific rate and payload.
 	 * @param rate The load rate for this sender in [msg/s]
 	 * @param payload The payload of each message in [kb]
 	 * @param configServerAddress the address of the global confi server
@@ -94,5 +96,34 @@ public class SenderLoader extends TimerTask {
 			this.sentMsg++;
 		}
 	}
+
+	/**
+	 * 
+	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
+	 */
+	public void shutDown() {
+		logger.info("Stopping Sender loader");
+		this.connection.close();
+		
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return "Sender loader thread";
+	}
+	
+	/**
+	 * 
+	 * @see java.util.TimerTask#cancel()
+	 */
+	@Override
+	public boolean cancel() {
+		this.shutDown();
+		return super.cancel();
+	}
+	
+	
 
 }
