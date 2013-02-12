@@ -15,7 +15,6 @@
 package org.roqmessaging.testload;
 
 import org.json.simple.parser.ParseException;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.roq.simulation.test.RoQTestCase;
 import org.roqmessaging.core.utils.RoQUtils;
