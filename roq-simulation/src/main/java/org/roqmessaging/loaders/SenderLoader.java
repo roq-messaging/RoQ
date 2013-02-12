@@ -65,6 +65,7 @@ public class SenderLoader extends TimerTask implements IStoppable {
 		initRoQpublisher();
 		//Init the message payload
 		this.payload = new byte[payload*1000];
+		logger.debug("Starting load sender at a rate of "+ this.rate+"msg/s of "+this.payload+"kb");
 	}
 
 	/**
@@ -85,7 +86,6 @@ public class SenderLoader extends TimerTask implements IStoppable {
 	 */
 	@Override
 	public void run() {
-		logger.debug("Starting load sender at a rate of "+ this.rate+"msg/s of "+this.payload+"kb");
 		//Check if the connection is ready
 		connection.blockTillReady(10000);
 		//Reset the sent message
