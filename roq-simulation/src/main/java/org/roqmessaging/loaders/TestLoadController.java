@@ -24,7 +24,6 @@ import org.roqmessaging.client.IRoQSubscriberConnection;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.interfaces.IStoppable;
-import org.roqmessaging.management.LogicalQFactory;
 
 /**
  * Class TestLoadController
@@ -36,8 +35,6 @@ import org.roqmessaging.management.LogicalQFactory;
 public class TestLoadController {
 	//The load description
 	private TestLoaderDecription testDesc = null;
-	//The queue factory
-	private LogicalQFactory factory = null;
 	//The connection factory
 	private IRoQConnectionFactory conFactory = null;
 	//The Qname
@@ -58,19 +55,17 @@ public class TestLoadController {
 	/**
 	 * @param description the test load description
 	 * @param gcmAddress the GCM address to connect
-	 * @param queueHost the host address on which we need to create a queue
+	 * @param queueName the queue name under test
 	 */
-	public  TestLoadController(TestLoaderDecription description, String gcmAddress, String queueHost){
+	public  TestLoadController(TestLoaderDecription description, String gcmAddress, String queueName){
 		this.testDesc = description;
 		this.gcmAddress = gcmAddress;
 		this.subscriberConnections = new ArrayList<IRoQSubscriberConnection>();
 		this.publisherConnections = new ArrayList<IStoppable>();
 		this.timerHandles = new ArrayList<Timer>();
-		//Init 0: create the logical Q factory
-		this.factory = new LogicalQFactory(gcmAddress);
+		this.qName = queueName;
+		//Init 0: create the connection factory
 		this.conFactory = new RoQConnectionFactory(this.gcmAddress);
-		//Init 1. create the test queue TODO this part must be removed as it cannot be created by the different process
-		this.factory.createQueue(this.qName, queueHost);
 	}
 	
 	/**

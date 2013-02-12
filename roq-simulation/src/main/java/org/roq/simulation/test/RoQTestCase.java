@@ -41,7 +41,7 @@ import org.roqmessaging.management.LogicalQFactory;
  */
 public class RoQTestCase {
 	protected RoQAllLocalLauncher launcher = null;
-	private Logger logger = Logger.getLogger(RoQTestCase.class);
+	protected Logger logger = Logger.getLogger(RoQTestCase.class);
 	protected LogicalQFactory factory = null;
 	protected IRoQSubscriberConnection subscriberConnection = null;
 	protected IRoQConnection connection = null;
