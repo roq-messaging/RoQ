@@ -48,7 +48,7 @@ public class TestLoadController {
 	//handles on the timers that launch the publisher processes
 	private List<Timer> timerHandles = null;
 	//Define how many message we must rcv befor logging them
-	private int logMsg = 200;
+	private int logMsg = 20000;
 	//The logger
 	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
 	
@@ -162,7 +162,7 @@ public class TestLoadController {
 				public void onEvent(byte[] msg) {
 					count++;
 					if(count>logMsg){
-						logger.debug("Got "+logMsg+" message of "+msg.length +" byte" );
+						logger.info("Got "+logMsg+" message of "+msg.length +" byte" );
 						count =0;
 					}
 				}
