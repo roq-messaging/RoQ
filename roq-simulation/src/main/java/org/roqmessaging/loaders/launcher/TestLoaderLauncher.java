@@ -20,17 +20,19 @@ import org.roqmessaging.loaders.TestLoaderDecription;
 
 /**
  * Class TestLoaderLauncher
- * <p> Description: Launcher for the Test Load controller. It initiates a test
+ * <p> Description: Launcher for the Test Load controller. It initiates a complete test defined by the test 
+ * description provided in JSON as argument. Notice that the second argument is the queue used for the test 
+ * every test process must use the same queue name.
  * 
  * @author sskhiri
  */
 public class TestLoaderLauncher {
 	
 	/**
+	 * Starts the {@linkplain TestLoadController}
 	 * @param args the argument should be [The JSON description file location, the queue name under test]
 	 */
 	public static void main(String[] args) {
-
 		System.out.println("Starting the Load Test Controller with  " + args.length + " arguments");
 		if(args.length!=2){
 			System.out.println("The argument must be [test file description location, queue name (under test)]");
