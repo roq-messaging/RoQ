@@ -78,6 +78,7 @@ public class SenderLoader extends TimerTask implements IStoppable {
 		connection.open();
 		//2. Creating the publisher and sending message
 		publisher = connection.createPublisher();
+		publisher.addTimeStamp(true);
 	}
 
 	/**
@@ -86,6 +87,7 @@ public class SenderLoader extends TimerTask implements IStoppable {
 	 */
 	@Override
 	public void run() {
+		logger.trace("Running send message");
 		//Check if the connection is ready
 		connection.blockTillReady(10000);
 		//Reset the sent message
@@ -123,7 +125,6 @@ public class SenderLoader extends TimerTask implements IStoppable {
 		this.shutDown();
 		return super.cancel();
 	}
-	
 	
 
 }

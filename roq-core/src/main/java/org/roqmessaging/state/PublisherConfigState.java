@@ -21,7 +21,8 @@ import org.zeromq.ZMQ;
 
 /**
  * Class PublisherConfigState
- * <p> Description: DAOdefine the state of the configuration. The exchange it should connect and the valid configuration.
+ * <p> Description: DAO defiing the state of the configuration. 
+ * The exchange it should connect and the valid configuration.
  * 
  * @author sskhiri
  */
