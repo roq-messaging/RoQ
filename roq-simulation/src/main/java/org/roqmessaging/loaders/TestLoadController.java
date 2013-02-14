@@ -24,6 +24,7 @@ import org.roqmessaging.client.IRoQSubscriberConnection;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.interfaces.IStoppable;
+import org.roqmessaging.core.utils.RoQUtils;
 
 /**
  * Class TestLoadController
@@ -32,7 +33,7 @@ import org.roqmessaging.core.interfaces.IStoppable;
  * 
  * @author sskhiri
  */
-public class TestLoadController {
+public class TestLoadController implements IStoppable {
 	//The load description
 	private TestLoaderDecription testDesc = null;
 	//The connection factory
@@ -173,6 +174,21 @@ public class TestLoadController {
 			//Maintains an handle to all subscriber connection
 			this.subscriberConnections.add(subscriberConnection);
 		}
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
+	 */
+	public void shutDown() {
+		//TODO check how we can wake up the thread
+		Thread.currentThread().interrupt();
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return "Test Load Controller on " + RoQUtils.getInstance().getLocalIP();
 	}
 
 }
