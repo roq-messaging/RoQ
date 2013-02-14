@@ -48,7 +48,7 @@ public class TestLoadController {
 	//handles on the timers that launch the publisher processes
 	private List<Timer> timerHandles = null;
 	//Define how many message we must rcv befor logging them
-	private int logMsg = 200000;
+	private int logMsg = 300000;
 	//The logger
 	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
 	
