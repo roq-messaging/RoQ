@@ -64,7 +64,7 @@ public class SenderLoader extends TimerTask implements IStoppable {
 		//Init the roq publisher
 		initRoQpublisher();
 		//Init the message payload
-		this.payload = new byte[payload*1000];
+		this.payload = new byte[payload];
 		logger.debug("Starting load sender at a rate of "+ this.rate+"msg/s of "+this.payload+"kb");
 	}
 
@@ -125,6 +125,7 @@ public class SenderLoader extends TimerTask implements IStoppable {
 		this.shutDown();
 		return super.cancel();
 	}
+	
 	
 
 }
