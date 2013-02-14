@@ -48,7 +48,7 @@ public class TestLoadController {
 	//handles on the timers that launch the publisher processes
 	private List<Timer> timerHandles = null;
 	//Define how many message we must rcv befor logging them
-	private int logMsg = 20000;
+	private int logMsg = 200000;
 	//The logger
 	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
 	
@@ -159,10 +159,11 @@ public class TestLoadController {
 			// Register a message listener
 			IRoQSubscriber subs = new IRoQSubscriber() {
 				private int count = 0;
+				private int sizeMD = (Long.toString(System.currentTimeMillis()) + " ").getBytes().length + "test".getBytes().length;
 				public void onEvent(byte[] msg) {
 					count++;
 					if(count>logMsg){
-						logger.info("Got "+logMsg+" message of "+msg.length +" byte" );
+						logger.info("Got "+logMsg+" message of "+(msg.length+sizeMD)  +" byte" );
 						count =0;
 					}
 				}

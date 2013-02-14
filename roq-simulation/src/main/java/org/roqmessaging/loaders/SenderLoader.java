@@ -64,7 +64,9 @@ public class SenderLoader extends TimerTask implements IStoppable {
 		//Init the roq publisher
 		initRoQpublisher();
 		//Init the message payload
-		this.payload = new byte[payload];
+		//Remove the meta data size: as we send the time stamp and the key, we need to remove this size
+		int sizeMD = (Long.toString(System.currentTimeMillis()) + " ").getBytes().length + "test".getBytes().length;
+		this.payload = new byte[(payload-sizeMD>0)?(payload-sizeMD): payload];
 		logger.debug("Starting load sender at a rate of "+ this.rate+"msg/s of "+this.payload+"kb");
 	}
 
