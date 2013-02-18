@@ -469,7 +469,7 @@ public class Monitor implements Runnable, IStoppable {
 			for (ExchangeState exchangeState_i : this.knownHosts) {
 				String address = exchangeState_i.getAddress();
 				int backport = exchangeState_i.getBackPort();
-				logger.debug("Stopping exchange on " + address + ":" + (backport + 1));
+				logger.info("Stopping exchange on " + address + ":" + (backport + 1));
 				ZMQ.Socket shutDownExChange = ZMQ.context(1).socket(ZMQ.REQ);
 				shutDownExChange.setSendTimeOut(-1);
 				shutDownExChange.connect("tcp://" + address + ":" + (backport + 1));
@@ -477,7 +477,7 @@ public class Monitor implements Runnable, IStoppable {
 					logger.error("Error while sending shutdown request to exchange", new IllegalStateException(
 							"The message has not been sent"));
 				} else {
-					logger.debug("Sent success fully Stopping exchange on " + address + ":" + (backport + 1));
+					logger.info("Sent success fully Stopping exchange on " + address + ":" + (backport + 1));
 				}
 				shutDownExChange.close();
 			}

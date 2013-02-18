@@ -34,7 +34,7 @@ public class HostOSMonitoring {
 	public double getMemoryUsage(){
 		double total = (double)((double)(Runtime.getRuntime().totalMemory()/1024)/1024);
 		double currentMemory =total- ((double)((double)(Runtime.getRuntime().freeMemory()/1024)/1024));
-		logger.debug("Current memory " +currentMemory +" Mo  on " +total +" Mo" );
+		logger.info("Current memory " +currentMemory +" Mo  on " +total +" Mo" );
 		return currentMemory;
 	}
 	
@@ -47,7 +47,7 @@ public class HostOSMonitoring {
 		// Using the JMX bean
 		OperatingSystemMXBean threadBean = ManagementFactory.getOperatingSystemMXBean();
 		double load =  threadBean.getSystemLoadAverage();
-		logger.info("CPU usage this last minute:  " +load +" %");
+		logger.info("CPU usage this last minute:  " +load  );
 		return  load;
 	}
 

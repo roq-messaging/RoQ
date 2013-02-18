@@ -28,7 +28,7 @@ import org.json.simple.parser.ParseException;
  * <br>     Max producers y: the maximum number of producers to spawn. Default =1
  * <br>     Rate (msg/s) r: the number of messages per minute to be sent by each spawned producer. Default =1msg/s
  * <br>     Duration (min) d: the test duration.  Default =1 min
- * <br>     Payload (kb) p: the message content size, simulated by an array of px1000 size of byte. Default =1 kb
+ * <br>     Payload (byte) p: the message content size, simulated by an array of px1000 size of byte. Default =1 kb
  * <br>     Number of subscribers s: the maximum number of producers to spawn . Default =1
  * <br>     Delay (s) de: the waiting time before starting the test.  Default = 5s
 
@@ -171,8 +171,8 @@ public class TestLoaderDecription {
 		this.setSpawnRate(
 				jsonObject.get("spawnRate")!=null?((Long)jsonObject.get("spawnRate")).intValue():1);
 		
-		logger.info("The Test load description is :");
-		logger.info(this.toString());
+		logger.debug("The Test load description is :");
+		logger.debug(this.toString());
 	}
 	
 	/**
@@ -186,7 +186,7 @@ public class TestLoaderDecription {
 				"Load Rate:" + this.getRate()+ "msg/s\n" +
 				"Publishers:" + this.getMaxProd()+ "\n" +
 				"Subscribers:" + this.getMaxSub()+ "\n" +
-				"Payload:" + this.getPayload()+ "kb\n" +
+				"Payload:" + this.getPayload()+ " byte\n" +
 				"Spawn Rate:" + this.getSpawnRate()+ "producer/s\n" +
 				"]";
 	}

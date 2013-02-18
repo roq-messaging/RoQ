@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 EURANOVA
+ * Copyright 2013 EURANOVA
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,7 +24,7 @@ import org.roqmessaging.client.IRoQSubscriberConnection;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.interfaces.IStoppable;
-import org.roqmessaging.management.LogicalQFactory;
+import org.roqmessaging.core.utils.RoQUtils;
 
 /**
  * Class TestLoadController
@@ -33,11 +33,9 @@ import org.roqmessaging.management.LogicalQFactory;
  * 
  * @author sskhiri
  */
-public class TestLoadController {
+public class TestLoadController implements IStoppable {
 	//The load description
 	private TestLoaderDecription testDesc = null;
-	//The queue factory
-	private LogicalQFactory factory = null;
 	//The connection factory
 	private IRoQConnectionFactory conFactory = null;
 	//The Qname
@@ -51,26 +49,26 @@ public class TestLoadController {
 	//handles on the timers that launch the publisher processes
 	private List<Timer> timerHandles = null;
 	//Define how many message we must rcv befor logging them
-	private int logMsg = 200;
+	private int logMsg = 300000;
+	//define whether the process has been stopped
+	private boolean stopped = false;
 	//The logger
 	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
 	
 	/**
 	 * @param description the test load description
 	 * @param gcmAddress the GCM address to connect
-	 * @param queueHost the host address on which we need to create a queue
+	 * @param queueName the queue name under test
 	 */
-	public  TestLoadController(TestLoaderDecription description, String gcmAddress, String queueHost){
+	public  TestLoadController(TestLoaderDecription description, String gcmAddress, String queueName){
 		this.testDesc = description;
 		this.gcmAddress = gcmAddress;
 		this.subscriberConnections = new ArrayList<IRoQSubscriberConnection>();
 		this.publisherConnections = new ArrayList<IStoppable>();
 		this.timerHandles = new ArrayList<Timer>();
-		//Init 0: create the logical Q factory
-		this.factory = new LogicalQFactory(gcmAddress);
+		this.qName = queueName;
+		//Init 0: create the connection factory
 		this.conFactory = new RoQConnectionFactory(this.gcmAddress);
-		//Init 1. create the test queue TODO this part must be removed as it cannot be created by the different process
-		this.factory.createQueue(this.qName, queueHost);
 	}
 	
 	/**
@@ -100,22 +98,29 @@ public class TestLoadController {
 	 * Stop the test and clean all
 	 */
 	private void stopTest() {
-		//Clean timers
-		for (Timer timer_i : this.timerHandles) {
-			timer_i.cancel();
-			timer_i.purge();
+		logger.info("Stopping the test and clean operations.");
+		if(!stopped){
+			this.stopped =true;
+			//Clean timers
+			for (Timer timer_i : this.timerHandles) {
+				timer_i.cancel();
+				timer_i.purge();
+			}
+			this.timerHandles.clear();
+			//Clear subscriber
+			for (IRoQSubscriberConnection subscriber_i : this.subscriberConnections) {
+				subscriber_i.close();
+			}
+			this.subscriberConnections.clear();
+			//Clear the publisher
+			for (IStoppable publisher_i: this.publisherConnections	) {
+				publisher_i.shutDown();
+			}
+			this.publisherConnections.clear();
+		}else{
+			logger.info("Already Stopped");
 		}
-		this.timerHandles.clear();
-		//Clear subscriber
-		for (IRoQSubscriberConnection subscriber_i : this.subscriberConnections) {
-			subscriber_i.close();
-		}
-		this.subscriberConnections.clear();
-		//Clear the publisher
-		for (IStoppable publisher_i: this.publisherConnections	) {
-			publisher_i.shutDown();
-		}
-		this.publisherConnections.clear();
+		
 	}
 
 	/**
@@ -148,7 +153,7 @@ public class TestLoadController {
 			}
 		} catch (InterruptedException e) {
 			logger.error("Error while spawning publishers...", e);
-			//TODO rollback, closing all connections
+			stopTest();
 		}
 	}
 
@@ -164,10 +169,11 @@ public class TestLoadController {
 			// Register a message listener
 			IRoQSubscriber subs = new IRoQSubscriber() {
 				private int count = 0;
+				private int sizeMD = (Long.toString(System.currentTimeMillis()) + " ").getBytes().length + "test".getBytes().length;
 				public void onEvent(byte[] msg) {
 					count++;
 					if(count>logMsg){
-						logger.debug("Got "+logMsg+" message of "+msg.length +" byte" );
+						logger.info("Got "+logMsg+" message of "+(msg.length+sizeMD)  +" byte" );
 						count =0;
 					}
 				}
@@ -177,6 +183,21 @@ public class TestLoadController {
 			//Maintains an handle to all subscriber connection
 			this.subscriberConnections.add(subscriberConnection);
 		}
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
+	 */
+	public void shutDown() {
+		System.out.println("Stopping the Test and cleaning connections.");
+		Thread.currentThread().interrupt();
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return "Test Load Controller on " + RoQUtils.getInstance().getLocalIP();
 	}
 
 }
