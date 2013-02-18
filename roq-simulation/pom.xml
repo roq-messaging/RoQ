@@ -73,8 +73,7 @@
 					</descriptorRefs>
 					<archive>
 						<manifest>
-							<mainClass>org.roqmessaging.core.launcher.MonitorLauncher</mainClass>
-							<mainClass>org.roqmessaging.core.launcher.ExchangeLauncher</mainClass>
+							<mainClass>org.roqmessaging.loaders.launcher.TestLoaderLauncher</mainClass>
 							<mainClass>org.roq.simulation.RoQAllLocalLauncher</mainClass>
 						</manifest>
 					</archive>
