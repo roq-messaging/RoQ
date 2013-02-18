@@ -33,11 +33,14 @@ public class QueueManagementLauncher {
 	 */
 	public static void main(String[] args) {
 		System.out.println("Starting Queue management process - this process will create a queue locally");
-		System.out.println(" <GCM address, add|| del || help, queue name]");
+		if(args.length!=3){
+			System.out.println("The right usage is :  <GCM address, add|| del || help, queue name]");
+			System.exit(0);
+		}
 		LogicalQFactory factory = new LogicalQFactory(args[0]);
 		//1. Parameter check
-		System.out.println("Connecting to GCM@"+ args[0]);
-		if( !(args[1].equalsIgnoreCase("add") && !args[1].equalsIgnoreCase("del" ) && !args[1].equalsIgnoreCase("help" ))){
+		System.out.println("Connecting to GCM@"+ args[0] +" to "+ args[1]+" Queue " + args[2] );
+		if( (!args[1].equalsIgnoreCase("add") && !args[1].equalsIgnoreCase("del") && !args[1].equalsIgnoreCase("help"))){
 			System.out.println(" The second argument must be add or del");
 			System.out.println(" <GCM address, add|| del || help, queue name]");
 			factory.clean();
@@ -50,16 +53,19 @@ public class QueueManagementLauncher {
 			System.out.println("Do you confirm to create the queue "+ args[2] +" (GCM @"+ args[0]+ ") [Y,N] ?");
 			if(checkYes(scan))
 				factory.createQueue(args[2], RoQUtils.getInstance().getLocalIP());
-		}
-		if(args[1].equalsIgnoreCase("add")){
-			System.out.println("Do you confirm to remove the queue "+ args[2] +" (GCM @"+ args[0]+ ")[Y,N] ?");
-			if(checkYes(scan))
-				factory.removeQueue(args[2]);
-		}
-		if(args[1].equalsIgnoreCase("help")){
-			System.out.println("[<GCM address>,< add|| del || help>, <queue name>]");
-			if(checkYes(scan))
-				factory.removeQueue(args[2]);
+		}else{
+			if(args[1].equalsIgnoreCase("del")){
+				System.out.println("Do you confirm to remove the queue "+ args[2] +" (GCM @"+ args[0]+ ")[Y,N] ?");
+				if(checkYes(scan))
+					factory.removeQueue(args[2]);
+			} else {
+				if (args[1].equalsIgnoreCase("help")) {
+					System.out.println("[<GCM address>,< add|| del || help>, <queue name>]");
+					if (checkYes(scan))
+						factory.removeQueue(args[2]);
+
+				}
+			}
 		}
 		factory.clean();
 		

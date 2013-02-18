@@ -50,6 +50,8 @@ public class TestLoadController implements IStoppable {
 	private List<Timer> timerHandles = null;
 	//Define how many message we must rcv befor logging them
 	private int logMsg = 300000;
+	//define whether the process has been stopped
+	private boolean stopped = false;
 	//The logger
 	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
 	
@@ -96,22 +98,29 @@ public class TestLoadController implements IStoppable {
 	 * Stop the test and clean all
 	 */
 	private void stopTest() {
-		//Clean timers
-		for (Timer timer_i : this.timerHandles) {
-			timer_i.cancel();
-			timer_i.purge();
+		logger.info("Stopping the test and clean operations.");
+		if(!stopped){
+			this.stopped =true;
+			//Clean timers
+			for (Timer timer_i : this.timerHandles) {
+				timer_i.cancel();
+				timer_i.purge();
+			}
+			this.timerHandles.clear();
+			//Clear subscriber
+			for (IRoQSubscriberConnection subscriber_i : this.subscriberConnections) {
+				subscriber_i.close();
+			}
+			this.subscriberConnections.clear();
+			//Clear the publisher
+			for (IStoppable publisher_i: this.publisherConnections	) {
+				publisher_i.shutDown();
+			}
+			this.publisherConnections.clear();
+		}else{
+			logger.info("Already Stopped");
 		}
-		this.timerHandles.clear();
-		//Clear subscriber
-		for (IRoQSubscriberConnection subscriber_i : this.subscriberConnections) {
-			subscriber_i.close();
-		}
-		this.subscriberConnections.clear();
-		//Clear the publisher
-		for (IStoppable publisher_i: this.publisherConnections	) {
-			publisher_i.shutDown();
-		}
-		this.publisherConnections.clear();
+		
 	}
 
 	/**
@@ -144,7 +153,7 @@ public class TestLoadController implements IStoppable {
 			}
 		} catch (InterruptedException e) {
 			logger.error("Error while spawning publishers...", e);
-			//TODO rollback, closing all connections
+			stopTest();
 		}
 	}
 
@@ -180,7 +189,7 @@ public class TestLoadController implements IStoppable {
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
 	public void shutDown() {
-		//TODO check how we can wake up the thread
+		System.out.println("Stopping the Test and cleaning connections.");
 		Thread.currentThread().interrupt();
 	}
 
