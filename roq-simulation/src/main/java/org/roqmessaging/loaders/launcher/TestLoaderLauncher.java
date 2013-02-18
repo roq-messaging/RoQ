@@ -49,7 +49,7 @@ public class TestLoaderLauncher {
 		System.out.println("Starting with test description from "+ file +", executing test on queue "+ qName);
 		File fileDesc = new File(file);
 		if(!fileDesc.isFile()){
-			System.out.println("The file  "+ file +"does not exist or cannot be found!");
+			System.out.println("The file  "+ file +" does not exist or cannot be found!");
 			System.exit(0);
 		}
 		try {
