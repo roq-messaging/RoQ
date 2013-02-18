@@ -14,6 +14,9 @@
  */
 package org.roqmessaging.loaders.launcher;
 
+import java.io.File;
+import java.util.Scanner;
+
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.loaders.TestLoadController;
 import org.roqmessaging.loaders.TestLoaderDecription;
@@ -44,16 +47,22 @@ public class TestLoaderLauncher {
 		//The test desc file location
 		String file = args[0];
 		System.out.println("Starting with test description from "+ file +", executing test on queue "+ qName);
-		
-		//TODO read the test description from file
-		// Set a test description
-		TestLoaderDecription desc = new TestLoaderDecription();
-		// Warning the diration must have a ".0" otherwise it will be considered
-		// as a Long not a double.
-		String description = "{\"maxPub\":5,\"duration\":2.5,\"rate\":3000,\"maxSub\":5,\"payload\":20,\"delay\":5,\"spawnRate\":1}";
+		File fileDesc = new File(file);
+		if(!fileDesc.isFile()){
+			System.out.println("The file  "+ file +"does not exist or cannot be found!");
+			System.exit(0);
+		}
 		try {
+			TestLoaderDecription desc = new TestLoaderDecription();
+			String description = new Scanner(fileDesc, "UTF-8").useDelimiter("\\A").next();
+			System.out.println("Reading Test description from file: \n "+ description);
+			// Warning the duration must have a ".0" otherwise it will be
+			// considered
+			// as a Long not a double.
+			//String description = "{\"maxPub\":5,\"duration\":2.5,\"rate\":3000,\"maxSub\":5,\"payload\":20,\"delay\":5,\"spawnRate\":1}";
 			desc.load(description);
-			final TestLoadController controller = new TestLoadController(desc, RoQUtils.getInstance().getLocalIP(), qName);
+			final TestLoadController controller = new TestLoadController(desc, RoQUtils.getInstance().getLocalIP(),
+					qName);
 			Runtime.getRuntime().addShutdownHook(new Thread() {
 				/**
 				 * Just stop the Test press ctrl C.
@@ -67,7 +76,7 @@ public class TestLoaderLauncher {
 
 			// Start the test
 			controller.start();
-			//Maintain the main process openned
+			// Maintain the main process openned
 			while (true) {
 				Thread.sleep(500);
 			}
