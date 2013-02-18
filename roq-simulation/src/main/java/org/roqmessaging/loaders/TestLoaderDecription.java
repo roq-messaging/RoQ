@@ -171,8 +171,8 @@ public class TestLoaderDecription {
 		this.setSpawnRate(
 				jsonObject.get("spawnRate")!=null?((Long)jsonObject.get("spawnRate")).intValue():1);
 		
-		logger.info("The Test load description is :");
-		logger.info(this.toString());
+		logger.debug("The Test load description is :");
+		logger.debug(this.toString());
 	}
 	
 	/**

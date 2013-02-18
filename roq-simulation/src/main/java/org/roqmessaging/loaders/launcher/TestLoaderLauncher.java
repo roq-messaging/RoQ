@@ -54,35 +54,53 @@ public class TestLoaderLauncher {
 		}
 		try {
 			TestLoaderDecription desc = new TestLoaderDecription();
+			//Read the file content
 			String description = new Scanner(fileDesc, "UTF-8").useDelimiter("\\A").next();
-			System.out.println("Reading Test description from file: \n "+ description);
+			//Will read the user input
+			Scanner scan = new Scanner(System.in);
 			// Warning the duration must have a ".0" otherwise it will be
 			// considered
 			// as a Long not a double.
 			//String description = "{\"maxPub\":5,\"duration\":2.5,\"rate\":3000,\"maxSub\":5,\"payload\":20,\"delay\":5,\"spawnRate\":1}";
 			desc.load(description);
-			final TestLoadController controller = new TestLoadController(desc, RoQUtils.getInstance().getLocalIP(),
-					qName);
-			Runtime.getRuntime().addShutdownHook(new Thread() {
-				/**
-				 * Just stop the Test press ctrl C.
-				 */
-				@Override
-				public void run() {
-					System.out.println("Shutting down the Test loader contoller");
-					controller.shutDown();
-				}
-			});
+			System.out.println("Are you sure to launch the test with this configuration[Y,N]: \n "+ desc.toString());
+			if(checkYes(scan)){
+				final TestLoadController controller = new TestLoadController(desc, RoQUtils.getInstance().getLocalIP(),
+						qName);
+				Runtime.getRuntime().addShutdownHook(new Thread() {
+					/**
+					 * Just stop the Test press ctrl C.
+					 */
+					@Override
+					public void run() {
+						System.out.println("Shutting down the Test loader contoller");
+						controller.shutDown();
+					}
+				});
 
-			// Start the test
-			controller.start();
-			// Maintain the main process openned
-			while (true) {
-				Thread.sleep(500);
+				// Start the test
+				controller.start();
+				// Maintain the main process openned
+				while (true) {
+					Thread.sleep(500);
+				}
 			}
+		
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	/**
+	 * Evaluate the user input [Y,N]
+	 * @param scan the scanner that will scan the I/O
+	 * @return true if the user enter yes
+	 */
+	private static boolean checkYes(Scanner scan) {
+		String choice = scan.nextLine();
+		if (choice.equalsIgnoreCase("Y"))
+			return true;
+		else
+			return false;
 	}
 
 }
