@@ -46,6 +46,7 @@ public class TestLoadControllerCase extends RoQTestCase {
 			desc.load(description);
 			TestLoadController controller = new TestLoadController(desc, RoQUtils.getInstance().getLocalIP(),qName );
 			controller.start();
+			//TODO adding a call back at the end of the test to remove the queue
 		} catch (ParseException e) {
 			super.logger.error(e);
 		}
