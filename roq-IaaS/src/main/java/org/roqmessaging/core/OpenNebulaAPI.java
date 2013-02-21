@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
+ * @Author Cyrille Duverne
  */
 
 package org.roqmessaging.core;
@@ -55,11 +56,11 @@ public class OpenNebulaAPI {
 	public int createInstance(String gcmadress) {
 
 		String vmTemplate = "NAME=vm-4-RoQ\n" + "CONTEXT=[\n"
-				+ "FILES=\"/nebuladata/scripts/init.sh\",\n"
+				+ "FILES=\"/nebuladata/scripts/init-RoQ.sh\",\n"
 				+ "GATEWAY=\"192.168.0.1\",\n" + "HOSTNAME=\"RoQ-VM-$VMID\",\n"
 				//+ "IP_PUBLIC=$NIC[IP, NETWORK=\"RoQ\"],\n"
-				+ "TARGET=\"vdb\",\n" + "GCMIP=\"" + gcmadress + "\"]\n"
-				+ "CPU=0.2\n" + "DISK=[\n" + "IMAGE=\"Base Instance\",\n"
+				+ "TARGET=\"vdb\",\n" + "GCM=\"" + gcmadress + "\"]\n"
+				+ "CPU=0.2\n" + "DISK=[\n" + "IMAGE=\"RoQ-OpenNebula\",\n"
 				+ "TARGET=\"vda\" ]\n" + "FEATURES=[\n" + "ACPI=\"yes\" ]\n"
 				+ "GRAPHICS=[\n" + "KEYMAP=\"fr\",\n" + "LISTEN=\"0.0.0.0\",\n"
 				+ "TYPE=\"vnc\" ]\n" + "MEMORY=512\n" + "NIC=[\n"
