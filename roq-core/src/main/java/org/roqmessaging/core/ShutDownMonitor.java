@@ -76,7 +76,7 @@ public class ShutDownMonitor implements Runnable {
 				}
 			}
 		}
-		logger.info("Monitor has been shut down");
+		logger.info("Monitor has been shut down for "+this.monitored.toString());
 		this.shutDownSocket.close();
 	}
 

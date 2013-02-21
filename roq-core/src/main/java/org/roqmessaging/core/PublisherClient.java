@@ -32,6 +32,8 @@ public class PublisherClient implements IRoQPublisher {
 	private PublisherConnectionManager connectionManager = null;
 	//Logger
 	private Logger logger = Logger.getLogger(PublisherClient.class);
+	//Define whether we need to add a time stamp in the message
+	private boolean timeStp = false;
 	
 	/**
 	 * Initiatilisation of the class
@@ -51,7 +53,7 @@ public class PublisherClient implements IRoQPublisher {
 			configState.getExchPub().send(key, ZMQ.SNDMORE);
 			configState.getExchPub().send(configState.getPublisherID().getBytes(), ZMQ.SNDMORE);
 
-			if (configState.isTimeStampServer()) {
+			if (this.timeStp) {
 				configState.getExchPub().send(msg, ZMQ.SNDMORE);
 				configState.getExchPub().send(getTimestamp(), 0);
 			}else {
@@ -65,8 +67,19 @@ public class PublisherClient implements IRoQPublisher {
 		}
 	}
 	
+	/**
+	 * @return the encoded time stamp
+	 */
 	private byte[] getTimestamp() {
 		return (Long.toString(System.currentTimeMillis()) + " ").getBytes();
+	}
+
+	/**
+	 * @see org.roqmessaging.client.IRoQPublisher#addTimeStamp(boolean)
+	 */
+	public void addTimeStamp(boolean add) {
+		this.timeStp=add;
+		logger.info("A time stamp of "+ this.getTimestamp().length +" will be added as a message part.");
 	}
 
 }

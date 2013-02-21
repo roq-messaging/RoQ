@@ -156,9 +156,10 @@ public class Exchange implements Runnable, IStoppable {
 		logger.info("Exchange Started");
 		timer = new Timer();
 		Heartbeat heartBeatTimer = new Heartbeat(this.s_monitor, this.frontEnd, this.backEnd );
-		timer.schedule(heartBeatTimer, 0, 5000);
+		timer.schedule(heartBeatTimer, 5, 3000);
 		ExchangeStatTimer exchStatTimer = new ExchangeStatTimer(this, this.statistic);
-		timer.schedule(exchStatTimer, 10, 6000);
+		//This is important that the exchange stat timer is triggered every second, since it computes throughput in byte/min.
+		timer.schedule(exchStatTimer, 10, 60000);
 		int part;
 		String prodID = "";
 		//Adding the poller

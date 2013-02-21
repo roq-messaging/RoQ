@@ -34,20 +34,20 @@ import org.roqmessaging.loaders.SenderLoader;
  * 
  * @author sskhiri
  */
-public class TestLoadTest extends RoQTestCase {
-	private Logger logger = Logger.getLogger(TestLoadTest.class);
+public class TestLoadSender extends RoQTestCase {
+	private Logger logger = Logger.getLogger(TestLoadSender.class);
 	
 	/**
 	 * Test the sender loader by creating one and checking the message sent.
 	 */
-	//@Test
+	@Test
 	public void testLoaderSender() {
 		// The queue under test
 		String qName = "performance_test";
 		// 1. Create the queue
 		this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP());
-		// 2. Create the sender
-		TimerTask sender = new SenderLoader(300, 100, RoQUtils.getInstance().getLocalIP(), qName);
+		// 2. Create the sender: rate, payload, GCM, q name 
+		TimerTask sender = new SenderLoader(10, 1, RoQUtils.getInstance().getLocalIP(), qName);
 		//3. Attach 1 subscriber
 		this.attachSUbscriber(qName);
 		// 4. Launch the sender
@@ -61,6 +61,7 @@ public class TestLoadTest extends RoQTestCase {
 		//KIll the timer
 		timerLoad.cancel();
 	}
+	
 	
 	/**
 	 * Attach a subscriber to the queue on the topic "key". The test must send 

@@ -69,6 +69,11 @@ public class TestHostExchangeInfo extends RoQTestCase {
 				Thread.sleep(5000);
 				assertEquals(2, askHostExchangeInfo());
 				
+				factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
+				subscriber.setXchangeToCheck(3);
+				Thread.sleep(5000);
+				assertEquals(3, askHostExchangeInfo());
+				
 				
 				//7. Shutdown
 				factory.removeQueue(qName);

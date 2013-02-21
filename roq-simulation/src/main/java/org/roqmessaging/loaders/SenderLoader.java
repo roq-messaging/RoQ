@@ -16,10 +16,12 @@ package org.roqmessaging.loaders;
 
 import java.util.TimerTask;
 
+import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
+import org.roqmessaging.core.interfaces.IStoppable;
 
 /**
  * Class SenderLoader
@@ -29,7 +31,7 @@ import org.roqmessaging.core.factory.RoQConnectionFactory;
  * 
  * @author sskhiri
  */
-public class SenderLoader extends TimerTask {
+public class SenderLoader extends TimerTask implements IStoppable {
 	//The load rate for this sender in [msg/s]
 	private int rate =0;
 	//Payload of message in [kb]
@@ -44,8 +46,11 @@ public class SenderLoader extends TimerTask {
 	private String queueOnTest = "?";
 	//The number of messages sent on this timer cycle
 	private int sentMsg = 0;
+	//The logger 
+	private Logger logger = Logger.getLogger(SenderLoader.class.getCanonicalName());
 	
 	/**
+	 * Create a sender process regulated for sending specific rate and payload.
 	 * @param rate The load rate for this sender in [msg/s]
 	 * @param payload The payload of each message in [kb]
 	 * @param configServerAddress the address of the global confi server
@@ -59,7 +64,10 @@ public class SenderLoader extends TimerTask {
 		//Init the roq publisher
 		initRoQpublisher();
 		//Init the message payload
-		this.payload = new byte[payload*1000];
+		//Remove the meta data size: as we send the time stamp and the key, we need to remove this size
+		int sizeMD = (Long.toString(System.currentTimeMillis()) + " ").getBytes().length + "test".getBytes().length;
+		this.payload = new byte[(payload-sizeMD>0)?(payload-sizeMD): payload];
+		logger.debug("Starting load sender at a rate of "+ this.rate+"msg/s of "+this.payload+"kb");
 	}
 
 	/**
@@ -72,6 +80,7 @@ public class SenderLoader extends TimerTask {
 		connection.open();
 		//2. Creating the publisher and sending message
 		publisher = connection.createPublisher();
+		publisher.addTimeStamp(true);
 	}
 
 	/**
@@ -80,6 +89,7 @@ public class SenderLoader extends TimerTask {
 	 */
 	@Override
 	public void run() {
+		logger.trace("Running send message");
 		//Check if the connection is ready
 		connection.blockTillReady(10000);
 		//Reset the sent message
@@ -87,7 +97,37 @@ public class SenderLoader extends TimerTask {
 		//Send while reaching the rate
 		while(this.sentMsg<this.rate){
 			publisher.sendMessage("test".getBytes(), this.payload);
+			this.sentMsg++;
 		}
 	}
+
+	/**
+	 * 
+	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
+	 */
+	public void shutDown() {
+		logger.info("Stopping Sender loader");
+		this.connection.close();
+		
+	}
+
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return "Sender loader thread";
+	}
+	
+	/**
+	 * 
+	 * @see java.util.TimerTask#cancel()
+	 */
+	@Override
+	public boolean cancel() {
+		this.shutDown();
+		return super.cancel();
+	}
+	
+	
 
 }

@@ -54,7 +54,6 @@ public class SubscriberConnectionManager implements Runnable {
 
 	private long latency;
 	private int latenced;
-	private boolean tstmp;
 	
 	//Define when the thread must stop
 	private volatile boolean running = true;
@@ -91,7 +90,6 @@ public class SubscriberConnectionManager implements Runnable {
 		this.latency = 0;
 		this.latenced = 0;
 
-		this.tstmp = tstmp;
 		if (tstmp) {
 			this.tstmpReq = context.socket(ZMQ.REQ);
 			this.tstmpReq.connect(portOff + ":5900");
@@ -116,7 +114,7 @@ public class SubscriberConnectionManager implements Runnable {
 			} else {
 				meanLat = Math.round(latency / latenced);
 			}
-			logger.debug("Total latency: " + latency + " Received: " + received + " Latenced: " + latenced + " Mean: "
+			logger.info("Total latency: " + latency + " Received: " + received + " Latenced: " + latenced + " Mean: "
 					+ meanLat + " " + "milliseconds");
 
 			statsPub.send(
@@ -209,7 +207,7 @@ public class SubscriberConnectionManager implements Runnable {
 		this.items.register(exchSub);
 
 		Timer timer = new Timer();
-		timer.schedule(new Stats(), 0, 60000);
+		timer.schedule(new Stats(), 0, 40000);
 
 		logger.info("Worker connected");
 
@@ -231,21 +229,25 @@ public class SubscriberConnectionManager implements Runnable {
 			}
 
 			if (items.pollin(1)) {//From Exchange
-				byte[] request;
-				request = exchSub.recv(0);
-				int part = 1;
-				byte[] key = request;
-				while (exchSub.hasReceiveMore()) {
+				byte[] request= null;
+				byte[] key  = exchSub.recv(0);
+				if(exchSub.hasReceiveMore()){
+					//the ID of the publisher
 					request = exchSub.recv(0);
-					part++;
-					if (part == 4 && this.tstmp) {
-						computeLatency(Long.parseLong(new String(request, 0, request.length - 1)));
-					}
+				}
+				if(exchSub.hasReceiveMore()){
+					//the payload
+					request = exchSub.recv(0);
+				}
+				if(exchSub.hasReceiveMore()){
+					//the time stamp
+					byte[] bTimeStamp = exchSub.recv(0);
+					computeLatency(Long.parseLong(new String(bTimeStamp, 0, bTimeStamp.length - 1)));
 				}
 				//logger.debug("Recieving message " +  new String(request,0,request.length) + " key : "+ new String(request,0,request.length));
 				//delivering to the message listener
 				if(Arrays.equals(subkey, key)){
-					this.subscriber.onEvent(request);
+					this.subscriber.onEvent(request!=null?request:new byte[]{});
 				}
 				received++;
 			}
