@@ -53,6 +53,7 @@ Register the key:
 cd /home/username/temp/
 git clone https://github.com/zeromq/jzmq.git
 cd jzmq
+git checkout v1.0.0
 ./configure
 make
 sudo make install
