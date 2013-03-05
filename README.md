@@ -51,7 +51,7 @@ Register the key:
 ### 3 Install jzmq binary library
 ```sh
 cd /home/username/temp/
-git clone https://github.com/zeromq/jzmq.git
+git clone https://github.com/zeromq/jzmq.git -b v1.0.0
 cd jzmq
 ./configure
 make
