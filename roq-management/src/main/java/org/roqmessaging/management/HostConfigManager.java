@@ -361,6 +361,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 		}
 	}
 
+
 	/**
 	 * Start a new exchange process
 	 * <p>
