@@ -36,6 +36,7 @@ import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.config.internal.FileConfigurationReader;
 import org.roqmessaging.management.config.internal.HostConfigDAO;
+import org.roqmessaging.management.launcher.hook.ShutDownSender;
 import org.roqmessaging.scaling.launcher.ScalingProcessLauncher;
 import org.zeromq.ZMQ;
 
@@ -338,18 +339,12 @@ public class HostConfigManager implements Runnable, IStoppable {
 			logger.info("Sending Remove Q request to " + portOff + (basePort + 5));
 			// 2. Send the remove message to the monitor
 			// The monitor will stop all the exchanges during its shut down
-			ZMQ.Socket shutDownMonitor = ZMQ.context(1).socket(ZMQ.REQ);
-			shutDownMonitor.setSendTimeOut(0);
-			shutDownMonitor.connect(portOff + (basePort + 5));
-			shutDownMonitor.send((Integer.toString(RoQConstant.SHUTDOWN_REQUEST)).getBytes(), 0);
-			shutDownMonitor.close();
+			ShutDownSender shutDownSender = new ShutDownSender(portOff + (basePort + 5));
+			shutDownSender.shutdown();
 			//3. Stopping the scaling process
 			if(this.qScalingProcessAddr.containsKey(qName)){
-				ZMQ.Socket shutDownScaling = ZMQ.context(1).socket(ZMQ.REQ);
-				shutDownScaling.setSendTimeOut(0);
-				shutDownScaling.connect(portOff + this.qScalingProcessAddr.get(qName).toString());
-				shutDownScaling.send(Integer.toString(RoQConstant.SHUTDOWN_REQUEST).getBytes(), 0);
-				shutDownScaling.close();
+				shutDownSender.setAddress(portOff + this.qScalingProcessAddr.get(qName).toString());
+				shutDownSender.shutdown();
 			}
 			//4. Removing Q information
 			this.qExchangeMap.remove(qName);
