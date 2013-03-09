@@ -32,6 +32,7 @@
 							<mainClass>org.roqmessaging.management.launcher.HostConfigManagerLauncher</mainClass>
 							<mainClass>org.roqmessaging.management.launcher.GlobalConfigurationLauncher</mainClass>
 							<mainClass>org.roqmessaging.management.launcher.QueueManagementLauncher</mainClass>
+							<mainClass>org.roqmessaging.management.launcher.RoQClusterStopper</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
