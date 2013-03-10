@@ -12,9 +12,14 @@ This procedure is meant for Ubuntu. It should be easy, though, to adapt it to an
 ### Install RoQ
 Get the GimmeRoQ.sh
 To install RoQ: ./GimmeRoQ.sh path/to/installation method
-path/to/installation : Path where you want to put your RoQ installation
 
-method = CI or GIT
+```sh
+./GimmeRoQ.sh path/to/installation method
+```
+
+Where "path/to/installation" : Path where you want to put your RoQ installation
+
+"method" = CI or GIT
 CI : Get the latest nightly build of RoQ from the Continuous Integration server (http://dev.roq-messaging.org/ci/).
 GIT : Get the latest release of RoQ on GitHub", this option is recommended to contribute or browse the RoQ code.
 
