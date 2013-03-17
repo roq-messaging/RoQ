@@ -68,60 +68,8 @@ public class TestMngtStorageCreateTables {
 			MngtServerStorage facade = new MngtServerStorage(connection);
 			// Drop table if exist - clean the file
 			facade.formatDB();
-
-			//Create an empty configuration with 2 hosts
-			HashMap<String, String> emptyCfg = new HashMap<String, String>();
-			//Host config
-			List<String> hosts = new ArrayList<String>();
-			hosts.add("127.0.0.2");
-			hosts.add("127.0.0.1");
-			hosts.add("127.0.0.3");
-			facade.updateConfiguration(emptyCfg, hosts);
-			
-//			facade.addRoQHost("127.0.0.1");
-//			facade.addRoQHost("127.0.0.2");
-			// Assert.assertEquals(1, facade.addRoQHost("127.0.0.1"));
-			// Assert.assertEquals(2, facade.addRoQHost("127.0.1.2"));
-
-			facade.addConfiguration("Configuration1", 100000, 2000);
-			facade.addConfiguration("Configuration2", 5000, 2000);
-			
-			//Test the auto scaling rule storage
-			facade.addAutoScalingRule(new HostScalingRule(50, 40));
-			facade.addAutoScalingRule(new LogicalQScalingRule(10000, 0));
-			int ruleXchange1 =facade.addAutoScalingRule(new XchangeScalingRule(10000, 0));
-			logger.debug("inserted a rule exchange with ID ="+ruleXchange1);
-			List<IAutoScalingRule> rules =  facade.getAllAutoScalingRules();
-			Assert.assertEquals(3, rules.size());
-			
-			facade.removeAutoScalingRule(rules.get(0));
-			 rules =  facade.getAllAutoScalingRules();
-			Assert.assertEquals(2, rules.size());
-			
-			facade.removeAutoScalingRule(rules.get(0));
-			rules =  facade.getAllAutoScalingRules();
-			Assert.assertEquals(1, rules.size());
-			
-			//Test the auto scaling config storage
-			logger.info("Testing auto scaling storage");
-			facade.addAutoScalingRule(new LogicalQScalingRule(10000, 0));
-			facade.addAutoScalingRule(new XchangeScalingRule(10000, 0));
-			facade.addAutoScalingRule(new LogicalQScalingRule(20000, 0));
-			facade.addAutoScalingRule(new XchangeScalingRule(20000, 0));
-			facade.addAutoScalingRule(new LogicalQScalingRule(30000, 0));
-			facade.addAutoScalingRule(new XchangeScalingRule(30000, 0));
-			facade.addAutoScalingConfig("conf1", 1, 2, 3);//host1, queue 2, xchange 3
-			facade.addAutoScalingConfig("conf2", 1, 1, 3);
-			facade.addAutoScalingConfig("conf3", 0, 0, 3);
-			AutoScalingConfig autoScalingConfig1 = facade.getAutoScalingCfg("conf1");
-			Assert.assertEquals(1, autoScalingConfig1.getHostRule().getID());
-			Assert.assertEquals(2, autoScalingConfig1.getqRule().getID());
-			Assert.assertEquals(3, autoScalingConfig1.getXgRule().getID());
-			
-			facade.addQueueConfiguration("Queue1", "127.0.0.1", 2, true, "conf1");
-			facade.addQueueConfiguration("Queue2", "127.0.0.2", 2, false,"conf2");
-			facade.updateAutoscalingQueueConfig("Queue2", "conf1");
-			facade.updateAutoscalingQueueConfig("Queue1", "conf2");
+			//Add fake DB
+			addConfiguration(facade);
 			
 			// Query example
 			ResultSet rs = statement.executeQuery("select * from Queues");
@@ -171,10 +119,72 @@ public class TestMngtStorageCreateTables {
 		}
 	}
 
+	/**
+	 * This methods creates a complete fake configuration for tests.
+	 * @param facade the management storage facade.
+	 * @throws SQLException 
+	 */
+	private void addConfiguration(MngtServerStorage facade) throws SQLException {
+		//Create an empty configuration with 2 hosts
+		HashMap<String, String> emptyCfg = new HashMap<String, String>();
+		//Host config
+		List<String> hosts = new ArrayList<String>();
+		hosts.add("127.0.0.2");
+		hosts.add("127.0.0.1");
+		hosts.add("127.0.0.3");
+		facade.updateConfiguration(emptyCfg, hosts);
+		
+		facade.addConfiguration("Configuration1", 100000, 2000);
+		facade.addConfiguration("Configuration2", 5000, 2000);
+		
+		//Test the auto scaling rule storage
+		facade.addAutoScalingRule(new HostScalingRule(50, 40));
+		facade.addAutoScalingRule(new LogicalQScalingRule(10000, 0));
+		int ruleXchange1 =facade.addAutoScalingRule(new XchangeScalingRule(10000, 0));
+		logger.debug("inserted a rule exchange with ID ="+ruleXchange1);
+		List<IAutoScalingRule> rules =  facade.getAllAutoScalingRules();
+		Assert.assertEquals(3, rules.size());
+		
+		facade.removeAutoScalingRule(rules.get(0));
+		 rules =  facade.getAllAutoScalingRules();
+		Assert.assertEquals(2, rules.size());
+		
+		facade.removeAutoScalingRule(rules.get(0));
+		rules =  facade.getAllAutoScalingRules();
+		Assert.assertEquals(1, rules.size());
+		
+		//Test the auto scaling config storage
+		logger.info("Testing auto scaling storage");
+		
+		facade.addAutoScalingRule(new LogicalQScalingRule(10000, 0));
+		facade.addAutoScalingRule(new XchangeScalingRule(10000, 0));
+		facade.addAutoScalingRule(new LogicalQScalingRule(20000, 0));
+		facade.addAutoScalingRule(new XchangeScalingRule(20000, 0));
+		facade.addAutoScalingRule(new LogicalQScalingRule(30000, 0));
+		facade.addAutoScalingRule(new XchangeScalingRule(30000, 0));
+		facade.addAutoScalingConfig("conf1", 1, 2, 3);//host1, queue 2, xchange 3
+		facade.addAutoScalingConfig("conf2", 1, 1, 3);
+		facade.addAutoScalingConfig("conf3", 0, 0, 3);
+		AutoScalingConfig autoScalingConfig1 = facade.getAutoScalingCfg("conf1");
+		Assert.assertEquals(1, autoScalingConfig1.getHostRule().getID());
+		Assert.assertEquals(2, autoScalingConfig1.getqRule().getID());
+		Assert.assertEquals(3, autoScalingConfig1.getXgRule().getID());
+		
+		facade.addQueueConfiguration("Queue1", "127.0.0.1", 2, true, "conf1");
+		facade.addQueueConfiguration("Queue2", "127.0.0.2", 2, false,"conf2");
+		facade.updateAutoscalingQueueConfig("Queue2", "conf1");
+		facade.updateAutoscalingQueueConfig("Queue1", "conf2");
+		
+		
+	}
+
 	@Test
 	public void testUpdate() throws Exception {
 		logger.debug("-> Test the update of new configuration");
 		MngtServerStorage facade = new MngtServerStorage(DriverManager.getConnection("jdbc:sqlite:" + this.dbName));
+		facade.formatDB();
+		//Add the fake configuration
+		addConfiguration(facade);
 		// Test state queue query
 		ArrayList<QueueManagementState> queues = facade.getQueues();
 		Assert.assertEquals(2, queues.size());
@@ -211,24 +221,17 @@ public class TestMngtStorageCreateTables {
 		Assert.assertNotNull(q1State);
 		Assert.assertEquals(false, q1State.isRunning());
 		facade.getQueues();
-	}
-	
-	/**
-	 * Test the queue removal
-	 * @throws Exception
-	 */
-	@Test
-	public void testRemoveQ() throws Exception {
-		MngtServerStorage facade = new MngtServerStorage(DriverManager.getConnection("jdbc:sqlite:" + this.dbName));
+		
+		// Test the queue removal
 		facade.getQueues();
 		facade.removeQueue("Queue2");
 		facade.removeQueue("Queue3");
-		ArrayList<QueueManagementState> queues = facade.getQueues();
+	    queues = facade.getQueues();
 		Assert.assertEquals(1, queues.size());
 		//rest remove
 		facade.removeHosts();
 		//Check get hosts
 		Assert.assertEquals(0, facade.getHosts().size());
 	}
-
+	
 }
