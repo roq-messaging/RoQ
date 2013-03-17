@@ -136,7 +136,7 @@ public class RoQTestCase {
 		// Register a message listener
 		IRoQSubscriber subs = new IRoQSubscriber() {
 			public void onEvent(byte[] msg) {
-				String content = new String(msg, 0, msg.length);
+				//String content = new String(msg, 0, msg.length);
 			}
 		};
 		subscriberConnection.setMessageSubscriber(subs);
