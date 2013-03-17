@@ -55,7 +55,9 @@ public class TestLoaderLauncher {
 		try {
 			TestLoaderDecription desc = new TestLoaderDecription();
 			//Read the file content
-			String description = new Scanner(fileDesc, "UTF-8").useDelimiter("\\A").next();
+		    @SuppressWarnings("resource")
+			Scanner inScan = new Scanner(fileDesc, "UTF-8");
+			String description = inScan .useDelimiter("\\A").next();
 			//Will read the user input
 			Scanner scan = new Scanner(System.in);
 			// Warning the duration must have a ".0" otherwise it will be
@@ -77,7 +79,7 @@ public class TestLoaderLauncher {
 						controller.shutDown();
 					}
 				});
-
+				closeScanner (inScan, scan);
 				// Start the test
 				controller.start();
 				// Maintain the main process openned
@@ -89,6 +91,15 @@ public class TestLoaderLauncher {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	/**
+	 * Close the the scanner openned.
+	 */
+	private static void closeScanner(Scanner ...scanners) {
+		for (Scanner scanner : scanners) {
+			scanner.close();
+		}
+		
 	}
 	/**
 	 * Evaluate the user input [Y,N]
