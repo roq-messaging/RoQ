@@ -134,7 +134,7 @@ public class PubClientLib implements Runnable {
 		byte[] msg = new byte[payloadSize - 8];
 		msg[msg.length - 1] = 0;
 
-		ZMQ.Poller items = context.poller(2);
+		ZMQ.Poller items = new ZMQ.Poller(2);
 		items.register(monitorSub);
 		
 		Timer timer = new Timer();

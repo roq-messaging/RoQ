@@ -31,6 +31,7 @@ import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.MngtController;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Poller;
 
 /**
  * Class GlobalConfigurationManager
@@ -114,11 +115,11 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		mngtTimer.schedule(configTimerTask, 500, this.properties.getPeriod());
 		
 		//ZMQ init
-		ZMQ.Poller items = context.poller(3);
+		ZMQ.Poller items = new Poller(3);
 		items.register(this.clientReqSocket);
 		//2. Start the main run of the monitor
 		while (this.running) {
-			items.poll(10000);
+			items.poll(100);
 			if (items.pollin(0)){ //Comes from a client
 				byte[] encoded = clientReqSocket.recv(0);
 				String content = new String(encoded);

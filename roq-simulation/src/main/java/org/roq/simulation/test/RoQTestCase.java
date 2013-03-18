@@ -68,7 +68,7 @@ public class RoQTestCase {
 		this.logger.info("Tear Down TEST");
 		this.factory.clean();
 		this.launcher.tearDown();
-		Thread.sleep(3000);
+		Thread.sleep(4000);
 	}
 	
 

@@ -105,10 +105,10 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	 * @see java.lang.Runnable#run()
 	 */
 	public void run() {
-		ZMQ.Poller poller = context.poller(1);
+		ZMQ.Poller poller = new ZMQ.Poller(1);
 		poller.register(kpiSocket);
 			while (active) {
-				poller.poll(2000);
+				poller.poll(100);
 				if (active & poller.pollin(0)) {
 					do {
 						// Stat coming from the KPI stream

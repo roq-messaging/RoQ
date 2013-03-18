@@ -58,7 +58,7 @@ public class Exchange implements Runnable, IStoppable {
 	private ShutDownMonitor shutDownMonitor = null;
 
 	//Timeout value of the front sub poller
-	private long timeout=2000;
+	private long timeout=5;
 
 	/**
 	 * Notice that we start a shutdown request socket on frontEnd port +1
@@ -163,7 +163,7 @@ public class Exchange implements Runnable, IStoppable {
 		int part;
 		String prodID = "";
 		//Adding the poller
-		ZMQ.Poller poller = context.poller(3);
+		ZMQ.Poller poller = new ZMQ.Poller(3);
 		poller.register(this.frontendSub);
 		
 		while (this.active) {

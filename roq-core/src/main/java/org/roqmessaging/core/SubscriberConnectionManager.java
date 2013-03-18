@@ -202,7 +202,7 @@ public class SubscriberConnectionManager implements Runnable {
 			logger.info("Retrying connection...");
 		}
 
-		this.items = context.poller();
+		this.items = new ZMQ.Poller(2);
 		this.items.register(monitorSub);
 		this.items.register(exchSub);
 
@@ -212,7 +212,7 @@ public class SubscriberConnectionManager implements Runnable {
 		logger.info("Worker connected");
 
 		while (running) {
-			items.poll(5000);
+			items.poll(50);
 			if (items.pollin(0)) { // Info from Monitor
 
 				String info[] = new String(monitorSub.recv(0)).split(",");

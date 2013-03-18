@@ -58,7 +58,7 @@ public class MngtSubscriber implements Runnable, IStoppable {
 	 * @see java.lang.Runnable#run()
 	 */
 	public void run() {
-		ZMQ.Poller poller = context.poller(1);
+		ZMQ.Poller poller = new ZMQ.Poller(1);
 		poller.register(mngtSubSocket);
 		
 		while (active){

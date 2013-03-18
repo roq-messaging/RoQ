@@ -122,12 +122,12 @@ public class HostConfigManager implements Runnable, IStoppable {
 		//1. Register to the global configuration
 		registerHost();
 		// ZMQ init
-		ZMQ.Poller items = context.poller(1);
+		ZMQ.Poller items = new ZMQ.Poller(1);
 		items.register(this.clientReqSocket);
 
 		// 2. Start the main run of the monitor
 		while (this.running) {
-			items.poll(2000);
+			items.poll(100);
 			if (items.pollin(0)) { // Comes from a client
 				logger.debug("Receiving Incoming request @host...");
 				String[] info = new String(clientReqSocket.recv(0)).split(",");

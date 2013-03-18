@@ -40,6 +40,7 @@ import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Poller;
 import org.zeromq.ZMQ.Socket;
 
 /**
@@ -152,7 +153,7 @@ public class MngtController implements Runnable, IStoppable {
 		publicationTimer.schedule(controllerTimer, period, period);
 
 		// ZMQ init of the subscriber socket
-		ZMQ.Poller poller = context.poller(2);
+		ZMQ.Poller poller = new Poller(2);
 		poller.register(mngtSubSocket);// 0
 		poller.register(mngtRepSocket);
 		// Init variables
@@ -162,7 +163,7 @@ public class MngtController implements Runnable, IStoppable {
 		while (this.active && !Thread.currentThread().isInterrupted()) {
 			// Set the poll time out, it returns either when something arrive or
 			// when it time out
-			poller.poll(2000);
+			poller.poll(100);
 			if (poller.pollin(0)) {
 				logger.debug("Recieving Message in the update broadcast update channel");
 				// An event arrives start analysing code

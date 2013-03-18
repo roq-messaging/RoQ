@@ -55,7 +55,7 @@ public class ShutDownMonitor implements Runnable {
 	 */
 	public void run() {
 		// 1. Set the poller
-		ZMQ.Poller items = context.poller(1);
+		ZMQ.Poller items = new ZMQ.Poller(1);
 		items.register(shutDownSocket);
 
 		// 2. Starting the loop
@@ -63,7 +63,7 @@ public class ShutDownMonitor implements Runnable {
 
 		// 2. Start the main run of the monitor
 		while (this.active && !Thread.currentThread().isInterrupted()) {
-			items.poll(2000);
+			items.poll(100);
 			if (items.pollin(0)) {
 				String info = new String(shutDownSocket.recv(0));
 				logger.info("Shutdown request received: " + info);

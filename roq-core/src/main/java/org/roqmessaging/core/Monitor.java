@@ -286,7 +286,7 @@ public class Monitor implements Runnable, IStoppable {
 		this.monitorStat = new MonitorStatTimer(this);
 		reportTimer.schedule(this.monitorStat, 0, period);
 
-		ZMQ.Poller items = context.poller(3);
+		ZMQ.Poller items = new ZMQ.Poller(3);
 		items.register(brokerSub);//0
 		items.register(initRep);//1
 
@@ -314,7 +314,7 @@ public class Monitor implements Runnable, IStoppable {
 			}
 			
 			//3. According to the channel bit used, we can define what kind of info is sent
-			items.poll(2000);
+			items.poll(100);
 			if (items.pollin(0)) { // Info from Exchange
 								String info[] = new String(brokerSub.recv(0)).split(",");
 					// Check if exchanges are present: this happens when the
