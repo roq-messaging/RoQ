@@ -127,7 +127,7 @@ echo "----Installing Back-End Management----"
 
                                 #Node Packages installation
                                 npm install >> $INSTALLDIR/roq.log 2>&1
-
+                                mkdir logs >> $INSTALLDIR/roq.log 2>&1
 				#cd roq-web-console
 
 				#git submodule init >> $INSTALLDIR/roq.log 2>&1
