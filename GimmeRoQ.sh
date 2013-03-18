@@ -66,7 +66,7 @@ echo "----Gathering latest build on RoQ's Jenkins----"
 				cd $INSTALLDIR/RoQ
 				#For last CI archive, use this command
 		        	#Gather the latest build of RoQ
-			        wget http://dev.roq-messaging.org/ci/job/RoQ/lastSuccessfulBuild/artifact/releases/latest.tgz >> $INSTALLDIR/roq.log 2>&1
+			        wget http://dev.roq-messaging.org/ci/job/RoQNightly/lastSuccessfulBuild/artifact/releases/latest.tgz >> $INSTALLDIR/roq.log 2>&1
 
 echo "----Pushing file to $INSTALLDIR/RoQ/-----"
 echo "----Untaring latest.tgz----"
