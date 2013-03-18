@@ -37,7 +37,7 @@ echo "----Installing 0MQ via apt----"
 	#Install ZMQ
 	sudo add-apt-repository --yes ppa:chris-lea/zeromq >> $INSTALLDIR/roq.log 2>&1
 	sudo apt-get update >> $INSTALLDIR/roq.log 2>&1
-	sudo apt-get install -y libzmq-dbg libzmq-dev libzmq1 >> $INSTALLDIR/roq.log 2>&1
+	sudo apt-get install -y libzmq-dbg=2.2.0+dfsg-2ubuntu1 libzmq-dev=2.2.0+dfsg-2ubuntu1 libzmq1=2.2.0+dfsg-2ubuntu1 >> $INSTALLDIR/roq.log 2>&1
 
 echo "----Installing JZMQ in $INSTALLDIR/jzmq/----"
 
