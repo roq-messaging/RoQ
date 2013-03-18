@@ -119,7 +119,6 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 				}
 			}
 			this.kpiSocket.setLinger(0);
-			poller.unregister(kpiSocket);
 			this.kpiSocket.close();
 	}
 	

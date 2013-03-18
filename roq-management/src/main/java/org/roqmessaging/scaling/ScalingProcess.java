@@ -227,8 +227,6 @@ public class ScalingProcess extends KPISubscriber {
 		//Closing sockets
 		this.kpiSocket.setLinger(0);
 		this.pullListnerConfigSocket.setLinger(0);
-		poller.unregister(kpiSocket);
-		poller.unregister(pullListnerConfigSocket);
 		this.pullListnerConfigSocket.close();
 		this.kpiSocket.close();
 
