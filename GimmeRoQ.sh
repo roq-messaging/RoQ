@@ -30,7 +30,7 @@ echo "RoQ Installation Initiated"
 echo "----Fetching pre-requisites from apt----"
 
 	#Install basics
-	sudo apt-get install -y openjdk-6-jdk maven2 git build-essential automake perl libtool autoconf g++ uuid-dev make unzip libpgm-dev nodejs npm >> $INSTALLDIR/roq.log 2>&1
+	sudo apt-get install -y openjdk-6-jdk maven2 git build-essential automake perl libtool autoconf g++ uuid-dev make unzip libpgm-dev pkg-config nodejs npm >> $INSTALLDIR/roq.log 2>&1
 
 echo "----Installing 0MQ via apt----"
 
