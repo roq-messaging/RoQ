@@ -54,6 +54,16 @@ public class MngClient {
 		this.requestSocket = this.context.socket(ZMQ.REQ);
 		this.requestSocket.connect("tcp://" + gcmAddr + ":5003");
 	}
+	
+	/**
+	 * Close the socket connection.
+	 */
+	public void close(){
+		if(this.requestSocket!=null){
+			this.requestSocket.close();
+			this.requestSocket=null;
+		}
+	}
 
 	/**
 	 * Test the creation of a queue by the BSON interface.

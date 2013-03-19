@@ -55,7 +55,6 @@ public class TestLoaderLauncher {
 		try {
 			TestLoaderDecription desc = new TestLoaderDecription();
 			//Read the file content
-		    @SuppressWarnings("resource")
 			Scanner inScan = new Scanner(fileDesc, "UTF-8");
 			String description = inScan .useDelimiter("\\A").next();
 			//Will read the user input
@@ -81,7 +80,7 @@ public class TestLoaderLauncher {
 				});
 				closeScanner (inScan, scan);
 				// Start the test
-				controller.start();
+				controller.start(false);
 				// Maintain the main process openned
 				while (true) {
 					Thread.sleep(500);

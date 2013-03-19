@@ -59,11 +59,16 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private MngtController mngtController = null;
 	//The SQL DB name
 	private String dbName = "Management.db";
+	//Handles on timers:
+	private GlobalConfigTimer configTimerTask = null;
+	//Handles on the management timer that send update to the magements.
+	private Timer mngtTimer=null;
 	
 	//Serializer (BSON)
 	private IRoQSerializer serialiazer = new RoQBSONSerializer();
 	
 	private Logger logger = Logger.getLogger(GlobalConfigurationManager.class);
+
 	
 	/**
 	 * Constructor.
@@ -110,8 +115,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	public void run() {
 		this.running = true;
 		//Init the timer for management subscriber
-		Timer mngtTimer = new Timer("Management config publisher");
-		GlobalConfigTimer configTimerTask = new GlobalConfigTimer(this);
+		mngtTimer = new Timer("Management config publisher");
+		configTimerTask = new GlobalConfigTimer(this);
 		mngtTimer.schedule(configTimerTask, 500, this.properties.getPeriod());
 		
 		//ZMQ init
@@ -133,10 +138,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				}
 			}
 		}
-		logger.info("Shutting down the global configuration manager");
-		this.clientReqSocket.close();
-		configTimerTask.shutDown();
-		mngtTimer.cancel();
+		logger.info("GCM Stopped.");
 	}
 	
 	/**
@@ -342,6 +344,10 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 */
 	public void  shutDown(){
 		this.running = false;
+		logger.info("Shutting down the global configuration manager  - closing GCM elements...");
+		this.clientReqSocket.close();
+		//deactivate the timer
+		configTimerTask.shutDown();
 		this.mngtController.getShutDownMonitor().shutDown();
 		this.logger.info("Shutting down config server");
 	}

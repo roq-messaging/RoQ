@@ -303,13 +303,11 @@ public class Monitor implements Runnable, IStoppable {
 			}
 			while (!hostsToRemove.isEmpty() && !this.shuttingDown) {
 				try {
-					this.lock.lock();
 					producersPub.send((new Integer(RoQConstant.EXCHANGE_LOST).toString()+"," + knownHosts.get(hostsToRemove.get(0)).getAddress()).getBytes(), 0);
 					knownHosts.remove((int) hostsToRemove.get(0));
 					hostsToRemove.remove(0);
 					logger.warn("Panic procedure initiated");
 				}finally {
-					this.lock.unlock();
 				}
 			}
 			
@@ -342,6 +340,7 @@ public class Monitor implements Runnable, IStoppable {
 							break;
 						case RoQConstant.EVENT_HEART_BEAT:
 							// Broker heartbeat code Registration
+							logger.debug("Getting Heart Beat information");
 							if (info.length == 4) {
 								if (logHost(info[1], info[2], info[3]) == 1) {
 									listenersPub.send((new Integer(RoQConstant.REQUEST_UPDATE_EXCHANGE_LIST).toString()

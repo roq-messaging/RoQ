@@ -41,10 +41,17 @@ public class Heartbeat extends TimerTask implements IStoppable {
 		this.fwPort=frontPort;
 		this.bkPort= backPort;
 	}
+	
+    @Override
 	public void run() {
-		String address = RoQUtils.getInstance().getLocalIP();
-		logger.debug("Local address to send with heart bit "+  address+","+fwPort+","+ bkPort);
-		hbsocket.send((new Integer(RoQConstant.EVENT_HEART_BEAT).toString()+"," +address+","+fwPort+","+ bkPort ).getBytes(), 0);
+		if(hbsocket!=null){
+			String address = RoQUtils.getInstance().getLocalIP();
+			logger.debug("Local address to send with heart bit "+  address+","+fwPort+","+ bkPort);
+			hbsocket.send((new Integer(RoQConstant.EVENT_HEART_BEAT).toString()+"," +address+","+fwPort+","+ bkPort ).getBytes(), 0);
+		}else{
+			logger.warn("The Thread must stop");
+			super.cancel();
+		}
 	}
 	
 	/**
@@ -52,7 +59,9 @@ public class Heartbeat extends TimerTask implements IStoppable {
 	 */
 	public void shutDown() {
 		logger.info("Canceling the Exchange Heartbeat");
-		this.cancel();
+		super.cancel();
+		this.hbsocket.close();
+		this.hbsocket =null;
 	}
 	/**
 	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()

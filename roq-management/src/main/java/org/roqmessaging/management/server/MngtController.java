@@ -84,6 +84,10 @@ public class MngtController implements Runnable, IStoppable {
 	private HashMap<String, ZMQ.Socket> scalingConfigListener = null;
 	//The HCM properties
 	private GCMPropertyDAO properties = null;
+	//The timer that sends periodically configuration to 3rd parties
+	private Timer publicationTimer=null;
+	//Handle ont the timer
+	private MngtControllerTimer controllerTimer=null;
 
 	/**
 	 * Constructor.
@@ -148,8 +152,8 @@ public class MngtController implements Runnable, IStoppable {
 		this.active = true;
 
 		// Launching the timer
-		MngtControllerTimer controllerTimer = new MngtControllerTimer(this.period, this, 5005);
-		Timer publicationTimer = new Timer();
+		controllerTimer = new MngtControllerTimer(this.period, this, 5005);
+		publicationTimer = new Timer();
 		publicationTimer.schedule(controllerTimer, period, period);
 
 		// ZMQ init of the subscriber socket
@@ -160,7 +164,7 @@ public class MngtController implements Runnable, IStoppable {
 		int infoCode = 0;
 
 		// Start the running loop
-		while (this.active && !Thread.currentThread().isInterrupted()) {
+		while (this.active) {
 			// Set the poll time out, it returns either when something arrive or
 			// when it time out
 			poller.poll(100);
@@ -603,13 +607,27 @@ public class MngtController implements Runnable, IStoppable {
 			}
 
 		}// END OF THE LOOP
+		cleanStop();
+		logger.info("Management controller stopped.");
+	}
+
+	/**
+	 * Clean all the timers and socket of the thread.
+	 */
+	private void cleanStop() {
+		logger.info("Clean STOP of the Management Controller");
+		logger.debug("Canceling timers ...");
+		this.controllerTimer.cancel();
+		this.publicationTimer.cancel();
+		this.publicationTimer.purge();
+		logger.debug("Removing host configurations ...");
 		this.cleanMngtConfig();
-		logger.info("Stopping " + this.getClass().getName() + " cleaning sockets");
+		logger.debug("Closing sockets ...");
 		this.mngtSubSocket.setLinger(0);
 		this.mngtRepSocket.setLinger(0);
 		this.mngtSubSocket.close();
 		this.mngtRepSocket.close();
-		controllerTimer.cancel();
+		
 	}
 
 	/**
@@ -715,8 +733,8 @@ public class MngtController implements Runnable, IStoppable {
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
 	public void shutDown() {
+		logger.info("Stopping " + this.getClass().getName() + " cleaning sockets");
 		this.active = false;
-
 	}
 
 	/**

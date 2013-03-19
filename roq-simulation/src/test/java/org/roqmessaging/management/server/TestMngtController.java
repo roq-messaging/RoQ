@@ -14,7 +14,6 @@
  */
 package org.roqmessaging.management.server;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 
 import junit.framework.Assert;
@@ -23,14 +22,12 @@ import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.roq.simulation.management.client.MngClient;
 import org.roq.simulation.test.RoQTestCase;
-import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
 import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
 import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.server.state.QueueManagementState;
-import org.zeromq.ZMQ;
 
 /**
  * Class TestMngtController
@@ -40,12 +37,11 @@ import org.zeromq.ZMQ;
  */
 public class TestMngtController extends RoQTestCase {
 	private Logger logger = Logger.getLogger(TestMngtController.class);
-	private MngtController mngtController = null;
 
 	@Test
-	public void test() {
+	public void testQlifeCycle() {
 		try {
-			this.mngtController = this.launcher.getMngtController();
+			 MngtController mngtController = this.launcher.getMngtController();
 			logger.info("---> Test 1 create  2 Qs");
 			// 1. Create Q
 			 this.factory.createQueue("queue1", RoQUtils.getInstance().getLocalIP().toString());
@@ -79,73 +75,22 @@ public class TestMngtController extends RoQTestCase {
 			//Clean all
 			this.factory.removeQueue("queueTest");
 			this.factory.removeQueue("queue2");
-			this.mngtController.getShutDownMonitor().shutDown();
+			subscriber.shutDown();
 			Thread.sleep(3000);
 			
-		} catch (InterruptedException e) {
+			logger.info("Start Test auto scaling");
+			testAutoScalingRequest();
+			
+		} catch (Exception e) {
 			logger.error("Error here", e);
-		} catch (SQLException e) {
-			logger.error("Error here due to SQL storage", e);
-		}
+		} 
 	}
 	
-	/**
-	 * Test the BSON interface exposed by the management controller
-	 * @throws Exception
-	 */
-	@Test
-	public void testBsonRequest() throws Exception {
-		ZMQ.Context context = ZMQ.context(1);
-		ZMQ.Socket mngtREQSocket = context.socket(ZMQ.REQ);
-		mngtREQSocket.connect("tcp://localhost:5003");
-		try {
-			
-		//1. define the queue
-		String qName = "testQ1";
-		
-		//2.  Create a client management & sending command request
-		MngClient client = new MngClient("localhost");
-		client.testCreate(qName);
-		
-		//3. Test the message sending
-		attachSUbscriber(qName);
-		IRoQPublisher publisher = attachPublisher(qName);
-		logger.debug("Send message");
-		sendMsg(publisher);
-		
-		//4. Remove the queue
-		logger.debug("Debug Queue");
-		client.testRemove(qName);
-		
-		//Phase 2 Test the stop
-		qName = "testQ2";
-		//1.  Create a queue
-		logger.debug("Create queue");
-		client.testCreate(qName);
-		
-		//2. Stop the queue
-		client.testStop(qName);
-		
-		//3. Stop the queue
-		client.testStart(qName);
-		
-		//4. Remove the queue
-		client.testRemove(qName);
-		
-		//5. Test the get cloud property API
-		client.testCloudPropertiesAPI();
-		
-		} catch (Exception e) {
-			logger.error("Error when testing BSON request ", e);
-		}
-				
-	}
 	
 	/**
 	 * Test the auto scaling configuration creation at the management controller level.
 	 * @throws Exception
 	 */
-	@Test
 	public void testAutoScalingRequest() throws Exception {
 		MngClient client = new MngClient("localhost");
 		//1. Test the queue creation
@@ -175,6 +120,9 @@ public class TestMngtController extends RoQTestCase {
 		
 		//5. Remove the queue
 		client.testRemove(qName);
+		
+		//Client close
+		client.close();
 		
 	}
 

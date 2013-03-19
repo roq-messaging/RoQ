@@ -177,6 +177,11 @@ public class HostConfigManager implements Runnable, IStoppable {
 					if (info.length == 2) {
 						String qName = info[1];
 						removingQueue(qName);
+						// Removing Q information
+						this.qExchangeMap.remove(qName);
+						this.qMonitorMap.remove(qName);
+						this.qMonitorStatMap.remove(qName);
+						this.qScalingProcessAddr.remove(qName);
 						this.clientReqSocket.send((Integer.toString(RoQConstant.OK) + ", ").getBytes(), 0);
 					} else {
 						logger.error("The remove queue request sent does not contain 2 part: ID, quName");
@@ -264,9 +269,17 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * house before closing the host.
 	 */
 	private void stopAllRunningQueueOnHost() {
+		List<String> toRemove = new ArrayList<>(this.qMonitorMap.keySet());
 		for (String qName : this.qMonitorMap.keySet()) {
 			logger.info("Cleaning host - removing  "+qName);
 			this.removingQueue(qName);
+		}
+		for (String qName : toRemove) {
+			// Removing Q information
+			this.qExchangeMap.remove(qName);
+			this.qMonitorMap.remove(qName);
+			this.qMonitorStatMap.remove(qName);
+			this.qScalingProcessAddr.remove(qName);
 		}
 		
 	}
@@ -346,11 +359,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 				shutDownSender.setAddress(portOff + this.qScalingProcessAddr.get(qName).toString());
 				shutDownSender.shutdown();
 			}
-			//4. Removing Q information
-			this.qExchangeMap.remove(qName);
-			this.qMonitorMap.remove(qName);
-			this.qMonitorStatMap.remove(qName);
-			this.qScalingProcessAddr.remove(qName);
+			//The caller must remove the queue.
 		} finally {
 			this.lockRemoveQ.unlock();
 		}
