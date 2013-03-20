@@ -269,7 +269,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * house before closing the host.
 	 */
 	private void stopAllRunningQueueOnHost() {
-		List<String> toRemove = new ArrayList<>(this.qMonitorMap.keySet());
+		List<String> toRemove = new ArrayList<String>(this.qMonitorMap.keySet());
 		for (String qName : this.qMonitorMap.keySet()) {
 			logger.info("Cleaning host - removing  "+qName);
 			this.removingQueue(qName);
