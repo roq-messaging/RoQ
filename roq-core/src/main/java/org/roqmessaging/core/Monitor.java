@@ -286,7 +286,7 @@ public class Monitor implements Runnable, IStoppable {
 		this.monitorStat = new MonitorStatTimer(this);
 		reportTimer.schedule(this.monitorStat, 0, period);
 
-		ZMQ.Poller items = context.poller(3);
+		ZMQ.Poller items = new ZMQ.Poller(3);
 		items.register(brokerSub);//0
 		items.register(initRep);//1
 
@@ -303,18 +303,16 @@ public class Monitor implements Runnable, IStoppable {
 			}
 			while (!hostsToRemove.isEmpty() && !this.shuttingDown) {
 				try {
-					this.lock.lock();
 					producersPub.send((new Integer(RoQConstant.EXCHANGE_LOST).toString()+"," + knownHosts.get(hostsToRemove.get(0)).getAddress()).getBytes(), 0);
 					knownHosts.remove((int) hostsToRemove.get(0));
 					hostsToRemove.remove(0);
 					logger.warn("Panic procedure initiated");
 				}finally {
-					this.lock.unlock();
 				}
 			}
 			
 			//3. According to the channel bit used, we can define what kind of info is sent
-			items.poll(2000);
+			items.poll(100);
 			if (items.pollin(0)) { // Info from Exchange
 								String info[] = new String(brokerSub.recv(0)).split(",");
 					// Check if exchanges are present: this happens when the
@@ -342,6 +340,7 @@ public class Monitor implements Runnable, IStoppable {
 							break;
 						case RoQConstant.EVENT_HEART_BEAT:
 							// Broker heartbeat code Registration
+							logger.debug("Getting Heart Beat information");
 							if (info.length == 4) {
 								if (logHost(info[1], info[2], info[3]) == 1) {
 									listenersPub.send((new Integer(RoQConstant.REQUEST_UPDATE_EXCHANGE_LIST).toString()

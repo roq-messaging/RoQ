@@ -36,6 +36,7 @@ import org.roqmessaging.loaders.SenderLoader;
  */
 public class TestLoadSender extends RoQTestCase {
 	private Logger logger = Logger.getLogger(TestLoadSender.class);
+	private int limit = 100000;
 	
 	/**
 	 * Test the sender loader by creating one and checking the message sent.
@@ -55,11 +56,14 @@ public class TestLoadSender extends RoQTestCase {
 		timerLoad.schedule(sender, 2000, 1000);
 		try {
 			Thread.sleep(10000);
+			// KIll the timer
+			timerLoad.cancel();
+			Thread.sleep(1000);
+			this.factory.removeQueue(qName);
+			this.subscriberConnection.close();
 		} catch (InterruptedException e) {
 			logger.debug(e);
 		}
-		//KIll the timer
-		timerLoad.cancel();
 	}
 	
 	
@@ -79,8 +83,8 @@ public class TestLoadSender extends RoQTestCase {
 			private int count = 0;
 			public void onEvent(byte[] msg) {
 				count++;
-				if(count>100){
-					logger.debug("Got 100 message of "+msg.length +" byte" );
+				if(count>limit){
+					logger.debug("Got "+ limit+"  message of "+msg.length +" byte" );
 					count =0;
 				}
 				

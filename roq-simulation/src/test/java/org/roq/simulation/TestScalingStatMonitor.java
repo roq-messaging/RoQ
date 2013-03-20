@@ -119,10 +119,13 @@ public class TestScalingStatMonitor extends RoQTestCase {
 			connection.close();
 			subConnection.close();
 			
+			//Client close
+			mngClient.close();
 
 			// Delete the queue
 			logicalQFactory.removeQueue("queue1");
 			Thread.sleep(2000);
+			
 
 		} catch (InterruptedException e) {
 			e.printStackTrace();

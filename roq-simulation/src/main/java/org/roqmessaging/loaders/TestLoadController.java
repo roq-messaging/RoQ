@@ -22,9 +22,11 @@ import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQSubscriber;
 import org.roqmessaging.client.IRoQSubscriberConnection;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
+import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.management.LogicalQFactory;
 
 /**
  * Class TestLoadController
@@ -73,8 +75,9 @@ public class TestLoadController implements IStoppable {
 	
 	/**
 	 * initializes the test load with the test description
+	 * @param removeQonFinish defines whether we need to remore the queue on finish. 
 	 */
-	public void start() {
+	public void start(boolean removeQonFinish) {
 		// 0. Wait for the delay before starting (delay in second)
 		try {
 			Thread.sleep(this.testDesc.getDelay() * 1000);
@@ -88,6 +91,11 @@ public class TestLoadController implements IStoppable {
 			Thread.sleep((long) this.testDesc.getDuration() * 1000 * 60);
 			// 4. Clean all
 			stopTest();
+			Thread.sleep(1000);
+			if(removeQonFinish){
+				IRoQLogicalQueueFactory factory = new LogicalQFactory(this.gcmAddress);
+				factory.removeQueue(qName);
+			}
 		} catch (InterruptedException e) {
 			logger.error("Error when starting the load test", e);
 			stopTest();

@@ -14,10 +14,9 @@
  */
 package org.roq.simulation;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import org.apache.log4j.Logger;
-import org.junit.Test;
 import org.roq.simulation.stat.KPILogicalQSubscriber;
 import org.roq.simulation.test.RoQTestCase;
 import org.roqmessaging.client.IRoQPublisher;
@@ -36,7 +35,6 @@ public class TestHostExchangeInfo extends RoQTestCase {
 	//logger
 	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
 
-		@Test
 		public void testExchangeInfo() {
 			String qName ="queueInfoXchange";
 			try {

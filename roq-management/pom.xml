@@ -51,7 +51,7 @@
 				<configuration>
 					<forkMode>once</forkMode>
 					<workingDirectory>target</workingDirectory>
-					<argLine>-Djava.library.path=/usr/local/lib</argLine>
+					<argLine>-Djava.library.path=/usr/local/lib/</argLine>
 				</configuration>
 			</plugin>
 		</plugins>

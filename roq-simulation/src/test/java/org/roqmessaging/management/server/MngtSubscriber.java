@@ -21,7 +21,6 @@ import org.bson.BSON;
 import org.bson.BSONObject;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQUtils;
-import org.roqmessaging.management.stat.KPISubscriber;
 import org.zeromq.ZMQ;
 
 /**
@@ -38,7 +37,7 @@ public class MngtSubscriber implements Runnable, IStoppable {
 	//Define whether the thread must continue to run
 	private volatile boolean active = true;
 	//the looger
-	private Logger logger = Logger.getLogger(KPISubscriber.class);
+	private Logger logger = Logger.getLogger(MngtSubscriber.class);
 	
 	/**
 	 * 
@@ -58,11 +57,11 @@ public class MngtSubscriber implements Runnable, IStoppable {
 	 * @see java.lang.Runnable#run()
 	 */
 	public void run() {
-		ZMQ.Poller poller = context.poller(1);
+		ZMQ.Poller poller = new ZMQ.Poller(1);
 		poller.register(mngtSubSocket);
 		
 		while (active){
-			poller.poll(2000);
+			poller.poll(150);
 			if(poller.pollin(0)){
 				//Stat coming from the KPI stream
 				BSONObject statObj = BSON.decode(mngtSubSocket.recv(0));
@@ -81,7 +80,6 @@ public class MngtSubscriber implements Runnable, IStoppable {
 			}
 		}
 		this.mngtSubSocket.close();
-
 	}
 
 	/* (non-Javadoc)

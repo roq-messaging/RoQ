@@ -2,7 +2,7 @@ RoQ Messaging
 =============
 
 RoQ, Elastically scalable MOM.
-Release-0.2 "Valerie"
+Release-0.3 "Marina"
 
 Building & installing
 ---------------------
@@ -24,9 +24,9 @@ GIT : Get the latest release of RoQ on GitHub", this option is recommended to co
 We recommend to select CI. If you selected the GIT option, you will find examples of JUnit tests in the page https://github.com/roq-messaging/RoQ/wiki/Writing-&-executing-Tests.
 
 The script will intall:
-* Zeromq and its dependency
-* JZMQ
-* JDK 1.6
+* Zeromq 3.X and its dependency
+* JZMQ 2.1
+* JDK 1.7
 
 ### Start RoQ
 Once RoQ has been installed from the CI server, a RoQ cluster can be started by launching two main components: (1) The Global Configuration Manager (GCM) and (2) the Host deamon (HCM). Then, each new host machines that must join the cluster has just to start its own host deamon.

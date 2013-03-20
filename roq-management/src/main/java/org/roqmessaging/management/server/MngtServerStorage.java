@@ -678,7 +678,6 @@ public class MngtServerStorage {
 	 */
 	public void removeHosts() throws SQLException {
 		try {
-			this.lock.lock();
 			logger.debug("Removing all hosts from table");
 			Statement statement = connection.createStatement();
 			// set timeout to 5 sec.
@@ -686,7 +685,6 @@ public class MngtServerStorage {
 			statement.executeUpdate("DELETE  from Hosts;");
 			statement.close();
 		} finally {
-			this.lock.unlock();
 		}
 	}
 	

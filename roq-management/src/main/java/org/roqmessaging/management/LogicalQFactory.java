@@ -95,6 +95,11 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 							+ " failed on the global configuration server");
 					return false;
 				}else{
+					try {
+						Thread.sleep(2000);
+					} catch (InterruptedException e) {
+						logger.warn(e);
+					}
 					return true;
 				}
 			}

@@ -53,6 +53,7 @@ public class RoQTestCase {
 	@Before
 	public void setUp() throws Exception {
 		this.logger.info("Setup TEST");
+		Thread.sleep(3000);
 		this.launcher = new RoQAllLocalLauncher();
 		this.launcher.setConfigFile("testGCM.properties");
 		this.launcher.setUp();
@@ -66,9 +67,15 @@ public class RoQTestCase {
 	@After
 	public void tearDown() throws Exception {
 		this.logger.info("Tear Down TEST");
+		if(this.subscriberConnection!=null){
+			subscriberConnection.close();
+		}
+		if(this.connection!=null){
+			this.connection.close();
+		}
 		this.factory.clean();
 		this.launcher.tearDown();
-		Thread.sleep(3000);
+		Thread.sleep(4000);
 	}
 	
 

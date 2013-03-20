@@ -67,7 +67,6 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 	@Override
 	public void run() {
 		try {
-			lock.lock();
 			logger.debug("Sending Global configuration update to Management Subscribers ...");
 			// 1. Get the configuration
 			// 2. Publish the configuration
@@ -77,7 +76,6 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 			this.mngtPubSocket.send( 
 					serializationUtils.serialiseObject(this.configurationManager.getHostManagerAddresses()), 0);
 		} finally {
-			lock.unlock();
 		}
 	}
 	
@@ -86,8 +84,8 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
 	public void shutDown() {
+		logger.debug("Shutting Down global config Timer");
 		try {
-			lock.lock();
 			this.cancel();
 			logger.debug("Closing Sockets");
 			this.mngtPubSocket.setLinger(0);
@@ -95,7 +93,6 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 		} catch (ZMQException e) {
 			logger.debug( "ERROR when closing sockets.",e);
 		} finally {
-			lock.unlock();
 		}
 	}
 

@@ -205,11 +205,11 @@ public class ScalingProcess extends KPISubscriber {
  */
 @Override
 	public void run() {
-		ZMQ.Poller poller = context.poller(1);
+		ZMQ.Poller poller = new ZMQ.Poller(1);
 		poller.register(kpiSocket);
 		poller.register(pullListnerConfigSocket);
 		while (active) {
-			poller.poll(2000);
+			poller.poll(200);
 			if (active & poller.pollin(0)) {
 				do {
 					// Stat coming from the KPI stream
@@ -227,8 +227,6 @@ public class ScalingProcess extends KPISubscriber {
 		//Closing sockets
 		this.kpiSocket.setLinger(0);
 		this.pullListnerConfigSocket.setLinger(0);
-		poller.unregister(kpiSocket);
-		poller.unregister(pullListnerConfigSocket);
 		this.pullListnerConfigSocket.close();
 		this.kpiSocket.close();
 

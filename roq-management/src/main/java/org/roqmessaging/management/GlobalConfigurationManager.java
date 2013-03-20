@@ -31,6 +31,7 @@ import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.MngtController;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Poller;
 
 /**
  * Class GlobalConfigurationManager
@@ -58,11 +59,16 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private MngtController mngtController = null;
 	//The SQL DB name
 	private String dbName = "Management.db";
+	//Handles on timers:
+	private GlobalConfigTimer configTimerTask = null;
+	//Handles on the management timer that send update to the magements.
+	private Timer mngtTimer=null;
 	
 	//Serializer (BSON)
 	private IRoQSerializer serialiazer = new RoQBSONSerializer();
 	
 	private Logger logger = Logger.getLogger(GlobalConfigurationManager.class);
+
 	
 	/**
 	 * Constructor.
@@ -109,16 +115,16 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	public void run() {
 		this.running = true;
 		//Init the timer for management subscriber
-		Timer mngtTimer = new Timer("Management config publisher");
-		GlobalConfigTimer configTimerTask = new GlobalConfigTimer(this);
+		mngtTimer = new Timer("Management config publisher");
+		configTimerTask = new GlobalConfigTimer(this);
 		mngtTimer.schedule(configTimerTask, 500, this.properties.getPeriod());
 		
 		//ZMQ init
-		ZMQ.Poller items = context.poller(3);
+		ZMQ.Poller items = new Poller(3);
 		items.register(this.clientReqSocket);
 		//2. Start the main run of the monitor
 		while (this.running) {
-			items.poll(10000);
+			items.poll(100);
 			if (items.pollin(0)){ //Comes from a client
 				byte[] encoded = clientReqSocket.recv(0);
 				String content = new String(encoded);
@@ -132,10 +138,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				}
 			}
 		}
-		logger.info("Shutting down the global configuration manager");
-		this.clientReqSocket.close();
-		configTimerTask.shutDown();
-		mngtTimer.cancel();
+		logger.info("GCM Stopped.");
 	}
 	
 	/**
@@ -341,6 +344,10 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 */
 	public void  shutDown(){
 		this.running = false;
+		logger.info("Shutting down the global configuration manager  - closing GCM elements...");
+		this.clientReqSocket.close();
+		//deactivate the timer
+		configTimerTask.shutDown();
 		this.mngtController.getShutDownMonitor().shutDown();
 		this.logger.info("Shutting down config server");
 	}

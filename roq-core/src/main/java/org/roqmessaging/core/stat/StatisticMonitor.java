@@ -80,11 +80,11 @@ public class StatisticMonitor implements Runnable, IStoppable {
 		logger.info("Starting the Stat Monitor on " + RoQUtils.getInstance().getLocalIP() + ":" + (this.statPort));
 		this.running = true;
 		// Poller that will poll for a message on the stat sub
-		ZMQ.Poller poller = context.poller(1);
+		ZMQ.Poller poller = new ZMQ.Poller(1);
 		poller.register(this.statSub);
 		// Running the thread
 		while (this.running) {
-			poller.poll(2000);
+			poller.poll(200);
 			if (poller.pollin(0)) {
 				do {
 					kpiPub.send(translateStream(statSub.recv(0)), statSub.hasReceiveMore() ? ZMQ.SNDMORE : 0);
