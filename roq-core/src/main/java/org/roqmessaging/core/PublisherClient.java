@@ -19,6 +19,8 @@ import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.state.PublisherConfigState;
 import org.zeromq.ZMQ;
 
+import com.google.common.primitives.Longs;
+
 /**
  * Class PublisherClient
  * <p> Description: Implementation of the publisher client library. 
@@ -71,7 +73,8 @@ public class PublisherClient implements IRoQPublisher {
 	 * @return the encoded time stamp
 	 */
 	private byte[] getTimestamp() {
-		return (Long.toString(System.currentTimeMillis()) + " ").getBytes();
+//		return (Long.toString(System.currentTimeMillis()) + " ").getBytes();
+		return Longs.toByteArray(System.currentTimeMillis());
 	}
 
 	/**

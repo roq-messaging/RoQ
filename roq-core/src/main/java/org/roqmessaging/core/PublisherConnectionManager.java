@@ -85,20 +85,18 @@ public class PublisherConnectionManager implements Runnable {
 	 * @return 1 if the list of exchanges received is empty, 1 otherwise
 	 */
 	private int init(int code) {
-		logger.debug("Asking for a new exchange connection to monitor  code "+ code+"...");
+		logger.info("Asking for a new exchange connection to monitor  code "+ code+"...");
 		// Code must be 2(first connection) or 3(panic procedure)!
 		initReq.send((Integer.toString(code) + "," + s_ID).getBytes(), 0);
 		//The answer must be the concatenated list of exchange
 		String exchg = new String(initReq.recv(0));
-		logger.debug("Recieving "+ exchg + " to connect ...");
+		logger.info("Recieving "+ exchg + " to connect ...");
 		if (!exchg.equals("")) {
 			try {
-				this.configState.getLock().lock();
 				this.configState.setExchPub(this.context.socket(ZMQ.PUB));
 				this.configState.getExchPub().connect("tcp://" + exchg);
 				this.configState.setValid(true);
 			}finally{
-				this.configState.getLock().unlock();
 			}
 			logger.info("Connected to Exchange " + exchg);
 			this.s_currentExchange = exchg;
