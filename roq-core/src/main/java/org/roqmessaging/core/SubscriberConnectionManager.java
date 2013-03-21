@@ -14,14 +14,19 @@
  */
 package org.roqmessaging.core;
 
+import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQSubscriber;
 import org.zeromq.ZMQ;
+
+import com.google.common.math.LongMath;
+import com.google.common.primitives.Longs;
+import com.google.common.primitives.UnsignedBytes;
 
 /**
  * Class SubClientLib
@@ -112,7 +117,7 @@ public class SubscriberConnectionManager implements Runnable {
 			if (latenced == 0) {
 				meanLat = 0;
 			} else {
-				meanLat = latency / latenced;
+				meanLat = LongMath.divide(latency,  latenced, RoundingMode.DOWN);
 			}
 			logger.info("Total latency: " + latency + " Received: " + received + " Latenced: " + latenced + " Mean: "
 					+ meanLat + " " + "milliseconds");
@@ -193,6 +198,7 @@ public class SubscriberConnectionManager implements Runnable {
 
 	public void run() {
 		knownHosts = new ArrayList<String>();
+		Comparator<byte[]> comparator = UnsignedBytes.lexicographicalComparator();
 		int counter =0;
 		while (init() != 0) {
 			try {
@@ -245,16 +251,15 @@ public class SubscriberConnectionManager implements Runnable {
 					byte[] bTimeStamp = exchSub.recv(0);
 					counter++;
 					if(counter ==1000){
-						computeLatency(Long.parseLong(new String(bTimeStamp, 0, bTimeStamp.length - 1)));
+						computeLatency(Longs.fromByteArray(bTimeStamp));
 						counter=0;
 					}
 				}
 				//logger.debug("Recieving message " +  new String(request,0,request.length) + " key : "+ new String(request,0,request.length));
 				//delivering to the message listener
-				if(Arrays.equals(subkey, key)){
+				if(comparator.compare(subkey, key)==0){
 					this.subscriber.onEvent(request!=null?request:new byte[]{});
-				}
-				
+				}	
 				received++;
 			}
 		}
