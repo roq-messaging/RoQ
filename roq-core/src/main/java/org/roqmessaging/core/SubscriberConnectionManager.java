@@ -46,7 +46,7 @@ public class SubscriberConnectionManager implements Runnable {
 
 	private ZMQ.Socket tstmpReq;
 
-	private int received=0;
+	private volatile int received=0;
 	private int totalReceived=0;
 	private int minute=0;
 
@@ -112,7 +112,7 @@ public class SubscriberConnectionManager implements Runnable {
 			if (latenced == 0) {
 				meanLat = 0;
 			} else {
-				meanLat = Math.round(latency / latenced);
+				meanLat = latency / latenced;
 			}
 			logger.info("Total latency: " + latency + " Received: " + received + " Latenced: " + latenced + " Mean: "
 					+ meanLat + " " + "milliseconds");
@@ -193,6 +193,7 @@ public class SubscriberConnectionManager implements Runnable {
 
 	public void run() {
 		knownHosts = new ArrayList<String>();
+		int counter =0;
 		while (init() != 0) {
 			try {
 				Thread.sleep(2500);
@@ -212,7 +213,7 @@ public class SubscriberConnectionManager implements Runnable {
 		logger.info("Worker connected");
 
 		while (running) {
-			items.poll(50);
+			items.poll(10);
 			if (items.pollin(0)) { // Info from Monitor
 
 				String info[] = new String(monitorSub.recv(0)).split(",");
@@ -242,13 +243,18 @@ public class SubscriberConnectionManager implements Runnable {
 				if(exchSub.hasReceiveMore()){
 					//the time stamp
 					byte[] bTimeStamp = exchSub.recv(0);
-					computeLatency(Long.parseLong(new String(bTimeStamp, 0, bTimeStamp.length - 1)));
+					counter++;
+					if(counter ==1500){
+						computeLatency(Long.parseLong(new String(bTimeStamp, 0, bTimeStamp.length - 1)));
+						counter=0;
+					}
 				}
 				//logger.debug("Recieving message " +  new String(request,0,request.length) + " key : "+ new String(request,0,request.length));
 				//delivering to the message listener
 				if(Arrays.equals(subkey, key)){
 					this.subscriber.onEvent(request!=null?request:new byte[]{});
 				}
+				
 				received++;
 			}
 		}
