@@ -132,14 +132,38 @@ public class Monitor implements Runnable, IStoppable {
 		String freeHostAddress = "";
 		if (!knownHosts.isEmpty()) {
 			long tempt = Long.MAX_VALUE;
-			int index = 0;
+			int tempP =  Integer.MAX_VALUE;;
+			int indexLoad = 0;
+			int indexPub = 0;
+			//Less than 10% of the max throughput
+			boolean coldStart = true;
 			for (int i = 0; i < knownHosts.size(); i++) {
+				if (knownHosts.get(i).getThroughput()>(this.maxThroughput/10)) coldStart =false;
+				//Check the less overloaded
 				if (knownHosts.get(i).getThroughput() < tempt) {
 					tempt = knownHosts.get(i).getThroughput();
-					index = i;
+					indexLoad = i;
+				}
+				//Check the less assigned
+				if(knownHosts.get(i).getNbProd()<tempP){
+					tempP=knownHosts.get(i).getNbProd();
+					indexPub = i;
 				}
 			}
-			freeHostAddress = knownHosts.get(index).getAddress()+ ":"+ knownHosts.get(index).getFrontPort();
+			if(coldStart){
+				//We chose the less assigned exchange
+				freeHostAddress = knownHosts.get(indexPub).getAddress()+ ":"+ knownHosts.get(indexPub).getFrontPort();
+				logger.info("Assigned Producer to exchange " +indexPub  + " (cold start)");
+				//Then we need tp update the cache, since the number of prod will arrive with stat later
+				tempP++;
+				knownHosts.get(indexPub).setNbProd(tempP);
+			}else{
+				//we choose the less overloaded exchange
+				freeHostAddress = knownHosts.get(indexLoad).getAddress()+ ":"+ knownHosts.get(indexLoad).getFrontPort();
+				logger.info("Assigned Producer to exchange " +indexLoad );
+			}
+			
+			
 		}
 		return freeHostAddress;
 	}

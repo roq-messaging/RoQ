@@ -244,7 +244,7 @@ public class SubscriberConnectionManager implements Runnable {
 					//the time stamp
 					byte[] bTimeStamp = exchSub.recv(0);
 					counter++;
-					if(counter ==1500){
+					if(counter ==1000){
 						computeLatency(Long.parseLong(new String(bTimeStamp, 0, bTimeStamp.length - 1)));
 						counter=0;
 					}

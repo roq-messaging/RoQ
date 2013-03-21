@@ -26,10 +26,10 @@ import org.roqmessaging.core.Monitor;
 public class ExchangeState {
 
 		private String address;
-		private long throughput;
+		private long throughput =0;
 		private boolean alive;
-		private int nbProd;
-		private int lost;
+		private int nbProd =0;
+		private int lost=0;
 		//Port
 		private int frontPort, backPort;
 
