@@ -153,14 +153,14 @@ public class Monitor implements Runnable, IStoppable {
 			if(coldStart){
 				//We chose the less assigned exchange
 				freeHostAddress = knownHosts.get(indexPub).getAddress()+ ":"+ knownHosts.get(indexPub).getFrontPort();
-				logger.info("Assigned Producer to exchange " +indexPub  + " (cold start)");
+				logger.info("Assigned Producer to exchange " +indexPub  + " (cold start) @ "+ freeHostAddress);
 				//Then we need tp update the cache, since the number of prod will arrive with stat later
 				tempP++;
 				knownHosts.get(indexPub).setNbProd(tempP);
 			}else{
 				//we choose the less overloaded exchange
 				freeHostAddress = knownHosts.get(indexLoad).getAddress()+ ":"+ knownHosts.get(indexLoad).getFrontPort();
-				logger.info("Assigned Producer to exchange " +indexLoad );
+				logger.info("Assigned Producer to exchange " +indexLoad+ " "+ freeHostAddress );
 			}
 			
 			
@@ -323,7 +323,7 @@ public class Monitor implements Runnable, IStoppable {
 			if (System.currentTimeMillis() - lastPublish > 10000) { 
 				listenersPub.send(("2," + bcastExchg()).getBytes(), 0);
 				lastPublish = System.currentTimeMillis();
-				logger.info("Alive hosts: " + bcastExchg() + " , Free host: " + getFreeHostForPublisher());
+				logger.info("Alive hosts: " + bcastExchg() );
 			}
 			while (!hostsToRemove.isEmpty() && !this.shuttingDown) {
 				try {
@@ -405,8 +405,9 @@ public class Monitor implements Runnable, IStoppable {
 						initRep.send(bcastExchg().getBytes(), 0);
 						break;
 					case RoQConstant.CHANNEL_INIT_PRODUCER:
-						logger.debug("Received init request from producer. Assigned on " + getFreeHostForPublisher());
-						initRep.send(getFreeHostForPublisher().getBytes(), 0);
+						String freeHost = getFreeHostForPublisher();
+						logger.debug("Received init request from producer. Assigned on " +freeHost);
+						initRep.send(freeHost.getBytes(), 0);
 						break;
 
 					case 3:
