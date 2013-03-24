@@ -30,7 +30,7 @@ echo "RoQ Installation Initiated"
 echo "----Fetching pre-requisites from apt----"
 
 	#Install basics
-	sudo apt-get install -y openjdk-6-jdk maven2 git build-essential automake perl libtool autoconf g++ uuid-dev make unzip libpgm-dev pkg-config nodejs npm >> $INSTALLDIR/roq.log 2>&1
+	sudo apt-get install -y openjdk-7-jdk maven2 git build-essential automake perl libtool autoconf g++ uuid-dev make unzip libpgm-dev nodejs npm >> $INSTALLDIR/roq.log 2>&1
 
 echo "----Installing 0MQ via apt----"
 
@@ -45,28 +45,43 @@ echo "----Installing JZMQ in $INSTALLDIR/jzmq/----"
 	cd $INSTALLDIR/
 	git clone git://github.com/zeromq/jzmq.git >> $INSTALLDIR/roq.log 2>&1
 	cd $INSTALLDIR/jzmq
-	git checkout v1.0.0 >> $INSTALLDIR/roq.log 2>&1
+	git checkout v2.1.0 >> $INSTALLDIR/roq.log 2>&1
+	./autogen.sh >> $INSTALLDIR/roq.log 2>&1
 	./configure >> $INSTALLDIR/roq.log 2>&1
 	make >> $INSTALLDIR/roq.log 2>&1
 	sudo make install >> $INSTALLDIR/roq.log 2>&1
 
-	#Install Maven JZMQ
-	mvn install -e -DskipTests >> $INSTALLDIR/roq.log 2>&1
+	#Install Maven JZMQ (Obsolete since installed from the central repository) - Obsolete : 24/03
+	#mvn install -e -DskipTests >> $INSTALLDIR/roq.log 2>&1
 
 echo "----Fetching RoQ----"
 
 	#Fetch RoQ
 		
-			if [ "$METHOD" = "CI" ]
+			if [ "$METHOD" = "CI" ] && [ -n "$3" ]
 			then	
+
+mkdir $INSTALLDIR/RoQ
+cd $INSTALLDIR/RoQ
+
+				#If the Stable release has been chosen
+				if [ "$3" = "STABLE" ]
+				then
 
 echo "----Gathering latest build on RoQ's Jenkins----"
 
-				mkdir $INSTALLDIR/RoQ
-				cd $INSTALLDIR/RoQ
 				#For last CI archive, use this command
-		        	#Gather the latest build of RoQ
-			        wget http://dev.roq-messaging.org/ci/job/RoQNightly/lastSuccessfulBuild/artifact/releases/latest.tgz >> $INSTALLDIR/roq.log 2>&1
+				#Gather the latest stable build of RoQ
+				wget http://dev.roq-messaging.org/ci/job/RoQStable/lastSuccessfulBuild/artifact/releases/latest.tgz >> $INSTALLDIR/roq.log 2>&1
+				
+				elif [ "$3" = "DEV" ]
+				then 
+				
+				#For last CI archive, use this command
+                                #Gather the latest dev build of RoQ
+				wget http://dev.roq-messaging.org/ci/job/RoQNightly/lastSuccessfulBuild/artifact/releases/latest.tgz >> $INSTALLDIR/roq.log 2>&1
+				fi
+
 
 echo "----Pushing file to $INSTALLDIR/RoQ/-----"
 echo "----Untaring latest.tgz----"
@@ -76,6 +91,8 @@ echo "----Untaring latest.tgz----"
 
 		        	#At this step RoQ is installed
 
+if [ -n "$4" ] && [ "$4" = "back-end" ]
+then
 echo "----Installing Back-End Management----"
 
 		        	#OPTIONAL : Install the backend management
@@ -96,6 +113,7 @@ echo "----Installing Back-End Management----"
 
 		        	#Node Packages installation
 			        npm install >> $INSTALLDIR/roq.log 2>&1
+fi
 
 echo "Installation log available at $INSTALLDIR/roq.log"
 echo "Congratulations ! RoQ has been successfully installed on your system in $INSTALLDIR/RoQ/ !!!"
@@ -113,6 +131,8 @@ echo "----Installing RoQ----"
 				cd RoQ
 				mvn install -e >> $INSTALLDIR/roq.log 2>&1
 
+if [ -n "$4" ] && [ "$4" = "back-end" ]
+then
 echo "----Installing Back-End Management----"
 
 				#OPTIONAL : Install the backend management
@@ -133,6 +153,7 @@ echo "----Installing Back-End Management----"
 				#git submodule init >> $INSTALLDIR/roq.log 2>&1
 				
 				#git submodule update $INSTALLDIR/roq.log 2>&1
+fi
 
 echo "Installation log available at $INSTALLDIR/roq.log"
 echo "Congratulations ! RoQ has been successfully installed on your system in $INSTALLDIR/RoQ/ !!!"
@@ -148,12 +169,16 @@ echo "Congratulations ! RoQ has been successfully installed on your system in $I
 else
 
  echo "-------------Missing Parameter---------------------
-Usage : ./GimmeRoQ.sh path/to/installation method
+Usage : ./GimmeRoQ.sh path/to/installation method release
 	
 path/to/installation : Path where you want to put your RoQ installation
 
 method = CI or GIT
 	CI : Get the latest build of RoQ
-	GIT : Get the latest release of RoQ on GitHub"
+	GIT : Get the latest release of RoQ on GitHub
+
+release = DEV or STABLE
+	DEV : Get the latest nightly build of RoQ
+	GIT : Get the latest stable build of RoQ"
 
 fi
