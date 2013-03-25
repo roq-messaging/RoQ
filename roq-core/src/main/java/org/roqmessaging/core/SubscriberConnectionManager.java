@@ -14,14 +14,19 @@
  */
 package org.roqmessaging.core;
 
+import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQSubscriber;
 import org.zeromq.ZMQ;
+
+import com.google.common.math.LongMath;
+import com.google.common.primitives.Longs;
+import com.google.common.primitives.UnsignedBytes;
 
 /**
  * Class SubClientLib
@@ -46,7 +51,7 @@ public class SubscriberConnectionManager implements Runnable {
 
 	private ZMQ.Socket tstmpReq;
 
-	private int received=0;
+	private volatile int received=0;
 	private int totalReceived=0;
 	private int minute=0;
 
@@ -54,7 +59,6 @@ public class SubscriberConnectionManager implements Runnable {
 
 	private long latency;
 	private int latenced;
-	private boolean tstmp;
 	
 	//Define when the thread must stop
 	private volatile boolean running = true;
@@ -91,7 +95,6 @@ public class SubscriberConnectionManager implements Runnable {
 		this.latency = 0;
 		this.latenced = 0;
 
-		this.tstmp = tstmp;
 		if (tstmp) {
 			this.tstmpReq = context.socket(ZMQ.REQ);
 			this.tstmpReq.connect(portOff + ":5900");
@@ -114,9 +117,9 @@ public class SubscriberConnectionManager implements Runnable {
 			if (latenced == 0) {
 				meanLat = 0;
 			} else {
-				meanLat = Math.round(latency / latenced);
+				meanLat = LongMath.divide(latency,  latenced, RoundingMode.DOWN);
 			}
-			logger.debug("Total latency: " + latency + " Received: " + received + " Latenced: " + latenced + " Mean: "
+			logger.info("Total latency: " + latency + " Received: " + received + " Latenced: " + latenced + " Mean: "
 					+ meanLat + " " + "milliseconds");
 
 			statsPub.send(
@@ -195,6 +198,8 @@ public class SubscriberConnectionManager implements Runnable {
 
 	public void run() {
 		knownHosts = new ArrayList<String>();
+		Comparator<byte[]> comparator = UnsignedBytes.lexicographicalComparator();
+		int counter =0;
 		while (init() != 0) {
 			try {
 				Thread.sleep(2500);
@@ -204,17 +209,17 @@ public class SubscriberConnectionManager implements Runnable {
 			logger.info("Retrying connection...");
 		}
 
-		this.items = context.poller();
+		this.items = new ZMQ.Poller(2);
 		this.items.register(monitorSub);
 		this.items.register(exchSub);
 
 		Timer timer = new Timer();
-		timer.schedule(new Stats(), 0, 60000);
+		timer.schedule(new Stats(), 0, 40000);
 
 		logger.info("Worker connected");
 
 		while (running) {
-			items.poll(5000);
+			items.poll(10);
 			if (items.pollin(0)) { // Info from Monitor
 
 				String info[] = new String(monitorSub.recv(0)).split(",");
@@ -231,29 +236,40 @@ public class SubscriberConnectionManager implements Runnable {
 			}
 
 			if (items.pollin(1)) {//From Exchange
-				byte[] request;
-				request = exchSub.recv(0);
-				int part = 1;
-				byte[] key = request;
-				while (exchSub.hasReceiveMore()) {
+				byte[] request= null;
+				byte[] key  = exchSub.recv(0);
+				if(exchSub.hasReceiveMore()){
+					//the ID of the publisher
 					request = exchSub.recv(0);
-					part++;
-					if (part == 4 && this.tstmp) {
-						computeLatency(Long.parseLong(new String(request, 0, request.length - 1)));
+				}
+				if(exchSub.hasReceiveMore()){
+					//the payload
+					request = exchSub.recv(0);
+				}
+				if(exchSub.hasReceiveMore()){
+					//the time stamp
+					byte[] bTimeStamp = exchSub.recv(0);
+					counter++;
+					if(counter ==1000){
+						computeLatency(Longs.fromByteArray(bTimeStamp));
+						counter=0;
 					}
 				}
 				//logger.debug("Recieving message " +  new String(request,0,request.length) + " key : "+ new String(request,0,request.length));
 				//delivering to the message listener
-				if(Arrays.equals(subkey, key)){
-					this.subscriber.onEvent(request);
-				}
+				if(comparator.compare(subkey, key)==0){
+					this.subscriber.onEvent(request!=null?request:new byte[]{});
+				}	
 				received++;
 			}
 		}
+		this.logger.debug("Closing subscriber sockets");
 		timer.cancel();
 		timer.purge();
 		knownHosts.clear();
+		this.exchSub.setLinger(0);
 		this.exchSub.close();
+		this.initReq.setLinger(0);
 		this.initReq.close();
 		logger.info("Closed.");
 	}

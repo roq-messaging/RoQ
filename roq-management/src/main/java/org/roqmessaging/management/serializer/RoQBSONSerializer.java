@@ -25,6 +25,10 @@ import org.bson.BasicBSONDecoder;
 import org.bson.BasicBSONEncoder;
 import org.bson.BasicBSONObject;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.management.config.scaling.AutoScalingConfig;
+import org.roqmessaging.management.config.scaling.HostScalingRule;
+import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
+import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.server.state.QueueManagementState;
 
 /**
@@ -89,6 +93,103 @@ public class RoQBSONSerializer implements IRoQSerializer {
 		logger.debug("Encoding CMD ID in BSON= "+bsonObject.toString());
 		return BSON.encode(bsonObject);
 	}
+	
+	/**
+	 * @param qName the queue name 
+	 * @param scalingCfg the scaling configuration
+	 * @return the serialization of the get auto scaling configuration answers.
+	 */
+	public byte[] serialiazeAutoScalingConfigAnswer(String qName, AutoScalingConfig scalingCfg){
+		BSONObject bsonObject = new BasicBSONObject();
+		bsonObject.put("RESULT",RoQConstant.OK );
+		bsonObject.put("COMMENT", "The auto scaling configuration for queue "+ qName);
+		bsonObject = serializeASConfig(bsonObject, scalingCfg);
+		logger.debug("Encoding autoscaling answer in BSON= "+bsonObject.toString());
+		return BSON.encode(bsonObject);
+	}
+	
+	/**
+	 * Serialize the autoscaling configuration
+	 * @param qName the queue name on which the auto scaling configuration will be associated.
+	 * @param scalingCfg the autoscaling configuration notice that the queue name must be set to the auto scaling configuration.
+	 * @param cmd the command to play either RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE or RoQConstant.BSON_CONFIG_GET_AUTOSCALING_RULE
+	 * @return the encoded request in BSON
+	 */
+	public byte[] serialiazeAutoScalingRequest(String qName, AutoScalingConfig scalingCfg, int cmd ){
+		BSONObject bsonObject = new BasicBSONObject();
+		bsonObject.put("CMD",cmd );
+		bsonObject.put("QName", qName);
+		bsonObject = serializeASConfig(bsonObject, scalingCfg);
+		logger.debug("Encoding autoscaling request in BSON= "+bsonObject.toString());
+		return BSON.encode(bsonObject);
+	}
+	
+	/**
+	 * @param bsonObject the bson object used for the encoding
+	 * @param scalingCfg the scaling cofiguration
+	 */
+	private BSONObject serializeASConfig(BSONObject bsonObject, AutoScalingConfig scalingCfg) {
+		bsonObject.put(RoQConstant.BSON_AUTOSCALING_CFG_NAME, scalingCfg.getName());
+		if(scalingCfg.getHostRule()!=null){
+			BSONObject hostObject = new BasicBSONObject();
+			hostObject.put(RoQConstant.BSON_AUTOSCALING_HOST_CPU, scalingCfg.getHostRule().getCPU_Limit());
+			hostObject.put(RoQConstant.BSON_AUTOSCALING_HOST_RAM , scalingCfg.getHostRule().getRAM_Limit());
+			bsonObject.put(RoQConstant.BSON_AUTOSCALING_HOST, hostObject);
+		}
+		if(scalingCfg.getXgRule()!=null){
+			BSONObject xchangeObject = new BasicBSONObject();
+			xchangeObject.put(RoQConstant.BSON_AUTOSCALING_XCHANGE_THR, scalingCfg.getXgRule().getEvent_Limit());
+			bsonObject.put(RoQConstant.BSON_AUTOSCALING_XCHANGE, xchangeObject);
+		}
+		if(scalingCfg.getqRule()!=null){
+			BSONObject qObject = new BasicBSONObject();
+			qObject.put(RoQConstant.BSON_AUTOSCALING_Q_THR_EXCH, scalingCfg.getqRule().getThrougputNumber());
+			qObject.put(RoQConstant.BSON_AUTOSCALING_Q_PROD_EXCH , scalingCfg.getqRule().getProducerNumber());
+			bsonObject.put(RoQConstant.BSON_AUTOSCALING_QUEUE, qObject);
+		}
+		return bsonObject;
+	}
+
+	/**
+	 * Decode an autoscaling request in BSON
+	 * @param encodedCfg the encoded auto scaling rule
+	 * @return the autoscaling rule model
+	 */
+	public AutoScalingConfig unserializeConfig(byte[] encodedCfg){
+		logger.debug("Unserializing encoded Q");
+		AutoScalingConfig result = new AutoScalingConfig();
+		//Defines whether there is at least one rule.
+		boolean  ruleSet = false;
+		BSONObject decodedCfg = decoder.readObject(encodedCfg);
+		//1. Set the configuration name
+		result.setName((String) decodedCfg.get(RoQConstant.BSON_AUTOSCALING_CFG_NAME));
+		BSONObject hRule = (BSONObject) decodedCfg.get(RoQConstant.BSON_AUTOSCALING_HOST);
+		if(hRule!=null){
+			result.setHostRule(new HostScalingRule(((Integer)hRule.get(RoQConstant.BSON_AUTOSCALING_HOST_RAM)).intValue(), 
+					((Integer)hRule.get(RoQConstant.BSON_AUTOSCALING_HOST_CPU)).intValue()));
+			logger.debug("Host scaling rule : "+ result.getHostRule().toString());
+			ruleSet= true;
+		}
+		//2. Extract the xchange rule
+		BSONObject xRule = (BSONObject) decodedCfg.get(RoQConstant.BSON_AUTOSCALING_XCHANGE);
+		if(xRule!=null){
+			result.setXgRule(new XchangeScalingRule(((Integer)xRule.get(RoQConstant.BSON_AUTOSCALING_XCHANGE_THR)).intValue(), 
+					 0f));
+			logger.debug("Host Xchange rule : "+ result.getXgRule().toString());
+			ruleSet= true;
+		}
+		
+		//3. Extract the Q-level rule
+		BSONObject qRule = (BSONObject) decodedCfg.get(RoQConstant.BSON_AUTOSCALING_QUEUE);
+		if(qRule!=null){
+			result.setqRule(new LogicalQScalingRule(((Integer)qRule.get(RoQConstant.BSON_AUTOSCALING_Q_PROD_EXCH)).intValue(), 
+					((Integer)qRule.get(RoQConstant.BSON_AUTOSCALING_Q_THR_EXCH)).intValue()));
+			logger.debug("Host Q rule : "+ result.getqRule().toString());
+			ruleSet= true;
+		}
+		return ruleSet==false? null:  result;
+	}
+	
 
 	/**
 	 * @see org.roqmessaging.management.serializer.IRoQSerializer#unSerializeQueues(byte[])
@@ -152,6 +253,7 @@ public class RoQBSONSerializer implements IRoQSerializer {
 		BSONObject answer = new BasicBSONObject();
 		answer.put("RESULT",result);
 		answer.put("COMMENT", comment);
+		logger.debug(answer.toString());
 		return	BSON.encode(answer);
 	}
 

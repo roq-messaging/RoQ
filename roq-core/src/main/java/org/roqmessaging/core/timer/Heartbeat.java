@@ -18,6 +18,7 @@ import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.zeromq.ZMQ;
 
@@ -27,7 +28,7 @@ import org.zeromq.ZMQ;
  * 
  * @author sskhiri
  */
-public class Heartbeat extends TimerTask {
+public class Heartbeat extends TimerTask implements IStoppable {
 	private Logger logger = Logger.getLogger(Heartbeat.class);
 	private ZMQ.Context hbcontext;
 	private ZMQ.Socket hbsocket;
@@ -40,9 +41,32 @@ public class Heartbeat extends TimerTask {
 		this.fwPort=frontPort;
 		this.bkPort= backPort;
 	}
+	
+    @Override
 	public void run() {
-		String address = RoQUtils.getInstance().getLocalIP();
-		logger.debug("Local address to send with heart bit "+  address+","+fwPort+","+ bkPort);
-		hbsocket.send((new Integer(RoQConstant.EVENT_HEART_BEAT).toString()+"," +address+","+fwPort+","+ bkPort ).getBytes(), 0);
+		if(hbsocket!=null){
+			String address = RoQUtils.getInstance().getLocalIP();
+			logger.debug("Local address to send with heart bit "+  address+","+fwPort+","+ bkPort);
+			hbsocket.send((new Integer(RoQConstant.EVENT_HEART_BEAT).toString()+"," +address+","+fwPort+","+ bkPort ).getBytes(), 0);
+		}else{
+			logger.warn("The Thread must stop");
+			super.cancel();
+		}
+	}
+	
+	/**
+	 * Shut down the timer
+	 */
+	public void shutDown() {
+		logger.info("Canceling the Exchange Heartbeat");
+		super.cancel();
+		this.hbsocket.close();
+		this.hbsocket =null;
+	}
+	/**
+	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
+	 */
+	public String getName() {
+		return ("Heart beat ");
 	}
 }

@@ -71,7 +71,7 @@ public class MonitorStatTimer extends TimerTask {
 		String message= RoQConstant.STAT_Q +","+this.queueMonitor.getName()+","
 	+this.queueMonitor.getExhcangeMetaData().size()
 	+","+numberProducers+","+ totalThroughput;
-		logger.info("Stat monitor: "+ message);
+		logger.debug("Stat monitor: "+ message);
 		//3. send message
 		statSocket.send(message.getBytes(), 0);
 	}
@@ -81,6 +81,7 @@ public class MonitorStatTimer extends TimerTask {
 	 */
 	public void shutTdown() {
 		logger.debug("Canceling the Monitor stat timer");
+		this.cancel();
 		this.statSocket.close();
 	}
 
@@ -91,6 +92,7 @@ public class MonitorStatTimer extends TimerTask {
 	private void getALlProcuders(ArrayList<ExchangeState> exhcangeMetaData) {
 		this.totalThroughput=0;
 		this.numberProducers =0;
+		logger.debug("Get all producer method: "+exhcangeMetaData.size()+ " Exchange registred");
 		for (ExchangeState exchangeState : exhcangeMetaData) {
 			numberProducers+=exchangeState.getNbProd();
 			totalThroughput+=exchangeState.getThroughput();

@@ -55,7 +55,9 @@ public class DataParser {
 		}
 
 		exchgWriter.close();
+		prodWriter.close();
 		listWriter.close();
+		reader.close();
 		
 	}
 

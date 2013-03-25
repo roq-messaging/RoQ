@@ -19,8 +19,8 @@ import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
-import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.serializer.IRoQSerializer;
+import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
 import org.zeromq.ZMQ;
 
@@ -84,13 +84,17 @@ public class MngtControllerTimer extends TimerTask {
 		}
 	}
 	
-	/* (non-Javadoc)
+	/**
 	 * @see java.util.TimerTask#cancel()
 	 */
 	@Override
 	public boolean cancel() {
 		logger.info("Stopping the Management controller publisher");
-		this.mngtPubSocket.close();
+		try {
+			this.mngtPubSocket.close();
+		} catch (Exception e) {
+			logger.error("Error when closing socket", e);
+		}
 		return super.cancel();
 	}
 }

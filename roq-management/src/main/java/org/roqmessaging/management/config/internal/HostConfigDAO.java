@@ -27,6 +27,7 @@ public class HostConfigDAO {
 	private int monitorBasePort = 5500;
 	private int exchangeFrontEndPort = 6000;
 	private int statPeriod =60000;
+	private int maxNumberEchanges =3;
 	
 	/**
 	 * @return the networkInterface
@@ -107,6 +108,18 @@ public class HostConfigDAO {
 	 */
 	public void setStatPeriod(int statPeriod) {
 		this.statPeriod = statPeriod;
+	}
+	/**
+	 * @return the maxNumberEchanges
+	 */
+	public int getMaxNumberEchanges() {
+		return maxNumberEchanges;
+	}
+	/**
+	 * @param maxNumberEchanges the maxNumberEchanges to set
+	 */
+	public void setMaxNumberEchanges(int maxNumberEchanges) {
+		this.maxNumberEchanges = maxNumberEchanges;
 	}
 	
 

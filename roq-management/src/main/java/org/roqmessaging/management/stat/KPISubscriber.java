@@ -12,9 +12,10 @@
  * limitations under the License.
  * 
  */
-package org.roq.simulation.stat;
+package org.roqmessaging.management.stat;
 
 import junit.framework.Assert;
+import junit.framework.AssertionFailedError;
 
 import org.apache.log4j.Logger;
 import org.bson.BSON;
@@ -23,10 +24,13 @@ import org.bson.BasicBSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Socket;
 
 /**
  * Class KPISubscriber
- * <p> Description: This class shows we can subscribe 
+ * <p> Description: This class is a generic KPI subscriber class that connect to the GCM, get the location of
+ *  the stat monitor and subscribe to the general stat channel. The method {@link #processStat(Integer, BSONObject)} 
+ *  must be implemented by extending classes (client classes).
  * 
  * @author sskhiri
  */
@@ -50,14 +54,18 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	 * @param qName the queue from which we want receive statistic. 
 	 */
 	public KPISubscriber(String globalConfiguration, String qName) {
-		//ZMQ Init
-		this.context = ZMQ.context(1);
-		//Copy parameters
-		this.configurationServer = globalConfiguration;
-		this.qName = qName;
-		//init subscription
-		subscribe();
-		//init file if required
+		try {
+			// ZMQ Init
+			logger.debug("Init ZMQ context");
+			this.context = ZMQ.context(1);
+			// Copy parameters
+			this.configurationServer = globalConfiguration;
+			this.qName = qName;
+			// init subscription
+			subscribe();
+		} catch (Exception e) {
+			logger.error("Error while initiating the KPI statistic channel", e);
+		}
 	}
 	
 	/**
@@ -65,6 +73,7 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	 * @throws IllegalStateException if the monitor stat is not present in the cache
 	 */
 	protected void subscribe() throws IllegalStateException {
+		logger.debug("Get the stat monitor address from the GCM");
 		// 1. Get the location in BSON
 		// 1.1 Create the request socket
 		ZMQ.Socket globalConfigReq = context.socket(ZMQ.REQ);
@@ -82,68 +91,73 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 		BSONObject dConfiguration = BSON.decode(configuration);
 		String monitorStatServer = (String) dConfiguration.get(RoQConstant.BSON_STAT_MONITOR_HOST);
 		Assert.assertNotNull(monitorStatServer);
-
+		logger.debug("Got the Stat monitor address @"+ monitorStatServer);
+		
 		// 2. Register a socket to the stat monitor
 		kpiSocket = context.socket(ZMQ.SUB);
 		kpiSocket.connect(monitorStatServer);
 		kpiSocket.subscribe("".getBytes());
 		logger.debug("Connected to Stat monitor " + monitorStatServer);
-
 	}
 
-
-
 	/**
+	 * Delegates the process stat to the client class.
 	 * @see java.lang.Runnable#run()
 	 */
 	public void run() {
-		ZMQ.Poller poller = context.poller(1);
+		ZMQ.Poller poller = new ZMQ.Poller(1);
 		poller.register(kpiSocket);
-		
-		while (active) {
-			poller.poll(2000);
-			if (poller.pollin(0)) {
-				do {
-					// Stat coming from the KPI stream
-					BSONObject statObj = BSON.decode(kpiSocket.recv(0));
-					logger.debug("Start analysing info code "
-							+ statObj.get("CMD"));
-				processStat((Integer) statObj.get("CMD"), statObj);
-				} while (kpiSocket.hasReceiveMore());
+			while (active) {
+				poller.poll(100);
+				if (active & poller.pollin(0)) {
+					do {
+						// Stat coming from the KPI stream
+						BSONObject statObj = BSON.decode(kpiSocket.recv(0));
+						logger.debug("Start analysing info code " + statObj.get("CMD"));
+						processStat((Integer) statObj.get("CMD"), statObj, kpiSocket);
+					} while (kpiSocket.hasReceiveMore());
+				}
 			}
-		}
+			this.kpiSocket.setLinger(0);
+			this.kpiSocket.close();
 	}
 	
 	/**
 	 * Checks whether the field is present in the BSON request
 	 * @param request the request
 	 * @param field the field to check
-	 * @return true if the field is present, false otherwise, in addition it sends a INVALI answer.
+	 * @return true if the field is present, false otherwise, in addition it sends a INVALID answer.
 	 */
-	protected boolean checkField(BSONObject request, String field) {
-		if(!request.containsField(field)){
-			logger.error("The "+field+"  field is not present, INVALID REQUEST");
+	protected boolean checkField(BSONObject request, String field) throws AssertionError {
+		if (!request.containsField(field)) {
+			logger.error("The " + field + "  field is not present, INVALID REQUEST");
 			logger.error("Invalid request, does not contain Host field.");
-			Assert.fail("Invalid request, does not contain "+field+ " field");
-		return false;
-	}else{
-		return true;
-	}
+			try {
+				Assert.fail("Invalid request, does not contain " + field + " field");
+			} catch (AssertionFailedError e) {
+				logger.error("The field is not present", e);
+			}
+			
+			return false;
+		} else {
+			return true;
+		}
 	}
 
 	/**
 	 * In this method the client code will process the statistic.
 	 * @param CMD the command code of the statistic.
 	 * @param statObj the bson stat object
+	 * @param statSocket the socket by which we receive the message
 	 */
-	abstract public void processStat(Integer CMD, BSONObject statObj);
+	abstract public void processStat(Integer CMD, BSONObject statObj, Socket statSocket);
 
 	/**
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
 	public void shutDown() {
+		logger.info("Closing socket at the KPI subscriber side");
 		this.active = false;
-		this.kpiSocket.close();
 		
 	}
 

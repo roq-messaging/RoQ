@@ -14,6 +14,7 @@
  */
 package org.roq.simulation;
 
+import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.roq.simulation.stat.KPILogicalQSubscriber;
 import org.roq.simulation.test.RoQTestCase;
@@ -21,7 +22,7 @@ import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.core.utils.RoQUtils;
 
 /**
- * Class TestLogicalQStat
+ * Class TestLogicalQStat 
  * <p> Description: Test the statistic sent by the logical queue.
  * 
  * @author sskhiri
@@ -32,6 +33,7 @@ public class TestLogicalQStat extends RoQTestCase {
 	public void test() {
 		String qName ="queueTestStat";
 		try {
+			Logger.getLogger(this.getClass().getName()).info("Starting main test in Test logical queue");
 			//1. Create a queue
 			this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP());
 			//2. Attach subscriber
@@ -54,11 +56,14 @@ public class TestLogicalQStat extends RoQTestCase {
 			//6. Add exchange
 			factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
 			subscriber.setXchangeToCheck(2);
-			Thread.sleep(6000);
+			Thread.sleep(5000);
+			
 			
 			//7. Shutdown
 			factory.removeQueue(qName);
 			subscriber.shutDown();
+			Thread.sleep(5000);
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

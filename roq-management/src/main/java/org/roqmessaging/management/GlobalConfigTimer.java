@@ -24,6 +24,7 @@ import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.management.server.MngtController;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQException;
 
 /**
  * Class GlobalConfigTImer
@@ -49,7 +50,7 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 	private Lock lock = new ReentrantLock();
 
 	/**
-	 * 
+	 * Constructor
 	 */
 	public GlobalConfigTimer(GlobalConfigurationManager manager) {
 		this.context = ZMQ.context(1);
@@ -66,15 +67,15 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 	@Override
 	public void run() {
 		try {
-			lock.lock();
 			logger.debug("Sending Global configuration update to Management Subscribers ...");
 			// 1. Get the configuration
 			// 2. Publish the configuration
 			this.mngtPubSocket.send(new Integer(RoQConstant.MNGT_UPDATE_CONFIG).toString().getBytes(), ZMQ.SNDMORE);
 			this.mngtPubSocket.send(
-					serializationUtils.serialiseObject(this.configurationManager.getQueueHostLocation()), 0);
+					serializationUtils.serialiseObject(this.configurationManager.getQueueHostLocation()), ZMQ.SNDMORE);
+			this.mngtPubSocket.send( 
+					serializationUtils.serialiseObject(this.configurationManager.getHostManagerAddresses()), 0);
 		} finally {
-			lock.unlock();
 		}
 	}
 	
@@ -83,13 +84,15 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
 	public void shutDown() {
+		logger.debug("Shutting Down global config Timer");
 		try {
-			lock.lock();
 			this.cancel();
 			logger.debug("Closing Sockets");
+			this.mngtPubSocket.setLinger(0);
 			this.mngtPubSocket.close();
+		} catch (ZMQException e) {
+			logger.debug( "ERROR when closing sockets.",e);
 		} finally {
-			lock.unlock();
 		}
 	}
 

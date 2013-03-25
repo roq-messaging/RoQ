@@ -172,18 +172,38 @@ public class AutoScalingRuleStorageManager {
 	 * @param statement the SQL statement
 	 * @param rule the auto scaling rule
 	 */
-	public void addExchangeRule(Statement statement, XchangeScalingRule rule){
-		logger.info("Inserting 1 new Exchange Auto scaling  configuration: "+ rule.toString());
+	public int addExchangeRule(Statement statement, XchangeScalingRule rule) {
+		logger.info("Inserting 1 new Exchange Auto scaling  configuration: " + rule.toString());
 		try {
 			// set timeout to 10 sec.
 			statement.setQueryTimeout(10);
-			statement.execute("insert into AS_Xchange_Rules  values(null, '" + rule.getEvent_Limit() + "'," + rule.getTime_Limit() + ")");
+			statement.execute("insert into AS_Xchange_Rules  values(null, '" + rule.getEvent_Limit() + "',"
+					+ rule.getTime_Limit() + ")");
+			int id=  getLastID(statement, "AS_Xchange_Rules");
 			statement.close();
+			return id;
 		} catch (Exception e) {
 			logger.error("Error whil inserting new configuration", e);
 		}
+		return -1;
 	}
 	
+	/**
+	 * Return the last iD instered in the table. This method works only in case of thread safe access.
+	 * @param statement the statement to execute the query
+	 * @param table the table name from wich we need to get the last update
+	 * @return the last id inserted.
+	 * @throws SQLException 
+	 */
+	private int getLastID(Statement statement, String table) throws SQLException {
+		ResultSet rs = statement.executeQuery("SELECT last_insert_rowid() from "+table+" ;");
+		Integer id = null;
+		if (rs.next()) {
+			id = rs.getInt("last_insert_rowid()");
+		}
+		return (id == null) ? -1 : id.intValue();
+	}
+
 	/**
 	 * Remove the specified auto scaling rule.
 	 * @param statement the SQL statement from a SQL connection.
@@ -203,16 +223,19 @@ public class AutoScalingRuleStorageManager {
 	 * @param statement the SQL statement
 	 * @param rule the auto scaling rule
 	 */
-	public void addQueueRule(Statement statement, LogicalQScalingRule rule){
+	public int addQueueRule(Statement statement, LogicalQScalingRule rule){
 		logger.info("Inserting 1 new Queue  Auto scaling  configuration: "+ rule.toString());
 		try {
 			// set timeout to 10 sec.
 			statement.setQueryTimeout(10);
 			statement.execute("insert into AS_LogicalQueue_Rules  values(null, '" + rule.getProducerNumber() + "'," + rule.getThrougputNumber() + ")");
+			int id=  getLastID(statement, "AS_LogicalQueue_Rules");
 			statement.close();
+			return id;
 		} catch (Exception e) {
 			logger.error("Error whil inserting new configuration", e);
 		}
+		return -1;
 	}
 	
 	/**
@@ -234,16 +257,19 @@ public class AutoScalingRuleStorageManager {
 	 * @param statement the SQL statement
 	 * @param rule the auto scaling rule
 	 */
-	public void addHostRule(Statement statement, HostScalingRule rule){
+	public int addHostRule(Statement statement, HostScalingRule rule){
 		logger.info("Inserting 1 new Physical host Auto scaling  configuration: "+ rule.toString());
 		try {
 			// set timeout to 10 sec.
 			statement.setQueryTimeout(10);
 			statement.execute("insert into AS_Host_Rules  values(null, '" + rule.getCPU_Limit() + "'," + rule.getRAM_Limit() + ")");
+			int id=  getLastID(statement, "AS_Host_Rules");
 			statement.close();
+			return id;
 		} catch (Exception e) {
 			logger.error("Error whil inserting new configuration", e);
 		}
+		return -1;
 	}
 	
 	/**

@@ -31,6 +31,8 @@
 						<manifest>
 							<mainClass>org.roqmessaging.management.launcher.HostConfigManagerLauncher</mainClass>
 							<mainClass>org.roqmessaging.management.launcher.GlobalConfigurationLauncher</mainClass>
+							<mainClass>org.roqmessaging.management.launcher.QueueManagementLauncher</mainClass>
+							<mainClass>org.roqmessaging.management.launcher.RoQClusterStopper</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
@@ -49,7 +51,7 @@
 				<configuration>
 					<forkMode>once</forkMode>
 					<workingDirectory>target</workingDirectory>
-					<argLine>-Djava.library.path=/usr/local/lib</argLine>
+					<argLine>-Djava.library.path=/usr/local/lib/</argLine>
 				</configuration>
 			</plugin>
 		</plugins>

@@ -23,6 +23,8 @@ import org.apache.log4j.Logger;
 import org.bson.BSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.management.stat.KPISubscriber;
+import org.zeromq.ZMQ.Socket;
 
 /**
  * Class KPISubscriberLogger
@@ -85,7 +87,7 @@ public class KPISubscriberLogger extends KPISubscriber {
 	 * @see org.roq.simulation.stat.KPISubscriber#processStat(java.lang.Integer)
 	 */
 	@Override
-	public void processStat(Integer CMD, BSONObject statObj) {
+	public void processStat(Integer CMD, BSONObject statObj, Socket statSub) {
 		switch ((Integer) statObj.get("CMD")) {
 		case RoQConstant.STAT_EXCHANGE_ID:
 			logger.info(" Stat from Exchange  " + statObj.get("ID") + " .");

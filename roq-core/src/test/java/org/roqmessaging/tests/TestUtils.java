@@ -44,5 +44,12 @@ public class TestUtils {
 		String address = RoQUtils.getInstance().getLocalIP(name);
 		logger.debug("Interface "+ name + "="+ address);
 	}
+	
+	@Test
+	public void testLatenciesCalc() throws Exception {
+		long latency = 93562600;
+		int latenced = 564122;
+		logger.info("Mean lat = "+(long)latency / latenced+" mean lat round ="+ Math.round(latency / latenced));
+	}
 
 }

@@ -18,7 +18,6 @@ import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.roq.simulation.stat.KPISubscriber;
 import org.roq.simulation.stat.KPISubscriberLogger;
 import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQPublisher;
@@ -29,6 +28,7 @@ import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.LogicalQFactory;
+import org.roqmessaging.management.stat.KPISubscriber;
 
 /**
  * Class TestStatMonitor
@@ -37,8 +37,8 @@ import org.roqmessaging.management.LogicalQFactory;
  * @author sskhiri
  */
 public class TestStatMonitor {
-	private RoQAllLocalLauncher launcher = null;
-	private 	KPISubscriber kpiSubscriber = null;
+	protected RoQAllLocalLauncher launcher = null;
+	protected 	KPISubscriber kpiSubscriber = null;
 	private Logger logger = Logger.getLogger(TestStatMonitor.class);
 	
 	/**
@@ -58,11 +58,13 @@ public class TestStatMonitor {
 	public void tearDown() throws Exception {
 		this.launcher.tearDown();
 		this.kpiSubscriber.shutDown();
+		Thread.sleep(3000);
 	}
 
 	@Test
 	public void test() {
 		try {
+			logger.info("Main test stat monitor test");
 			// Let the host self register to the global configuration
 			Thread.sleep(3000);
 			// 1. Create a Queue
@@ -116,7 +118,7 @@ public class TestStatMonitor {
 			for (int i = 0; i < 1000; i++) {
 				publisher.sendMessage("key".getBytes(), ("hello" + i).getBytes());
 			}
-			Thread.sleep(4000);
+			Thread.sleep(3000);
 
 			// End close connection
 			connection.close();
@@ -124,7 +126,7 @@ public class TestStatMonitor {
 
 			// Delete the queue
 			logicalQFactory.removeQueue("queue1");
-			Thread.sleep(3000);
+			Thread.sleep(2000);
 
 		} catch (InterruptedException e) {
 			e.printStackTrace();

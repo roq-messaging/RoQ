@@ -10,14 +10,12 @@ public class ZLoadSub {
 		int max = Integer.parseInt(args[0]);
 
 		Thread subThreads[] = new Thread[max];
-		int IDs = 0;
 		for (int i = 0; i < max; i++) {
 			System.out.println("Starting listener "+ (i+1) +"/" +max);
 			SubscriberConnectionManager tempSub = new SubscriberConnectionManager("tcp://localhost:5571", "tcp://localhost:5800", "manche",  false);
 			Thread t = new Thread(tempSub);
 			subThreads[i] = t;
 			subThreads[i].start();
-			IDs++;
 		}
 	}
 }

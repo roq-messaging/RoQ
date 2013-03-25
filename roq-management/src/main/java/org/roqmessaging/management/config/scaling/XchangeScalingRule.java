@@ -111,7 +111,7 @@ public class XchangeScalingRule implements IAutoScalingRule {
 	 */
 	@Override
 	public String toString() {
-		return "Exchange scaling rule ["+ this.getID()+", "+ this.getEvent_Limit()+", "+ this.Time_Limit+"]";
+		return "Exchange scaling rule  id = "+getID()+" ["+ this.getID()+", "+ this.getEvent_Limit()+", "+ this.Time_Limit+"]";
 	}
 
 }

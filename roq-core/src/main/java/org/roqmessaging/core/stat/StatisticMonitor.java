@@ -48,6 +48,8 @@ public class StatisticMonitor implements Runnable, IStoppable {
 	private volatile boolean running;
 	
 	private Logger logger = Logger.getLogger(StatisticMonitor.class);
+	
+	//Scaling process, this position should not be definitive - this must be an indep process
 
 	/**
 	 * Init & constructor
@@ -78,11 +80,11 @@ public class StatisticMonitor implements Runnable, IStoppable {
 		logger.info("Starting the Stat Monitor on " + RoQUtils.getInstance().getLocalIP() + ":" + (this.statPort));
 		this.running = true;
 		// Poller that will poll for a message on the stat sub
-		ZMQ.Poller poller = context.poller(1);
+		ZMQ.Poller poller = new ZMQ.Poller(1);
 		poller.register(this.statSub);
 		// Running the thread
 		while (this.running) {
-			poller.poll(2000);
+			poller.poll(200);
 			if (poller.pollin(0)) {
 				do {
 					kpiPub.send(translateStream(statSub.recv(0)), statSub.hasReceiveMore() ? ZMQ.SNDMORE : 0);
@@ -175,20 +177,20 @@ public class StatisticMonitor implements Runnable, IStoppable {
 			return BSON.encode(statObj);
 			
 			/*  Stat from Logical queue*/
-			//TODO creating a monitor timer that will sends statistics 
+			//Sends statistics at the queue level
 			//23,QName, number of exchange registered, number of total producer, total througput on Q
 			
 		case RoQConstant.STAT_Q:
 			statObj = new BasicBSONObject();
-			statObj.put("CMD",RoQConstant.STAT_Q);
+			statObj.put("CMD", RoQConstant.STAT_Q);
 			statObj.put("QName", info[1]);
 			statObj.put("XChanges", info[2]);
 			statObj.put("Producers", info[3]);
 			statObj.put("Throughput", info[4]);
 			logger.debug(statObj.toString());
 			return BSON.encode(statObj);
-			
-	}
+
+		}
 		return BSON.encode(new BasicBSONObject());
 	}
 

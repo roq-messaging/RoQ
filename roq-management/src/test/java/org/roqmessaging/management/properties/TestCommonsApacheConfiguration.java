@@ -54,12 +54,24 @@ public class TestCommonsApacheConfiguration {
 	public void testReader() {
 		try {
 		FileConfigurationReader reader = new FileConfigurationReader();
-		GCMPropertyDAO dao = reader.loadGCMConfiguration("GCM.properties");
+		GCMPropertyDAO dao = reader.loadGCMConfiguration("GCM-test.properties");
 			logger.info("Period = "+ dao.getPeriod());
 			Assert.assertEquals(60000, dao.getPeriod());
 			
 			logger.info("format DB = "+ dao.isFormatDB());
 			Assert.assertEquals(false, dao.isFormatDB());
+			
+			logger.info("use cloud  = "+ dao.isUseCloud());
+			Assert.assertEquals(true, dao.isUseCloud());
+			
+			logger.info("user cloud  = "+ dao.getCloudUser());
+			Assert.assertEquals("sabri", dao.getCloudUser());
+			
+			logger.info("user Passwd  = "+ dao.getCloudPasswd());
+			Assert.assertEquals("sabsab", dao.getCloudPasswd());
+			
+			logger.info("End point cloud  = "+ dao.getCloudEndPoint());
+			Assert.assertEquals("http://inferno.local:2633/RPC2", dao.getCloudEndPoint());
 			
 			HostConfigDAO hostDao = reader.loadHCMConfiguration("HCM.properties");
 			logger.info("gcm.address = "+ hostDao.getGcmAddress());

@@ -27,12 +27,14 @@ import org.zeromq.ZMQ;
 
 /**
  * Class StatTimer
- * <p> Description: The stat timer gather statistic information about a producer. This {@link StatDataState} data 
- * object is used for sharing information between the exchange and the timer.
+ * <p>
+ * Description: The stat timer gather statistic information about a producer.
+ * This {@link StatDataState} data object is used for sharing information
+ * between the exchange and the timer.
  * 
  * @author sskhiri
  */
-public 	class ExchangeStatTimer extends TimerTask implements IStoppable {
+public class ExchangeStatTimer extends TimerTask implements IStoppable {
 	private Logger logger = Logger.getLogger(ExchangeStatTimer.class);
 	private ZMQ.Context timercontext;
 	private ZMQ.Socket monitorSocket;
@@ -42,84 +44,89 @@ public 	class ExchangeStatTimer extends TimerTask implements IStoppable {
 	private StatDataState statistic = null;
 	private Exchange xchange = null;
 	private HostOSMonitoring hostMonitoring = null;
+	private volatile boolean open = true;
 
-	public ExchangeStatTimer(Exchange xChangeRef,  StatDataState stat ) {
+	public ExchangeStatTimer(Exchange xChangeRef, StatDataState stat) {
 		this.xchange = xChangeRef;
 		this.timercontext = ZMQ.context(1);
-		this.statistic=stat;
-		//init the monitor socket to send info for re-allocation
+		this.statistic = stat;
+		// init the monitor socket to send info for re-allocation
 		this.monitorSocket = timercontext.socket(ZMQ.PUB);
 		this.monitorSocket.connect(this.xchange.getS_monitor());
-		//init the statistic socket that sends information to the stat monitor forwarder
+		// init the statistic socket that sends information to the stat monitor
+		// forwarder
 		this.statSocket = timercontext.socket(ZMQ.PUB);
 		this.statSocket.connect(stat.getStatHost());
-		this.logger.debug("Connecting to "+ stat.getStatHost());
-		//init
+		this.logger.debug("Connecting to " + stat.getStatHost());
+		// init
 		this.minute = 0;
 		this.totalThroughput = 0;
 		this.hostMonitoring = new HostOSMonitoring();
 	}
 
 	public void run() {
-		monitorSocket.send((new Integer(RoQConstant.EVENT_MOST_PRODUCTIVE).toString()+"," + RoQUtils.getInstance().getLocalIP() + "," + this.xchange.getMostProducer()
-				+ "," + this.statistic.getThroughput() + "," + this.statistic.getMax_bw() + "," + this.xchange.getKnownProd().size())
-				.getBytes(), 0);
-		logger.info(RoQUtils.getInstance().getLocalIP() + " : minute " + minute + " : "
-				+ this.statistic.getThroughput() + " bytes/min, " + this.xchange.getKnownProd().size()
-				+ " producers connected");
-		logger.info(RoQUtils.getInstance().getLocalIP() + " : minute " + minute + " : "
-				+ this.xchange.getMostProducer());
-		
-       this.statistic.setTotalProcessed(this.statistic.getTotalProcessed()+this.statistic.getProcessed());
-       
-   	statSocket.send((
-			new Integer(RoQConstant.STAT_EXCHANGE_ID).toString()+","
-	                + this.xchange.getID() ).getBytes(), ZMQ.SNDMORE);
-       
-		statSocket.send((
-				new Integer(RoQConstant.STAT_EXCHANGE_MIN).toString()+","
-		                + minute + "," 
-						+ this.statistic.getTotalProcessed() + ","
-					 	+ this.statistic.getProcessed() + "," 
-		                + totalThroughput + ","
-					   	+ this.statistic.getThroughput()	+ "," 
-		                + this.xchange.getKnownProd().size()+",").getBytes()
-		                , ZMQ.SNDMORE);
-		
-		//CPU & memory
-		statSocket.send((
-				new Integer(RoQConstant.STAT_EXCHANGE_OS_MIN).toString()+","
-		                + this.hostMonitoring.getCPUUsage() + "," 
-						+ this.hostMonitoring.getMemoryUsage()).getBytes()
-		                , 0);
+		if (open) {
+			monitorSocket.send(
+					(new Integer(RoQConstant.EVENT_MOST_PRODUCTIVE).toString() + ","
+							+ RoQUtils.getInstance().getLocalIP() + "," + this.xchange.getMostProducer() + ","
+							+ this.statistic.getThroughput() + "," + this.statistic.getMax_bw() + "," + this.xchange
+							.getKnownProd().size()).getBytes(), 0);
+			
+			logger.info(RoQUtils.getInstance().getLocalIP() + " : minute " + minute + " : "
+					+ this.statistic.getThroughput() + " bytes/min, " + this.xchange.getKnownProd().size()
+					+ " producers connected - most productive = " + this.xchange.getMostProducer());
+			logger.debug(RoQUtils.getInstance().getLocalIP() + " : minute " + minute + " : "
+					+ this.xchange.getMostProducer());
 
-		for (int i = 0; i < this.xchange.getKnownProd().size(); i++) {
-			if (!this.xchange.getKnownProd().get(i).isActive()) {
-				this.xchange.getKnownProd().get(i).addInactive();
-				if (this.xchange.getKnownProd().get(i).getInactive() > 0) {
-					this.xchange.getKnownProd().remove(i);
+			this.statistic.setTotalProcessed(this.statistic.getTotalProcessed() + this.statistic.getProcessed());
+
+			statSocket.send(
+					(new Integer(RoQConstant.STAT_EXCHANGE_ID).toString() + "," + this.xchange.getID()).getBytes(),
+					ZMQ.SNDMORE);
+
+			statSocket.send(
+					(new Integer(RoQConstant.STAT_EXCHANGE_MIN).toString() + "," + minute + ","
+							+ this.statistic.getTotalProcessed() + "," + this.statistic.getProcessed() + ","
+							+ totalThroughput + "," + this.statistic.getThroughput() + ","
+							+ this.xchange.getKnownProd().size() + ",").getBytes(), ZMQ.SNDMORE);
+
+			// CPU & memory
+			statSocket.send(
+					(new Integer(RoQConstant.STAT_EXCHANGE_OS_MIN).toString() + "," + this.hostMonitoring.getCPUUsage()
+							+ "," + this.hostMonitoring.getMemoryUsage()).getBytes(), 0);
+
+			for (int i = 0; i < this.xchange.getKnownProd().size(); i++) {
+				if (!this.xchange.getKnownProd().get(i).isActive()) {
+					this.xchange.getKnownProd().get(i).addInactive();
+					if (this.xchange.getKnownProd().get(i).getInactive() > 0) {
+						this.xchange.getKnownProd().remove(i);
+					}
+				} else {
+					this.xchange.getKnownProd().get(i).reset();
 				}
-			} else {
-				this.xchange.getKnownProd().get(i).reset();
 			}
+			totalThroughput += this.statistic.getThroughput();
+			if (this.minute < Integer.MAX_VALUE - 1000) {
+				minute++;
+			} else
+				minute = 0;
+
+			this.statistic.setThroughput(0);
+			this.statistic.setProcessed(0);
 		}
-		totalThroughput += this.statistic.getThroughput();
-		if(this.minute< Integer.MAX_VALUE-1000){
-			minute++;
-		}else minute =0;
-		
-		this.statistic.setThroughput(0);
-		this.statistic.setProcessed(0);
 	}
-	
+
 	/**
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
 	 */
 	public void shutDown() {
+		this.open = false;
 		logger.info("Closing  socket");
+		this.cancel();
+		this.monitorSocket.setLinger(0);
+		this.statSocket.setLinger(0);
 		this.monitorSocket.close();
 		this.statSocket.close();
-		
 	}
 
 	/**
@@ -128,5 +135,5 @@ public 	class ExchangeStatTimer extends TimerTask implements IStoppable {
 	public String getName() {
 		return this.getClass().getName();
 	}
-	
+
 }

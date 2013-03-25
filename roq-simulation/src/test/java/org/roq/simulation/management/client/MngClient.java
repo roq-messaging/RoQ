@@ -21,8 +21,10 @@ import junit.framework.Assert;
 import org.apache.log4j.Logger;
 import org.bson.BSON;
 import org.bson.BSONObject;
+import org.bson.BasicBSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.zeromq.ZMQ;
@@ -52,10 +54,22 @@ public class MngClient {
 		this.requestSocket = this.context.socket(ZMQ.REQ);
 		this.requestSocket.connect("tcp://" + gcmAddr + ":5003");
 	}
+	
+	/**
+	 * Close the socket connection.
+	 */
+	public void close(){
+		if(this.requestSocket!=null){
+			this.requestSocket.close();
+			this.requestSocket=null;
+		}
+	}
 
 	/**
 	 * Test the creation of a queue by the BSON interface.
-	 * @param qName the queue under test
+	 * 
+	 * @param qName
+	 *            the queue under test
 	 */
 	public void testCreate(String qName) {
 		try {
@@ -64,7 +78,7 @@ public class MngClient {
 			HashMap<String, String> fields = new HashMap<String, String>();
 			fields.put("QName", qName);
 			fields.put("Host", RoQUtils.getInstance().getLocalIP());
-			byte[] encoded = serializer.serialiazeConfigRequest(RoQConstant.BSON_CONFIG_START_QUEUE, fields);
+			byte[] encoded = serializer.serialiazeConfigRequest(RoQConstant.BSON_CONFIG_CREATE_QUEUE, fields);
 			requestSocket.send(encoded, 0);
 			byte[] bres = requestSocket.recv(0);
 			BSONObject answer = BSON.decode(bres);
@@ -77,10 +91,13 @@ public class MngClient {
 
 	/**
 	 * Test the removal of a queue by the BSON interface.
-	 * @param qName the queue under test
+	 * 
+	 * @param qName
+	 *            the queue under test
 	 */
 	public void testRemove(String qName) {
 		try {
+			logger.debug("Removing Queue "+ qName);
 			IRoQSerializer serializer = new RoQBSONSerializer();
 			// 1. Init the request
 			HashMap<String, String> fields = new HashMap<String, String>();
@@ -92,6 +109,7 @@ public class MngClient {
 			byte[] eEemoveAnswer = requestSocket.recv(0);
 			BSONObject removeAnswer = BSON.decode(eEemoveAnswer);
 			Assert.assertEquals(RoQConstant.OK, removeAnswer.get("RESULT"));
+			logger.debug("Removed correctly Queue "+ qName);
 			Thread.sleep(4000);
 		} catch (Exception e) {
 			logger.error("Error when testing client ", e);
@@ -100,7 +118,9 @@ public class MngClient {
 
 	/**
 	 * Test the stop method on the queue
-	 * @param qName the queue under test
+	 * 
+	 * @param qName
+	 *            the queue under test
 	 */
 	public void testStop(String qName) {
 		try {
@@ -119,8 +139,165 @@ public class MngClient {
 		} catch (Exception e) {
 			logger.error("Error when testing client ", e);
 		}
-	
+	}
+
+	/**
+	 * Test the start method on the queue
+	 * 
+	 * @param qName
+	 *            the queue under test
+	 */
+	public void testStart(String qName) {
+		try {
+			logger.debug("Start Queue Test");
+			IRoQSerializer serializer = new RoQBSONSerializer();
+			// 1. Init the request
+			HashMap<String, String> fields = new HashMap<String, String>();
+			fields.put("QName", qName);
+			// Encode in BSON & send
+			byte[] eStartRqs = serializer.serialiazeConfigRequest(RoQConstant.BSON_CONFIG_START_QUEUE, fields);
+			requestSocket.send(eStartRqs, 0);
+			// Get the result and check
+			byte[] eStartAnswer = requestSocket.recv(0);
+			BSONObject removeAnswer = BSON.decode(eStartAnswer);
+			Assert.assertEquals(RoQConstant.OK, removeAnswer.get("RESULT"));
+			Thread.sleep(4000);
+		} catch (Exception e) {
+			logger.error("Error when testing client ", e);
+		}
+	}
+
+	/**
+	 * @param qName
+	 *            the queue name on which we are creating the auto scaling
+	 *            configuration
+	 * @param config
+	 *            the configuration for the auto scaling policies.
+	 */
+	public void testAutoScaling(String qName, AutoScalingConfig config) {
+		try {
+			IRoQSerializer serializer = new RoQBSONSerializer();
+			// 1. Launch a create Queue request
+			byte[] encoded = serializer.serialiazeAutoScalingRequest(qName, config,
+					RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE);
+			// 2. Send the request
+			requestSocket.send(encoded, 0);
+			// 3. Check the result
+			byte[] bres = requestSocket.recv(0);
+			BSONObject answer = BSON.decode(bres);
+			Assert.assertEquals(RoQConstant.OK, answer.get("RESULT"));
+			// 4. Check the auto scaling configuration
+			Assert.assertEquals(true, this.checkAutoScalingConfig(qName, config));
+			Thread.sleep(4000);
+		} catch (Exception e) {
+			logger.error("Error when testing client ", e);
+		}
+	}
+
+	/**
+	 * @param qName
+	 *            the queue name on which we are creating the auto scaling
+	 *            configuration
+	 * @param config
+	 *            the configuration for the auto scaling policies.
+	 */
+	public boolean checkAutoScalingConfig(String qName, AutoScalingConfig expecteConfig) {
+		try {
+			IRoQSerializer serializer = new RoQBSONSerializer();
+			// 1. Launch a get autoscaling Queue request
+			BSONObject bsonObject = new BasicBSONObject();
+			bsonObject.put("CMD", RoQConstant.BSON_CONFIG_GET_AUTOSCALING_RULE);
+			bsonObject.put("QName", qName);
+			logger.info("Request get Auto scaling info");
+			logger.info(bsonObject.toString());
+			byte[] encoded = BSON.encode(bsonObject);
+
+			// 2. Send the request
+			requestSocket.send(encoded, 0);
+
+			// 3. Check the result
+			byte[] bres = requestSocket.recv(0);
+			AutoScalingConfig config = serializer.unserializeConfig(bres);
+			if (!config.getName().equals(expecteConfig.getName())) {
+				return false;
+			} else {
+				if (expecteConfig.getHostRule() != null) {
+					if (expecteConfig.getHostRule().getCPU_Limit() != config.getHostRule().getCPU_Limit()) {
+						return false;
+					}
+				}
+				if (expecteConfig.getXgRule() != null) {
+					if (expecteConfig.getXgRule().getEvent_Limit() != config.getXgRule().getEvent_Limit()) {
+						return false;
+					}
+				}
+				if (expecteConfig.getqRule() != null) {
+					if (expecteConfig.getqRule().getProducerNumber() != config.getqRule().getProducerNumber()) {
+						return false;
+					}
+				}
+				return true;
+			}
+		} catch (Exception e) {
+			logger.error("Error when testing client ", e);
+		}
+		return false;
+	}
+
+	/**
+	 * @param qName the qname
+	 * @param config the already existing configuration
+	 */
+	public void testSameAutoScaling(String qName, AutoScalingConfig config) {
+		try {
+			//We are going to send a configuration that already exist
+			IRoQSerializer serializer = new RoQBSONSerializer();
+			// 1. Launch a create Queue request
+			byte[] encoded = serializer.serialiazeAutoScalingRequest(qName, config,
+					RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE);
+			// 2. Send the request
+			requestSocket.send(encoded, 0);
+			// 3. Check the result
+			byte[] bres = requestSocket.recv(0);
+			BSONObject answer = BSON.decode(bres);
+			Assert.assertEquals(RoQConstant.FAIL, answer.get("RESULT"));
+			Thread.sleep(000);
+		} catch (Exception e) {
+			logger.error("Error when testing client ", e);
+		}
 		
+	}
+	
+	/**
+	 * Test whether the get cloud property API is working properly
+	 * @throws Exception
+	 */
+	public void testCloudPropertiesAPI()  {
+		logger.info("Testing Cloud properties");
+		try {
+			// 1. Launch a get autoscaling Queue request
+			BSONObject bsonObject = new BasicBSONObject();
+			bsonObject.put("CMD", RoQConstant.BSON_CONFIG_GET_CLOUD_PROPERTIES);
+			logger.info("Request get cloud properties from Mngt client");
+			logger.info(bsonObject.toString());
+			byte[] encoded = BSON.encode(bsonObject);
+
+			// 2. Send the request
+			requestSocket.send(encoded, 0);
+
+			// 3. Check the result
+			BSONObject props= BSON.decode(requestSocket.recv(0));
+			logger.debug(props.toString());
+			if((Boolean) props.get("cloud.use")){
+				logger.info("A cloud configuration has been provided");
+			}else{
+				//No cloud configuration has been defined
+				logger.info("No cloud configuration has been provided");
+			}
+		} catch (Exception e) {
+			logger.error("Error when getting cloud properties from the GCM ", e);
+		}
+	
 	}
 
 }

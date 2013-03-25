@@ -110,9 +110,9 @@ public class BasicSetupTest {
 		loQFactory.refreshTopology();
 		loQFactory.removeQueue("queue1");
 	
-		this.configManager. getShutDownMonitor().shutDown();
 		this.hostConfigManager.getShutDownMonitor().shutDown();
-		
+		Thread.sleep(2000);
+		this.configManager. getShutDownMonitor().shutDown();
 		Thread.sleep(2000);
 	}
 

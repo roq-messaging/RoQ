@@ -58,7 +58,7 @@ public class Exchange implements Runnable, IStoppable {
 	private ShutDownMonitor shutDownMonitor = null;
 
 	//Timeout value of the front sub poller
-	private long timeout=2000;
+	private long timeout=5;
 
 	/**
 	 * Notice that we start a shutdown request socket on frontEnd port +1
@@ -155,13 +155,15 @@ public class Exchange implements Runnable, IStoppable {
 	public void run() {
 		logger.info("Exchange Started");
 		timer = new Timer();
-		timer.schedule(new Heartbeat(this.s_monitor, this.frontEnd, this.backEnd ), 0, 5000);
+		Heartbeat heartBeatTimer = new Heartbeat(this.s_monitor, this.frontEnd, this.backEnd );
+		timer.schedule(heartBeatTimer, 5, 2000);
 		ExchangeStatTimer exchStatTimer = new ExchangeStatTimer(this, this.statistic);
-		timer.schedule(exchStatTimer, 10, 6000);
+		//This is important that the exchange stat timer is triggered every second, since it computes throughput in byte/min.
+		timer.schedule(exchStatTimer, 100, 60000);
 		int part;
 		String prodID = "";
 		//Adding the poller
-		ZMQ.Poller poller = context.poller(3);
+		ZMQ.Poller poller = new ZMQ.Poller(1);
 		poller.register(this.frontendSub);
 		
 		while (this.active) {
@@ -194,6 +196,9 @@ public class Exchange implements Runnable, IStoppable {
 		}
 		closeSockets();
 		exchStatTimer.shutDown();
+		heartBeatTimer.shutDown();
+		timer.purge();
+		timer.cancel();
 		logger.info("Stopping Exchange "+frontEnd+"->"+backEnd);
 	}
 
@@ -237,9 +242,13 @@ public class Exchange implements Runnable, IStoppable {
 		logger.info("Inititating shutdown sequence");
 		this.active = false;
 		this.timer.cancel();
-		if(!this.monitorPub.send((new Integer(RoQConstant.EVENT_EXCHANGE_SHUT_DONW).toString()+",shutdown").getBytes(), 0))
-			logger.error("Error when sending Exchange shut down", new IllegalStateException("Shut down Exchange notification not sent"));
-		
+		this.timer.purge();
+		try {
+			if(!this.monitorPub.send((new Integer(RoQConstant.EVENT_EXCHANGE_SHUT_DONW).toString()+",shutdown").getBytes(), 0))
+				logger.error("Error when sending Exchange shut down", new IllegalStateException("Shut down Exchange notification not sent"));
+		} catch (Exception e) {
+			logger.warn("The socket is not available anymore. This happens when  the monitor has shut down.");
+		}
 	}
 
 	/**

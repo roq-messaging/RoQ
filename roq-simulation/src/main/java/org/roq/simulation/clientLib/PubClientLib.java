@@ -134,14 +134,14 @@ public class PubClientLib implements Runnable {
 		byte[] msg = new byte[payloadSize - 8];
 		msg[msg.length - 1] = 0;
 
-		ZMQ.Poller items = context.poller(2);
+		ZMQ.Poller items = new ZMQ.Poller(2);
 		items.register(monitorSub);
 		
 		Timer timer = new Timer();
 		timer.schedule(new RateLimiter(), 3000, 60000);
 		logger.info("Producer online");
 		while (running) {
-			items.poll(1);
+			items.poll(200);
 			if (items.pollin(0)) { // Info from Monitor
 				String info[] = new String(monitorSub.recv(0)).split(",");
 				int infoCode = Integer.parseInt(info[0]);

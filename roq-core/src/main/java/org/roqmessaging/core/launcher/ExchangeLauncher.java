@@ -18,7 +18,7 @@ import org.roqmessaging.core.Exchange;
 import org.zeromq.ZMQ;
 
 /**
- * Class ExchangeSimulator
+ * Class ExchangeLauncher
  * <p>
  * Description: Launch an exchange instance with the specified configuration.
  * 

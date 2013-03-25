@@ -95,6 +95,11 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 							+ " failed on the global configuration server");
 					return false;
 				}else{
+					try {
+						Thread.sleep(2000);
+					} catch (InterruptedException e) {
+						logger.warn(e);
+					}
 					return true;
 				}
 			}
@@ -234,6 +239,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 			logger.info("Cleaning the local cache");
 			for (String host : this.configurationState.getHostManagerMap().keySet()) {
 				ZMQ.Socket socket = this.configurationState.getHostManagerMap().get(host);
+				socket.setLinger(0);
 				socket.close();
 			}
 			this.configurationState.getHostManagerMap().clear();
@@ -273,5 +279,12 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		
 		//3. Sends to the global config Manager - > no needs.
 		return true;
+	}
+
+	/**
+	 * @return the configurationState
+	 */
+	public GlobalConfigurationStateClient getConfigurationState() {
+		return configurationState;
 	}
 }

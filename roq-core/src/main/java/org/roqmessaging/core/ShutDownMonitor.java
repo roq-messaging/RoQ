@@ -35,7 +35,7 @@ public class ShutDownMonitor implements Runnable {
 	private Logger logger = Logger.getLogger(ShutDownMonitor.class);
 	// Element to monitor
 	private IStoppable monitored = null;
-
+	//Defines whether this is still active.
 	private volatile boolean active = true;
 
 	/**
@@ -55,29 +55,29 @@ public class ShutDownMonitor implements Runnable {
 	 */
 	public void run() {
 		// 1. Set the poller
-		ZMQ.Poller items = context.poller(1);
+		ZMQ.Poller items = new ZMQ.Poller(1);
 		items.register(shutDownSocket);
 
 		// 2. Starting the loop
 		logger.info("Shutdown monitor started for " + this.monitored.getName());
 
 		// 2. Start the main run of the monitor
-		while (this.active & !Thread.currentThread().isInterrupted()) {
-			items.poll(2000);
+		while (this.active) {
+			items.poll(50);
 			if (items.pollin(0)) {
 				String info = new String(shutDownSocket.recv(0));
-				logger.info("Shutdown request received: " + info);
+				logger.info("Shutdown request received: " + info +" for "+ this.monitored.getName());
 				int infoCode = Integer.parseInt(info);
 				if (infoCode == RoQConstant.SHUTDOWN_REQUEST) {
-					shutDown();
+					this.shutDownSocket.setSendTimeOut(0);
 					this.shutDownSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+					shutDown();
 				} else {
 					logger.error("The shutdown Monitor got a wrong request !");
 				}
 			}
 		}
-		logger.info("Monitor has been shut down");
-		this.shutDownSocket.close();
+		logger.info("Monitor has been shut down for "+this.monitored.toString());
 	}
 
 	/**
@@ -85,9 +85,12 @@ public class ShutDownMonitor implements Runnable {
 	 */
 	public void shutDown() {
 		logger.info("Shutting down : " + this.monitored.getName());
-		this.monitored.shutDown();
 		// close me
 		this.active = false;
+		//Close monitored
+		this.monitored.shutDown();
+		//Close socket
+		this.shutDownSocket.close();
 	}
 
 }

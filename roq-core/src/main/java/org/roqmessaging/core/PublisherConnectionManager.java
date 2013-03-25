@@ -85,20 +85,18 @@ public class PublisherConnectionManager implements Runnable {
 	 * @return 1 if the list of exchanges received is empty, 1 otherwise
 	 */
 	private int init(int code) {
-		logger.debug("Asking for a new exchange connection to monitor  code "+ code+"...");
+		logger.info("Asking for a new exchange connection to monitor  code "+ code+"...");
 		// Code must be 2(first connection) or 3(panic procedure)!
 		initReq.send((Integer.toString(code) + "," + s_ID).getBytes(), 0);
 		//The answer must be the concatenated list of exchange
 		String exchg = new String(initReq.recv(0));
-		logger.debug("Recieving "+ exchg + " to connect ...");
+		logger.info("Recieving "+ exchg + " to connect ...");
 		if (!exchg.equals("")) {
 			try {
-				this.configState.getLock().lock();
 				this.configState.setExchPub(this.context.socket(ZMQ.PUB));
 				this.configState.getExchPub().connect("tcp://" + exchg);
 				this.configState.setValid(true);
 			}finally{
-				this.configState.getLock().unlock();
 			}
 			logger.info("Connected to Exchange " + exchg);
 			this.s_currentExchange = exchg;
@@ -121,12 +119,12 @@ public class PublisherConnectionManager implements Runnable {
 			}
 		}
 		//Register in Pollin 0 position the monitor
-		ZMQ.Poller items = context.poller(2);
+		ZMQ.Poller items = new ZMQ.Poller(2);
 		items.register(monitorSub);
 		
 		logger.info("Producer online");
 		while (running) {
-			items.poll(10000);
+			items.poll(100);
 			if (items.pollin(0)) { // Info from Monitor
 				String info[] = new String(monitorSub.recv(0)).split(",");
 				int infoCode = Integer.parseInt(info[0]);
@@ -168,6 +166,8 @@ public class PublisherConnectionManager implements Runnable {
 	 */
 	private void closeConnection() {
 		try {
+			this.logger.debug("Closing publisher sockets ...");
+			this.configState.getExchPub().setLinger(0);
 			this.configState.getLock().lock();
 			this.configState.getExchPub().close();
 			this.configState.setValid(false);
@@ -183,7 +183,9 @@ public class PublisherConnectionManager implements Runnable {
 	 */
 	private void rellocateExchange(String exchange) {
 		try{
+			this.logger.debug("Closing sockets when re-locate the exchange");
 			this.configState.getLock().lock();
+			this.configState.getExchPub().setLinger(0);
 			this.configState.getExchPub().close();
 			this.configState.setExchPub(context.socket(ZMQ.PUB));
 			this.configState.getExchPub().connect("tcp://" + exchange);

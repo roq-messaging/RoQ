@@ -79,7 +79,7 @@ public class LogicalQScalingRule implements IAutoScalingRule {
 	 */
 	@Override
 	public String toString() {
-		return "Logical Q String [ Producer limit per Exchange: "+ this.producerPerXchangeLimit+", Throughput limit per exchange:"+ this.througputPerXchangeLimit+"]";
+		return "Logical Q rule id = "+getID()+" [ Producer limit per Exchange: "+ this.producerPerXchangeLimit+", Throughput limit per exchange:"+ this.througputPerXchangeLimit+"]";
 	}
 
 

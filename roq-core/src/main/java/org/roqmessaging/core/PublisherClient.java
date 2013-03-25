@@ -19,6 +19,8 @@ import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.state.PublisherConfigState;
 import org.zeromq.ZMQ;
 
+import com.google.common.primitives.Longs;
+
 /**
  * Class PublisherClient
  * <p> Description: Implementation of the publisher client library. 
@@ -32,6 +34,8 @@ public class PublisherClient implements IRoQPublisher {
 	private PublisherConnectionManager connectionManager = null;
 	//Logger
 	private Logger logger = Logger.getLogger(PublisherClient.class);
+	//Define whether we need to add a time stamp in the message
+	private boolean timeStp = false;
 	
 	/**
 	 * Initiatilisation of the class
@@ -51,7 +55,7 @@ public class PublisherClient implements IRoQPublisher {
 			configState.getExchPub().send(key, ZMQ.SNDMORE);
 			configState.getExchPub().send(configState.getPublisherID().getBytes(), ZMQ.SNDMORE);
 
-			if (configState.isTimeStampServer()) {
+			if (this.timeStp) {
 				configState.getExchPub().send(msg, ZMQ.SNDMORE);
 				configState.getExchPub().send(getTimestamp(), 0);
 			}else {
@@ -65,8 +69,20 @@ public class PublisherClient implements IRoQPublisher {
 		}
 	}
 	
+	/**
+	 * @return the encoded time stamp
+	 */
 	private byte[] getTimestamp() {
-		return (Long.toString(System.currentTimeMillis()) + " ").getBytes();
+//		return (Long.toString(System.currentTimeMillis()) + " ").getBytes();
+		return Longs.toByteArray(System.currentTimeMillis());
+	}
+
+	/**
+	 * @see org.roqmessaging.client.IRoQPublisher#addTimeStamp(boolean)
+	 */
+	public void addTimeStamp(boolean add) {
+		this.timeStp=add;
+		logger.info("A time stamp of "+ this.getTimestamp().length +" will be added as a message part.");
 	}
 
 }

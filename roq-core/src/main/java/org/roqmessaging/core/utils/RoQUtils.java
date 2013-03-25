@@ -88,7 +88,7 @@ public class RoQUtils {
 								adrName = InetAddress.getLocalHost().getCanonicalHostName();
 
 							if (!adrName.equals(adrIP))
-								return adrIP;
+								return checkIPV6(adrIP);
 							else
 								ipOnly = adrIP;
 						}
@@ -126,7 +126,7 @@ public class RoQUtils {
 							InetAddress adr = adrs.nextElement();
 							if (adr != null && !adr.isLoopbackAddress()
 									&& (nif.isPointToPoint() || !adr.isLinkLocalAddress())) {
-								return adr.getHostAddress();
+								return checkIPV6(adr.getHostAddress());
 							}
 						}
 					}
@@ -142,6 +142,17 @@ public class RoQUtils {
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd_hh:mm:ss");
 		df.setTimeZone(TimeZone.getTimeZone("GMT+2:00"));
 		return df.format(new Date());
+	}
+
+	/**
+	 * @param targetAddress the target address 
+	 * @return the same address but without the % of the IP v6 format
+	 */
+	public String checkIPV6(String targetAddress) {
+		if(targetAddress.indexOf("%")>0){
+			return targetAddress.substring(0, targetAddress.indexOf("%"));
+		}
+		return targetAddress;
 	}
 	
 

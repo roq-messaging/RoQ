@@ -29,5 +29,11 @@ public interface IRoQPublisher {
 	 * @return true if the configuration is valid
 	 */
 	public boolean sendMessage(byte[] key , byte[] msg ) throws IllegalStateException;
+	
+	/**
+	 * @param add define whether we need to add a time stamp as a multi part message:
+	 * [key, payload, timestamp]
+	 */
+	public void addTimeStamp(boolean add);
 
 }

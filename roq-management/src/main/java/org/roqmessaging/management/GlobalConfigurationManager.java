@@ -31,11 +31,14 @@ import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.MngtController;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Poller;
 
 /**
  * Class GlobalConfigurationManager
  * <p> Description: responsible for handling the global configuration. This class must run 
  * within a thread. In the future this class will share its data through a data grid.
+ * Notice that the configuration is maintain through a state DAO, this object is ready to be shared on data grid. 
+ * This state is persisted at the configuration manager level.
  * 
  * @author sskhiri
  */
@@ -56,11 +59,16 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private MngtController mngtController = null;
 	//The SQL DB name
 	private String dbName = "Management.db";
+	//Handles on timers:
+	private GlobalConfigTimer configTimerTask = null;
+	//Handles on the management timer that send update to the magements.
+	private Timer mngtTimer=null;
 	
 	//Serializer (BSON)
 	private IRoQSerializer serialiazer = new RoQBSONSerializer();
 	
 	private Logger logger = Logger.getLogger(GlobalConfigurationManager.class);
+
 	
 	/**
 	 * Constructor.
@@ -86,12 +94,12 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 
 			// Read configuration from file
 			FileConfigurationReader reader = new FileConfigurationReader();
-			properties = reader.loadGCMConfiguration(configFile);
+			this.properties = reader.loadGCMConfiguration(configFile);
 			logger.info("Configuration from props: "+properties.toString());
 
 			// The Management controller - the start is in the run to take the
 			// period attribute
-			this.mngtController = new MngtController("localhost", dbName, (properties.getPeriod() + 500));
+			this.mngtController = new MngtController("localhost", dbName, (properties.getPeriod() + 500), this.properties);
 			if (properties.isFormatDB())
 				this.mngtController.getStorage().formatDB();
 			new Thread(mngtController).start();
@@ -107,16 +115,16 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	public void run() {
 		this.running = true;
 		//Init the timer for management subscriber
-		Timer mngtTimer = new Timer("Management config publisher");
-		GlobalConfigTimer configTimerTask = new GlobalConfigTimer(this);
+		mngtTimer = new Timer("Management config publisher");
+		configTimerTask = new GlobalConfigTimer(this);
 		mngtTimer.schedule(configTimerTask, 500, this.properties.getPeriod());
 		
 		//ZMQ init
-		ZMQ.Poller items = context.poller(3);
+		ZMQ.Poller items = new Poller(3);
 		items.register(this.clientReqSocket);
 		//2. Start the main run of the monitor
 		while (this.running) {
-			items.poll(10000);
+			items.poll(100);
 			if (items.pollin(0)){ //Comes from a client
 				byte[] encoded = clientReqSocket.recv(0);
 				String content = new String(encoded);
@@ -130,12 +138,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				}
 			}
 		}
-		logger.info("Shutting down the global configuration manager");
-		this.clientReqSocket.close();
-		configTimerTask.shutDown();
-		mngtTimer.cancel();
+		logger.info("GCM Stopped.");
 	}
-	
 	
 	/**
 	 * Processes the BSON requests
@@ -185,7 +189,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		
 		//init request from client that want to receive a local cache of configuration
 		case RoQConstant.INIT_REQ:
-			// A client is asking fof the topology of all local host
+			// A client is asking for the topology of all local host
 			// manager
 			logger.debug("Recieveing init request from a client ");
 			this.clientReqSocket.send( this.serializationUtils.serialiseObject(this.stateDAO.getHostManagerAddresses()), ZMQ.SNDMORE);
@@ -250,6 +254,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				logger.debug("The request format is valid ");
 				// The logical queue config is sent int the part 2
 				removeHostManager(info[1]);
+				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
 			}
 			break;
 			
@@ -326,7 +331,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 
 
 	/**
-	 * @param hosr the ip address of the host to remove.
+	 * @param host the ip address of the host to remove.
 	 */
 	public void removeHostManager(String host) {
 		if(this.stateDAO.getHostManagerAddresses().remove(host)) logger.info("Removed host successfully "+ host);
@@ -339,6 +344,10 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 */
 	public void  shutDown(){
 		this.running = false;
+		logger.info("Shutting down the global configuration manager  - closing GCM elements...");
+		this.clientReqSocket.close();
+		//deactivate the timer
+		configTimerTask.shutDown();
 		this.mngtController.getShutDownMonitor().shutDown();
 		this.logger.info("Shutting down config server");
 	}
@@ -399,7 +408,14 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	public MngtController getMngtController() {
 		return mngtController;
 	}
-	
+
+
+	/**
+	 * @return the list of host manager addresses
+	 */
+	public Object getHostManagerAddresses() {
+		return this.stateDAO.getHostManagerAddresses();
+	}
 	
 
 }

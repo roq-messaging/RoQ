@@ -29,13 +29,19 @@ import org.roqmessaging.management.LogicalQFactory;
 
 /**
  * Class RoQTestCase
- * <p> Description: Thest case that provides methods for popluating a queue for test.
+ * <p> Description: Thest case that provides methods for populating a queue for test.
+ * In the setup we launch the RoQ all launcher that will instantiate a complete RoQ infra,
+ *  in addition we set the configuration file with the testGCM.properties.
+ *  Finally we initiate a factory in case of queue or exchange creation. 
+ *  
+ *  Going further the case provides facility method to initiate queue and automatically
+ *  attaching subscriber. Publisher can also be created easily. 
  * 
  * @author sskhiri
  */
 public class RoQTestCase {
 	protected RoQAllLocalLauncher launcher = null;
-	private Logger logger = Logger.getLogger(RoQTestCase.class);
+	protected Logger logger = Logger.getLogger(RoQTestCase.class);
 	protected LogicalQFactory factory = null;
 	protected IRoQSubscriberConnection subscriberConnection = null;
 	protected IRoQConnection connection = null;
@@ -47,6 +53,7 @@ public class RoQTestCase {
 	@Before
 	public void setUp() throws Exception {
 		this.logger.info("Setup TEST");
+		Thread.sleep(3000);
 		this.launcher = new RoQAllLocalLauncher();
 		this.launcher.setConfigFile("testGCM.properties");
 		this.launcher.setUp();
@@ -60,9 +67,15 @@ public class RoQTestCase {
 	@After
 	public void tearDown() throws Exception {
 		this.logger.info("Tear Down TEST");
+		if(this.subscriberConnection!=null){
+			subscriberConnection.close();
+		}
+		if(this.connection!=null){
+			this.connection.close();
+		}
 		this.factory.clean();
 		this.launcher.tearDown();
-		Thread.sleep(3000);
+		Thread.sleep(4000);
 	}
 	
 
@@ -117,7 +130,8 @@ public class RoQTestCase {
 	}
 
 	/**
-	 * Attach a subscriber to the queue
+	 * Attach a subscriber to the queue on the topic "key". The test must send 
+	 * a java-encoded verison of "hello".
 	 * @param qName the queue to attach the subs.
 	 */
 	protected void attachSUbscriber(String qName) {
@@ -129,8 +143,7 @@ public class RoQTestCase {
 		// Register a message listener
 		IRoQSubscriber subs = new IRoQSubscriber() {
 			public void onEvent(byte[] msg) {
-				String content = new String(msg, 0, msg.length);
-				assert content.startsWith("hello");
+				//String content = new String(msg, 0, msg.length);
 			}
 		};
 		subscriberConnection.setMessageSubscriber(subs);
