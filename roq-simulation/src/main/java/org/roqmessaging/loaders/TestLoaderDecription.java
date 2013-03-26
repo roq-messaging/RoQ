@@ -38,11 +38,11 @@ import org.json.simple.parser.ParseException;
  */
 public class TestLoaderDecription {
 	private int spawnRate =1;
-	private int maxProd = 1;
+	private int maxProd = 0;
 	private int rate =1;
 	private float duration = 1.0f;
 	private int payload = 1;
-	private int maxSub = 1;
+	private int maxSub = 0;
 	private int delay = 5;
 	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
 	/**
