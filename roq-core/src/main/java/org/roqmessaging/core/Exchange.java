@@ -24,7 +24,6 @@ import org.roqmessaging.core.data.StatDataState;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.timer.ExchangeStatTimer;
 import org.roqmessaging.core.timer.Heartbeat;
-import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.state.ProducerState;
 import org.zeromq.ZMQ;
 
@@ -183,8 +182,7 @@ public class Exchange implements Runnable, IStoppable {
 					message = frontendSub.recv(0);
 					part++;
 					if (part == 2) {
-						prodID=RoQSerializationUtils.bytesToStringUTFCustom(message);
-//						prodID=new String(message);
+						prodID=bytesToStringUTFCustom(message);
 					}
 					if (part == 3) {
 						logPayload(message.length, prodID);
@@ -201,6 +199,21 @@ public class Exchange implements Runnable, IStoppable {
 		timer.purge();
 		timer.cancel();
 		logger.info("Stopping Exchange "+frontEnd+"->"+backEnd);
+	}
+	
+	/**
+	 * Optimized decoding of strings.
+	 *  @param bytes the encoded byte array
+	 * @return the decoded string
+	 */
+	public String bytesToStringUTFCustom(byte[] bytes) {
+		char[] buffer = new char[bytes.length >> 1];
+		for (int i = 0; i < buffer.length; i++) {
+			int bpos = i << 1;
+			char c = (char) (((bytes[bpos] & 0x00FF) << 8) + (bytes[bpos + 1] & 0x00FF));
+			buffer[i] = c;
+		}
+		return new String(buffer);
 	}
 
 
