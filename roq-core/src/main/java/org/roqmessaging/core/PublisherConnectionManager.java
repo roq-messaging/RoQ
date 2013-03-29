@@ -93,7 +93,7 @@ public class PublisherConnectionManager implements Runnable {
 		logger.info("Recieving "+ exchg + " to connect ...");
 		if (!exchg.equals("")) {
 			try {
-				this.configState.setExchPub(this.context.socket(ZMQ.PUB));
+				this.configState.setExchPub(this.context.socket(ZMQ.XPUB));
 				this.configState.getExchPub().connect("tcp://" + exchg);
 				this.configState.setValid(true);
 			}finally{

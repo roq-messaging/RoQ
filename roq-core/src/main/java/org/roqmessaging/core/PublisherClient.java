@@ -16,6 +16,7 @@ package org.roqmessaging.core;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQPublisher;
+import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.state.PublisherConfigState;
 import org.zeromq.ZMQ;
 
@@ -50,16 +51,18 @@ public class PublisherClient implements IRoQPublisher {
 	public boolean sendMessage(byte[] key, byte[] msg) throws IllegalStateException {
 		//1. Get the configuration state
 		PublisherConfigState configState = this.connectionManager.getConfiguration();
+		ZMQ.Socket pubSocket = configState.getExchPub();
 		if(configState.isValid()){
 			//2. If OK send the message
-			configState.getExchPub().send(key, ZMQ.SNDMORE);
-			configState.getExchPub().send(configState.getPublisherID().getBytes(), ZMQ.SNDMORE);
-
+			pubSocket.send(key, ZMQ.SNDMORE);
+			pubSocket.send(RoQSerializationUtils.stringToBytesUTFCustom(configState.getPublisherID()), ZMQ.SNDMORE);
+//			pubSocket.send(configState.getPublisherID().getBytes(), ZMQ.SNDMORE);
+			
 			if (this.timeStp) {
-				configState.getExchPub().send(msg, ZMQ.SNDMORE);
-				configState.getExchPub().send(getTimestamp(), 0);
+				pubSocket.send(msg, ZMQ.SNDMORE);
+				pubSocket.send(getTimestamp(), 0);
 			}else {
-				configState.getExchPub().send(msg, 0);
+				pubSocket.send(msg, 0);
 			}
 			return true;
 		}else{

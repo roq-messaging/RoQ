@@ -25,4 +25,5 @@ the sqlite-jdbc developed by xerial,
 the BSON encoder/decoder provided by the mongo-DB driver and developed by Mongo DB, 
 the INFINISPAN data grid from Red Hat (used in the Active standbye configuration of the management server),
 the JSON Simle (http://code.google.com/p/json-simple/),
+the Guava library,
 and finally Maven2 for the build and Jenkins for the continous integration.

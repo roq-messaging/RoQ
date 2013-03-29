@@ -118,9 +118,10 @@ public class Exchange implements Runnable, IStoppable {
 		if (!knownProd.isEmpty()) {
 			for (int i = 0; i < knownProd.size(); i++) {
 				if (prodID.equals(knownProd.get(i).getID())) {
-					knownProd.get(i).addMsgSent();
-					knownProd.get(i).setActive(true);
-					knownProd.get(i).addBytesSent(msgsize);
+					ProducerState state = knownProd.get(i);
+					state.addMsgSent();
+					state.setActive(true);
+					state.addBytesSent(msgsize);
 					return;
 				}
 			}
@@ -181,14 +182,12 @@ public class Exchange implements Runnable, IStoppable {
 					message = frontendSub.recv(0);
 					part++;
 					if (part == 2) {
-						prodID = new String(message);
+						prodID=bytesToStringUTFCustom(message);
 					}
 					if (part == 3) {
 						logPayload(message.length, prodID);
 					}
 					backendPub.send(message, frontendSub.hasReceiveMore() ? ZMQ.SNDMORE : 0);
-					// if (!frontendSub.hasReceiveMore())
-					// break;
 
 				} while (this.frontendSub.hasReceiveMore() && this.active);
 				this.statistic.setProcessed(this.statistic.getProcessed() + 1);
@@ -200,6 +199,21 @@ public class Exchange implements Runnable, IStoppable {
 		timer.purge();
 		timer.cancel();
 		logger.info("Stopping Exchange "+frontEnd+"->"+backEnd);
+	}
+	
+	/**
+	 * Optimized decoding of strings.
+	 *  @param bytes the encoded byte array
+	 * @return the decoded string
+	 */
+	public String bytesToStringUTFCustom(byte[] bytes) {
+		char[] buffer = new char[bytes.length >> 1];
+		for (int i = 0; i < buffer.length; i++) {
+			int bpos = i << 1;
+			char c = (char) (((bytes[bpos] & 0x00FF) << 8) + (bytes[bpos + 1] & 0x00FF));
+			buffer[i] = c;
+		}
+		return new String(buffer);
 	}
 
 
