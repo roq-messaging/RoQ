@@ -16,6 +16,7 @@ package org.roqmessaging.core;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQPublisher;
+import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.state.PublisherConfigState;
 import org.zeromq.ZMQ;
 
@@ -54,8 +55,9 @@ public class PublisherClient implements IRoQPublisher {
 		if(configState.isValid()){
 			//2. If OK send the message
 			pubSocket.send(key, ZMQ.SNDMORE);
-			pubSocket.send(configState.getPublisherID().getBytes(), ZMQ.SNDMORE);
-
+			pubSocket.send(RoQSerializationUtils.stringToBytesUTFCustom(configState.getPublisherID()), ZMQ.SNDMORE);
+//			pubSocket.send(configState.getPublisherID().getBytes(), ZMQ.SNDMORE);
+			
 			if (this.timeStp) {
 				pubSocket.send(msg, ZMQ.SNDMORE);
 				pubSocket.send(getTimestamp(), 0);
