@@ -63,7 +63,7 @@ public class ShutDownMonitor implements Runnable {
 
 		// 2. Start the main run of the monitor
 		while (this.active) {
-			items.poll(50);
+			items.poll(300);
 			if (items.pollin(0)) {
 				String info = new String(shutDownSocket.recv(0));
 				logger.info("Shutdown request received: " + info +" for "+ this.monitored.getName());
