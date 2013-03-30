@@ -27,6 +27,7 @@ import junit.framework.Assert;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.Logger;
+import org.roqmessaging.core.Monitor;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
@@ -142,6 +143,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 					if (info.length == 2) {
 						String qName = info[1];
 						logger.debug("The request format is valid with 2 parts, Q to create:  " + qName);
+				
 						// 1. Start the monitor
 						String monitorAddress = startNewMonitorProcess(qName);
 
@@ -455,30 +457,36 @@ public class HostConfigManager implements Runnable, IStoppable {
 		logger.debug(" This host contains already " + this.qMonitorMap.size() + " Monitor");
 		String argument = frontPort + " " + statPort;
 		logger.debug("Starting monitor process by script launch on " + argument);
-
-		// 2. Launch script
-		// ProcessBuilder pb = new ProcessBuilder(this.monitorScript, argument);
-		ProcessBuilder pb = new ProcessBuilder("java",
-				"-Djava.library.path=" + System.getProperty("java.library.path"), "-cp",
-				System.getProperty("java.class.path"), MonitorLauncher.class.getCanonicalName(),
-				new Integer(frontPort).toString(), new Integer(statPort).toString(), qName, new Integer(this.properties.getStatPeriod()).toString());
-
-		logger.debug("Starting: " + pb.command());
+		//Monitor configuration
 		String monitorAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + frontPort;
 		String statAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + statPort;
-
-		try {
-			final Process process = pb.start();
-			pipe(process.getErrorStream(), System.err);
-			pipe(process.getInputStream(), System.out);
-
-			this.qMonitorMap.put(qName, (monitorAddress));
-			this.qMonitorStatMap.put(qName, statAddress);
-			return monitorAddress + "," + statAddress;
-		} catch (IOException e) {
-			logger.error("Error while executing script", e);
-			return null;
+		//Checking whether we must create the monitor, stat monitor and the scaling process in the same VM
+		if(this.properties.isQueueInHcmVm()){
+			logger.info("Creating the Monitor of the "+ qName +" on the same VM as the local HCM");
+			 Monitor monitor = new Monitor(frontPort, statPort,  qName, new Integer(this.properties.getStatPeriod()).toString());
+			Thread t = new Thread(monitor);
+			t.start();
+		} else {
+			// 2. Launch script in its onw VM
+			// ProcessBuilder pb = new ProcessBuilder(this.monitorScript,
+			// argument);
+			ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
+					+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),	MonitorLauncher.class.getCanonicalName(), new Integer(frontPort).toString(),
+					new Integer(statPort).toString(), qName, new Integer(this.properties.getStatPeriod()).toString());
+			try {
+				logger.debug("Starting: " + pb.command());
+				final Process process = pb.start();
+				pipe(process.getErrorStream(), System.err);
+				pipe(process.getInputStream(), System.out);
+			} catch (IOException e) {
+				logger.error("Error while executing script", e);
+				return null;
+			}
 		}
+		//add the monitor configuration
+		this.qMonitorMap.put(qName, (monitorAddress));
+		this.qMonitorStatMap.put(qName, statAddress);
+		return monitorAddress + "," + statAddress;
 	}
 
 	private static void pipe(final InputStream src, final PrintStream dest) {
