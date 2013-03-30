@@ -38,6 +38,7 @@ import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.config.internal.FileConfigurationReader;
 import org.roqmessaging.management.config.internal.HostConfigDAO;
 import org.roqmessaging.management.launcher.hook.ShutDownSender;
+import org.roqmessaging.scaling.ScalingProcess;
 import org.roqmessaging.scaling.launcher.ScalingProcessLauncher;
 import org.zeromq.ZMQ;
 
@@ -239,30 +240,42 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * @return true if the creation was OK
 	 */
 	private boolean startNewScalingProcess(String qName) {
-		//1. Compute the stat monitor port+2
 		if(this.qMonitorStatMap.containsKey(qName)){
+			//1. Compute the stat monitor port+2
 			int basePort = this.serializationUtils.extractBasePort(this.qMonitorStatMap.get(qName));
 			basePort+=2;
-			// 2. Launch script
-			try {
-				ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
-						+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),
-						ScalingProcessLauncher.class.getCanonicalName(), this.properties.getGcmAddress(),
-						qName, new Integer((basePort)).toString());
-				logger.debug("Starting: " + pb.command());
-				final Process process = pb.start();
-				pipe(process.getErrorStream(), System.err);
-				pipe(process.getInputStream(), System.out);
-				logger.debug("Storing scaling process information");
-				this.qScalingProcessAddr.put(qName, (basePort+1));
-			} catch (IOException e) {
-				logger.error("Error while executing script", e);
-				return false;
-			}	
+			//2. Check wether we need to launch it locally or in its own process
+			if(this.properties.isQueueInHcmVm()){
+				logger.info("Starting the scaling process  for queue " + qName + ", using a listener port= " + basePort +", GCM ="+this.properties.getGcmAddress() );
+				//Local startup in the same VM as the host config Monitor
+				ScalingProcess scalingProcess = new ScalingProcess(this.properties.getGcmAddress(), qName,basePort );
+				//Here is the problem we still do not have registred the queue at the GCM
+				scalingProcess.subscribe();
+				// Launch the thread
+				new Thread(scalingProcess).start();
+			}else{
+				//Start in its own VM
+				// 2. Launch script
+				try {
+					ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
+							+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),
+							ScalingProcessLauncher.class.getCanonicalName(), this.properties.getGcmAddress(),
+							qName, new Integer((basePort)).toString());
+					logger.debug("Starting: " + pb.command());
+					final Process process = pb.start();
+					pipe(process.getErrorStream(), System.err);
+					pipe(process.getInputStream(), System.out);
+				} catch (IOException e) {
+					logger.error("Error while executing script", e);
+					return false;
+				}	
+			}
+			//4. Add the configuration information
+			logger.debug("Storing scaling process information");
+			this.qScalingProcessAddr.put(qName, (basePort+1));
 		}else{
 			return false;
 		}
-		
 		return true;
 	}
 
@@ -464,8 +477,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 		if(this.properties.isQueueInHcmVm()){
 			logger.info("Creating the Monitor of the "+ qName +" on the same VM as the local HCM");
 			 Monitor monitor = new Monitor(frontPort, statPort,  qName, new Integer(this.properties.getStatPeriod()).toString());
-			Thread t = new Thread(monitor);
-			t.start();
+			new Thread(monitor).start();
 		} else {
 			// 2. Launch script in its onw VM
 			// ProcessBuilder pb = new ProcessBuilder(this.monitorScript,

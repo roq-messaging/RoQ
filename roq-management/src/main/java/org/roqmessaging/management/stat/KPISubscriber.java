@@ -61,8 +61,6 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 			// Copy parameters
 			this.configurationServer = globalConfiguration;
 			this.qName = qName;
-			// init subscription
-			subscribe();
 		} catch (Exception e) {
 			logger.error("Error while initiating the KPI statistic channel", e);
 		}
@@ -72,12 +70,14 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	 * Subscribe to the statistic stream got from the global configuration
 	 * @throws IllegalStateException if the monitor stat is not present in the cache
 	 */
-	protected void subscribe() throws IllegalStateException {
+	public void subscribe() throws IllegalStateException {
 		logger.debug("Get the stat monitor address from the GCM");
 		// 1. Get the location in BSON
 		// 1.1 Create the request socket
 		ZMQ.Socket globalConfigReq = context.socket(ZMQ.REQ);
-		globalConfigReq.connect("tcp://" + this.configurationServer + ":5000");
+		String gcm = "tcp://" + this.configurationServer + ":5000";
+		logger.debug("Sending request to GCM = "+ gcm);
+		globalConfigReq.connect(gcm);
 
 		// 1.2 Send the request
 		// Prepare the request BSON object
