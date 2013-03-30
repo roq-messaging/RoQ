@@ -78,7 +78,8 @@ public class FileConfigurationReader {
 			configDao.setStatMonitorBasePort(config.getInt("statmonitor.base.port"));
 			configDao.setStatPeriod(config.getInt("monitor.stat.period"));
 			configDao.setMaxNumberEchanges(config.getInt("exchange.max.perhost"));
-
+			configDao.setQueueInHcmVm(config.getBoolean("queue.hcm.vm"));
+			configDao.setExchangeInHcmVm(config.getBoolean("exchange.hcm.vm"));
 			if (config.containsKey("network.interface"))
 				configDao.setNetworkInterface(config.getString("network.interface"));
 		} catch (Exception configE) {
