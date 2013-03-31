@@ -58,6 +58,7 @@ public class ScalingProcessLauncher {
 			int listenerPort = Integer.parseInt(args[2]);
 			// Instanciate the exchange
 			final ScalingProcess scalingProcess = new ScalingProcess(args[0], args[1], listenerPort);
+			scalingProcess.subscribe();
 			// Launch the thread
 			Thread t = new Thread(scalingProcess);
 			t.start();

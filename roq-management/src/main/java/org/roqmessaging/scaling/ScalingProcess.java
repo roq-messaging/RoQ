@@ -35,80 +35,110 @@ import org.zeromq.ZMQ;
 
 /**
  * Class ScalingProcess
- * <p> Description: Subscriber to the Statistic channel and process specific stat in order 
- * to evaluate auto scaling rules.
- * 1. Spawning the Scaling process at the host monitor level in order to let the module indep
- * 2. Push/Pull request or Req/Resp to get the last auto scaling rule associated to this queue - later a real pub/sub system must be put in place
- * 3. Evaluation of the rule
+ * <p>
+ * Description: Subscriber to the Statistic channel and process specific stat in
+ * order to evaluate auto scaling rules. 1. Spawning the Scaling process at the
+ * host monitor level in order to let the module indep 2. Push/Pull request or
+ * Req/Resp to get the last auto scaling rule associated to this queue - later a
+ * real pub/sub system must be put in place 3. Evaluation of the rule
  * 
  * @author sskhiri
  */
 public class ScalingProcess extends KPISubscriber {
 	// ZMQ
 	private ZMQ.Context context = null;
-	//Management controller socket - enables to get the auto scaling  configuration
+	// Management controller socket - enables to get the auto scaling
+	// configuration
 	private ZMQ.Socket requestSocket = null;
-	//Pull socket that will listen for configuration update
+	// Pull socket that will listen for configuration update
 	private ZMQ.Socket pullListnerConfigSocket = null;
-	//The queue name on which the scaling process is bound
+	// The queue name on which the scaling process is bound
 	private String qName = null;
-	//The auto scaling config got from the mngt server
+	// The auto scaling config got from the mngt server
 	private AutoScalingConfig scalingConfig = null;
-	//Request serialiazer
-	private IRoQSerializer serializer =null;
-	//Logger
+	// Request serialiazer
+	private IRoQSerializer serializer = null;
+	// Logger
 	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
-	//The scaling policy
+	// The scaling policy
 	private IScalingPolicy scalingPolicy = null;
-	//The shut down monitor
+	// The shut down monitor
 	private ShutDownMonitor shutDownMonitor = null;
-	//The cloud properties
+	// The cloud properties
 	private GCMPropertyDAO cloudProps = null;
+	// The port to listen
+	private int listnerPort = 0;
+
 	/**
-	 * Notice the scaling process starts a shutdown monitor on the listener port +1. We advice to start it on port 5802. 
-	 * @param globalConfiguration the GCM IP address
-	 * @param qName the name of the queue we want to connect.
-	 * @param listnerPort is the port on which the scaling process will listen for push request when a new configuration will
-	 * be published
+	 * Notice the scaling process starts a shutdown monitor on the listener port
+	 * +1. We advice to start it on port 5802.
+	 * 
+	 * @param globalConfiguration
+	 *            the GCM IP address
+	 * @param qName
+	 *            the name of the queue we want to connect.
+	 * @param listnerPort
+	 *            is the port on which the scaling process will listen for push
+	 *            request when a new configuration will be published
 	 */
 	public ScalingProcess(String globalConfiguration, String qName, int listnerPort) {
 		super(globalConfiguration, qName);
 		this.qName = qName;
+		this.listnerPort = listnerPort;
 		this.serializer = new RoQBSONSerializer();
 		// ZMQ init
 		this.context = ZMQ.context(1);
-		//Prepare the request socket to the management controller
+		// Prepare the request socket to the management controller
 		this.requestSocket = this.context.socket(ZMQ.REQ);
 		this.requestSocket.connect("tcp://" + globalConfiguration + ":5003");
-		//Getting the initial auto scaling configuration
-		this.scalingConfig = getAutoScalingConfig();
-		if(this.scalingConfig==null){
-			this.logger.info("Autoscaling process for queue "+ qName + " is innactive - no auto scaling rules");
-		}
-		//Get the cloud props
-		this.cloudProps = getCloudConfigProperties();
-
-		//Init the scaling policy
-		this.scalingPolicy= new NullScalingPolicy();
-		
-		//Prepare the push listener registration
-		this.pullListnerConfigSocket=  this.context.socket(ZMQ.PULL);
-		String localListenerAddress = "tcp://"+RoQUtils.getInstance().getLocalIP()+":"+listnerPort;
-		this.pullListnerConfigSocket.bind(localListenerAddress);
-		//Start the registration operation
-		this.registerListener( localListenerAddress);
-		
-		//initiatlisation of the shutdown thread
-		this.shutDownMonitor = new ShutDownMonitor(listnerPort+1, this);
-		new Thread(shutDownMonitor).start();
-		logger.debug("Started  scaling shutdown monitor on "+ (listnerPort+1));
 	}
 
 	/**
-	 * Ask the management controller to register the listener for auto scaling update.
-	 * @param localListenerAddress the address on which the auto scaling update arrive
+	 * Initializes the scaling process configuration.
 	 */
-	private void registerListener( String localListenerAddress) {
+	private void initialization() {
+		logger.debug("Starting auto scaling process configuration init");
+		while (!super.subscribe()) {
+			try {
+				logger.info("The queue does not exist or is not yet configured.");
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				logger.error(e);
+			}
+		}
+		// Getting the initial auto scaling configuration
+		this.scalingConfig = getAutoScalingConfig();
+		if (this.scalingConfig == null) {
+			this.logger.info("Autoscaling process for queue " + qName + " is innactive - no auto scaling rules");
+		}
+		// Get the cloud props
+		this.cloudProps = getCloudConfigProperties();
+
+		// Init the scaling policy
+		this.scalingPolicy = new NullScalingPolicy();
+
+		// Prepare the push listener registration
+		this.pullListnerConfigSocket = this.context.socket(ZMQ.PULL);
+		String localListenerAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + listnerPort;
+		this.pullListnerConfigSocket.bind(localListenerAddress);
+		// Start the registration operation
+		this.registerListener(localListenerAddress);
+
+		// initiatlisation of the shutdown thread
+		this.shutDownMonitor = new ShutDownMonitor(listnerPort + 1, this);
+		new Thread(shutDownMonitor).start();
+		logger.debug("Started  scaling shutdown monitor on " + (listnerPort + 1));
+
+	}
+
+	/**
+	 * Ask the management controller to register the listener for auto scaling
+	 * update.
+	 * 
+	 * @param localListenerAddress
+	 *            the address on which the auto scaling update arrive
+	 */
+	private void registerListener(String localListenerAddress) {
 		try {
 			// 1. Launch a register listener request
 			BSONObject bsonObject = new BasicBSONObject();
@@ -124,15 +154,15 @@ public class ScalingProcess extends KPISubscriber {
 
 			// 3. Check the result
 			byte[] bres = requestSocket.recv(0);
-			
+
 			BSONObject result = BSON.decode(bres);
-			if ((Integer)result.get("RESULT")==RoQConstant.FAIL){
-				throw new IllegalStateException("The request failed: "+ result.get("COMMENT"));
+			if ((Integer) result.get("RESULT") == RoQConstant.FAIL) {
+				throw new IllegalStateException("The request failed: " + result.get("COMMENT"));
 			}
 		} catch (Exception e) {
 			logger.error("Error when testing client ", e);
 		}
-		
+
 	}
 
 	/**
@@ -153,14 +183,14 @@ public class ScalingProcess extends KPISubscriber {
 
 			// 3. Check the result
 			byte[] bres = requestSocket.recv(0);
-			
-			return  serializer.unserializeConfig(bres);
+
+			return serializer.unserializeConfig(bres);
 		} catch (Exception e) {
 			logger.error("Error when testing client ", e);
 		}
 		return null;
 	}
-	
+
 	/**
 	 * @return the configuration properties for cloud endpoint.
 	 */
@@ -177,34 +207,38 @@ public class ScalingProcess extends KPISubscriber {
 			requestSocket.send(encoded, 0);
 
 			// 3. Check the result
-			BSONObject props= BSON.decode(requestSocket.recv(0));
+			BSONObject props = BSON.decode(requestSocket.recv(0));
 			GCMPropertyDAO result = new GCMPropertyDAO();
-			if((Boolean) props.get("cloud.use")){
+			if ((Boolean) props.get("cloud.use")) {
 				logger.info("A cloud configuration has been provided");
 				result.setUseCloud(true);
-				result.setCloudGateWay( (String) props.get("cloud.gateway"));
-				result.setCloudUser( (String) props.get("cloud.user"));
-				result.setCloudPasswd( (String) props.get("cloud.password"));
-				result.setCloudEndPoint( (String) props.get("cloud.endpoint"));
-			}else{
-				//No cloud configuration has been defined
+				result.setCloudGateWay((String) props.get("cloud.gateway"));
+				result.setCloudUser((String) props.get("cloud.user"));
+				result.setCloudPasswd((String) props.get("cloud.password"));
+				result.setCloudEndPoint((String) props.get("cloud.endpoint"));
+			} else {
+				// No cloud configuration has been defined
 				logger.info("No cloud configuration has been provided");
 				result.setUseCloud(false);
 			}
-			return  result;
+			return result;
 		} catch (Exception e) {
 			logger.error("Error when getting cloud properties from the GCM ", e);
 		}
 		return null;
 	}
 
-/**
- * Override the run in order to add a socket (for the update config listener) to the poller.
- * 
- * @see org.roqmessaging.management.stat.KPISubscriber#run()
- */
-@Override
+	/**
+	 * Override the run in order to add a socket (for the update config
+	 * listener) to the poller.
+	 * 
+	 * @see org.roqmessaging.management.stat.KPISubscriber#run()
+	 */
+	@Override
 	public void run() {
+		// Wait before starting (in local VM model this enables the HCM to
+		// finish the queue registration).
+		initialization();
 		ZMQ.Poller poller = new ZMQ.Poller(1);
 		poller.register(kpiSocket);
 		poller.register(pullListnerConfigSocket);
@@ -224,7 +258,7 @@ public class ScalingProcess extends KPISubscriber {
 				this.scalingConfig = serializer.unserializeConfig(pullListnerConfigSocket.recv(0));
 			}
 		}
-		//Closing sockets
+		// Closing sockets
 		this.kpiSocket.setLinger(0);
 		this.pullListnerConfigSocket.setLinger(0);
 		this.pullListnerConfigSocket.close();
@@ -233,102 +267,121 @@ public class ScalingProcess extends KPISubscriber {
 	}
 
 	/**
-	 * @see org.roqmessaging.management.stat.KPISubscriber#processStat(java.lang.Integer, org.bson.BSONObject)
+	 * @see org.roqmessaging.management.stat.KPISubscriber#processStat(java.lang.Integer,
+	 *      org.bson.BSONObject)
 	 */
 	@Override
 	public void processStat(Integer CMD, BSONObject statObj, org.zeromq.ZMQ.Socket statSocket) {
-		if(this.scalingConfig!=null){
-			this.logger.info(" Processing in AUTO SCALING process Stat "+ CMD + " : ");
+		if (this.scalingConfig != null) {
+			this.logger.info(" Processing in AUTO SCALING process Stat " + CMD + " : ");
 			this.logger.debug(statObj.toString());
 			boolean overloaded = false;
 			switch (CMD.intValue()) {
 			case 20:
-			    //Receiving statistic from an exchange
+				// Receiving statistic from an exchange
 				/**
-				 * Stats recieved from exchange
-				 *  { "CMD" : 20 , "X_ID" : "XChange 1340470515568"}
-				 *  { "CMD" : 21 , "Minute" : "1" , "TotalProcessed" : "500" , "Processed" : "500" , "TotalThroughput" : "0" , "Throughput" : "3890" , "Producers" : "1"}
-				 *  { "CMD" : 22 , "CPU" : "1.12" , "MEMORY" : "4.6083984375"}
+				 * Stats recieved from exchange { "CMD" : 20 , "X_ID" :
+				 * "XChange 1340470515568"} { "CMD" : 21 , "Minute" : "1" ,
+				 * "TotalProcessed" : "500" , "Processed" : "500" ,
+				 * "TotalThroughput" : "0" , "Throughput" : "3890" , "Producers"
+				 * : "1"} { "CMD" : 22 , "CPU" : "1.12" , "MEMORY" :
+				 * "4.6083984375"}
 				 */
-				//Building Exchange context
+				// Building Exchange context
 				HashMap<String, Double> context = new HashMap<String, Double>();
 				String xchangeID = (String) statObj.get("X_ID");
-				while(statSocket.hasReceiveMore()){
+				while (statSocket.hasReceiveMore()) {
 					statObj = BSON.decode(statSocket.recv(0));
 					logger.debug("In the Exchange stat message  " + statObj.toString());
 					Integer cmd = (Integer) statObj.get("CMD");
-					if(cmd.intValue() ==21){
-						if(checkField(statObj, "Throughput"))
-							context.put(RoQConstantInternal.CONTEXT_KPI_XCHANGE_EVENTS, Double.parseDouble((String) statObj.get("Throughput")));
-						if(evaluateXchangeRule(context)){
+					if (cmd.intValue() == 21) {
+						if (checkField(statObj, "Throughput"))
+							context.put(RoQConstantInternal.CONTEXT_KPI_XCHANGE_EVENTS,
+									Double.parseDouble((String) statObj.get("Throughput")));
+						if (evaluateXchangeRule(context)) {
 							overloaded = true;
-							logger.info("Xchange auto scaling rule triggered "+ this.scalingConfig.getXgRule().toString() + "for exchange "+ xchangeID);
-						}else{
-							logger.info("Xchange auto scaling rule NOT triggered "+ this.scalingConfig.getXgRule().toString() + "for exchange "+ xchangeID);
+							logger.info("Xchange auto scaling rule triggered "
+									+ this.scalingConfig.getXgRule().toString() + "for exchange " + xchangeID);
+						} else {
+							logger.info("Xchange auto scaling rule NOT triggered "
+									+ this.scalingConfig.getXgRule().toString() + "for exchange " + xchangeID);
 						}
 					}
-					if(cmd.intValue() ==22){
-						if(checkField(statObj, "MEMORY") && checkField(statObj, "CPU")){
-							context.put(RoQConstantInternal.CONTEXT_KPI_HOST_CPU, Double.parseDouble((String) statObj.get("CPU")));
-							context.put(RoQConstantInternal.CONTEXT_KPI_HOST_RAM,Double.parseDouble((String) statObj.get("MEMORY")));
-							if(evaluateHostRule(context)){
-								overloaded=true;
-								logger.info("Host auto scaling rule triggered "+ this.scalingConfig.getHostRule().toString()+ "for exchange "+ xchangeID + " Host");
-							}else{
-								logger.info("Host auto scaling rule NOT  triggered "+ this.scalingConfig.getHostRule().toString()+ "for exchange "+ xchangeID + " Host");
+					if (cmd.intValue() == 22) {
+						if (checkField(statObj, "MEMORY") && checkField(statObj, "CPU")) {
+							context.put(RoQConstantInternal.CONTEXT_KPI_HOST_CPU,
+									Double.parseDouble((String) statObj.get("CPU")));
+							context.put(RoQConstantInternal.CONTEXT_KPI_HOST_RAM,
+									Double.parseDouble((String) statObj.get("MEMORY")));
+							if (evaluateHostRule(context)) {
+								overloaded = true;
+								logger.info("Host auto scaling rule triggered "
+										+ this.scalingConfig.getHostRule().toString() + "for exchange " + xchangeID
+										+ " Host");
+							} else {
+								logger.info("Host auto scaling rule NOT  triggered "
+										+ this.scalingConfig.getHostRule().toString() + "for exchange " + xchangeID
+										+ " Host");
 							}
 						}
 					}
 				}
-				if(overloaded){
+				if (overloaded) {
 					this.scalingPolicy.scaleOut(context, this.qName);
 				}
 				break;
-				
+
 			case 23:
-				//This is a stat at the logical queue level only 1 message in the enveloppe
+				// This is a stat at the logical queue level only 1 message in
+				// the enveloppe
 				/**
-				 * { "CMD" : 23 , "QName" : "queueTestStat:5500" , "XChanges" : "1" , "Producers" : "0" , "Throughput" : "0"}
+				 * { "CMD" : 23 , "QName" : "queueTestStat:5500" , "XChanges" :
+				 * "1" , "Producers" : "0" , "Throughput" : "0"}
 				 * */
 				context = new HashMap<String, Double>();
-				String qName =(String) statObj.get("QName");
+				String qName = (String) statObj.get("QName");
 				logger.debug("Evaluating auto scaling rule for logical queue  " + qName);
-				if(checkField(statObj, "XChanges")
-						&& checkField(statObj, "Producers")
-						&& checkField(statObj, "Throughput")){
-					//Context creation
-					context.put(RoQConstantInternal.CONTEXT_KPI_Q_XCHANGE_NUMBER, Double.valueOf((String) statObj.get("XChanges")));
-					context.put(RoQConstantInternal.CONTEXT_KPI_Q_PRODUCER_NUMBER, Double.valueOf((String) statObj.get("Producers")));
-					context.put(RoQConstantInternal.CONTEXT_KPI_Q_THROUGPUT, Double.valueOf((String) statObj.get("Throughput")));
-					//Autoscaling rule checking
-					if(this.scalingConfig.getqRule()!=null){
-						if(this.scalingConfig.getqRule().isOverLoaded(context)){
-							overloaded= true;
-							logger.info("Logical Queue  auto scaling rule triggered "+ this.scalingConfig.getqRule().toString() + "for Q  "+ qName);
-						}else{
-							logger.info("Logical Queue  auto scaling rule  NOT triggered "+ this.scalingConfig.getqRule().toString() + "for Q  "+ qName);
+				if (checkField(statObj, "XChanges") && checkField(statObj, "Producers")
+						&& checkField(statObj, "Throughput")) {
+					// Context creation
+					context.put(RoQConstantInternal.CONTEXT_KPI_Q_XCHANGE_NUMBER,
+							Double.valueOf((String) statObj.get("XChanges")));
+					context.put(RoQConstantInternal.CONTEXT_KPI_Q_PRODUCER_NUMBER,
+							Double.valueOf((String) statObj.get("Producers")));
+					context.put(RoQConstantInternal.CONTEXT_KPI_Q_THROUGPUT,
+							Double.valueOf((String) statObj.get("Throughput")));
+					// Autoscaling rule checking
+					if (this.scalingConfig.getqRule() != null) {
+						if (this.scalingConfig.getqRule().isOverLoaded(context)) {
+							overloaded = true;
+							logger.info("Logical Queue  auto scaling rule triggered "
+									+ this.scalingConfig.getqRule().toString() + "for Q  " + qName);
+						} else {
+							logger.info("Logical Queue  auto scaling rule  NOT triggered "
+									+ this.scalingConfig.getqRule().toString() + "for Q  " + qName);
 						}
 					}
-				}else{
+				} else {
 					logger.warn("The Queue level stat does not contain the mandatory attributes to create the context");
 				}
-				if(overloaded){
-					//TODO autoscaling action
+				if (overloaded) {
+					// TODO autoscaling action
 				}
-			break;
+				break;
 
 			default:
 				break;
 			}
 		}
 	}
-	
+
 	/**
-	 * @param context the topology context fed by stat
+	 * @param context
+	 *            the topology context fed by stat
 	 * @return true when the rule is activated
 	 */
 	private boolean evaluateXchangeRule(HashMap<String, Double> context) {
-		//Rule evaluation
+		// Rule evaluation
 		if (this.scalingConfig.getXgRule() != null) {
 			if (this.scalingConfig.getXgRule().isOverLoaded(context)) {
 				return true;
@@ -340,14 +393,15 @@ public class ScalingProcess extends KPISubscriber {
 	}
 
 	/**
-	 * @param context the current context of the topology
+	 * @param context
+	 *            the current context of the topology
 	 * @return true if the rule is activated
 	 */
 	private boolean evaluateHostRule(HashMap<String, Double> context) {
-		if(this.scalingConfig.getHostRule()!=null){
-			if(this.scalingConfig.getHostRule().isOverLoaded(context)){
+		if (this.scalingConfig.getHostRule() != null) {
+			if (this.scalingConfig.getHostRule().isOverLoaded(context)) {
 				return true;
-			}else{
+			} else {
 				return false;
 			}
 		}
@@ -359,7 +413,7 @@ public class ScalingProcess extends KPISubscriber {
 	 */
 	@Override
 	public void shutDown() {
-		logger.debug("Stopping the Scaling process for Q " +this.qName);
+		logger.debug("Stopping the Scaling process for Q " + this.qName);
 		this.requestSocket.setLinger(0);
 		this.requestSocket.close();
 		super.shutDown();
@@ -374,7 +428,8 @@ public class ScalingProcess extends KPISubscriber {
 	}
 
 	/**
-	 * @param scalingPolicy the scalingPolicy to set
+	 * @param scalingPolicy
+	 *            the scalingPolicy to set
 	 */
 	public void setScalingPolicy(IScalingPolicy scalingPolicy) {
 		this.scalingPolicy = scalingPolicy;

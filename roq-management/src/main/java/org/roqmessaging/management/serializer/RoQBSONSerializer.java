@@ -229,6 +229,7 @@ public class RoQBSONSerializer implements IRoQSerializer {
 		BSONObject answer = new BasicBSONObject();
 		answer.put(RoQConstant.BSON_MONITOR_HOST, monitor);
 		answer.put(RoQConstant.BSON_STAT_MONITOR_HOST, statMonitor);
+		answer.put("RESULT", RoQConstant.OK);
 		this.logger.debug("Serialize Get Host by QName:");
 		this.logger.debug(answer);
 		return BSON.encode(answer);
