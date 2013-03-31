@@ -169,7 +169,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 					this.clientReqSocket.send(this.serialiazer.serialiazeMonitorInfo(this.stateDAO.getQueueMonitorMap().get(qName),subscribingKPIMonitor), 0);
 				}else{
 					logger.warn(" No logical queue as:"+qName);
-					this.clientReqSocket.send(("").getBytes(), 0);
+					this.clientReqSocket.send(serialiazer.serialiazeConfigAnswer(RoQConstant.FAIL,
+							"The Queue "+qName+"  is not registred."), 0);
 				}
 			}
 		}else{
@@ -288,7 +289,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 					this.clientReqSocket.send(this.serialiazer.serialiazeMonitorInfo(this.stateDAO.getQueueMonitorMap().get(info[1]),subscribingKPIMonitor), 0);
 				}else{
 					logger.warn(" No logical queue as:"+info[1]);
-					this.clientReqSocket.send(("").getBytes(), 0);
+					this.clientReqSocket.send(serialiazer.serialiazeConfigAnswer(RoQConstant.FAIL,
+							"The Queue "+info[1]+"  is not registred."), 0);
 				}
 			}
 			break;

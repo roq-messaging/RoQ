@@ -68,9 +68,10 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	
 	/**
 	 * Subscribe to the statistic stream got from the global configuration
+	 * @return true if the subscription succeed, false in the other cases.
 	 * @throws IllegalStateException if the monitor stat is not present in the cache
 	 */
-	public void subscribe() throws IllegalStateException {
+	public boolean subscribe() throws IllegalStateException {
 		logger.debug("Get the stat monitor address from the GCM");
 		// 1. Get the location in BSON
 		// 1.1 Create the request socket
@@ -89,6 +90,13 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 		byte[] configuration = globalConfigReq.recv(0);
 		//Decode answer
 		BSONObject dConfiguration = BSON.decode(configuration);
+		//Check the error code
+		if(dConfiguration.containsField("RESULT")){
+			if((int)dConfiguration.get("RESULT") == RoQConstant.FAIL){
+				logger.warn("The subscribe request failed because of the queue configuration: "+ dConfiguration.get("COMMENT"));
+				return false;
+			}
+		}
 		String monitorStatServer = (String) dConfiguration.get(RoQConstant.BSON_STAT_MONITOR_HOST);
 		Assert.assertNotNull(monitorStatServer);
 		logger.debug("Got the Stat monitor address @"+ monitorStatServer);
@@ -98,6 +106,7 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 		kpiSocket.connect(monitorStatServer);
 		kpiSocket.subscribe("".getBytes());
 		logger.debug("Connected to Stat monitor " + monitorStatServer);
+		return true;
 	}
 
 	/**
