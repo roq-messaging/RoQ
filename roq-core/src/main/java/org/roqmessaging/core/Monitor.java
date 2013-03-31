@@ -446,6 +446,7 @@ public class Monitor implements Runnable, IStoppable {
 		brokerSub.close();
 		initRep.close();
 		listenersPub.close();
+		heartBeat.close();
 	}
 
 
