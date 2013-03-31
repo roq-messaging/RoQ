@@ -53,7 +53,6 @@ public class Monitor implements Runnable, IStoppable {
 	//Monitor heart beat socket, client can check that monitor is alive
 	private ZMQ.Socket heartBeat = null;
 	private int basePort = 0, statPort =0;
-	
 	//The handle to the statistic monitor thread
 	private StatisticMonitor statMonitor = null;
 	//Shut down monitor
@@ -73,48 +72,53 @@ public class Monitor implements Runnable, IStoppable {
 	 * @param qname the logical queue from which the monitor belongs to
 	 * @param period the stat period for publication
 	 */
-	public Monitor(int basePort, int statPort, String qname, String period){
-		this.basePort = basePort;
-		this.statPort = statPort;
-		this.qName = qname;
-		this.period = Integer.parseInt(period);
-		knownHosts = new ArrayList<ExchangeState>();
-		hostsToRemove = new ArrayList<Integer>();
-		maxThroughput = 75000000L; // Maximum throughput per exchange, in
-									// bytes/minute
+	public Monitor(int basePort, int statPort, String qname, String period) {
+		try {
+			this.statPort = statPort;
+			this.qName = qname;
+			this.period = Integer.parseInt(period);
+			knownHosts = new ArrayList<ExchangeState>();
+			hostsToRemove = new ArrayList<Integer>();
+			maxThroughput = 75000000L; // Maximum throughput per exchange, in
+										// bytes/minute
 
-		context = ZMQ.context(1);
+			context = ZMQ.context(1);
 
-		producersPub = context.socket(ZMQ.PUB);
-		producersPub.bind("tcp://*:"+(basePort+2));
-		logger.debug("Binding procuder to "+"tcp://*:"+(basePort+2));
+			producersPub = context.socket(ZMQ.PUB);
+			producersPub.bind("tcp://*:" + (basePort + 2));
+			logger.debug("Binding procuder to " + "tcp://*:" + (basePort + 2));
 
-		brokerSub = context.socket(ZMQ.SUB);
-		brokerSub.bind("tcp://*:"+(basePort));
-		logger.debug("Binding broker Sub  to "+"tcp://*:"+(basePort));
-		brokerSub.subscribe("".getBytes());
+			brokerSub = context.socket(ZMQ.SUB);
+			brokerSub.bind("tcp://*:" + (basePort));
+			logger.debug("Binding broker Sub  to " + "tcp://*:" + (basePort));
+			brokerSub.subscribe("".getBytes());
 
-		initRep = context.socket(ZMQ.REP);
-		initRep.bind("tcp://*:"+(basePort+1));
-		logger.debug("Init request socket to "+"tcp://*:"+(basePort+1));
+			initRep = context.socket(ZMQ.REP);
+			initRep.bind("tcp://*:" + (basePort + 1));
+			logger.debug("Init request socket to " + "tcp://*:" + (basePort + 1));
 
-		listenersPub = context.socket(ZMQ.PUB);
-		listenersPub.bind("tcp://*:"+(basePort+3));
-		
-		heartBeat = context.socket(ZMQ.REP);
-		heartBeat.bind("tcp://*:"+(basePort+4));
-		logger.debug("Heart beat request socket to "+"tcp://*:"+(basePort+4));
-		
-		//Stat monitor init thread
+			listenersPub = context.socket(ZMQ.PUB);
+			listenersPub.bind("tcp://*:" + (basePort + 3));
+
+			heartBeat = context.socket(ZMQ.REP);
+			heartBeat.bind("tcp://*:" + (basePort + 4));
+			logger.debug("Heart beat request socket to " + "tcp://*:" + (basePort + 4));
+
+		} catch (Exception e) {
+			logger.error("Error while creating Monitor, ABORDED", e);
+			return;
+		}
+
+		// Stat monitor init thread
 		this.statMonitor = new StatisticMonitor(statPort, qname);
 		new Thread(this.statMonitor).start();
-		
-		//shutodown monitor
-		//initiatlisation of the shutdown thread
-		this.shutDownMonitor = new ShutDownMonitor(basePort+5, this);
+
+		// shutodown monitor
+		// initiatlisation of the shutdown thread
+		this.shutDownMonitor = new ShutDownMonitor(basePort + 5, this);
 		new Thread(shutDownMonitor).start();
-		logger.debug("Started shutdown monitor on "+ (basePort+5));
-		
+		logger.debug("Started shutdown monitor on " + (basePort + 5));
+
 	}
 	
 	private int hostLookup(String address) {
