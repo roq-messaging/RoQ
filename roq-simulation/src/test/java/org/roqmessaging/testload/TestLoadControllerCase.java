@@ -38,7 +38,7 @@ public class TestLoadControllerCase extends RoQTestCase {
 		//Init 2. let the queue start 
 		Thread.sleep(2000);
 		//Init 3. create an exchange
-		super.factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
+//		super.factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
 		Thread.sleep(2000);
 		//3. Set a test description
 		TestLoaderDecription desc = new TestLoaderDecription();
