@@ -81,6 +81,8 @@ public class HostConfigManager implements Runnable, IStoppable {
 	private RoQSerializationUtils serializationUtils = null;
 	//Network & IP address Configuration
 	private boolean useNif = false;
+	//The JVM options
+	private String maxHeap="1024";
 
 	/**
 	 * Constructor
@@ -420,10 +422,10 @@ public class HostConfigManager implements Runnable, IStoppable {
 			// Launch script
 			try {
 				ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
-						+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),
+						+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"), "-Xmx"+maxHeap+"m","-XX:+UseConcMarkSweepGC",
 						ExchangeLauncher.class.getCanonicalName(), new Integer(frontPort).toString(), new Integer(
 								backPort).toString(), monitorAddress, monitorStatAddress);
-				logger.debug("Starting: " + pb.command());
+				logger.info("Starting: " + pb.command());
 				final Process process = pb.start();
 				pipe(process.getErrorStream(), System.err);
 				pipe(process.getInputStream(), System.out);

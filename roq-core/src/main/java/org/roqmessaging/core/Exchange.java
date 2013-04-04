@@ -88,7 +88,7 @@ public class Exchange implements Runnable, IStoppable {
 		// Use these to (double) check if the settings were correctly set  
 		// logger.info(this.backend.getHWM());
 		// logger.info(this.backend.getSwap());
-		this.backendPub.setHWM(3400);  
+		this.backendPub.setHWM(5000);  
 
 		this.frontendSub.bind(s_frontend);
 		this.frontendSub.subscribe("".getBytes());
