@@ -119,8 +119,6 @@ public class Exchange implements Runnable, IStoppable {
 			for (int i = 0; i < knownProd.size(); i++) {
 				if (prodID.equals(knownProd.get(i).getID())) {
 					ProducerState state = knownProd.get(i);
-					state.addMsgSent();
-					state.setActive(true);
 					state.addBytesSent(msgsize);
 					return;
 				}

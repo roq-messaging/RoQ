@@ -38,12 +38,12 @@ public class TestLoadControllerCase extends RoQTestCase {
 		//Init 2. let the queue start 
 		Thread.sleep(2000);
 		//Init 3. create an exchange
-//		super.factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
+		super.factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
 		Thread.sleep(2000);
 		//3. Set a test description
 		TestLoaderDecription desc = new TestLoaderDecription();
 		//Warning the diration must have a ".0" otherwise it will be considered as a Long not a double.
-		String description = "{\"maxPub\":1,\"duration\":1.0,\"rate\":8000,\"maxSub\":6,\"payload\":5,\"delay\":5,\"spawnRate\":1}";
+		String description = "{\"maxPub\":2,\"duration\":1.0,\"rate\":5000,\"maxSub\":5,\"payload\":5,\"delay\":5,\"spawnRate\":1}";
 		//4. Start the test
 		try {
 			desc.load(description);
