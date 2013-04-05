@@ -122,7 +122,7 @@ public class Exchange implements Runnable, IStoppable {
 			state = new ProducerState(prodID);
 			state.addBytesSent(msgsize);
 			knownProd.put(prodID,state );
-			logger.info("A new challenger has come ("+prodID+"), they are now :" + knownProd.size());
+			logger.info("A new challenger has come ("+prodID+") on "+ID+", they are now :" + knownProd.size());
 		}
 	}
 
