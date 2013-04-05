@@ -82,7 +82,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	//Network & IP address Configuration
 	private boolean useNif = false;
 	//The JVM options
-	private String maxHeap="1024";
+	private String maxHeap="512";
 
 	/**
 	 * Constructor

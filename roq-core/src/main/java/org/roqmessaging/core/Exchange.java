@@ -16,7 +16,7 @@
 
 package org.roqmessaging.core;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Timer;
 
 import org.apache.log4j.Logger;
@@ -39,7 +39,7 @@ public class Exchange implements Runnable, IStoppable {
 	
 	private Logger logger = Logger.getLogger(Exchange.class);
 
-	private ArrayList<ProducerState> knownProd;
+	private HashMap<String, ProducerState> knownProd;
 	private ZMQ.Context context;
 	private ZMQ.Socket frontendSub;
 	private ZMQ.Socket backendPub;
@@ -68,7 +68,7 @@ public class Exchange implements Runnable, IStoppable {
 	 * @param statHost tcp://monitor:statport
 	 */
 	public Exchange(int frontend, int backend, String monitorHost, String statHost) {
-		knownProd = new ArrayList<ProducerState>();
+		knownProd = new HashMap<String, ProducerState>();
 		this.statistic = new StatDataState();
 		this.statistic.setProcessed(0);
 		this.statistic.setThroughput(0);
@@ -115,20 +115,15 @@ public class Exchange implements Runnable, IStoppable {
 	 */
 	private void logPayload(long msgsize, String prodID) {
 		statistic.setThroughput(statistic.getThroughput()+ msgsize);
-		if (!knownProd.isEmpty()) {
-			for (int i = 0; i < knownProd.size(); i++) {
-				if (prodID.equals(knownProd.get(i).getID())) {
-					ProducerState state = knownProd.get(i);
-					state.addBytesSent(msgsize);
-					return;
-				}
-			}
+		ProducerState state = knownProd.get(prodID);
+		if(state!=null){
+			state.addBytesSent(msgsize);
+		}else{
+			state = new ProducerState(prodID);
+			state.addBytesSent(msgsize);
+			knownProd.put(prodID,state );
+			logger.info("A new challenger has come ("+prodID+"), they are now :" + knownProd.size());
 		}
-		knownProd.add(new ProducerState(prodID));
-		knownProd.get(knownProd.size() - 1).addBytesSent(msgsize);
-		knownProd.get(knownProd.size() - 1).addMsgSent();
-		logger.info("A new challenger has come: "+prodID);
-
 	}
 
 	/**
@@ -138,15 +133,15 @@ public class Exchange implements Runnable, IStoppable {
 	public  String getMostProducer() {
 		if (!knownProd.isEmpty()) {
 			long max = 0;
-			int index = 0;
-			for (int i = 0; i < knownProd.size(); i++) {
-				if (knownProd.get(i).getBytesSent() > max) {
-					max = knownProd.get(i).getBytesSent();
-					index = i;
+			String ID = null;
+			for (ProducerState state_i : knownProd.values()) {
+				if(state_i.getBytesSent()>max){
+					max = state_i.getBytesSent();
+					ID = state_i.getID();
 				}
 			}
-			return knownProd.get(index).getID() + ","
-					+ Long.toString(knownProd.get(index).getBytesSent());
+			return ID + ","
+					+ Long.toString(knownProd.get(ID).getBytesSent());
 		}
 		return "x,x";
 	}
@@ -160,7 +155,7 @@ public class Exchange implements Runnable, IStoppable {
 		//This is important that the exchange stat timer is triggered every second, since it computes throughput in byte/min.
 		timer.schedule(exchStatTimer, 100, 60000);
 		int part;
-		String prodID = "";
+		String prodID= null;
 		//Adding the poller
 		ZMQ.Poller poller = new ZMQ.Poller(1);
 		poller.register(this.frontendSub);
@@ -243,7 +238,7 @@ public class Exchange implements Runnable, IStoppable {
 	/**
 	 * @return the knownProd
 	 */
-	public ArrayList<ProducerState> getKnownProd() {
+	public HashMap<String, ProducerState> getKnownProd() {
 		return knownProd;
 	}
 
