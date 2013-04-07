@@ -2,7 +2,7 @@ RoQ Messaging
 =============
 
 RoQ, Elastically scalable MOM.
-Release-0.3 "Marina"
+Release-0.3.1 "Marina"
 
 Building & installing
 ---------------------
