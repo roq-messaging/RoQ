@@ -30,7 +30,7 @@ public class HostConfigDAO {
 	private int maxNumberEchanges =3;
 	private boolean queueInHcmVm = true;
 	private boolean exchangeInHcmVm = true;
-	private int exchangeHeap = 512;
+	private int exchangeHeap = 256;
 	
 	/**
 	 * @return the networkInterface
