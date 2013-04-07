@@ -27,6 +27,7 @@ import junit.framework.Assert;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.Logger;
+import org.roqmessaging.core.Exchange;
 import org.roqmessaging.core.Monitor;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
@@ -392,7 +393,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * @return true if the creation process worked well
 	 */
 	private boolean startNewExchangeProcess(String qName, String monitorAddress, String monitorStatAddress) {
-		if(monitorAddress == null || monitorStatAddress==null){
+		if (monitorAddress == null || monitorStatAddress == null) {
 			logger.error("The monitor or the monitor stat server is null", new IllegalStateException());
 			return false;
 		}
@@ -404,34 +405,44 @@ public class HostConfigManager implements Runnable, IStoppable {
 		}
 		// 2. Assigns a front port and a back port
 		logger.debug(" This host contains already " + number + " Exchanges");
-		int frontPort = this.properties.getExchangeFrontEndPort() + number * 3; 
+		int frontPort = this.properties.getExchangeFrontEndPort() + number * 3;
 		// 3 because there is the front, back and the shut down
 		int backPort = frontPort + 1;
 		String ip = RoQUtils.getInstance().getLocalIP();
 
-		// 2. Launch script
-		try {
-			ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
-					+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),
-					ExchangeLauncher.class.getCanonicalName(), new Integer(frontPort).toString(),
-					new Integer(backPort).toString(), monitorAddress, monitorStatAddress);
-			logger.debug("Starting: " + pb.command());
-			final Process process = pb.start();
-			pipe(process.getErrorStream(), System.err);
-			pipe(process.getInputStream(), System.out);
-			if (this.qExchangeMap.containsKey(qName)) {
-				this.qExchangeMap.get(qName).add("tcp://" + ip + ":" + frontPort);
-				logger.debug("Storing Xchange info: " + "tcp://" + ip + ":" + frontPort);
-			} else {
-				List<String> xChange = new ArrayList<String>();
-				xChange.add("tcp://" + ip + ":" + frontPort);
-				this.qExchangeMap.put(qName, xChange);
-				logger.debug("Storing Xchange info: " + "tcp://" + ip + ":" + frontPort);
+		if (this.properties.isExchangeInHcmVm()) {
+			// We must start the thread in the same process
+			Exchange exchange = new Exchange(frontPort, backPort, monitorAddress, monitorStatAddress);
+			// Launch the thread
+			new Thread(exchange).start();
+		} else {
+			// We start the exchange in its own process
+			// Launch script
+			try {
+				ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
+						+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"), "-Xmx"+this.properties.getExchangeHeap()+"m","-XX:+UseConcMarkSweepGC",
+						ExchangeLauncher.class.getCanonicalName(), new Integer(frontPort).toString(), new Integer(
+								backPort).toString(), monitorAddress, monitorStatAddress);
+				logger.info("Starting: " + pb.command());
+				final Process process = pb.start();
+				pipe(process.getErrorStream(), System.err);
+				pipe(process.getInputStream(), System.out);
+			} catch (IOException e) {
+				logger.error("Error while executing script", e);
+				return false;
 			}
-		} catch (IOException e) {
-			logger.error("Error while executing script", e);
-			return false;
 		}
+
+		if (this.qExchangeMap.containsKey(qName)) {
+			this.qExchangeMap.get(qName).add("tcp://" + ip + ":" + frontPort);
+			logger.debug("Storing Xchange info: " + "tcp://" + ip + ":" + frontPort);
+		} else {
+			List<String> xChange = new ArrayList<String>();
+			xChange.add("tcp://" + ip + ":" + frontPort);
+			this.qExchangeMap.put(qName, xChange);
+			logger.debug("Storing Xchange info: " + "tcp://" + ip + ":" + frontPort);
+		}
+
 		return true;
 	}
 

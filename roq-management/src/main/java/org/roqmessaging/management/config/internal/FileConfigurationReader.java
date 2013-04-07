@@ -72,7 +72,7 @@ public class FileConfigurationReader {
 			PropertiesConfiguration config = new PropertiesConfiguration();
 			config.load(file);
 			// 3. Set the properties
-			configDao.setGcmAddress(config.getString("gcm.address"));
+			configDao.setGcmAddress(config.getString("gcm.address")!=null?config.getString("gcm.address"):configDao.getGcmAddress());
 			configDao.setExchangeFrontEndPort(config.getInt("exchange.base.port"));
 			configDao.setMonitorBasePort(config.getInt("monitor.base.port"));
 			configDao.setStatMonitorBasePort(config.getInt("statmonitor.base.port"));
@@ -80,6 +80,7 @@ public class FileConfigurationReader {
 			configDao.setMaxNumberEchanges(config.getInt("exchange.max.perhost"));
 			configDao.setQueueInHcmVm(config.getBoolean("queue.hcm.vm"));
 			configDao.setExchangeInHcmVm(config.getBoolean("exchange.hcm.vm"));
+			configDao.setExchangeHeap(config.getInt("exchange.vm.heap")!=-1?config.getInt("exchange.vm.heap"):256);
 			if (config.containsKey("network.interface"))
 				configDao.setNetworkInterface(config.getString("network.interface"));
 		} catch (Exception configE) {

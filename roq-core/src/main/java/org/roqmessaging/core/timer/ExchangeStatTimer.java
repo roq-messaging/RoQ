@@ -23,6 +23,7 @@ import org.roqmessaging.core.data.StatDataState;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.monitoring.HostOSMonitoring;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.state.ProducerState;
 import org.zeromq.ZMQ;
 
 /**
@@ -95,14 +96,18 @@ public class ExchangeStatTimer extends TimerTask implements IStoppable {
 					(new Integer(RoQConstant.STAT_EXCHANGE_OS_MIN).toString() + "," + this.hostMonitoring.getCPUUsage()
 							+ "," + this.hostMonitoring.getMemoryUsage()).getBytes(), 0);
 
-			for (int i = 0; i < this.xchange.getKnownProd().size(); i++) {
-				if (!this.xchange.getKnownProd().get(i).isActive()) {
-					this.xchange.getKnownProd().get(i).addInactive();
-					if (this.xchange.getKnownProd().get(i).getInactive() > 0) {
-						this.xchange.getKnownProd().remove(i);
+			for (ProducerState state_i : this.xchange.getKnownProd().values()) {
+				if (!state_i.isActive()) {
+					state_i.addInactive();
+					if (state_i.getInactive() > 0) {
+						try {
+							this.xchange.getKnownProd().remove(state_i.getID());
+						} catch (Exception e) {
+							logger.error(e);
+						}
 					}
 				} else {
-					this.xchange.getKnownProd().get(i).reset();
+					state_i.reset();
 				}
 			}
 			totalThroughput += this.statistic.getThroughput();

@@ -146,6 +146,7 @@ public class SubscriberConnectionManager implements Runnable {
 			String[] brokerList = response.split(",");
 			this.exchSub = context.socket(ZMQ.SUB);
 			this.exchSub.subscribe("".getBytes());
+			this.exchSub.setHWM(5000);  
 			for (int i = 0; i < brokerList.length; i++) {
 				exchSub.connect("tcp://" + brokerList[i] );
 				knownHosts.add(brokerList[i]);
