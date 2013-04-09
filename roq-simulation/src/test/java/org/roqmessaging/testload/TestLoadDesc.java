@@ -40,7 +40,11 @@ public class TestLoadDesc {
 	public void testJLoad() throws Exception {
 		TestLoaderDecription desc = new TestLoaderDecription();
 		String description = "{\"maxPub\":5,\"duration\":5.0,\"rate\":3,\"maxSub\":2,\"payload\":10,\"delay\":5,\"spawnRate\":8}";
-		logger.debug(description);
+		logger.info(description);
+		desc.load(description);
+		
+		desc = new TestLoaderDecription();
+		description = "{\"maxPub\":2,\"duration\":2.0,\"throughput\":36000,\"maxSub\":6,\"payload\":5,\"delay\":5,\"spawnRate\":1}";
 		desc.load(description);
 	}
 
