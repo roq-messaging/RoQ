@@ -25,7 +25,7 @@ public class StatDataState {
 	private long throughput = 0;
 	private long max_bw=0;
 	private int totalProcessed =0;
-	private int processed =0;
+	public int processed =0;
 	
 	
 	/**
