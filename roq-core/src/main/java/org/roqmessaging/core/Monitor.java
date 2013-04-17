@@ -327,7 +327,7 @@ public class Monitor implements Runnable, IStoppable {
 			if (System.currentTimeMillis() - lastPublish > 10000) { 
 				listenersPub.send(("2," + bcastExchg()).getBytes(), 0);
 				lastPublish = System.currentTimeMillis();
-				logger.info("Alive hosts: " + bcastExchg() );
+				logger.debug("Alive hosts: " + bcastExchg() );
 			}
 			while (!hostsToRemove.isEmpty() && !this.shuttingDown) {
 				try {
