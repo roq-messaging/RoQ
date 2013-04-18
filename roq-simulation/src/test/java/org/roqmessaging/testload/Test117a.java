@@ -17,27 +17,30 @@ package org.roqmessaging.testload;
 import java.util.Timer;
 
 import org.apache.log4j.Logger;
-import org.json.simple.parser.ParseException;
 import org.junit.Test;
 import org.roq.simulation.test.RoQTestCase;
+import org.roqmessaging.client.IRoQSubscriber;
+import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
+import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.loaders.SenderLoader;
-import org.roqmessaging.loaders.TestLoadController;
-import org.roqmessaging.loaders.TestLoaderDecription;
 
 /**
  * Class Test117a
- * <p> Description: Test the first scenario defined in the Issue #117 for checking the static behavior.
- * ## Test 1: starting a producer after the cold start condition
- * 1. Starting a test load with 2 Publishers and 3 Subscribers. The load must be > 10% 
- * than the MAX exchange limit in order to overcome the cold start condition. <br>
- * 2. After 1 min, when we are sure that the cold start condition is not applicable : we create an exchange and we 
- * start a new producer and we check the allocation.
+ * <p>
+ * Description: Test the first scenario defined in the Issue #117 for checking
+ * the static behavior. ## Test 1: starting a producer after the cold start
+ * condition 1. Starting a test load with 2 Publishers and 3 Subscribers. The
+ * load must be > 10% than the MAX exchange limit in order to overcome the cold
+ * start condition. <br>
+ * 2. After 1 min, when we are sure that the cold start condition is not
+ * applicable : we create an exchange and we start a new producer and we check
+ * the allocation.
  * 
  * @author sskhiri
  */
-public class Test117a extends RoQTestCase  {
-	//The logger
+public class Test117a extends RoQTestCase {
+	// The logger
 	private Logger logger = Logger.getLogger(Test117a.class);
 
 	@Test
@@ -48,36 +51,61 @@ public class Test117a extends RoQTestCase  {
 		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP());
 		// Init 2. let the queue start
 		Thread.sleep(2000);
-		// 3. Set a test description
-		TestLoaderDecription desc = new TestLoaderDecription();
-		//The limit is 75 Mi byte/min 
+		//3. Attach a subscriber
+		createSubscriber(qName);
+		// The limit is 75 Mi byte/min
 		// 10% of the limit is 7.5Mi byte/min => 125k byte/sec
-		//With a rate of 12500 msg/sec of 10 byte we can reach the limit
-		String description = "{\"maxPub\":1,\"duration\":4.0,\"throughput\":15000,\"maxSub\":1,\"payload\":10,\"delay\":5,\"spawnRate\":1}";
-		// 4. Start the test
-		try {
-			//This should be re-implemented since it blocks in the start
-			desc.load(description);
-			TestLoadController controller = new TestLoadController(desc, RoQUtils.getInstance().getLocalIP(), qName);
-			controller.start(true);
-			//Wait for the the second part of the test
-			Thread.sleep(100000);
-			logger.info("TEST 117-------------------------------------Starting The exchange----------------------------");
-			// create an exchange
-			super.factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
-			Thread.sleep(30000);
-			//Start a producer
-			logger.info("TEST 117-------------------------------------Starting The producer----------------------------");
-			SenderLoader loader = new SenderLoader(100, 5, RoQUtils.getInstance().getLocalIP(), qName);
-			Timer timerLoad = new Timer("Loader Publisher");
-			//Schedule it, the run will be called soon
-			timerLoad.schedule(loader, 50,1000);
-			Thread.sleep(30000);
-			timerLoad.cancel();
-			
-		} catch (ParseException e) {
-			super.logger.error(e);
-		}
+		// With a rate of 12500 msg/sec of 10 byte we can reach the limit
+		// 3. Start the test
+		Timer timerLoad = new Timer("Loader Publisher");
+		SenderLoader loader1 = new SenderLoader(15000, 10, RoQUtils.getInstance().getLocalIP(), qName);
+		SenderLoader loader2 = new SenderLoader(15000, 10, RoQUtils.getInstance().getLocalIP(), qName);
+		logger.info("TEST 117-------------------------------------Start Test--------------------------");
+		timerLoad.schedule(loader1, 50, 1000);
+		timerLoad.schedule(loader2, 50, 1000);
+		// Wait for the the second part of the test
+		Thread.sleep(100000);
+		logger.info("TEST 117-------------------------------------Starting The exchange----------------------------");
+		// create an exchange
+		super.factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
+		Thread.sleep(30000);
+		// Start a producer
+		logger.info("TEST 117-------------------------------------Starting The producer----------------------------");
+		SenderLoader loader3 = new SenderLoader(100, 5, RoQUtils.getInstance().getLocalIP(), qName);
+		// Schedule it, the run will be called soon
+		timerLoad.schedule(loader3, 50, 1000);
+		Thread.sleep(30000);
+		//Close all
+		timerLoad.cancel();
+		super.factory.removeQueue(qName);
+		if(super.subscriberConnection!=null) super.subscriberConnection.close();
+		loader1.shutDown();
+		loader2.shutDown();
+		loader3.shutDown();
+
 	}
+	
+/**
+ * Create a subscriber to this queue
+ */
+private void createSubscriber(String qName) {
+	IRoQConnectionFactory conFactory = new RoQConnectionFactory(RoQUtils.getInstance().getLocalIP());
+	subscriberConnection = conFactory.createRoQSubscriberConnection(qName, "test");
+	// Open the connection to the logical queue
+	subscriberConnection.open();
+	// Register a message listener
+	IRoQSubscriber subs = new IRoQSubscriber() {
+		private int count = 0;
+		public void onEvent(byte[] msg) {
+			count++;
+			if(count>300000){
+				logger.info("Got "+300000+" message");
+				count =0;
+			}
+		}
+	};
+	//Se the subscriber logic for this connection
+	subscriberConnection.setMessageSubscriber(subs);
+}
 
 }
