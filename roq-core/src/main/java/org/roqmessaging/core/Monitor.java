@@ -145,7 +145,7 @@ public class Monitor implements Runnable, IStoppable {
 				if (knownHosts.get(i).getThroughput()>(this.maxThroughput/10)) coldStart =false;
 				//Check the less overloaded
 				if (knownHosts.get(i).getThroughput() < tempt) {
-					logger.info("Host "+i+ " "+ knownHosts.get(i).getThroughput());
+					logger.debug("Host "+i+ " has a throughput of "+ knownHosts.get(i).getThroughput() + " byte/min");
 					tempt = knownHosts.get(i).getThroughput();
 					indexLoad = i;
 				}
@@ -241,7 +241,7 @@ public class Monitor implements Runnable, IStoppable {
 	 * @param nbprod the number of producers connected to the exchange
 	 */
 	private void updateExchgMetadata(String address, String throughput, String nbprod) {
-		logger.info("update Exchg Metadata");
+		logger.debug("update Exchg Metadata");
 		String[] addressInfo = address.split(":");
 		if(addressInfo.length!=3){
 			logger.error(new IllegalStateException("The message EVENT_MOST_PRODUCTIVE is nof formated correctly, the address is not as IP:front port:back port"));
