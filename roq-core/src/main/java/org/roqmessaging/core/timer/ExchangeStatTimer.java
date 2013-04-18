@@ -69,7 +69,7 @@ public class ExchangeStatTimer extends TimerTask implements IStoppable {
 		if (open) {
 			monitorSocket.send(
 					(new Integer(RoQConstant.EVENT_MOST_PRODUCTIVE).toString() + ","
-							+ RoQUtils.getInstance().getLocalIP() + "," + this.xchange.getMostProducer() + ","
+							+ RoQUtils.getInstance().getLocalIP()+":"+this.xchange.frontEnd+":"+this.xchange.backEnd + "," + this.xchange.getMostProducer() + ","
 							+ this.statistic.getThroughput() + "," + this.statistic.getMax_bw() + "," + this.xchange
 							.getKnownProd().size()).getBytes(), 0);
 			

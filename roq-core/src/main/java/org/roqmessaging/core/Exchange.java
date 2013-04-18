@@ -48,7 +48,7 @@ public class Exchange implements Runnable, IStoppable {
 	private String s_backend;
 	private String s_monitor;
 	private StatDataState statistic=null;
-	private int frontEnd, backEnd;
+	public int frontEnd, backEnd;
 	//the heart beat and the stat
 	private Timer timer = null;
 	private volatile boolean active=false;
