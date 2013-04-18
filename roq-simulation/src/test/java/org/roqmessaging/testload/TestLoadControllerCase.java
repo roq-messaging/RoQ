@@ -42,8 +42,8 @@ public class TestLoadControllerCase extends RoQTestCase {
 		Thread.sleep(2000);
 		//3. Set a test description
 		TestLoaderDecription desc = new TestLoaderDecription();
-		//Warning the diration must have a ".0" otherwise it will be considered as a Long not a double.
-		String description = "{\"maxPub\":2,\"duration\":2.0,\"rate\":3000,\"maxSub\":6,\"payload\":5,\"delay\":5,\"spawnRate\":1}";
+		//Warning the duration must have a ".0" otherwise it will be considered as a Long not a double.
+		String description = "{\"maxPub\":2,\"duration\":3.0,\"throughput\":36000,\"maxSub\":6,\"payload\":5,\"delay\":5,\"spawnRate\":1}";
 		//4. Start the test
 		try {
 			desc.load(description);

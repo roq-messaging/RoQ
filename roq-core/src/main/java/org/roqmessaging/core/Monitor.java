@@ -145,6 +145,7 @@ public class Monitor implements Runnable, IStoppable {
 				if (knownHosts.get(i).getThroughput()>(this.maxThroughput/10)) coldStart =false;
 				//Check the less overloaded
 				if (knownHosts.get(i).getThroughput() < tempt) {
+					logger.debug("Host "+i+ " has a throughput of "+ knownHosts.get(i).getThroughput() + " byte/min");
 					tempt = knownHosts.get(i).getThroughput();
 					indexLoad = i;
 				}
@@ -235,19 +236,24 @@ public class Monitor implements Runnable, IStoppable {
 
 
 	/**
-	 * @param address the exchange host address 
+	 * @param address the exchange host address under the format IP:front port: back port
 	 * @param throughput the current throughput
 	 * @param nbprod the number of producers connected to the exchange
 	 */
 	private void updateExchgMetadata(String address, String throughput, String nbprod) {
 		logger.debug("update Exchg Metadata");
+		String[] addressInfo = address.split(":");
+		if(addressInfo.length!=3){
+			logger.error(new IllegalStateException("The message EVENT_MOST_PRODUCTIVE is nof formated correctly, the address is not as IP:front port:back port"));
+			return;
+		}
 		if(!this.shuttingDown){
-			for (int i = 0; i < knownHosts.size(); i++) {
-				if (address.equals(knownHosts.get(i).getAddress())) {
-					knownHosts.get(i).setThroughput(Long.parseLong(throughput));
-					knownHosts.get(i).setNbProd(Integer.parseInt(nbprod));
-					logger.info("Host " + knownHosts.get(i).getAddress() + " : " + knownHosts.get(i).getThroughput()
-							+ " bytes/min, " + knownHosts.get(i).getNbProd() + " users");
+			for (ExchangeState state_i : knownHosts) {
+				if(state_i.match(addressInfo[0], addressInfo[1], addressInfo[2])){
+					state_i.setThroughput(Long.parseLong(throughput));
+					state_i.setNbProd(Integer.parseInt(nbprod));
+					logger.info("Host " + state_i.getAddress() + " : " + state_i.getFrontPort()+ "->" + state_i.getBackPort()+" :" + state_i.getThroughput()
+							+ " bytes/min, " + state_i.getNbProd() + " users");
 				}
 			}
 		}else{
@@ -327,7 +333,7 @@ public class Monitor implements Runnable, IStoppable {
 			if (System.currentTimeMillis() - lastPublish > 10000) { 
 				listenersPub.send(("2," + bcastExchg()).getBytes(), 0);
 				lastPublish = System.currentTimeMillis();
-				logger.info("Alive hosts: " + bcastExchg() );
+				logger.debug("Alive hosts: " + bcastExchg() );
 			}
 			while (!hostsToRemove.isEmpty() && !this.shuttingDown) {
 				try {

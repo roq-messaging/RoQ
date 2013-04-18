@@ -48,7 +48,7 @@ public class Exchange implements Runnable, IStoppable {
 	private String s_backend;
 	private String s_monitor;
 	private StatDataState statistic=null;
-	private int frontEnd, backEnd;
+	public int frontEnd, backEnd;
 	//the heart beat and the stat
 	private Timer timer = null;
 	private volatile boolean active=false;
@@ -58,7 +58,7 @@ public class Exchange implements Runnable, IStoppable {
 	private ShutDownMonitor shutDownMonitor = null;
 
 	//Timeout value of the front sub poller
-	private long timeout=5;
+	private long timeout=80;
 
 	/**
 	 * Notice that we start a shutdown request socket on frontEnd port +1
@@ -122,7 +122,7 @@ public class Exchange implements Runnable, IStoppable {
 			state = new ProducerState(prodID);
 			state.addBytesSent(msgsize);
 			knownProd.put(prodID,state );
-			logger.info("A new challenger has come ("+prodID+") on "+ID+", they are now :" + knownProd.size());
+			logger.debug("A new challenger has come ("+prodID+") on "+ID+", they are now :" + knownProd.size());
 		}
 	}
 
@@ -159,7 +159,6 @@ public class Exchange implements Runnable, IStoppable {
 		//Adding the poller
 		ZMQ.Poller poller = new ZMQ.Poller(1);
 		poller.register(this.frontendSub);
-		
 		while (this.active) {
 			byte[] message;
 			part = 0;
@@ -181,9 +180,8 @@ public class Exchange implements Runnable, IStoppable {
 						logPayload(message.length, prodID);
 					}
 					backendPub.send(message, frontendSub.hasReceiveMore() ? ZMQ.SNDMORE : 0);
-
 				} while (this.frontendSub.hasReceiveMore() && this.active);
-				this.statistic.setProcessed(this.statistic.getProcessed() + 1);
+				this.statistic.processed++;
 			}
 		}
 		closeSockets();
