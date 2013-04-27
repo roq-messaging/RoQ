@@ -302,8 +302,8 @@ public class Monitor implements Runnable, IStoppable {
 							
 							knownHosts.get(candidate_index).addThroughput(Long.parseLong(bytesSent));
 							knownHosts.get(candidate_index).addNbProd();
-							logger.info("Relocate a publisher on "+ candidate);
-							return candidate;
+							logger.info("Relocate a publisher on "+ candidate+":"+knownHosts.get(candidate_index).getFrontPort());
+							return candidate+":"+knownHosts.get(candidate_index).getFrontPort();
 						}else if (knownHosts.get(candidate_index).getThroughput() + Long.parseLong(bytesSent) < knownHosts
 								.get(hostLookup(exchg_addr)).getThroughput()
 								&& 
@@ -312,8 +312,8 @@ public class Monitor implements Runnable, IStoppable {
 							
 							knownHosts.get(candidate_index).addThroughput(Long.parseLong(bytesSent));
 							knownHosts.get(candidate_index).addNbProd();
-							logger.info("Relocating for load optimization on "+ candidate);
-							return candidate;
+							logger.info("Relocating for load optimization on "+ candidate+":"+knownHosts.get(candidate_index).getFrontPort());
+							return candidate+":"+knownHosts.get(candidate_index).getFrontPort();
 						}
 					}
 				}
