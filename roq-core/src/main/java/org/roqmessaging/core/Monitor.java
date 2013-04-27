@@ -128,11 +128,13 @@ public class Monitor implements Runnable, IStoppable {
 	private int hostLookup(String address) {
 		String[] addressInfo = address.split(":");
 		int index = 0;
-		for (ExchangeState state_i : knownHosts) {
-			if (state_i.match(addressInfo[0], addressInfo[1], addressInfo[2])) {
-				return index;
-			}else{
-				index++;
+		if(addressInfo.length==3){
+			for (ExchangeState state_i : knownHosts) {
+				if (state_i.match(addressInfo[0], addressInfo[1], addressInfo[2])) {
+					return index;
+				}else{
+					index++;
+				}
 			}
 		}
 		return -1;
