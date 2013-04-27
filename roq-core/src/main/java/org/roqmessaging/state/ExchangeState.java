@@ -44,6 +44,10 @@ public class ExchangeState {
 		public void addNbProd() {
 			this.nbProd++;
 		}
+		
+		public void lessNbProd() {
+			this.nbProd--;
+		}
 
 		public boolean isAlive() {
 			return alive;
@@ -99,6 +103,10 @@ public class ExchangeState {
 
 		public void addThroughput(long tr) {
 			this.throughput += tr;
+		}
+		
+		public void lessThroughput(long tr) {
+			this.throughput -= tr;
 		}
 
 		/**
