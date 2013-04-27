@@ -285,9 +285,9 @@ public class Monitor implements Runnable, IStoppable {
 	 */
 	private String relocateProd(String exchg_addr, String bytesSent) {
 		logger.debug("Relocate exchange procedure");
-		if (knownHosts.size() > 0 && hostLookup(exchg_addr) != -1 && !this.shuttingDown) {
+		int exch_index = hostLookup(exchg_addr);
+		if (knownHosts.size() > 0 && exch_index != -1 && !this.shuttingDown) {
 			logger.debug("Do we need to relocate ?");
-			int exch_index = hostLookup(exchg_addr);
 			//TODO externalize 1.0, 0.90, and 0.20 tolerance values
 			if (knownHosts.get(exch_index).getThroughput() > (java.lang.Math.round(maxThroughput * 1.10))) { 
 				logger.debug("Is "+knownHosts.get(exch_index).getThroughput() + " > "+  (java.lang.Math.round(maxThroughput * 1.10)));
