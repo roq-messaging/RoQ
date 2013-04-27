@@ -89,7 +89,7 @@ public class SenderLoader extends TimerTask implements IStoppable {
 	 */
 	@Override
 	public void run() {
-		logger.trace("Running send message");
+		logger.debug("Running send message");
 		//Check if the connection is ready
 		connection.blockTillReady(10000);
 		//Reset the sent message

@@ -44,7 +44,7 @@ public class Test117a extends RoQTestCase {
 	private Logger logger = Logger.getLogger(Test117a.class);
 
 	@Test
-	public void test() throws InterruptedException {
+	public void test117a() throws InterruptedException {
 		// The Qname
 		String qName = "test117-Q";
 		// Init 1. create the test queue
@@ -53,9 +53,9 @@ public class Test117a extends RoQTestCase {
 		Thread.sleep(2000);
 		//3. Attach a subscriber
 		createSubscriber(qName);
-		// The limit is 75 Mi byte/min
-		// 10% of the limit is 7.5Mi byte/min => 125k byte/sec
-		// With a rate of 12500 msg/sec of 10 byte we can reach the limit
+		// The limit is 82.5 Mi byte/min
+		// 10% of the limit is 8.25Mi byte/min => 137k byte/sec = 140 kb/s
+		// With a rate of 15000 msg/sec of 10 byte we can reach the limit
 		// 3. Start the test
 		Timer timerLoad = new Timer("Loader Publisher");
 		SenderLoader loader1 = new SenderLoader(15000, 10, RoQUtils.getInstance().getLocalIP(), qName);
