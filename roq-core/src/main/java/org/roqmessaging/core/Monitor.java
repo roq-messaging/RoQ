@@ -121,10 +121,21 @@ public class Monitor implements Runnable, IStoppable {
 
 	}
 	
+	/**
+	 * @param address the address:front port:backport
+	 * @return the index of the state in the knowhost or -1;
+	 */
 	private int hostLookup(String address) {
-		for (int i = 0; i < knownHosts.size(); i++) {
-			if (knownHosts.get(i).getAddress().equals(address))
-				return i;
+		String[] addressInfo = address.split(":");
+		int index = 0;
+		if(addressInfo.length==3){
+			for (ExchangeState state_i : knownHosts) {
+				if (state_i.match(addressInfo[0], addressInfo[1], addressInfo[2])) {
+					return index;
+				}else{
+					index++;
+				}
+			}
 		}
 		return -1;
 	}
@@ -199,12 +210,12 @@ public class Monitor implements Runnable, IStoppable {
 	 */
 	private int logHost(String address, String frontPort, String backPort) {
 		if(!this.shuttingDown){
-			logger.debug("Log host procedure for "+ address +": "+ frontPort +"->"+ backPort);
+			logger.trace("Log host procedure for "+ address +": "+ frontPort +"->"+ backPort);
 			if (!knownHosts.isEmpty()) {
 				for (ExchangeState exchange_i : knownHosts) {
 					if(exchange_i.match(address, frontPort, backPort)){
 						exchange_i.setAlive(true);
-						 logger.debug("Host "+address+": "+ frontPort+"->"+ backPort+"  reported alive");
+						 logger.trace("Host "+address+": "+ frontPort+"->"+ backPort+"  reported alive");
 						return 0;
 					}
 				}
@@ -276,12 +287,15 @@ public class Monitor implements Runnable, IStoppable {
 	 */
 	private String relocateProd(String exchg_addr, String bytesSent) {
 		logger.debug("Relocate exchange procedure");
-		if (knownHosts.size() > 0 && hostLookup(exchg_addr) != -1 && !this.shuttingDown) {
-			int exch_index = hostLookup(exchg_addr);
+		int exch_index = hostLookup(exchg_addr);
+		if (knownHosts.size() > 0 && exch_index != -1 && !this.shuttingDown) {
+			logger.debug("Do we need to relocate ?");
 			//TODO externalize 1.0, 0.90, and 0.20 tolerance values
 			if (knownHosts.get(exch_index).getThroughput() > (java.lang.Math.round(maxThroughput * 1.10))) { 
+				logger.debug("Is "+knownHosts.get(exch_index).getThroughput() + " > "+  (java.lang.Math.round(maxThroughput * 1.10)));
 				//Limit case: exchange saturated with only one producer TODO raised alarm
 				if (knownHosts.get(exch_index).getNbProd() == 1) { 
+					logger.error("Limit Case we cannot relocate  the unique producer !");
 					return "";
 				} else {
 					int candidate_index = getFreeHost_index(exch_index);
@@ -292,7 +306,10 @@ public class Monitor implements Runnable, IStoppable {
 							
 							knownHosts.get(candidate_index).addThroughput(Long.parseLong(bytesSent));
 							knownHosts.get(candidate_index).addNbProd();
-							return candidate;
+							knownHosts.get(exch_index).lessNbProd();
+							knownHosts.get(exch_index).lessThroughput(Long.parseLong(bytesSent));
+							logger.info("Relocate a publisher on "+ candidate+":"+knownHosts.get(candidate_index).getFrontPort());
+							return candidate+":"+knownHosts.get(candidate_index).getFrontPort();
 						}else if (knownHosts.get(candidate_index).getThroughput() + Long.parseLong(bytesSent) < knownHosts
 								.get(hostLookup(exchg_addr)).getThroughput()
 								&& 
@@ -301,8 +318,10 @@ public class Monitor implements Runnable, IStoppable {
 							
 							knownHosts.get(candidate_index).addThroughput(Long.parseLong(bytesSent));
 							knownHosts.get(candidate_index).addNbProd();
-							logger.info("Relocating for load optimization");
-							return candidate;
+							knownHosts.get(exch_index).lessNbProd();
+							knownHosts.get(exch_index).lessThroughput(Long.parseLong(bytesSent));
+							logger.info("Relocating for load optimization on "+ candidate+":"+knownHosts.get(candidate_index).getFrontPort());
+							return candidate+":"+knownHosts.get(candidate_index).getFrontPort();
 						}
 					}
 				}
@@ -354,7 +373,7 @@ public class Monitor implements Runnable, IStoppable {
 					// connection
 					if (info.length > 1) {
 						infoCode = Integer.parseInt(info[0]);
-						logger.debug("Recieving message from Exhange:" + infoCode + " info array " + info.length);
+						logger.trace("Recieving message from Exhange:" + infoCode + " info array " + info.length);
 						switch (infoCode) {
 						case RoQConstant.DEBUG:
 							// Broker debug code
@@ -374,7 +393,7 @@ public class Monitor implements Runnable, IStoppable {
 							break;
 						case RoQConstant.EVENT_HEART_BEAT:
 							// Broker heartbeat code Registration
-							logger.debug("Getting Heart Beat information");
+							logger.trace("Getting Heart Beat information");
 							if (info.length == 4) {
 								if (logHost(info[1], info[2], info[3]) == 1) {
 									listenersPub.send((new Integer(RoQConstant.REQUEST_UPDATE_EXCHANGE_LIST).toString()
