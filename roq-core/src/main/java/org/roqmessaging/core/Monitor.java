@@ -121,10 +121,17 @@ public class Monitor implements Runnable, IStoppable {
 
 	}
 	
+	/**
+	 * @param address the address:front port:backport
+	 * @return the index of the state in the knowhost or -1;
+	 */
 	private int hostLookup(String address) {
-		for (int i = 0; i < knownHosts.size(); i++) {
-			if (knownHosts.get(i).getAddress().equals(address))
-				return i;
+		String[] addressInfo = address.split(":");
+		for (int j = 0; j < knownHosts.size(); j++) {
+			ExchangeState state_i = knownHosts.get(j);
+			if (state_i.match(addressInfo[0], addressInfo[1], addressInfo[2])) {
+				return j;
+			}
 		}
 		return -1;
 	}
@@ -277,9 +284,11 @@ public class Monitor implements Runnable, IStoppable {
 	private String relocateProd(String exchg_addr, String bytesSent) {
 		logger.debug("Relocate exchange procedure");
 		if (knownHosts.size() > 0 && hostLookup(exchg_addr) != -1 && !this.shuttingDown) {
+			logger.debug("Do we need to relocate ?");
 			int exch_index = hostLookup(exchg_addr);
 			//TODO externalize 1.0, 0.90, and 0.20 tolerance values
 			if (knownHosts.get(exch_index).getThroughput() > (java.lang.Math.round(maxThroughput * 1.10))) { 
+				logger.debug("Is "+knownHosts.get(exch_index).getThroughput() + " > "+  (java.lang.Math.round(maxThroughput * 1.10)));
 				//Limit case: exchange saturated with only one producer TODO raised alarm
 				if (knownHosts.get(exch_index).getNbProd() == 1) { 
 					logger.error("Limit Case we cannot relocate  the unique producer !");
