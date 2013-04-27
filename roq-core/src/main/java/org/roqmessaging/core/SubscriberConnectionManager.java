@@ -215,7 +215,7 @@ public class SubscriberConnectionManager implements Runnable {
 		this.items.register(exchSub);
 
 		Timer timer = new Timer();
-		timer.schedule(new Stats(), 0, 40000);
+		timer.schedule(new Stats(), 0, 60000);
 
 		logger.info("Worker connected");
 

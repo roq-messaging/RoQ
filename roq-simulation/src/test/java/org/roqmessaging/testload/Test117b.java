@@ -72,10 +72,10 @@ public class Test117b extends RoQTestCase {
 		createSubscriber(qName);
 		// 3. Start the test
 		Timer timerLoad = new Timer("Loader Publisher");
-		SenderLoader loader1 = new SenderLoader(44000, 10, RoQUtils.getInstance().getLocalIP(), qName);
-		SenderLoader loader2 = new SenderLoader(8800, 10, RoQUtils.getInstance().getLocalIP(), qName);
-		SenderLoader loader3 = new SenderLoader(8800, 10, RoQUtils.getInstance().getLocalIP(), qName);
-		SenderLoader loader4 = new SenderLoader(8800, 10, RoQUtils.getInstance().getLocalIP(), qName);
+		SenderLoader loader1 = new SenderLoader(44000, 100, RoQUtils.getInstance().getLocalIP(), qName);
+		SenderLoader loader2 = new SenderLoader(8800, 100, RoQUtils.getInstance().getLocalIP(), qName);
+		SenderLoader loader3 = new SenderLoader(8800, 100, RoQUtils.getInstance().getLocalIP(), qName);
+		SenderLoader loader4 = new SenderLoader(8800, 100, RoQUtils.getInstance().getLocalIP(), qName);
 		logger.info("TEST 117b-------------------------------------Start Test--------------------------");
 		timerLoad.schedule(loader1, 50, 1000);
 		timerLoad.schedule(loader2, 50, 1000);

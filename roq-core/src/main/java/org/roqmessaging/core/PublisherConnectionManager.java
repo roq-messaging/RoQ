@@ -183,7 +183,7 @@ public class PublisherConnectionManager implements Runnable {
 	 */
 	private void rellocateExchange(String exchange) {
 		try{
-			this.logger.debug("Closing sockets when re-locate the exchange");
+			this.logger.debug("Closing sockets when re-locate the exchange on "+exchange);
 			this.configState.getLock().lock();
 			this.configState.getExchPub().setLinger(0);
 			this.configState.getExchPub().close();
