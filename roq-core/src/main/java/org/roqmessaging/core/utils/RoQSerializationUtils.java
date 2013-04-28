@@ -78,7 +78,7 @@ public class RoQSerializationUtils {
 	 *            the host address: tcp://ip:port
 	 * @return the port as an int
 	 */
-	public int extractBasePort(String monitor) {
+	public static  int extractBasePort(String monitor) {
 		String segment = monitor.substring("tcp://".length());
 		return Integer.parseInt(segment.substring(segment.indexOf(":") + 1));
 	}

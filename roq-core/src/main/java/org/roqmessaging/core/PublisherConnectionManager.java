@@ -5,6 +5,7 @@ package org.roqmessaging.core;
 import java.util.UUID;
 
 import org.apache.log4j.Logger;
+import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.state.PublisherConfigState;
 import org.zeromq.ZMQ;
 
@@ -95,6 +96,8 @@ public class PublisherConnectionManager implements Runnable {
 			try {
 				this.configState.setExchPub(this.context.socket(ZMQ.XPUB));
 				this.configState.getExchPub().connect("tcp://" + exchg);
+				this.configState.getExchReq().connect(getExchangeReqAddress("tcp://" + exchg));
+				//TODO Bug #133 add a connect to exchange address + x port + impact on hist configuration manager ??
 				this.configState.setValid(true);
 			}finally{
 			}
@@ -105,6 +108,17 @@ public class PublisherConnectionManager implements Runnable {
 			logger.info("no exchange available");
 			return 1;
 		}
+	}
+
+	/**
+	 * @return
+	 */
+	private String getExchangeReqAddress(String exchangeFrontAddress) {
+		int basePort = RoQSerializationUtils.extractBasePort(exchangeFrontAddress);
+		String portOff = exchangeFrontAddress.substring(0, exchangeFrontAddress.length() - "xxxx".length());
+		String result = portOff + (basePort + 4);
+		logger.info("The Request exchange address is: " + result);
+		return  result;
 	}
 
 	public void run() {
@@ -165,6 +179,7 @@ public class PublisherConnectionManager implements Runnable {
 	 * Closes the connection to the current exchange
 	 */
 	private void closeConnection() {
+		this.sendDeconnectionEvent();
 		try {
 			this.logger.debug("Closing publisher sockets ...");
 			this.configState.getExchPub().setLinger(0);
@@ -183,18 +198,37 @@ public class PublisherConnectionManager implements Runnable {
 	 */
 	private void rellocateExchange(String exchange) {
 		try{
+			this.sendDeconnectionEvent();
 			this.logger.debug("Closing sockets when re-locate the exchange on "+exchange);
 			this.configState.getLock().lock();
 			this.configState.getExchPub().setLinger(0);
 			this.configState.getExchPub().close();
 			this.configState.setExchPub(context.socket(ZMQ.PUB));
 			this.configState.getExchPub().connect("tcp://" + exchange);
+			//TODO Bug #133 add a connect to exchange REQ socket address
 			this.configState.setValid(true);
 			s_currentExchange = exchange;
 			logger.info("Re-allocation order -  Moving to " + exchange);
 		}finally{
 			this.configState.getLock().unlock();
 		}
+	}
+
+	/**
+	 * Notifies the exchange that this producer is not connected to this exchange.
+	 * Then the exchange cna update his producer statistic state.
+	 * This situation happens when a producer is re-located or just close the connection.
+	 */
+	private void sendDeconnectionEvent() {
+		logger.info("Sending a de-connect event to exchange");
+		//TODO Bug #133 replace the initReq in this code by the new exchange Req socket address.
+//		initReq.send((Integer.toString(RoQConstant.EVENT_PROD_DECONNECT) + "," + s_ID).getBytes(), 0);
+//		//The answer must be the concatenated list of exchange
+//		String result = new String(initReq.recv(0));
+//		if (Integer.parseInt(result) == RoQConstant.OK){
+//			logger.info(s_ID +" Succesfully disconnected from exchange.");
+//		}else
+//			logger.error("Error when disconnecting "+ s_ID +" from exchange, check exchange logs.");
 	}
 
 	/**

@@ -44,6 +44,7 @@ public class Exchange implements Runnable, IStoppable {
 	private ZMQ.Socket frontendSub;
 	private ZMQ.Socket backendPub;
 	private ZMQ.Socket monitorPub;
+	private ZMQ.Socket pubInfoRep;
 	private String s_frontend;
 	private String s_backend;
 	private String s_monitor;
@@ -93,9 +94,13 @@ public class Exchange implements Runnable, IStoppable {
 		this.frontendSub.bind(s_frontend);
 		this.frontendSub.subscribe("".getBytes());
 
-		// this.backend.setSwap(500000000);
+		 //this.backendPub.setSwap(500000000);
 		this.backendPub.bind(s_backend);
 		this.monitorPub = context.socket(ZMQ.PUB);
+		
+		//The channel on which the publisher will notifies their deconnection
+		this.pubInfoRep =  context.socket(ZMQ.REP);
+		this.pubInfoRep.bind("tcp://*:" +(backend+2));
 		
 		this.monitorPub.connect(s_monitor);
 		this.frontEnd=frontend;

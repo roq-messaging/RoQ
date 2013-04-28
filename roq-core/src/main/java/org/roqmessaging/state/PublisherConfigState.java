@@ -28,9 +28,15 @@ import org.zeromq.ZMQ;
  */
 public class PublisherConfigState {
 	private boolean valid = false;
+	//The pub socket of the exchange
 	private ZMQ.Socket exchPub = null;
+	//The request socket of the exchange
+	private ZMQ.Socket exchReq = null;
+	//The monitor address
 	private String monitor = null;
+	//OPTIONAL the address of a time stamp server
 	private boolean timeStampServer = false;
+	//The publisher ID
 	private String publisherID = null;
 	//Locking configuration
 	private Lock lock = new ReentrantLock();
@@ -105,6 +111,18 @@ public class PublisherConfigState {
 	 */
 	public void setPublisherID(String publisherID) {
 		this.publisherID = publisherID;
+	}
+	/**
+	 * @return the exchReq
+	 */
+	public ZMQ.Socket getExchReq() {
+		return exchReq;
+	}
+	/**
+	 * @param exchReq the exchReq to set
+	 */
+	public void setExchReq(ZMQ.Socket exchReq) {
+		this.exchReq = exchReq;
 	}
 	
 

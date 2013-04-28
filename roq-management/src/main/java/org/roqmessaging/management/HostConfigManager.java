@@ -78,7 +78,6 @@ public class HostConfigManager implements Runnable, IStoppable {
 	private ShutDownMonitor shutDownMonitor = null;
 	//The lock to avoid any race condition
 	private Lock lockRemoveQ = new ReentrantLock();
-	private RoQSerializationUtils serializationUtils = null;
 	//Network & IP address Configuration
 	private boolean useNif = false;
 
@@ -89,7 +88,6 @@ public class HostConfigManager implements Runnable, IStoppable {
 	public HostConfigManager(String propertyFile) {
 		try {
 			// Global init
-			this.serializationUtils = new RoQSerializationUtils();
 			FileConfigurationReader reader = new FileConfigurationReader();
 			this.properties = reader.loadHCMConfiguration(propertyFile);
 			if(this.properties.getNetworkInterface()==null)
@@ -243,7 +241,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	private boolean startNewScalingProcess(String qName) {
 		if(this.qMonitorStatMap.containsKey(qName)){
 			//1. Compute the stat monitor port+2
-			int basePort = this.serializationUtils.extractBasePort(this.qMonitorStatMap.get(qName));
+			int basePort = RoQSerializationUtils.extractBasePort(this.qMonitorStatMap.get(qName));
 			basePort+=2;
 			//2. Check wether we need to launch it locally or in its own process
 			if(this.properties.isQueueInHcmVm()){
@@ -363,7 +361,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 			// extract
 			// the port and make +5
 			// to get the shutdown monitor thread
-			int basePort = this.serializationUtils.extractBasePort(monitorAddress);
+			int basePort = RoQSerializationUtils.extractBasePort(monitorAddress);
 			String portOff = monitorAddress.substring(0, monitorAddress.length() - "xxxx".length());
 			logger.info("Sending Remove Q request to " + portOff + (basePort + 5));
 			// 2. Send the remove message to the monitor
@@ -405,7 +403,8 @@ public class HostConfigManager implements Runnable, IStoppable {
 		}
 		// 2. Assigns a front port and a back port
 		logger.debug(" This host contains already " + number + " Exchanges");
-		int frontPort = this.properties.getExchangeFrontEndPort() + number * 3;
+		//x4 = Front, back, Shutdown, prod request
+		int frontPort = this.properties.getExchangeFrontEndPort() + number * 4;
 		// 3 because there is the front, back and the shut down
 		int backPort = frontPort + 1;
 		String ip = RoQUtils.getInstance().getLocalIP();
