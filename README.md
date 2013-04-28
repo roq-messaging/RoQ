@@ -63,4 +63,8 @@ To test the code locally on 1 VM, we have created a simple launcher which instan
  java -Djava.library.path=/usr/local/lib -cp roq-simulation-1.0-SNAPSHOT-jar-with-dependencies.jar org.roq.simulation.RoQAllLocalLauncher 
 ```
 
+RoQ is shipped with a back-end for management. It is installed with the GimmeRoQ script and more information about usage of the CLI can be found on https://github.com/roq-messaging/roq-backend/blob/master/README.md.
+
+
+
 
