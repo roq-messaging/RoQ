@@ -96,7 +96,7 @@ public class PublisherConnectionManager implements Runnable {
 			try {
 				this.configState.setExchPub(this.context.socket(ZMQ.XPUB));
 				this.configState.getExchPub().connect("tcp://" + exchg);
-				this.configState.getExchReq().connect(getExchangeReqAddress("tcp://" + exchg));
+//				this.configState.getExchReq().connect(getExchangeReqAddress("tcp://" + exchg));
 				//TODO Bug #133 add a connect to exchange address + x port + impact on hist configuration manager ??
 				this.configState.setValid(true);
 			}finally{
