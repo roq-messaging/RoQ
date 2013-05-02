@@ -236,7 +236,10 @@ public class PublisherConnectionManager implements Runnable {
 		//TODO Bug #133 replace the initReq in this code by the new exchange Req socket address.
 		this.configState.getExchReq().send((Integer.toString(RoQConstant.EVENT_PROD_DECONNECT) + "," + s_ID).getBytes(), 0);
 		//The answer must be the concatenated list of exchange
-		String result = new String(this.configState.getExchReq().recv(0));
+		byte[] bresult =this.configState.getExchReq().recv(0);
+		String result="?";
+		if(bresult!=null) result = new String(bresult);
+		else result = new String("1101");
 		if (Integer.parseInt(result) == RoQConstant.OK){
 			logger.info(s_ID +" Succesfully disconnected from exchange.");
 		}else

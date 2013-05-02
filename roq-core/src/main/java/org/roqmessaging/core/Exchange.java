@@ -195,7 +195,7 @@ public class Exchange implements Runnable, IStoppable {
 					String mInfo = new String(info);
 					String[] arrayInfo = mInfo.split(","); //CODE, ID
 					if(knownProd.remove(arrayInfo[1])!=null){
-						logger.info("Successfully removed publisher");
+						logger.info("Successfully removed publisher "+arrayInfo[1] +" remains "+ knownProd.size() + " publishers.");
 						this.pubInfoRep.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
 					}else{
 						logger.warn("The publisher "+ arrayInfo[1]+"  is not known");
