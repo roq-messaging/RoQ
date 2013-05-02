@@ -96,9 +96,11 @@ public class PublisherConnectionManager implements Runnable {
 			try {
 				this.configState.setExchPub(this.context.socket(ZMQ.XPUB));
 				this.configState.getExchPub().connect("tcp://" + exchg);
+				//Bug #133 add a connect to exchange address for information channel
 				this.configState.setExchReq(this.context.socket(ZMQ.REQ));
+				this.configState.getExchReq().setSendTimeOut(3000);
+				this.configState.getExchReq().setReceiveTimeOut(3000);
 				this.configState.getExchReq().connect(getExchangeReqAddress("tcp://" + exchg));
-				//TODO Bug #133 add a connect to exchange address + x port + impact on hist configuration manager ??
 				this.configState.setValid(true);
 			}finally{
 			}
@@ -211,7 +213,7 @@ public class PublisherConnectionManager implements Runnable {
 			this.configState.getExchPub().close();
 			this.configState.setExchPub(context.socket(ZMQ.PUB));
 			this.configState.getExchPub().connect("tcp://" + exchange);
-			//TODO Bug #133 add a connect to exchange REQ socket address
+			// Bug #133 add a connect to exchange REQ socket address
 			this.configState.setExchReq(this.context.socket(ZMQ.REQ));
 			this.configState.getExchReq().setSendTimeOut(3000);
 			this.configState.getExchReq().setReceiveTimeOut(3000);
