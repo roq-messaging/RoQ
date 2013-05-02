@@ -213,6 +213,8 @@ public class PublisherConnectionManager implements Runnable {
 			this.configState.getExchPub().connect("tcp://" + exchange);
 			//TODO Bug #133 add a connect to exchange REQ socket address
 			this.configState.setExchReq(this.context.socket(ZMQ.REQ));
+			this.configState.getExchReq().setSendTimeOut(3000);
+			this.configState.getExchReq().setReceiveTimeOut(3000);
 			this.configState.getExchReq().connect(getExchangeReqAddress("tcp://" + exchange));
 			this.configState.setValid(true);
 			s_currentExchange = exchange;

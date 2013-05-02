@@ -94,7 +94,7 @@ public class Exchange implements Runnable, IStoppable {
 		this.frontendSub.bind(s_frontend);
 		this.frontendSub.subscribe("".getBytes());
 
-		 //this.backendPub.setSwap(500000000);
+		 this.backendPub.setSwap(500000000);
 		this.backendPub.bind(s_backend);
 		this.monitorPub = context.socket(ZMQ.PUB);
 		
