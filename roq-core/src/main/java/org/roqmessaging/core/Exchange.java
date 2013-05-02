@@ -162,8 +162,9 @@ public class Exchange implements Runnable, IStoppable {
 		int part;
 		String prodID= null;
 		//Adding the poller
-		ZMQ.Poller poller = new ZMQ.Poller(1);
+		ZMQ.Poller poller = new ZMQ.Poller(2);
 		poller.register(this.frontendSub);
+		poller.register(this.pubInfoRep);
 		while (this.active) {
 			byte[] message;
 			part = 0;
@@ -187,6 +188,20 @@ public class Exchange implements Runnable, IStoppable {
 					backendPub.send(message, frontendSub.hasReceiveMore() ? ZMQ.SNDMORE : 0);
 				} while (this.frontendSub.hasReceiveMore() && this.active);
 				this.statistic.processed++;
+			}else{
+				if(poller.pollin(1)){
+					//A publisher sends a deconnexion event
+					byte[] info = pubInfoRep.recv(0);
+					String mInfo = new String(info);
+					String[] arrayInfo = mInfo.split(","); //CODE, ID
+					if(knownProd.remove(arrayInfo[1])!=null){
+						logger.info("Successfully removed publisher");
+						this.pubInfoRep.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+					}else{
+						logger.warn("The publisher "+ arrayInfo[1]+"  is not known");
+						this.pubInfoRep.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
+					}
+				}
 			}
 		}
 		closeSockets();
