@@ -162,7 +162,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				if(this.stateDAO.getQueueMonitorMap().containsKey(qName) && this.stateDAO.getQueueMonitorStatMap().containsKey(qName)){
 					//Replace the stat monitor port to the subscription port
 					String subscribingKPIMonitor = this.stateDAO.getQueueMonitorStatMap().get(qName);
-					int basePort = this.serializationUtils.extractBasePort(subscribingKPIMonitor);
+					int basePort = RoQSerializationUtils.extractBasePort(subscribingKPIMonitor);
 					String portOff = subscribingKPIMonitor.substring(0, subscribingKPIMonitor.length() - "xxxx".length());
 					subscribingKPIMonitor= portOff+(basePort+1);
 					logger.debug("Answering back:"+ this.stateDAO.getQueueMonitorMap().get(qName)+","+subscribingKPIMonitor);
@@ -282,7 +282,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				if(this.stateDAO.getQueueMonitorMap().containsKey(info[1]) && this.stateDAO.getQueueMonitorStatMap().containsKey(info[1])){
 					//Replace the stat monitor port to the subscription port
 					String subscribingKPIMonitor = this.stateDAO.getQueueMonitorStatMap().get(info[1]);
-					int basePort = this.serializationUtils.extractBasePort(subscribingKPIMonitor);
+					int basePort = RoQSerializationUtils.extractBasePort(subscribingKPIMonitor);
 					String portOff = subscribingKPIMonitor.substring(0, subscribingKPIMonitor.length() - "xxxx".length());
 					subscribingKPIMonitor= portOff+(basePort+1);
 					logger.debug("Answering back:"+ this.stateDAO.getQueueMonitorMap().get(info[1])+","+subscribingKPIMonitor);

@@ -103,6 +103,13 @@ public interface RoQConstant {
 	public static int EVENT_EXCHANGE_SHUT_DONW = 6;
 	
 	/**
+	 *  From  produder to exchange
+	 * This event is sent by the producer when it deconnects the exchange.
+	 * Sends “7, prodID”
+	 */
+	public static int EVENT_PROD_DECONNECT = 7;
+	
+	/**
 	 * Event sent from subscriber to monitor.
 	 * “31,totalreceived”
 	 */

@@ -44,6 +44,7 @@ public class Exchange implements Runnable, IStoppable {
 	private ZMQ.Socket frontendSub;
 	private ZMQ.Socket backendPub;
 	private ZMQ.Socket monitorPub;
+	private ZMQ.Socket pubInfoRep;
 	private String s_frontend;
 	private String s_backend;
 	private String s_monitor;
@@ -93,9 +94,13 @@ public class Exchange implements Runnable, IStoppable {
 		this.frontendSub.bind(s_frontend);
 		this.frontendSub.subscribe("".getBytes());
 
-		// this.backend.setSwap(500000000);
+		 this.backendPub.setSwap(500000000);
 		this.backendPub.bind(s_backend);
 		this.monitorPub = context.socket(ZMQ.PUB);
+		
+		//The channel on which the publisher will notifies their deconnection
+		this.pubInfoRep =  context.socket(ZMQ.REP);
+		this.pubInfoRep.bind("tcp://*:" +(backend+2));
 		
 		this.monitorPub.connect(s_monitor);
 		this.frontEnd=frontend;
@@ -157,8 +162,9 @@ public class Exchange implements Runnable, IStoppable {
 		int part;
 		String prodID= null;
 		//Adding the poller
-		ZMQ.Poller poller = new ZMQ.Poller(1);
+		ZMQ.Poller poller = new ZMQ.Poller(2);
 		poller.register(this.frontendSub);
+		poller.register(this.pubInfoRep);
 		while (this.active) {
 			byte[] message;
 			part = 0;
@@ -182,6 +188,20 @@ public class Exchange implements Runnable, IStoppable {
 					backendPub.send(message, frontendSub.hasReceiveMore() ? ZMQ.SNDMORE : 0);
 				} while (this.frontendSub.hasReceiveMore() && this.active);
 				this.statistic.processed++;
+			}else{
+				if(poller.pollin(1)){
+					//A publisher sends a deconnexion event
+					byte[] info = pubInfoRep.recv(0);
+					String mInfo = new String(info);
+					String[] arrayInfo = mInfo.split(","); //CODE, ID
+					if(knownProd.remove(arrayInfo[1])!=null){
+						logger.info("Successfully removed publisher "+arrayInfo[1] +" remains "+ knownProd.size() + " publishers.");
+						this.pubInfoRep.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+					}else{
+						logger.warn("The publisher "+ arrayInfo[1]+"  is not known");
+						this.pubInfoRep.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
+					}
+				}
 			}
 		}
 		closeSockets();

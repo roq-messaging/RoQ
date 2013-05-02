@@ -128,6 +128,8 @@ public class TestStatMonitor {
 			// Delete the queue
 			logicalQFactory.removeQueue("queue1");
 			Thread.sleep(2000);
+			
+			kpiSubscriber.shutDown();
 
 		} catch (InterruptedException e) {
 			e.printStackTrace();
