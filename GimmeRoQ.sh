@@ -45,7 +45,7 @@ echo "----Installing JZMQ in $INSTALLDIR/jzmq/----"
 	cd $INSTALLDIR/
 	git clone git://github.com/zeromq/jzmq.git >> $INSTALLDIR/roq.log 2>&1
 	cd $INSTALLDIR/jzmq
-	git checkout v2.1.0 >> $INSTALLDIR/roq.log 2>&1
+	git checkout v2.1.3 >> $INSTALLDIR/roq.log 2>&1
 	./autogen.sh >> $INSTALLDIR/roq.log 2>&1
 	./configure >> $INSTALLDIR/roq.log 2>&1
 	make >> $INSTALLDIR/roq.log 2>&1

@@ -34,7 +34,17 @@ public class PublisherConnectionManager implements Runnable {
 	private volatile boolean running;
 	//The publisher state DAO for handling the conf
 	private PublisherConfigState configState = null;
+	//define whether we relocate
+	private volatile boolean relocating = false;
 	
+
+	public boolean isRelocating() {
+		return relocating;
+	}
+
+	public void setRelocating(boolean relocating) {
+		this.relocating = relocating;
+	}
 
 	/**
 	 * @param monitor the monitor host address" tcp://<ip>:<port>"
@@ -206,6 +216,7 @@ public class PublisherConnectionManager implements Runnable {
 	 */
 	private void rellocateExchange(String exchange) {
 		try{
+			this.relocating = true;
 			this.sendDeconnectionEvent();
 			this.logger.debug("Closing sockets when re-locate the exchange on "+exchange);
 			this.configState.getLock().lock();
@@ -220,6 +231,7 @@ public class PublisherConnectionManager implements Runnable {
 			this.configState.getExchReq().connect(getExchangeReqAddress("tcp://" + exchange));
 			this.configState.setValid(true);
 			s_currentExchange = exchange;
+			this.relocating=false;
 			logger.info("Re-allocation order -  Moving to " + exchange);
 		}finally{
 			this.configState.getLock().unlock();

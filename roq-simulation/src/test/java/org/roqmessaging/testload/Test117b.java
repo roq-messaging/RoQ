@@ -58,7 +58,7 @@ public class Test117b extends RoQTestCase {
 	private List<IRoQSubscriberConnection> connectionList = new ArrayList<IRoQSubscriberConnection>();
 
 	@Test
-	public void test117b() throws InterruptedException {
+	public void test117b() throws Exception{
 		// The Qname
 		String qName = "test117b-Q";
 		// Init 1. create the test queue
