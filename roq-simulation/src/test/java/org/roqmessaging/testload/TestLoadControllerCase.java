@@ -30,7 +30,7 @@ import org.roqmessaging.loaders.TestLoaderDecription;
 public class TestLoadControllerCase extends RoQTestCase {
 
 	@Test
-	public void testEnd2EndTestLoad() throws InterruptedException {
+	public void testEnd2EndTestLoad() throws Exception{
 		//The Qname
 		String qName = "performance-test";
 		//Init 1. create the test queue 
