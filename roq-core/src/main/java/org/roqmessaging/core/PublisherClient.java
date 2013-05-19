@@ -46,11 +46,17 @@ public class PublisherClient implements IRoQPublisher {
 	}
 
 	/**
+	 * @throws InterruptedException we sleep when relocating publisher
 	 * @see org.roqmessaging.client.IRoQPublisher#sendMessage(byte[], byte[])
 	 */
 	public boolean sendMessage(byte[] key, byte[] msg) throws IllegalStateException {
 		//1. Get the configuration state
 		PublisherConfigState configState = this.connectionManager.getConfiguration();
+		try {
+			blockTillReady();
+		} catch (InterruptedException e) {
+			logger.error(e);
+		}
 		ZMQ.Socket pubSocket = configState.getExchPub();
 		if(configState.isValid()){
 			//2. If OK send the message
@@ -72,6 +78,20 @@ public class PublisherClient implements IRoQPublisher {
 		}
 	}
 	
+	/**
+	 * Blocks in case of relocation
+	 * @throws InterruptedException
+	 */
+	private void blockTillReady() throws InterruptedException {
+		int wait=0;
+		while(this.connectionManager.isRelocating()){
+			if(wait==10) throw new IllegalStateException("The relocating state is during more than 100ms!!");
+			Thread.sleep(10);
+			wait++;
+		}
+		
+	}
+
 	/**
 	 * @return the encoded time stamp
 	 */
