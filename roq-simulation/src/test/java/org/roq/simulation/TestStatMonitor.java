@@ -56,8 +56,8 @@ public class TestStatMonitor {
 	 */
 	@After
 	public void tearDown() throws Exception {
-		this.launcher.tearDown();
 		this.kpiSubscriber.shutDown();
+		this.launcher.tearDown();
 		Thread.sleep(3000);
 	}
 
