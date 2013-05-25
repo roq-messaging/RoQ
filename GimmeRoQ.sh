@@ -11,6 +11,7 @@
 #  limitations under the License.
 #
 #  @author Cyrille DUVERNE
+#  @author Jehan BRUGGEMAN jbruggeman@symzo.be
 
 
 if [ -n "$1" ] && [ -n "$2" ]
@@ -22,6 +23,9 @@ METHOD=$2
 
  if [ -e "$INSTALLDIR" ]
  then 
+ 
+exec >> $INSTALLDIR/roq.log 2>&1
+
 echo "RoQ Installation Initiated"
 	#Flush previous install in same directory
 	rm -rf $INSTALLDIR/RoQ 
@@ -30,29 +34,29 @@ echo "RoQ Installation Initiated"
 echo "----Fetching pre-requisites from apt----"
 
 	#Install basics
-	sudo apt-get install -y openjdk-7-jdk maven2 git build-essential automake perl libtool autoconf g++ uuid-dev make unzip libpgm-dev nodejs npm >> $INSTALLDIR/roq.log 2>&1
+	sudo apt-get install -y openjdk-7-jdk maven2 git build-essential pkg-config automake perl libtool autoconf g++ uuid-dev make unzip libpgm-dev nodejs npm 
 
 echo "----Installing 0MQ via apt----"
 
 	#Install ZMQ
-	sudo add-apt-repository --yes ppa:chris-lea/zeromq >> $INSTALLDIR/roq.log 2>&1
-	sudo apt-get update >> $INSTALLDIR/roq.log 2>&1
-	sudo apt-get install -y libzmq-dbg=3.2.2-1chl1~precise1 libzmq-dev=3.2.2-1chl1~precise1 libzmq1=3.2.2-1chl1~precise1 >> $INSTALLDIR/roq.log 2>&1
+	sudo add-apt-repository --yes ppa:chris-lea/zeromq 
+	sudo apt-get update 
+	sudo apt-get install -y libzmq-dbg=3.2.2-1chl1~precise1 libzmq-dev=3.2.2-1chl1~precise1 libzmq1=3.2.2-1chl1~precise1 
 
 echo "----Installing JZMQ in $INSTALLDIR/jzmq/----"
 
 	#Install JZMQ
 	cd $INSTALLDIR/
-	git clone git://github.com/zeromq/jzmq.git >> $INSTALLDIR/roq.log 2>&1
+	git clone git://github.com/zeromq/jzmq.git 
 	cd $INSTALLDIR/jzmq
-	git checkout v2.1.3 >> $INSTALLDIR/roq.log 2>&1
-	./autogen.sh >> $INSTALLDIR/roq.log 2>&1
-	./configure >> $INSTALLDIR/roq.log 2>&1
-	make >> $INSTALLDIR/roq.log 2>&1
-	sudo make install >> $INSTALLDIR/roq.log 2>&1
+	git checkout v2.1.3 
+	./autogen.sh 
+	./configure 
+	make 
+	sudo make install 
 
 	#Install Maven JZMQ (Obsolete since installed from the central repository) - Obsolete : 24/03
-	#mvn install -e -DskipTests >> $INSTALLDIR/roq.log 2>&1
+	#mvn install -e -DskipTests 
 
 echo "----Fetching RoQ----"
 
@@ -72,14 +76,14 @@ echo "----Gathering latest build on RoQ's Jenkins----"
 
 				#For last CI archive, use this command
 				#Gather the latest stable build of RoQ
-				wget http://dev.roq-messaging.org/ci/job/RoQStable/lastSuccessfulBuild/artifact/releases/latest.tgz >> $INSTALLDIR/roq.log 2>&1
+				wget http://dev.roq-messaging.org/ci/job/RoQStable/lastSuccessfulBuild/artifact/releases/latest.tgz 
 				
 				elif [ "$3" = "DEV" ]
 				then 
 				
 				#For last CI archive, use this command
                                 #Gather the latest dev build of RoQ
-				wget http://dev.roq-messaging.org/ci/job/RoQNightly/lastSuccessfulBuild/artifact/releases/latest.tgz >> $INSTALLDIR/roq.log 2>&1
+				wget http://dev.roq-messaging.org/ci/job/RoQNightly/lastSuccessfulBuild/artifact/releases/latest.tgz 
 				fi
 
 
@@ -87,7 +91,7 @@ echo "----Pushing file to $INSTALLDIR/RoQ/-----"
 echo "----Untaring latest.tgz----"
 
 	        		#Untar it
-			        tar zxvf latest.tgz >> $INSTALLDIR/roq.log 2>&1
+			        tar zxvf latest.tgz 
 
 		        	#At this step RoQ is installed
 
@@ -97,22 +101,22 @@ echo "----Installing Back-End Management----"
 
 		        	#OPTIONAL : Install the backend management
 	        		#Clone Git repository
-		        	git clone git://github.com/roq-messaging/roq-backend.git >> $INSTALLDIR/roq.log 2>&1
+		        	git clone git://github.com/roq-messaging/roq-backend.git 
 
 			        cd roq-backend
 
-			        git checkout develop >> $INSTALLDIR/roq.log 2>&1
+			        git checkout develop 
 
-				git submodule update --init --recursive >> $INSTALLDIR/roq.log 2>&1
+				git submodule update --init --recursive 
 
 				#cd roq-web-console
 
-				#git submodule init >> $INSTALLDIR/roq.log 2>&1
+				#git submodule init 
 				
 				#git submodule update $INSTALLDIR/roq.log 2>&1
 
 		        	#Node Packages installation
-			        npm install >> $INSTALLDIR/roq.log 2>&1
+			        npm install 
 fi
 
 echo "Installation log available at $INSTALLDIR/roq.log"
@@ -124,12 +128,12 @@ echo "Congratulations ! RoQ has been successfully installed on your system in $I
 echo "----Gathering latest release fron http://www.github.com/roq-messaging/RoQ----"
 echo "----Pushing files in $INSTALLDIR/RoQ/----"
 				#For working instance use the line below
-				git clone git://github.com/roq-messaging/RoQ.git >> $INSTALLDIR/roq.log 2>&1
+				git clone git://github.com/roq-messaging/RoQ.git 
 
 echo "----Installing RoQ----"
 
 				cd RoQ
-				mvn install -e >> $INSTALLDIR/roq.log 2>&1
+				mvn install -e 
 
 if [ -n "$4" ] && [ "$4" = "back-end" ]
 then
@@ -137,20 +141,20 @@ echo "----Installing Back-End Management----"
 
 				#OPTIONAL : Install the backend management
                                 #Clone Git repository
-                                git clone git://github.com/roq-messaging/roq-backend.git >> $INSTALLDIR/roq.log 2>&1
+                                git clone git://github.com/roq-messaging/roq-backend.git 
 
                                 cd roq-backend
 
-                                git checkout develop >> $INSTALLDIR/roq.log 2>&1
+                                git checkout develop 
 				
-				git submodule update --init --recursive >> $INSTALLDIR/roq.log 2>&1
+				git submodule update --init --recursive 
 
                                 #Node Packages installation
-                                npm install >> $INSTALLDIR/roq.log 2>&1
-                                mkdir logs >> $INSTALLDIR/roq.log 2>&1
+                                npm install 
+                                mkdir logs 
 				#cd roq-web-console
 
-				#git submodule init >> $INSTALLDIR/roq.log 2>&1
+				#git submodule init 
 				
 				#git submodule update $INSTALLDIR/roq.log 2>&1
 fi

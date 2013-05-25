@@ -14,6 +14,7 @@ Get the GimmeRoQ.sh
 To install RoQ: ./GimmeRoQ.sh path/to/installation method
 
 ```sh
+wget https://github.com/roq-messaging/RoQ/raw/develop/GimmeRoQ.sh
 ./GimmeRoQ.sh path/to/installation method
 ```
 
