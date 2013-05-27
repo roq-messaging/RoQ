@@ -34,7 +34,8 @@ echo "RoQ Installation Initiated"
 echo "----Fetching pre-requisites from apt----"
 
 	#Install basics
-	sudo apt-get install -y openjdk-7-jdk maven2 git build-essential pkg-config automake perl libtool autoconf g++ uuid-dev make unzip libpgm-dev nodejs npm 
+	sudo apt-get install -y openjdk-7-jdk maven2 git build-essential pkg-config automake perl libtool autoconf g++ uuid-dev make unzip libpgm-dev
+    
 
 echo "----Installing 0MQ via apt----"
 
@@ -99,6 +100,9 @@ if [ -n "$4" ] && [ "$4" = "back-end" ]
 then
 echo "----Installing Back-End Management----"
 
+        # TODO: first, install nodejs 0.10.7
+        # http://nodejs.org/dist/v0.10.7/node-v0.10.7-linux-x64.tar.gz 
+
 		        	#OPTIONAL : Install the backend management
 	        		#Clone Git repository
 		        	git clone git://github.com/roq-messaging/roq-backend.git 
@@ -117,6 +121,7 @@ echo "----Installing Back-End Management----"
 
 		        	#Node Packages installation
 			        npm install 
+                    mkdir logs 
 fi
 
 echo "Installation log available at $INSTALLDIR/roq.log"
@@ -139,6 +144,11 @@ if [ -n "$4" ] && [ "$4" = "back-end" ]
 then
 echo "----Installing Back-End Management----"
 
+        # TODO: first, latest nodejs
+        sudo add-apt-repository --yes ppa:chris-lea/node.js 
+        sudo apt-get update 
+        sudo apt-get install nodejs npm
+        
 				#OPTIONAL : Install the backend management
                                 #Clone Git repository
                                 git clone git://github.com/roq-messaging/roq-backend.git 
