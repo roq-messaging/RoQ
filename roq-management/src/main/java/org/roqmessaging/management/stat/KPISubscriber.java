@@ -103,6 +103,7 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 		
 		// 2. Register a socket to the stat monitor
 		kpiSocket = context.socket(ZMQ.SUB);
+		kpiSocket.setReceiveTimeOut(100);
 		kpiSocket.connect(monitorStatServer);
 		kpiSocket.subscribe("".getBytes());
 		logger.debug("Connected to Stat monitor " + monitorStatServer);
