@@ -58,19 +58,20 @@ public class PublisherClient implements IRoQPublisher {
 			logger.error(e);
 		}
 		ZMQ.Socket pubSocket = configState.getExchPub();
+		boolean result = true;
 		if(configState.isValid()){
 			//2. If OK send the message
-			pubSocket.send(key, ZMQ.SNDMORE);
-			pubSocket.send(RoQSerializationUtils.stringToBytesUTFCustom(configState.getPublisherID()), ZMQ.SNDMORE);
+			result &= pubSocket.send(key, ZMQ.SNDMORE);
+			result &= pubSocket.send(RoQSerializationUtils.stringToBytesUTFCustom(configState.getPublisherID()), ZMQ.SNDMORE);
 //			pubSocket.send(configState.getPublisherID().getBytes(), ZMQ.SNDMORE);
 			
 			if (this.timeStp) {
-				pubSocket.send(msg, ZMQ.SNDMORE);
-				pubSocket.send(getTimestamp(), 0);
+				result &= pubSocket.send(msg, ZMQ.SNDMORE);
+				result &= pubSocket.send(getTimestamp(), 0);
 			}else {
-				pubSocket.send(msg, 0);
+				result &= pubSocket.send(msg, 0);
 			}
-			return true;
+			return result;
 		}else{
 			logger.error("The publisher configuration for "+configState.getPublisherID()+" is not valid " +
 					"when sending the message");
