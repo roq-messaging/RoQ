@@ -26,6 +26,7 @@ import org.roqmessaging.core.timer.ExchangeStatTimer;
 import org.roqmessaging.core.timer.Heartbeat;
 import org.roqmessaging.state.ProducerState;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Socket;
 
 
 /**
@@ -89,12 +90,12 @@ public class Exchange implements Runnable, IStoppable {
 		// Use these to (double) check if the settings were correctly set  
 		// logger.info(this.backend.getHWM());
 		// logger.info(this.backend.getSwap());
-		this.backendPub.setHWM(5000);  
-
+		setSocketOptions(this.backendPub);
+		setSocketOptions(this.frontendSub);
+	    
 		this.frontendSub.bind(s_frontend);
 		this.frontendSub.subscribe("".getBytes());
 
-		 this.backendPub.setSwap(500000000);
 		this.backendPub.bind(s_backend);
 		this.monitorPub = context.socket(ZMQ.PUB);
 		
@@ -107,10 +108,22 @@ public class Exchange implements Runnable, IStoppable {
 		this.backEnd= backend;
 		this.active = true;
 		
+		if(logger.isInfoEnabled()){
+			logger.info("BackendSub: SndHWM="+this.backendPub.getSndHWM()+" RcvHWM="+this.backendPub.getRcvHWM());
+	        logger.info("FrontendSub: SndHWM="+this.frontendSub.getSndHWM()+" RcvHWM="+this.frontendSub.getRcvHWM());
+		}
+			
+		
 		//initiatlisation of the shutdown thread
 		this.shutDownMonitor = new ShutDownMonitor(backend+1, this);
 		new Thread(shutDownMonitor).start();
 		logger.debug("Started shutdown monitor on "+ (backend+1));
+	}
+
+	private void setSocketOptions(Socket sock) {
+		sock.setSndHWM(100000);  
+		sock.setRcvHWM(100000);
+		
 	}
 
 	/**

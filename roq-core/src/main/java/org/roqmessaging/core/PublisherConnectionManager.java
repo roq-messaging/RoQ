@@ -104,14 +104,7 @@ public class PublisherConnectionManager implements Runnable {
 		logger.info("Recieving "+ exchg + " to connect ...");
 		if (!exchg.equals("")) {
 			try {
-				this.configState.setExchPub(this.context.socket(ZMQ.XPUB));
-				this.configState.getExchPub().connect("tcp://" + exchg);
-				//Bug #133 add a connect to exchange address for information channel
-				this.configState.setExchReq(this.context.socket(ZMQ.REQ));
-				this.configState.getExchReq().setSendTimeOut(3000);
-				this.configState.getExchReq().setReceiveTimeOut(3000);
-				this.configState.getExchReq().connect(getExchangeReqAddress("tcp://" + exchg));
-				this.configState.setValid(true);
+				createPublisherSocket(exchg);
 			}finally{
 			}
 			logger.info("Connected to Exchange " + exchg);
@@ -121,6 +114,18 @@ public class PublisherConnectionManager implements Runnable {
 			logger.info("no exchange available");
 			return 1;
 		}
+	}
+	
+	private void createPublisherSocket(String exchange) {
+		this.configState.setExchPub(this.context.socket(ZMQ.XPUB));
+		this.configState.getExchPub().setSndHWM(100000);
+		this.configState.getExchPub().connect("tcp://" + exchange);
+		//Bug #133 add a connect to exchange address for information channel
+		this.configState.setExchReq(this.context.socket(ZMQ.REQ));
+		this.configState.getExchReq().setSendTimeOut(3000);
+		this.configState.getExchReq().setReceiveTimeOut(3000);
+		this.configState.getExchReq().connect(getExchangeReqAddress("tcp://" + exchange));
+		this.configState.setValid(true);
 	}
 
 	/**
@@ -222,14 +227,8 @@ public class PublisherConnectionManager implements Runnable {
 			this.configState.getLock().lock();
 			this.configState.getExchPub().setLinger(0);
 			this.configState.getExchPub().close();
-			this.configState.setExchPub(context.socket(ZMQ.PUB));
-			this.configState.getExchPub().connect("tcp://" + exchange);
-			// Bug #133 add a connect to exchange REQ socket address
-			this.configState.setExchReq(this.context.socket(ZMQ.REQ));
-			this.configState.getExchReq().setSendTimeOut(3000);
-			this.configState.getExchReq().setReceiveTimeOut(3000);
-			this.configState.getExchReq().connect(getExchangeReqAddress("tcp://" + exchange));
-			this.configState.setValid(true);
+			
+			createPublisherSocket(exchange);
 			s_currentExchange = exchange;
 			this.relocating=false;
 			logger.info("Re-allocation order -  Moving to " + exchange);
