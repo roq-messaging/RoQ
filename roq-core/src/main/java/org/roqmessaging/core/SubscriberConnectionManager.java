@@ -16,18 +16,15 @@ package org.roqmessaging.core;
 
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQSubscriber;
 import org.zeromq.ZMQ;
-import org.zeromq.ZMQ.Socket;
 
 import com.google.common.math.LongMath;
 import com.google.common.primitives.Longs;
-import com.google.common.primitives.UnsignedBytes;
 
 /**
  * Class SubClientLib
@@ -85,7 +82,7 @@ public class SubscriberConnectionManager implements Runnable {
 		
 		this.monitorSub = context.socket(ZMQ.SUB);
 		monitorSub.connect(portOff+(basePort+3));
-		monitorSub.subscribe(subkey);
+		monitorSub.subscribe("".getBytes());
 
 		this.initReq = this.context.socket(ZMQ.REQ);
 		this.initReq.connect(portOff+(basePort+1));
@@ -148,7 +145,7 @@ public class SubscriberConnectionManager implements Runnable {
 			this.exchSub = context.socket(ZMQ.SUB);
 			this.exchSub.setRcvHWM(10000000);
 			logger.info("Connnecting with RcvHWM: "+this.exchSub.getRcvHWM());
-			this.exchSub.subscribe("".getBytes());
+			this.exchSub.subscribe(this.subkey);
 			for (int i = 0; i < brokerList.length; i++) {
 				connectToBroker(brokerList[i]);
 			}
@@ -160,6 +157,7 @@ public class SubscriberConnectionManager implements Runnable {
 	}
 
 	private void connectToBroker(String broker) {
+		logger.info("Connecting new exchange: "+ broker);
 		if (!knownHosts.contains(broker)) {
 			exchSub.connect("tcp://" + broker );
 			knownHosts.add(broker);
@@ -207,7 +205,7 @@ public class SubscriberConnectionManager implements Runnable {
 
 	public void run() {
 		knownHosts = new ArrayList<String>();
-		Comparator<byte[]> comparator = UnsignedBytes.lexicographicalComparator();
+//		Comparator<byte[]> comparator = UnsignedBytes.lexicographicalComparator();
 		int counter =0;
 		while (init() != 0) {
 			try {
@@ -234,8 +232,8 @@ public class SubscriberConnectionManager implements Runnable {
 				String info[] = new String(monitorSub.recv(0)).split(",");
 				int infoCode = Integer.parseInt(info[0]);
 
-				if (infoCode == RoQConstant.REQUEST_UPDATE_EXCHANGE_LIST && !info[1].equals("")) { // new Exchange
-															// available message
+				if (infoCode == RoQConstant.REQUEST_UPDATE_EXCHANGE_LIST && !info[1].equals("")) {
+					// new Exchange  available message
 					connectToBroker(info[1]);
 					
 				}
@@ -243,7 +241,8 @@ public class SubscriberConnectionManager implements Runnable {
 
 			if (items.pollin(1)) {//From Exchange
 				byte[] request= null;
-				byte[] key  = exchSub.recv(0);
+				//Get the key
+				exchSub.recv(0);
 				if(exchSub.hasReceiveMore()){
 					//the ID of the publisher
 					request = exchSub.recv(0);
@@ -263,9 +262,7 @@ public class SubscriberConnectionManager implements Runnable {
 				}
 				//logger.debug("Recieving message " +  new String(request,0,request.length) + " key : "+ new String(request,0,request.length));
 				//delivering to the message listener
-				if(comparator.compare(subkey, key)==0){
-					this.subscriber.onEvent(request!=null?request:new byte[]{});
-				}	
+				this.subscriber.onEvent(request!=null?request:new byte[]{});
 				received++;
 			}
 		}

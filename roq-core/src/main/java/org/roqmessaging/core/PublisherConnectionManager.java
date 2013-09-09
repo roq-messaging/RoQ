@@ -116,6 +116,10 @@ public class PublisherConnectionManager implements Runnable {
 		}
 	}
 	
+	/**
+	 * Create a connection socket to this exchange address
+	 * @param exchange the exchange to connect
+	 */
 	private void createPublisherSocket(String exchange) {
 		this.configState.setExchPub(this.context.socket(ZMQ.XPUB));
 		this.configState.getExchPub().setSndHWM(100000);
