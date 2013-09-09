@@ -52,7 +52,7 @@ public class SimpleScalingPolicy implements IScalingPolicy {
 		String candidate = null;
 		int bestFreeSlot=0;
 		//1. Get the list of host from the GCM
-		this.qFactory.getConfigurationState().refreshConfiguration();
+		this.qFactory.refreshTopology();
 		//2. for each host ask the host the number of exchanges
 		for (String host : this.qFactory.getConfigurationState().getHostManagerMap().keySet()) {
 			ZMQ.Socket hostSocket = 	this.qFactory.getConfigurationState().getHostManagerMap().get(host);
