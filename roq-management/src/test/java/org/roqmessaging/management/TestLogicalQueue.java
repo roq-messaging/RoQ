@@ -147,7 +147,7 @@ public class TestLogicalQueue {
 	 * @param configurationServer the address of the configuration server
 	 * @return a RoQ subscriber
 	 */
-	private IRoQSubscriber createSubscriber(String qName, String key, String configurationServer) {
+	private IRoQSubscriber createSubscriber(String qName, final String key, String configurationServer) {
 		IRoQConnectionFactory factory = new RoQConnectionFactory(configurationServer);
 		// add a subscriber
 		IRoQSubscriberConnection subConnection = factory.createRoQSubscriberConnection(qName, key);
@@ -159,7 +159,7 @@ public class TestLogicalQueue {
 			public void onEvent(byte[] msg) {
 				String content = new String(msg, 0, msg.length);
 				assert content.equals("hello");
-				logger.info("In message lIstener recieveing :" + content);
+				logger.info("In message lIstener recieveing :" + content + " on Key :"+ key);
 			}
 		};
 		subConnection.setMessageSubscriber(subs);
