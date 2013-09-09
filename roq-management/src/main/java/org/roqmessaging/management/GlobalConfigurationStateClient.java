@@ -130,6 +130,7 @@ public class GlobalConfigurationStateClient extends GlobalConfigurationState {
 				socket.setSendTimeOut(3500);
 				socket.connect(address);
 				this.hostManagerMap.put(hostToadd, socket);
+				this.getHostManagerAddresses().add(hostToadd);
 				logger.debug("Added host " + hostToadd + " in the local configuration");
 			} catch (Exception e) {
 				logger.error("Error when connecting to host " + hostToadd, e);

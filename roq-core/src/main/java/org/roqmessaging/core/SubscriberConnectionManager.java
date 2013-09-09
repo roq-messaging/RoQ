@@ -23,6 +23,7 @@ import java.util.TimerTask;
 import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQSubscriber;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Socket;
 
 import com.google.common.math.LongMath;
 import com.google.common.primitives.Longs;
@@ -145,17 +146,24 @@ public class SubscriberConnectionManager implements Runnable {
 		if (!response.equals("")) {
 			String[] brokerList = response.split(",");
 			this.exchSub = context.socket(ZMQ.SUB);
+			this.exchSub.setRcvHWM(10000000);
+			logger.info("Connnecting with RcvHWM: "+this.exchSub.getRcvHWM());
 			this.exchSub.subscribe("".getBytes());
-			this.exchSub.setHWM(5000);  
 			for (int i = 0; i < brokerList.length; i++) {
-				exchSub.connect("tcp://" + brokerList[i] );
-				knownHosts.add(brokerList[i]);
-				logger.info("connected to " + brokerList[i]);
+				connectToBroker(brokerList[i]);
 			}
 			return 0;
 		} else {
 			logger.info("No exchange available");
 			return 1;
+		}
+	}
+
+	private void connectToBroker(String broker) {
+		if (!knownHosts.contains(broker)) {
+			exchSub.connect("tcp://" + broker );
+			knownHosts.add(broker);
+			logger.info("connected to " + broker);
 		}
 	}
 
@@ -228,11 +236,8 @@ public class SubscriberConnectionManager implements Runnable {
 
 				if (infoCode == RoQConstant.REQUEST_UPDATE_EXCHANGE_LIST && !info[1].equals("")) { // new Exchange
 															// available message
-					logger.info("listening to " + info[1]);
-					if (!knownHosts.contains(info[1])) {
-						exchSub.connect("tcp://" + info[1] );
-						knownHosts.add(info[1]);
-					}
+					connectToBroker(info[1]);
+					
 				}
 			}
 

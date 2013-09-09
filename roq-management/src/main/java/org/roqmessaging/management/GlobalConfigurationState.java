@@ -19,6 +19,7 @@ import java.util.HashMap;
 
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Socket;
 
 /**
  * Class GlobalConfigurationState
@@ -125,5 +126,5 @@ public class GlobalConfigurationState {
 	public void setHostManagerAddresses(ArrayList<String> hostManagerAddresses) {
 		this.hostManagerAddresses = hostManagerAddresses;
 	}
-	
+
 }
