@@ -397,7 +397,7 @@ public class Monitor implements Runnable, IStoppable {
 							if (info.length == 4) {
 								if (logHost(info[1], info[2], info[3]) == 1) {
 									listenersPub.send((new Integer(RoQConstant.REQUEST_UPDATE_EXCHANGE_LIST).toString()
-											+ "," + info[1]).getBytes(), 0);
+											+ "," + info[1]+":"+ info[2]).getBytes(), 0);
 								}
 							} else
 								logger.error("The message recieved from the exchange heart beat"
