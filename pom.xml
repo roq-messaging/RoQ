@@ -5,7 +5,7 @@
 
 	<groupId>org.roqmessaging</groupId>
 	<artifactId>roq-modules</artifactId>
-	<version>1.0-SNAPSHOT</version>
+	<version>1.1</version>
 
 	<name>RoQ modules POM</name>
 	<packaging>pom</packaging>
