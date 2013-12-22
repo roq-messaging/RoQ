@@ -42,7 +42,7 @@ public class TestLoadSender extends RoQTestCase {
 	 * Test the sender loader by creating one and checking the message sent.
 	 */
 	@Test
-	public void testLoaderSender() {
+	public void testLoaderSender() throws Exception{
 		// The queue under test
 		String qName = "performance_test";
 		// 1. Create the queue

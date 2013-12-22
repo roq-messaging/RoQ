@@ -42,6 +42,7 @@ public class ProducerState {
 	 */
 	public void addMsgSent() {
 		this.msgSent++;
+		this.active = true;
 	}
 	
 	/**
@@ -70,6 +71,8 @@ public class ProducerState {
 	 */
 	public void addBytesSent(long bytesSent) {
 		this.bytesSent += bytesSent;
+		this.msgSent++;
+		this.active = true;
 	}
 
 	/**

@@ -16,6 +16,7 @@ package org.roqmessaging.core;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQPublisher;
+import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.state.PublisherConfigState;
 import org.zeromq.ZMQ;
 
@@ -45,23 +46,32 @@ public class PublisherClient implements IRoQPublisher {
 	}
 
 	/**
+	 * @throws InterruptedException we sleep when relocating publisher
 	 * @see org.roqmessaging.client.IRoQPublisher#sendMessage(byte[], byte[])
 	 */
 	public boolean sendMessage(byte[] key, byte[] msg) throws IllegalStateException {
 		//1. Get the configuration state
 		PublisherConfigState configState = this.connectionManager.getConfiguration();
+		try {
+			blockTillReady();
+		} catch (InterruptedException e) {
+			logger.error(e);
+		}
+		ZMQ.Socket pubSocket = configState.getExchPub();
+		boolean result = true;
 		if(configState.isValid()){
 			//2. If OK send the message
-			configState.getExchPub().send(key, ZMQ.SNDMORE);
-			configState.getExchPub().send(configState.getPublisherID().getBytes(), ZMQ.SNDMORE);
-
+			result &= pubSocket.send(key, ZMQ.SNDMORE);
+			result &= pubSocket.send(RoQSerializationUtils.stringToBytesUTFCustom(configState.getPublisherID()), ZMQ.SNDMORE);
+//			pubSocket.send(configState.getPublisherID().getBytes(), ZMQ.SNDMORE);
+			
 			if (this.timeStp) {
-				configState.getExchPub().send(msg, ZMQ.SNDMORE);
-				configState.getExchPub().send(getTimestamp(), 0);
+				result &= pubSocket.send(msg, ZMQ.SNDMORE);
+				result &= pubSocket.send(getTimestamp(), 0);
 			}else {
-				configState.getExchPub().send(msg, 0);
+				result &= pubSocket.send(msg, 0);
 			}
-			return true;
+			return result;
 		}else{
 			logger.error("The publisher configuration for "+configState.getPublisherID()+" is not valid " +
 					"when sending the message");
@@ -69,6 +79,20 @@ public class PublisherClient implements IRoQPublisher {
 		}
 	}
 	
+	/**
+	 * Blocks in case of relocation
+	 * @throws InterruptedException
+	 */
+	private void blockTillReady() throws InterruptedException {
+		int wait=0;
+		while(this.connectionManager.isRelocating()){
+			if(wait==10) throw new IllegalStateException("The relocating state is during more than 100ms!!");
+			Thread.sleep(10);
+			wait++;
+		}
+		
+	}
+
 	/**
 	 * @return the encoded time stamp
 	 */

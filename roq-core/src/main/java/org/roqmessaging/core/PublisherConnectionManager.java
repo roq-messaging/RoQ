@@ -5,6 +5,7 @@ package org.roqmessaging.core;
 import java.util.UUID;
 
 import org.apache.log4j.Logger;
+import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.state.PublisherConfigState;
 import org.zeromq.ZMQ;
 
@@ -33,7 +34,17 @@ public class PublisherConnectionManager implements Runnable {
 	private volatile boolean running;
 	//The publisher state DAO for handling the conf
 	private PublisherConfigState configState = null;
+	//define whether we relocate
+	private volatile boolean relocating = false;
 	
+
+	public boolean isRelocating() {
+		return relocating;
+	}
+
+	public void setRelocating(boolean relocating) {
+		this.relocating = relocating;
+	}
 
 	/**
 	 * @param monitor the monitor host address" tcp://<ip>:<port>"
@@ -93,9 +104,7 @@ public class PublisherConnectionManager implements Runnable {
 		logger.info("Recieving "+ exchg + " to connect ...");
 		if (!exchg.equals("")) {
 			try {
-				this.configState.setExchPub(this.context.socket(ZMQ.PUB));
-				this.configState.getExchPub().connect("tcp://" + exchg);
-				this.configState.setValid(true);
+				createPublisherSocket(exchg);
 			}finally{
 			}
 			logger.info("Connected to Exchange " + exchg);
@@ -105,6 +114,38 @@ public class PublisherConnectionManager implements Runnable {
 			logger.info("no exchange available");
 			return 1;
 		}
+	}
+	
+	/**
+	 * Create a connection socket to this exchange address
+	 * @param exchange the exchange to connect
+	 */
+	private void createPublisherSocket(String exchange) {
+		this.configState.setExchPub(this.context.socket(ZMQ.XPUB));
+		this.configState.getExchPub().setSndHWM(100000);
+		this.configState.getExchPub().connect("tcp://" + exchange);
+		//Bug #133 add a connect to exchange address for information channel
+		this.configState.setExchReq(this.context.socket(ZMQ.REQ));
+		this.configState.getExchReq().setSendTimeOut(3000);
+		this.configState.getExchReq().setReceiveTimeOut(3000);
+		this.configState.getExchReq().connect(getExchangeReqAddress("tcp://" + exchange));
+		this.configState.setValid(true);
+	}
+
+	/**
+	 * @return the exchange address to bind for the request channel.
+	 */
+	private String getExchangeReqAddress(String exchangeFrontAddress) {
+		if(exchangeFrontAddress.contains(":")){
+			int basePort =  RoQSerializationUtils.extractBasePort(exchangeFrontAddress);
+			String portOff = exchangeFrontAddress.substring(0, exchangeFrontAddress.length() - "xxxx".length());
+			String result = portOff + (basePort + 3);
+			logger.info("The Request exchange address is: " + result);
+			return  result;
+		}else{
+			throw new IllegalStateException("The address to bind does not contain any :port !");
+		}
+		
 	}
 
 	public void run() {
@@ -165,6 +206,7 @@ public class PublisherConnectionManager implements Runnable {
 	 * Closes the connection to the current exchange
 	 */
 	private void closeConnection() {
+		this.sendDeconnectionEvent();
 		try {
 			this.logger.debug("Closing publisher sockets ...");
 			this.configState.getExchPub().setLinger(0);
@@ -183,18 +225,40 @@ public class PublisherConnectionManager implements Runnable {
 	 */
 	private void rellocateExchange(String exchange) {
 		try{
-			this.logger.debug("Closing sockets when re-locate the exchange");
+			this.relocating = true;
+			this.sendDeconnectionEvent();
+			this.logger.debug("Closing sockets when re-locate the exchange on "+exchange);
 			this.configState.getLock().lock();
 			this.configState.getExchPub().setLinger(0);
 			this.configState.getExchPub().close();
-			this.configState.setExchPub(context.socket(ZMQ.PUB));
-			this.configState.getExchPub().connect("tcp://" + exchange);
-			this.configState.setValid(true);
+			
+			createPublisherSocket(exchange);
 			s_currentExchange = exchange;
+			this.relocating=false;
 			logger.info("Re-allocation order -  Moving to " + exchange);
 		}finally{
 			this.configState.getLock().unlock();
 		}
+	}
+
+	/**
+	 * Notifies the exchange that this producer is not connected to this exchange.
+	 * Then the exchange can update his producer statistic state.
+	 * This situation happens when a producer is re-located or just close the connection.
+	 */
+	private void sendDeconnectionEvent() {
+		logger.info("Sending a de-connect event to exchange");
+		//TODO Bug #133 replace the initReq in this code by the new exchange Req socket address.
+		this.configState.getExchReq().send((Integer.toString(RoQConstant.EVENT_PROD_DECONNECT) + "," + s_ID).getBytes(), 0);
+		//The answer must be the concatenated list of exchange
+		byte[] bresult =this.configState.getExchReq().recv(0);
+		String result="?";
+		if(bresult!=null) result = new String(bresult);
+		else result = new String("1101");
+		if (Integer.parseInt(result) == RoQConstant.OK){
+			logger.info(s_ID +" Succesfully disconnected from exchange.");
+		}else
+			logger.error("Error when disconnecting "+ s_ID +" from exchange, check exchange logs.");
 	}
 
 	/**

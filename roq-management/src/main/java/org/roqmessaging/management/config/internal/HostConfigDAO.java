@@ -28,6 +28,9 @@ public class HostConfigDAO {
 	private int exchangeFrontEndPort = 6000;
 	private int statPeriod =60000;
 	private int maxNumberEchanges =3;
+	private boolean queueInHcmVm = true;
+	private boolean exchangeInHcmVm = true;
+	private int exchangeHeap = 256;
 	
 	/**
 	 * @return the networkInterface
@@ -95,7 +98,8 @@ public class HostConfigDAO {
 	 */
 	@Override
 	public String toString() {
-		return "Host configuration manager [GCM :"+gcmAddress +"] [Exhange FE :" +exchangeFrontEndPort+"] [Monitor base port: "+ monitorBasePort+"]";
+		return "Host configuration manager [GCM :"+gcmAddress +"] [Exhange FE :" +exchangeFrontEndPort+"] [Monitor base port: "+ monitorBasePort+"]\n" +
+				" [Create Queue in the same HCM VM: "+ queueInHcmVm+"] [Create Exchange in same HCM VM: "+ exchangeInHcmVm+"] [ Exchange Heap: "+ exchangeHeap+"]";
 	}
 	/**
 	 * @return the statPeriod
@@ -120,6 +124,42 @@ public class HostConfigDAO {
 	 */
 	public void setMaxNumberEchanges(int maxNumberEchanges) {
 		this.maxNumberEchanges = maxNumberEchanges;
+	}
+	/**
+	 * @return the queueInHcmVm
+	 */
+	public boolean isQueueInHcmVm() {
+		return queueInHcmVm;
+	}
+	/**
+	 * @param queueInHcmVm the queueInHcmVm to set
+	 */
+	public void setQueueInHcmVm(boolean queueInHcmVm) {
+		this.queueInHcmVm = queueInHcmVm;
+	}
+	/**
+	 * @return the exchangeInHcmVm
+	 */
+	public boolean isExchangeInHcmVm() {
+		return exchangeInHcmVm;
+	}
+	/**
+	 * @param exchangeInHcmVm the exchangeInHcmVm to set
+	 */
+	public void setExchangeInHcmVm(boolean exchangeInHcmVm) {
+		this.exchangeInHcmVm = exchangeInHcmVm;
+	}
+	/**
+	 * @return the exchangeHeap
+	 */
+	public int getExchangeHeap() {
+		return exchangeHeap;
+	}
+	/**
+	 * @param exchangeHeap the exchangeHeap to set
+	 */
+	public void setExchangeHeap(int exchangeHeap) {
+		this.exchangeHeap = exchangeHeap;
 	}
 	
 

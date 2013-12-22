@@ -31,6 +31,8 @@ import org.json.simple.parser.ParseException;
  * <br>     Payload (byte) p: the message content size, simulated by an array of px1000 size of byte. Default =1 kb
  * <br>     Number of subscribers s: the maximum number of producers to spawn . Default =1
  * <br>     Delay (s) de: the waiting time before starting the test.  Default = 5s
+ * <br>     Throughput (msg/s): this option is optional. In case of rate is = 0 AND pub and sub are different from 0, then, the throughput is taken 
+ * 				for computing the rate.
 
  * Uses  a JSON parser and developing a wrapper for creating a description from a JSON 
  * file http://www.mkyong.com/java/json-simple-example-read-and-write-json/
@@ -38,12 +40,13 @@ import org.json.simple.parser.ParseException;
  */
 public class TestLoaderDecription {
 	private int spawnRate =1;
-	private int maxProd = 1;
-	private int rate =1;
+	private int maxProd = 0;
+	private int rate =0;
 	private float duration = 1.0f;
 	private int payload = 1;
-	private int maxSub = 1;
+	private int maxSub = 0;
 	private int delay = 5;
+	private int throughput = 0;
 	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
 	/**
 	 * @return the spawnRate
@@ -161,18 +164,23 @@ public class TestLoaderDecription {
 		this.setDuration(
 				jsonObject.get("duration")!=null?((Double)jsonObject.get("duration")).intValue():1.0f);
 		this.setMaxProd(
-				jsonObject.get("maxPub")!=null?((Long)jsonObject.get("maxPub")).intValue():1);
+				jsonObject.get("maxPub")!=null?((Long)jsonObject.get("maxPub")).intValue():this.maxProd);
 		this.setMaxSub(
-				jsonObject.get("maxSub")!=null?((Long)jsonObject.get("maxSub")).intValue():1);
+				jsonObject.get("maxSub")!=null?((Long)jsonObject.get("maxSub")).intValue():this.maxSub);
 		this.setPayload(
-				jsonObject.get("payload")!=null?((Long)jsonObject.get("payload")).intValue():1);
+				jsonObject.get("payload")!=null?((Long)jsonObject.get("payload")).intValue():this.payload);
 		this.setRate(
-				jsonObject.get("rate")!=null?((Long)jsonObject.get("rate")).intValue():1);
+				jsonObject.get("rate")!=null?((Long)jsonObject.get("rate")).intValue():this.rate);
 		this.setSpawnRate(
 				jsonObject.get("spawnRate")!=null?((Long)jsonObject.get("spawnRate")).intValue():1);
-		
-		logger.debug("The Test load description is :");
-		logger.debug(this.toString());
+		this.setThroughput(
+				jsonObject.get("throughput")!=null?((Long)jsonObject.get("throughput")).intValue():this.getThroughput());
+		if(this.rate==0 && (this.throughput!=0 &&this.maxProd!=0 && this.maxSub!=0)){
+			this.rate=this.throughput/(this.maxProd*this.maxSub);
+			logger.info(" Check OK the rate has been reset to "+ this.rate +" msg/s");
+		}
+		logger.info("The Test load description is :");
+		logger.info(this.toString());
 	}
 	
 	/**
@@ -183,11 +191,23 @@ public class TestLoaderDecription {
 	public String toString() {
 		return "[\nDuration of the test:" + this.getDuration()+"min\n" +
 				"Delay before starting:" + this.getDelay()+ "s\n" +
-				"Load Rate:" + this.getRate()+ "msg/s\n" +
+				"Load Rate:" + this.getRate()+ "msg/s\n"+
 				"Publishers:" + this.getMaxProd()+ "\n" +
 				"Subscribers:" + this.getMaxSub()+ "\n" +
 				"Payload:" + this.getPayload()+ " byte\n" +
 				"Spawn Rate:" + this.getSpawnRate()+ "producer/s\n" +
 				"]";
+	}
+	/**
+	 * @return the throughput
+	 */
+	public int getThroughput() {
+		return throughput;
+	}
+	/**
+	 * @param throughput the throughput to set
+	 */
+	public void setThroughput(int throughput) {
+		this.throughput = throughput;
 	}
 }

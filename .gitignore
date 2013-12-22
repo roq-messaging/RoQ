@@ -6,4 +6,4 @@ target/
 bin/
 *.db
 *~
-
+run

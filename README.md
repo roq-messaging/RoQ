@@ -2,7 +2,7 @@ RoQ Messaging
 =============
 
 RoQ, Elastically scalable MOM.
-Release-0.3 "Marina"
+Release-0.3.1 "Marina"
 
 Building & installing
 ---------------------
@@ -14,6 +14,7 @@ Get the GimmeRoQ.sh
 To install RoQ: ./GimmeRoQ.sh path/to/installation method
 
 ```sh
+wget https://github.com/roq-messaging/RoQ/raw/develop/GimmeRoQ.sh
 ./GimmeRoQ.sh path/to/installation method
 ```
 
@@ -62,5 +63,9 @@ To test the code locally on 1 VM, we have created a simple launcher which instan
 ```
  java -Djava.library.path=/usr/local/lib -cp roq-simulation-1.0-SNAPSHOT-jar-with-dependencies.jar org.roq.simulation.RoQAllLocalLauncher 
 ```
+
+RoQ is shipped with a back-end for management. It is installed with the GimmeRoQ script and more information about usage of the CLI can be found on https://github.com/roq-messaging/roq-backend/blob/master/README.md.
+
+
 
 

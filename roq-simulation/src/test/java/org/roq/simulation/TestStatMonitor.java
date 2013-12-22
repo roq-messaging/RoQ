@@ -56,8 +56,8 @@ public class TestStatMonitor {
 	 */
 	@After
 	public void tearDown() throws Exception {
-		this.launcher.tearDown();
 		this.kpiSubscriber.shutDown();
+		this.launcher.tearDown();
 		Thread.sleep(3000);
 	}
 
@@ -76,6 +76,7 @@ public class TestStatMonitor {
 			
 			// 2. Init the KPI subscriber
 			kpiSubscriber = new KPISubscriberLogger(launcher.getConfigurationServer(), "queue1", false);
+			kpiSubscriber.subscribe();
 			new Thread(kpiSubscriber).start();
 
 			// 3. Create a subscriber
@@ -127,6 +128,8 @@ public class TestStatMonitor {
 			// Delete the queue
 			logicalQFactory.removeQueue("queue1");
 			Thread.sleep(2000);
+			
+			kpiSubscriber.shutDown();
 
 		} catch (InterruptedException e) {
 			e.printStackTrace();

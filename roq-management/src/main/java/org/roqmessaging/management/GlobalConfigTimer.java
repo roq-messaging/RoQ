@@ -15,8 +15,6 @@
 package org.roqmessaging.management;
 
 import java.util.TimerTask;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
@@ -46,8 +44,6 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 	private GlobalConfigurationManager configurationManager = null;
 	//The serializer
 	private RoQSerializationUtils serializationUtils = null;
-	//Lock to avoid course condition
-	private Lock lock = new ReentrantLock();
 
 	/**
 	 * Constructor

@@ -61,8 +61,6 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 			// Copy parameters
 			this.configurationServer = globalConfiguration;
 			this.qName = qName;
-			// init subscription
-			subscribe();
 		} catch (Exception e) {
 			logger.error("Error while initiating the KPI statistic channel", e);
 		}
@@ -70,14 +68,17 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	
 	/**
 	 * Subscribe to the statistic stream got from the global configuration
+	 * @return true if the subscription succeed, false in the other cases.
 	 * @throws IllegalStateException if the monitor stat is not present in the cache
 	 */
-	protected void subscribe() throws IllegalStateException {
+	public boolean subscribe() throws IllegalStateException {
 		logger.debug("Get the stat monitor address from the GCM");
 		// 1. Get the location in BSON
 		// 1.1 Create the request socket
 		ZMQ.Socket globalConfigReq = context.socket(ZMQ.REQ);
-		globalConfigReq.connect("tcp://" + this.configurationServer + ":5000");
+		String gcm = "tcp://" + this.configurationServer + ":5000";
+		logger.debug("Sending request to GCM = "+ gcm);
+		globalConfigReq.connect(gcm);
 
 		// 1.2 Send the request
 		// Prepare the request BSON object
@@ -89,15 +90,24 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 		byte[] configuration = globalConfigReq.recv(0);
 		//Decode answer
 		BSONObject dConfiguration = BSON.decode(configuration);
+		//Check the error code
+		if(dConfiguration.containsField("RESULT")){
+			if((int)dConfiguration.get("RESULT") == RoQConstant.FAIL){
+				logger.warn("The subscribe request failed because of the queue configuration: "+ dConfiguration.get("COMMENT"));
+				return false;
+			}
+		}
 		String monitorStatServer = (String) dConfiguration.get(RoQConstant.BSON_STAT_MONITOR_HOST);
 		Assert.assertNotNull(monitorStatServer);
 		logger.debug("Got the Stat monitor address @"+ monitorStatServer);
 		
 		// 2. Register a socket to the stat monitor
 		kpiSocket = context.socket(ZMQ.SUB);
+		kpiSocket.setReceiveTimeOut(100);
 		kpiSocket.connect(monitorStatServer);
 		kpiSocket.subscribe("".getBytes());
 		logger.debug("Connected to Stat monitor " + monitorStatServer);
+		return true;
 	}
 
 	/**
@@ -109,12 +119,15 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 		poller.register(kpiSocket);
 			while (active) {
 				poller.poll(100);
-				if (active & poller.pollin(0)) {
+				if (poller.pollin(0)) {
 					do {
-						// Stat coming from the KPI stream
-						BSONObject statObj = BSON.decode(kpiSocket.recv(0));
-						logger.debug("Start analysing info code " + statObj.get("CMD"));
-						processStat((Integer) statObj.get("CMD"), statObj, kpiSocket);
+						if(active){
+							// Stat coming from the KPI stream
+							BSONObject statObj = BSON.decode(kpiSocket.recv(0));
+							logger.debug("Start analysing info code " + statObj.get("CMD"));
+							processStat((Integer) statObj.get("CMD"), statObj, kpiSocket);
+						}else break;
+						
 					} while (kpiSocket.hasReceiveMore());
 				}
 			}

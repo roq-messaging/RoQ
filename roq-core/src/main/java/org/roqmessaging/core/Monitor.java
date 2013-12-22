@@ -53,7 +53,6 @@ public class Monitor implements Runnable, IStoppable {
 	//Monitor heart beat socket, client can check that monitor is alive
 	private ZMQ.Socket heartBeat = null;
 	private int basePort = 0, statPort =0;
-	
 	//The handle to the statistic monitor thread
 	private StatisticMonitor statMonitor = null;
 	//Shut down monitor
@@ -73,54 +72,70 @@ public class Monitor implements Runnable, IStoppable {
 	 * @param qname the logical queue from which the monitor belongs to
 	 * @param period the stat period for publication
 	 */
-	public Monitor(int basePort, int statPort, String qname, String period){
-		this.basePort = basePort;
-		this.statPort = statPort;
-		this.qName = qname;
-		this.period = Integer.parseInt(period);
-		knownHosts = new ArrayList<ExchangeState>();
-		hostsToRemove = new ArrayList<Integer>();
-		maxThroughput = 75000000L; // Maximum throughput per exchange, in
-									// bytes/minute
+	public Monitor(int basePort, int statPort, String qname, String period) {
+		try {
+			this.statPort = statPort;
+			this.qName = qname;
+			this.period = Integer.parseInt(period);
+			knownHosts = new ArrayList<ExchangeState>();
+			hostsToRemove = new ArrayList<Integer>();
+			maxThroughput = 75000000L; // Maximum throughput per exchange, in
+										// bytes/minute
 
-		context = ZMQ.context(1);
+			context = ZMQ.context(1);
 
-		producersPub = context.socket(ZMQ.PUB);
-		producersPub.bind("tcp://*:"+(basePort+2));
-		logger.debug("Binding procuder to "+"tcp://*:"+(basePort+2));
+			producersPub = context.socket(ZMQ.PUB);
+			producersPub.bind("tcp://*:" + (basePort + 2));
+			logger.debug("Binding procuder to " + "tcp://*:" + (basePort + 2));
 
-		brokerSub = context.socket(ZMQ.SUB);
-		brokerSub.bind("tcp://*:"+(basePort));
-		logger.debug("Binding broker Sub  to "+"tcp://*:"+(basePort));
-		brokerSub.subscribe("".getBytes());
+			brokerSub = context.socket(ZMQ.SUB);
+			brokerSub.bind("tcp://*:" + (basePort));
+			logger.debug("Binding broker Sub  to " + "tcp://*:" + (basePort));
+			brokerSub.subscribe("".getBytes());
 
-		initRep = context.socket(ZMQ.REP);
-		initRep.bind("tcp://*:"+(basePort+1));
-		logger.debug("Init request socket to "+"tcp://*:"+(basePort+1));
+			initRep = context.socket(ZMQ.REP);
+			initRep.bind("tcp://*:" + (basePort + 1));
+			logger.debug("Init request socket to " + "tcp://*:" + (basePort + 1));
 
-		listenersPub = context.socket(ZMQ.PUB);
-		listenersPub.bind("tcp://*:"+(basePort+3));
-		
-		heartBeat = context.socket(ZMQ.REP);
-		heartBeat.bind("tcp://*:"+(basePort+4));
-		logger.debug("Heart beat request socket to "+"tcp://*:"+(basePort+4));
-		
-		//Stat monitor init thread
+			listenersPub = context.socket(ZMQ.PUB);
+			listenersPub.bind("tcp://*:" + (basePort + 3));
+
+			heartBeat = context.socket(ZMQ.REP);
+			heartBeat.bind("tcp://*:" + (basePort + 4));
+			logger.debug("Heart beat request socket to " + "tcp://*:" + (basePort + 4));
+
+		} catch (Exception e) {
+			logger.error("Error while creating Monitor, ABORDED", e);
+			return;
+		}
+
+		// Stat monitor init thread
 		this.statMonitor = new StatisticMonitor(statPort, qname);
 		new Thread(this.statMonitor).start();
-		
-		//shutodown monitor
-		//initiatlisation of the shutdown thread
-		this.shutDownMonitor = new ShutDownMonitor(basePort+5, this);
+
+		// shutodown monitor
+		// initiatlisation of the shutdown thread
+		this.shutDownMonitor = new ShutDownMonitor(basePort + 5, this);
 		new Thread(shutDownMonitor).start();
-		logger.debug("Started shutdown monitor on "+ (basePort+5));
-		
+		logger.debug("Started shutdown monitor on " + (basePort + 5));
+
 	}
 	
+	/**
+	 * @param address the address:front port:backport
+	 * @return the index of the state in the knowhost or -1;
+	 */
 	private int hostLookup(String address) {
-		for (int i = 0; i < knownHosts.size(); i++) {
-			if (knownHosts.get(i).getAddress().equals(address))
-				return i;
+		String[] addressInfo = address.split(":");
+		int index = 0;
+		if(addressInfo.length==3){
+			for (ExchangeState state_i : knownHosts) {
+				if (state_i.match(addressInfo[0], addressInfo[1], addressInfo[2])) {
+					return index;
+				}else{
+					index++;
+				}
+			}
 		}
 		return -1;
 	}
@@ -141,6 +156,7 @@ public class Monitor implements Runnable, IStoppable {
 				if (knownHosts.get(i).getThroughput()>(this.maxThroughput/10)) coldStart =false;
 				//Check the less overloaded
 				if (knownHosts.get(i).getThroughput() < tempt) {
+					logger.debug("Host "+i+ " has a throughput of "+ knownHosts.get(i).getThroughput() + " byte/min");
 					tempt = knownHosts.get(i).getThroughput();
 					indexLoad = i;
 				}
@@ -194,12 +210,12 @@ public class Monitor implements Runnable, IStoppable {
 	 */
 	private int logHost(String address, String frontPort, String backPort) {
 		if(!this.shuttingDown){
-			logger.debug("Log host procedure for "+ address +": "+ frontPort +"->"+ backPort);
+			logger.trace("Log host procedure for "+ address +": "+ frontPort +"->"+ backPort);
 			if (!knownHosts.isEmpty()) {
 				for (ExchangeState exchange_i : knownHosts) {
 					if(exchange_i.match(address, frontPort, backPort)){
 						exchange_i.setAlive(true);
-						 logger.debug("Host "+address+": "+ frontPort+"->"+ backPort+"  reported alive");
+						 logger.trace("Host "+address+": "+ frontPort+"->"+ backPort+"  reported alive");
 						return 0;
 					}
 				}
@@ -231,19 +247,24 @@ public class Monitor implements Runnable, IStoppable {
 
 
 	/**
-	 * @param address the exchange host address 
+	 * @param address the exchange host address under the format IP:front port: back port
 	 * @param throughput the current throughput
 	 * @param nbprod the number of producers connected to the exchange
 	 */
 	private void updateExchgMetadata(String address, String throughput, String nbprod) {
 		logger.debug("update Exchg Metadata");
+		String[] addressInfo = address.split(":");
+		if(addressInfo.length!=3){
+			logger.error(new IllegalStateException("The message EVENT_MOST_PRODUCTIVE is nof formated correctly, the address is not as IP:front port:back port"));
+			return;
+		}
 		if(!this.shuttingDown){
-			for (int i = 0; i < knownHosts.size(); i++) {
-				if (address.equals(knownHosts.get(i).getAddress())) {
-					knownHosts.get(i).setThroughput(Long.parseLong(throughput));
-					knownHosts.get(i).setNbProd(Integer.parseInt(nbprod));
-					logger.info("Host " + knownHosts.get(i).getAddress() + " : " + knownHosts.get(i).getThroughput()
-							+ " bytes/min, " + knownHosts.get(i).getNbProd() + " users");
+			for (ExchangeState state_i : knownHosts) {
+				if(state_i.match(addressInfo[0], addressInfo[1], addressInfo[2])){
+					state_i.setThroughput(Long.parseLong(throughput));
+					state_i.setNbProd(Integer.parseInt(nbprod));
+					logger.info("Host " + state_i.getAddress() + " : " + state_i.getFrontPort()+ "->" + state_i.getBackPort()+" :" + state_i.getThroughput()
+							+ " bytes/min, " + state_i.getNbProd() + " users");
 				}
 			}
 		}else{
@@ -266,12 +287,15 @@ public class Monitor implements Runnable, IStoppable {
 	 */
 	private String relocateProd(String exchg_addr, String bytesSent) {
 		logger.debug("Relocate exchange procedure");
-		if (knownHosts.size() > 0 && hostLookup(exchg_addr) != -1 && !this.shuttingDown) {
-			int exch_index = hostLookup(exchg_addr);
+		int exch_index = hostLookup(exchg_addr);
+		if (knownHosts.size() > 0 && exch_index != -1 && !this.shuttingDown) {
+			logger.debug("Do we need to relocate ?");
 			//TODO externalize 1.0, 0.90, and 0.20 tolerance values
 			if (knownHosts.get(exch_index).getThroughput() > (java.lang.Math.round(maxThroughput * 1.10))) { 
+				logger.debug("Is "+knownHosts.get(exch_index).getThroughput() + " > "+  (java.lang.Math.round(maxThroughput * 1.10)));
 				//Limit case: exchange saturated with only one producer TODO raised alarm
 				if (knownHosts.get(exch_index).getNbProd() == 1) { 
+					logger.error("Limit Case we cannot relocate  the unique producer !");
 					return "";
 				} else {
 					int candidate_index = getFreeHost_index(exch_index);
@@ -282,7 +306,10 @@ public class Monitor implements Runnable, IStoppable {
 							
 							knownHosts.get(candidate_index).addThroughput(Long.parseLong(bytesSent));
 							knownHosts.get(candidate_index).addNbProd();
-							return candidate;
+							knownHosts.get(exch_index).lessNbProd();
+							knownHosts.get(exch_index).lessThroughput(Long.parseLong(bytesSent));
+							logger.info("Relocate a publisher on "+ candidate+":"+knownHosts.get(candidate_index).getFrontPort());
+							return candidate+":"+knownHosts.get(candidate_index).getFrontPort();
 						}else if (knownHosts.get(candidate_index).getThroughput() + Long.parseLong(bytesSent) < knownHosts
 								.get(hostLookup(exchg_addr)).getThroughput()
 								&& 
@@ -291,8 +318,10 @@ public class Monitor implements Runnable, IStoppable {
 							
 							knownHosts.get(candidate_index).addThroughput(Long.parseLong(bytesSent));
 							knownHosts.get(candidate_index).addNbProd();
-							logger.info("Relocating for load optimization");
-							return candidate;
+							knownHosts.get(exch_index).lessNbProd();
+							knownHosts.get(exch_index).lessThroughput(Long.parseLong(bytesSent));
+							logger.info("Relocating for load optimization on "+ candidate+":"+knownHosts.get(candidate_index).getFrontPort());
+							return candidate+":"+knownHosts.get(candidate_index).getFrontPort();
 						}
 					}
 				}
@@ -323,7 +352,7 @@ public class Monitor implements Runnable, IStoppable {
 			if (System.currentTimeMillis() - lastPublish > 10000) { 
 				listenersPub.send(("2," + bcastExchg()).getBytes(), 0);
 				lastPublish = System.currentTimeMillis();
-				logger.info("Alive hosts: " + bcastExchg() );
+				logger.debug("Alive hosts: " + bcastExchg() );
 			}
 			while (!hostsToRemove.isEmpty() && !this.shuttingDown) {
 				try {
@@ -344,7 +373,7 @@ public class Monitor implements Runnable, IStoppable {
 					// connection
 					if (info.length > 1) {
 						infoCode = Integer.parseInt(info[0]);
-						logger.debug("Recieving message from Exhange:" + infoCode + " info array " + info.length);
+						logger.trace("Recieving message from Exhange:" + infoCode + " info array " + info.length);
 						switch (infoCode) {
 						case RoQConstant.DEBUG:
 							// Broker debug code
@@ -364,11 +393,11 @@ public class Monitor implements Runnable, IStoppable {
 							break;
 						case RoQConstant.EVENT_HEART_BEAT:
 							// Broker heartbeat code Registration
-							logger.debug("Getting Heart Beat information");
+							logger.trace("Getting Heart Beat information");
 							if (info.length == 4) {
 								if (logHost(info[1], info[2], info[3]) == 1) {
 									listenersPub.send((new Integer(RoQConstant.REQUEST_UPDATE_EXCHANGE_LIST).toString()
-											+ "," + info[1]).getBytes(), 0);
+											+ "," + info[1]+":"+ info[2]).getBytes(), 0);
 								}
 							} else
 								logger.error("The message recieved from the exchange heart beat"
@@ -446,6 +475,7 @@ public class Monitor implements Runnable, IStoppable {
 		brokerSub.close();
 		initRep.close();
 		listenersPub.close();
+		heartBeat.close();
 	}
 
 

@@ -162,14 +162,15 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				if(this.stateDAO.getQueueMonitorMap().containsKey(qName) && this.stateDAO.getQueueMonitorStatMap().containsKey(qName)){
 					//Replace the stat monitor port to the subscription port
 					String subscribingKPIMonitor = this.stateDAO.getQueueMonitorStatMap().get(qName);
-					int basePort = this.serializationUtils.extractBasePort(subscribingKPIMonitor);
+					int basePort = RoQSerializationUtils.extractBasePort(subscribingKPIMonitor);
 					String portOff = subscribingKPIMonitor.substring(0, subscribingKPIMonitor.length() - "xxxx".length());
 					subscribingKPIMonitor= portOff+(basePort+1);
 					logger.debug("Answering back:"+ this.stateDAO.getQueueMonitorMap().get(qName)+","+subscribingKPIMonitor);
 					this.clientReqSocket.send(this.serialiazer.serialiazeMonitorInfo(this.stateDAO.getQueueMonitorMap().get(qName),subscribingKPIMonitor), 0);
 				}else{
 					logger.warn(" No logical queue as:"+qName);
-					this.clientReqSocket.send(("").getBytes(), 0);
+					this.clientReqSocket.send(serialiazer.serialiazeConfigAnswer(RoQConstant.FAIL,
+							"The Queue "+qName+"  is not registred."), 0);
 				}
 			}
 		}else{
@@ -281,14 +282,15 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				if(this.stateDAO.getQueueMonitorMap().containsKey(info[1]) && this.stateDAO.getQueueMonitorStatMap().containsKey(info[1])){
 					//Replace the stat monitor port to the subscription port
 					String subscribingKPIMonitor = this.stateDAO.getQueueMonitorStatMap().get(info[1]);
-					int basePort = this.serializationUtils.extractBasePort(subscribingKPIMonitor);
+					int basePort = RoQSerializationUtils.extractBasePort(subscribingKPIMonitor);
 					String portOff = subscribingKPIMonitor.substring(0, subscribingKPIMonitor.length() - "xxxx".length());
 					subscribingKPIMonitor= portOff+(basePort+1);
 					logger.debug("Answering back:"+ this.stateDAO.getQueueMonitorMap().get(info[1])+","+subscribingKPIMonitor);
 					this.clientReqSocket.send(this.serialiazer.serialiazeMonitorInfo(this.stateDAO.getQueueMonitorMap().get(info[1]),subscribingKPIMonitor), 0);
 				}else{
 					logger.warn(" No logical queue as:"+info[1]);
-					this.clientReqSocket.send(("").getBytes(), 0);
+					this.clientReqSocket.send(serialiazer.serialiazeConfigAnswer(RoQConstant.FAIL,
+							"The Queue "+info[1]+"  is not registred."), 0);
 				}
 			}
 			break;

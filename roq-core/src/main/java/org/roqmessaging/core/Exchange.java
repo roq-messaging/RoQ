@@ -16,7 +16,7 @@
 
 package org.roqmessaging.core;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Timer;
 
 import org.apache.log4j.Logger;
@@ -26,6 +26,7 @@ import org.roqmessaging.core.timer.ExchangeStatTimer;
 import org.roqmessaging.core.timer.Heartbeat;
 import org.roqmessaging.state.ProducerState;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Socket;
 
 
 /**
@@ -39,16 +40,17 @@ public class Exchange implements Runnable, IStoppable {
 	
 	private Logger logger = Logger.getLogger(Exchange.class);
 
-	private ArrayList<ProducerState> knownProd;
+	private HashMap<String, ProducerState> knownProd;
 	private ZMQ.Context context;
 	private ZMQ.Socket frontendSub;
 	private ZMQ.Socket backendPub;
 	private ZMQ.Socket monitorPub;
+	private ZMQ.Socket pubInfoRep;
 	private String s_frontend;
 	private String s_backend;
 	private String s_monitor;
 	private StatDataState statistic=null;
-	private int frontEnd, backEnd;
+	public int frontEnd, backEnd;
 	//the heart beat and the stat
 	private Timer timer = null;
 	private volatile boolean active=false;
@@ -58,7 +60,7 @@ public class Exchange implements Runnable, IStoppable {
 	private ShutDownMonitor shutDownMonitor = null;
 
 	//Timeout value of the front sub poller
-	private long timeout=5;
+	private long timeout=80;
 
 	/**
 	 * Notice that we start a shutdown request socket on frontEnd port +1
@@ -68,7 +70,7 @@ public class Exchange implements Runnable, IStoppable {
 	 * @param statHost tcp://monitor:statport
 	 */
 	public Exchange(int frontend, int backend, String monitorHost, String statHost) {
-		knownProd = new ArrayList<ProducerState>();
+		knownProd = new HashMap<String, ProducerState>();
 		this.statistic = new StatDataState();
 		this.statistic.setProcessed(0);
 		this.statistic.setThroughput(0);
@@ -88,24 +90,40 @@ public class Exchange implements Runnable, IStoppable {
 		// Use these to (double) check if the settings were correctly set  
 		// logger.info(this.backend.getHWM());
 		// logger.info(this.backend.getSwap());
-		this.backendPub.setHWM(3400);  
-
+		setSocketOptions(this.backendPub);
+		setSocketOptions(this.frontendSub);
+	    
 		this.frontendSub.bind(s_frontend);
 		this.frontendSub.subscribe("".getBytes());
 
-		// this.backend.setSwap(500000000);
 		this.backendPub.bind(s_backend);
 		this.monitorPub = context.socket(ZMQ.PUB);
+		
+		//The channel on which the publisher will notifies their deconnection
+		this.pubInfoRep =  context.socket(ZMQ.REP);
+		this.pubInfoRep.bind("tcp://*:" +(backend+2));
 		
 		this.monitorPub.connect(s_monitor);
 		this.frontEnd=frontend;
 		this.backEnd= backend;
 		this.active = true;
 		
+		if(logger.isInfoEnabled()){
+			logger.info("BackendSub: SndHWM="+this.backendPub.getSndHWM()+" RcvHWM="+this.backendPub.getRcvHWM());
+	        logger.info("FrontendSub: SndHWM="+this.frontendSub.getSndHWM()+" RcvHWM="+this.frontendSub.getRcvHWM());
+		}
+			
+		
 		//initiatlisation of the shutdown thread
 		this.shutDownMonitor = new ShutDownMonitor(backend+1, this);
 		new Thread(shutDownMonitor).start();
 		logger.debug("Started shutdown monitor on "+ (backend+1));
+	}
+
+	private void setSocketOptions(Socket sock) {
+		sock.setSndHWM(100000);  
+		sock.setRcvHWM(100000);
+		
 	}
 
 	/**
@@ -115,21 +133,15 @@ public class Exchange implements Runnable, IStoppable {
 	 */
 	private void logPayload(long msgsize, String prodID) {
 		statistic.setThroughput(statistic.getThroughput()+ msgsize);
-		if (!knownProd.isEmpty()) {
-			for (int i = 0; i < knownProd.size(); i++) {
-				if (prodID.equals(knownProd.get(i).getID())) {
-					knownProd.get(i).addMsgSent();
-					knownProd.get(i).setActive(true);
-					knownProd.get(i).addBytesSent(msgsize);
-					return;
-				}
-			}
+		ProducerState state = knownProd.get(prodID);
+		if(state!=null){
+			state.addBytesSent(msgsize);
+		}else{
+			state = new ProducerState(prodID);
+			state.addBytesSent(msgsize);
+			knownProd.put(prodID,state );
+			logger.debug("A new challenger has come ("+prodID+") on "+ID+", they are now :" + knownProd.size());
 		}
-		knownProd.add(new ProducerState(prodID));
-		knownProd.get(knownProd.size() - 1).addBytesSent(msgsize);
-		knownProd.get(knownProd.size() - 1).addMsgSent();
-		logger.info("A new challenger has come: "+prodID);
-
 	}
 
 	/**
@@ -139,15 +151,15 @@ public class Exchange implements Runnable, IStoppable {
 	public  String getMostProducer() {
 		if (!knownProd.isEmpty()) {
 			long max = 0;
-			int index = 0;
-			for (int i = 0; i < knownProd.size(); i++) {
-				if (knownProd.get(i).getBytesSent() > max) {
-					max = knownProd.get(i).getBytesSent();
-					index = i;
+			String ID = null;
+			for (ProducerState state_i : knownProd.values()) {
+				if(state_i.getBytesSent()>max){
+					max = state_i.getBytesSent();
+					ID = state_i.getID();
 				}
 			}
-			return knownProd.get(index).getID() + ","
-					+ Long.toString(knownProd.get(index).getBytesSent());
+			return ID + ","
+					+ Long.toString(knownProd.get(ID).getBytesSent());
 		}
 		return "x,x";
 	}
@@ -161,11 +173,11 @@ public class Exchange implements Runnable, IStoppable {
 		//This is important that the exchange stat timer is triggered every second, since it computes throughput in byte/min.
 		timer.schedule(exchStatTimer, 100, 60000);
 		int part;
-		String prodID = "";
+		String prodID= null;
 		//Adding the poller
-		ZMQ.Poller poller = new ZMQ.Poller(1);
+		ZMQ.Poller poller = new ZMQ.Poller(2);
 		poller.register(this.frontendSub);
-		
+		poller.register(this.pubInfoRep);
 		while (this.active) {
 			byte[] message;
 			part = 0;
@@ -181,17 +193,28 @@ public class Exchange implements Runnable, IStoppable {
 					message = frontendSub.recv(0);
 					part++;
 					if (part == 2) {
-						prodID = new String(message);
+						prodID=bytesToStringUTFCustom(message);
 					}
 					if (part == 3) {
 						logPayload(message.length, prodID);
 					}
 					backendPub.send(message, frontendSub.hasReceiveMore() ? ZMQ.SNDMORE : 0);
-					// if (!frontendSub.hasReceiveMore())
-					// break;
-
 				} while (this.frontendSub.hasReceiveMore() && this.active);
-				this.statistic.setProcessed(this.statistic.getProcessed() + 1);
+				this.statistic.processed++;
+			}else{
+				if(poller.pollin(1)){
+					//A publisher sends a deconnexion event
+					byte[] info = pubInfoRep.recv(0);
+					String mInfo = new String(info);
+					String[] arrayInfo = mInfo.split(","); //CODE, ID
+					if(knownProd.remove(arrayInfo[1])!=null){
+						logger.info("Successfully removed publisher "+arrayInfo[1] +" remains "+ knownProd.size() + " publishers.");
+						this.pubInfoRep.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+					}else{
+						logger.warn("The publisher "+ arrayInfo[1]+"  is not known");
+						this.pubInfoRep.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
+					}
+				}
 			}
 		}
 		closeSockets();
@@ -200,6 +223,21 @@ public class Exchange implements Runnable, IStoppable {
 		timer.purge();
 		timer.cancel();
 		logger.info("Stopping Exchange "+frontEnd+"->"+backEnd);
+	}
+	
+	/**
+	 * Optimized decoding of strings.
+	 *  @param bytes the encoded byte array
+	 * @return the decoded string
+	 */
+	public String bytesToStringUTFCustom(byte[] bytes) {
+		char[] buffer = new char[bytes.length >> 1];
+		for (int i = 0; i < buffer.length; i++) {
+			int bpos = i << 1;
+			char c = (char) (((bytes[bpos] & 0x00FF) << 8) + (bytes[bpos + 1] & 0x00FF));
+			buffer[i] = c;
+		}
+		return new String(buffer);
 	}
 
 
@@ -231,7 +269,7 @@ public class Exchange implements Runnable, IStoppable {
 	/**
 	 * @return the knownProd
 	 */
-	public ArrayList<ProducerState> getKnownProd() {
+	public HashMap<String, ProducerState> getKnownProd() {
 		return knownProd;
 	}
 

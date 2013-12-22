@@ -140,6 +140,7 @@ public class BSONUnitTest {
 		BSONObject answer = new BasicBSONObject();
 		answer.put(RoQConstant.BSON_MONITOR_HOST,"tcp://127.0.1.1:5000");
 		answer.put(RoQConstant.BSON_STAT_MONITOR_HOST, "tcp://127.0.0.1:5061");
+		answer.put("RESULT", RoQConstant.OK);
 		this.logger.debug("Test Get Host by QName:");
 		this.logger.debug(answer);
 		

@@ -79,6 +79,7 @@ public class TestCommonsApacheConfiguration {
 			Assert.assertEquals(5800, hostDao.getStatMonitorBasePort());
 			Assert.assertEquals(5500, hostDao.getMonitorBasePort());
 			Assert.assertEquals(6000, hostDao.getExchangeFrontEndPort());
+			logger.info(hostDao.toString());
 		} catch (ConfigurationException e) {
 			logger.error(e);
 		}
