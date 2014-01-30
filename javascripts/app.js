@@ -1,10 +1,13 @@
 /* Foundation v2.1.4 http://foundation.zurb.com */
 $(document).ready(function () {
-
+  
 	/* Use this js doc for all application specific JS */
 
 	/* TABS --------------------------------- */
 	/* Remove if you don't need :) */
+
+  //Go to the correct tab when the page load.
+  activateTab($('a[href="' + location.hash + '"]'));
 
 	function activateTab($tab) {
 		var $activeTab = $tab.closest('dl').find('a.active'),
@@ -18,26 +21,16 @@ $(document).ready(function () {
 		$(contentLocation).closest('.tabs-content').children('li').hide();
 		$(contentLocation).show();
 	}
-
-	$('dl.tabs').each(function () {
-		//Get all tabs
-		var tabs = $(this).children('dd').children('a');
-		tabs.click(function (e) {
-			activateTab($(this));
-		});
-	});
-  
-  //Tab activation by links on the home tab
-  $('a.call2tab').click(function () {
-		//Get corresponding tab
-    var target = $(this).attr("href");
-    var tabTarget = $("dl.tabs > dd > a[href='"+target+"']");
-		activateTab(tabTarget);
-	});
-
-	if (window.location.hash) {
-		activateTab($('a[href="' + window.location.hash + '"]'));
-	}
+    
+  //Tab activation when hash changes
+  window.onhashchange = function () {
+    if (location.hash === "") {
+      target="#home";
+    } else {
+      target=location.hash;
+    }
+    activateTab($('a[href="' + target + '"]'));
+  }
 
 	/* ALERT BOXES ------------ */
 	$(".alert-box").delegate("a.close", "click", function(event) {
