@@ -37,8 +37,8 @@ public class GCMPropertyDAO {
 	private String cloudGateWay = "??";
 	//API end point for the cloud server
 	private String cloudEndPoint = "??";
-	
-	
+	// Class which contains the ports used for the various components of the GCM.
+	public GCMPorts ports = new GCMPorts();
 
 	/**
 	 * @return the period

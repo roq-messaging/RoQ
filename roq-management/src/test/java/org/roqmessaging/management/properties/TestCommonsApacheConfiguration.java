@@ -70,8 +70,11 @@ public class TestCommonsApacheConfiguration {
 			logger.info("user Passwd  = "+ dao.getCloudPasswd());
 			Assert.assertEquals("sabsab", dao.getCloudPasswd());
 			
-			logger.info("End point cloud  = "+ dao.getCloudEndPoint());
+			logger.info("end point cloud  = "+ dao.getCloudEndPoint());
 			Assert.assertEquals("http://inferno.local:2633/RPC2", dao.getCloudEndPoint());
+
+			logger.info("GCM base port  = "+ dao.ports.get("GlobalConfigurationManager.interface"));
+			Assert.assertEquals("5000", dao.ports.get("GlobalConfigurationManager.interface"));
 			
 			HostConfigDAO hostDao = reader.loadHCMConfiguration("HCM.properties");
 			logger.info("gcm.address = "+ hostDao.getGcmAddress());

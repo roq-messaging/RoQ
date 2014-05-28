@@ -48,10 +48,10 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 	/**
 	 * Constructor
 	 */
-	public GlobalConfigTimer(GlobalConfigurationManager manager) {
+	public GlobalConfigTimer(int port, GlobalConfigurationManager manager) {
 		this.context = ZMQ.context(1);
 		this.mngtPubSocket = context.socket(ZMQ.PUB);
-		this.mngtPubSocket.bind("tcp://*:5002");
+		this.mngtPubSocket.bind("tcp://*:"+port);
 		
 		this.configurationManager = manager;
 		this.serializationUtils = new RoQSerializationUtils();

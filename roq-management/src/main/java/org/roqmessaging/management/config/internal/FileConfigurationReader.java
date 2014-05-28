@@ -51,6 +51,8 @@ public class FileConfigurationReader {
 				configDao.setCloudPasswd(config.getString("cloud.password"));
 				configDao.setCloudGateWay(config.getString("cloud.gateway"));
 			}
+			// initialize the ports used by the GCM
+			configDao.ports.setBasePort(config.getInt("ports.base"));
 		} catch (Exception configE) {
 			logger.error("Error while reading configuration file - skipped but set the default configuration", configE);
 		}

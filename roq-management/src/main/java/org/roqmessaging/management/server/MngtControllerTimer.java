@@ -38,18 +38,16 @@ public class MngtControllerTimer extends TimerTask {
 	//ZMQ init
 	private ZMQ.Socket mngtPubSocket = null;
 	private ZMQ.Context context;
-	//The port on which we broadcast the config
-	private int port = 5004;
 	//The Serialiazer
 	private IRoQSerializer serializer = null;
 	//logger
 	private Logger logger = Logger.getLogger(MngtControllerTimer.class);
 	
 	/**
-	 * Init variable and open a pub socket on the 5004 port
+	 * Init variable and open a pub socket on the given port
 	 * @param period the publication period
 	 * @param controller the handle to the controller
-	 * @param port the port to start the publisher (5004 by default)
+	 * @param port the port to publish on
 	 */
 	public MngtControllerTimer(int period, MngtController controller, int port) {
 		super();
@@ -59,8 +57,7 @@ public class MngtControllerTimer extends TimerTask {
 		//ZMQ init
 		this.context = ZMQ.context(1);
 		this.mngtPubSocket = context.socket(ZMQ.PUB);
-		this.port = (port==0?this.port:port);
-		this.mngtPubSocket.bind("tcp://*:"+this.port);
+		this.mngtPubSocket.bind("tcp://*:"+port);
 	}
 
 	/**
@@ -68,7 +65,7 @@ public class MngtControllerTimer extends TimerTask {
 	 */
 	@Override
 	public void run() {
-		logger.debug("Sending Global configuration update to Management console broad" + " cast on port..." + this.port);
+		logger.debug("Sending stored topology");
 		try {
 			// 1. Get the configuration
 			ArrayList<QueueManagementState> queues =  this.controller.getStorage().getQueues();
