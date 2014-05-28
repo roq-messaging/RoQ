@@ -75,6 +75,8 @@ public class FileConfigurationReader {
 			config.load(file);
 			// 3. Set the properties
 			configDao.setGcmAddress(config.getString("gcm.address")!=null?config.getString("gcm.address"):configDao.getGcmAddress());
+			configDao.ports.setBasePort(config.getInt("gcm.ports.base"));
+			
 			configDao.setExchangeFrontEndPort(config.getInt("exchange.base.port"));
 			configDao.setMonitorBasePort(config.getInt("monitor.base.port"));
 			configDao.setStatMonitorBasePort(config.getInt("statmonitor.base.port"));

@@ -243,11 +243,18 @@ public class HostConfigManager implements Runnable, IStoppable {
 			//1. Compute the stat monitor port+2
 			int basePort = RoQSerializationUtils.extractBasePort(this.qMonitorStatMap.get(qName));
 			basePort+=2;
+			
+			// Get the address and the ports used by the GCM
+			String gcm_address = this.properties.getGcmAddress();
+			int gcm_topologyPort = this.properties.ports.get("GlobalConfigurationManager.interface");
+			int gcm_adminPort    = this.properties.ports.get("MngtController.interface");
+			
 			//2. Check wether we need to launch it locally or in its own process
 			if(this.properties.isQueueInHcmVm()){
+				// Local startup in the same VM as the host config Monitor
 				logger.info("Starting the scaling process  for queue " + qName + ", using a listener port= " + basePort +", GCM ="+this.properties.getGcmAddress() );
-				//Local startup in the same VM as the host config Monitor
-				ScalingProcess scalingProcess = new ScalingProcess(this.properties.getGcmAddress(), qName,basePort );
+				
+				ScalingProcess scalingProcess = new ScalingProcess(gcm_address, gcm_topologyPort, gcm_adminPort, qName, basePort);
 				//Here is the problem we still do not have registred the queue at the GCM
 				scalingProcess.subscribe();
 				// Launch the thread
@@ -258,8 +265,9 @@ public class HostConfigManager implements Runnable, IStoppable {
 				try {
 					ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
 							+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),
-							ScalingProcessLauncher.class.getCanonicalName(), this.properties.getGcmAddress(),
-							qName, new Integer((basePort)).toString());
+							ScalingProcessLauncher.class.getCanonicalName(),
+							gcm_address, Integer.toString(gcm_topologyPort), Integer.toString(gcm_adminPort),
+							qName, Integer.toString(basePort));
 					logger.debug("Starting: " + pb.command());
 					final Process process = pb.start();
 					pipe(process.getErrorStream(), System.err);
