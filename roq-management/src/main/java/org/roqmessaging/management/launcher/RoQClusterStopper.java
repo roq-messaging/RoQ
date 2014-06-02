@@ -36,12 +36,14 @@ public class RoQClusterStopper {
 		}else{
 			if( args[0].equalsIgnoreCase("GCM"))	{
 				System.out.println("Shutting down GCM @"+target);
+				// TODO Find a way to configure this port 
 				ShutDownSender sender = new ShutDownSender("tcp://"+target+":5001");
 				sender.shutdown();
 				System.out.println("Shutting down Signal sent");
 			}else{
 				if( args[0].equalsIgnoreCase("HCM"))	{
 					System.out.println("Shutting down HCM @"+target);
+					// TODO Find a way to configure this port
 					ShutDownSender sender = new ShutDownSender("tcp://"+target+":5101");
 					sender.shutdown();
 					System.out.println("Shutting down Signal sent");
