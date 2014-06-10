@@ -53,6 +53,8 @@ public class FileConfigurationReader {
 			}
 			// initialize the ports used by the GCM
 			configDao.ports.setBasePort(config.getInt("ports.base"));
+			// intialize the zookeeper configuration
+			configDao.zkConfig.servers = config.getString("zk.servers");
 		} catch (Exception configE) {
 			logger.error("Error while reading configuration file - skipped but set the default configuration", configE);
 		}
