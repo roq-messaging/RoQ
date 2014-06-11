@@ -28,6 +28,7 @@ import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
+import org.roqmessaging.management.config.internal.CloudConfig;
 import org.roqmessaging.management.config.internal.FileConfigurationReader;
 import org.roqmessaging.management.config.internal.GCMPropertyDAO;
 import org.roqmessaging.management.serializer.IRoQSerializer;
@@ -86,11 +87,12 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			this.running = true;
 			this.serializationUtils = new RoQSerializationUtils();
 
-			// Read configuration from file
+			// Read the GCM configuration from file
 			FileConfigurationReader reader = new FileConfigurationReader();
 			this.properties = reader.loadGCMConfiguration(configFile);
 			logger.info("Configuration from props: " + properties.toString());
-						
+			
+			
 			// Initialization of the ZMQ port for the GCM interface
 			int port = properties.ports.get("GlobalConfigurationManager.interface");
 			this.context = ZMQ.context(1);
@@ -101,6 +103,18 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			this.zk = new RoQZooKeeperClient(properties.zkConfig);
 			this.zk.start();
 			
+			// clear zookeeper storage if requested
+			if (properties.isFormatDB()) {
+				zk.clear();
+			}
+			
+			// Read the cloud configuration from file
+			// serialize it and save it to ZooKeeper
+			logger.info("Reading cloud configuration from file");
+			CloudConfig cloudConfig = reader.loadCloudConfiguration(configFile);
+			logger.info("Writing cloud configuration to zookeeper");
+			this.zk.setCloudConfig(serializationUtils.serialiseObject(cloudConfig));
+			
 			// Start the shutdown thread
 			int shutDownPort = properties.ports.get("GlobalConfigurationManager.shutDown");
 			this.shutDownMonitor = new ShutDownMonitor(shutDownPort, this);
@@ -108,9 +122,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 
 			// The Management controller - the start is in the run to take the
 			// period attribute
-			this.mngtController = new MngtController("localhost", dbName, (properties.getPeriod() + 500), this.properties);
+			this.mngtController = new MngtController("localhost", dbName, (properties.getPeriod() + 500), this.properties, this.zk);
 			if (properties.isFormatDB()) {
-				zk.clear();
 				this.mngtController.getStorage().formatDB();
 			}
 			new Thread(mngtController).start();

@@ -31,6 +31,7 @@ import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.LogicalQFactory;
+import org.roqmessaging.management.config.internal.CloudConfig;
 import org.roqmessaging.management.config.internal.GCMPropertyDAO;
 import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
@@ -39,6 +40,7 @@ import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
+import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Poller;
 import org.zeromq.ZMQ.Socket;
@@ -89,19 +91,23 @@ public class MngtController implements Runnable, IStoppable {
 	private Timer publicationTimer=null;
 	//Handle ont the timer
 	private MngtControllerTimer controllerTimer=null;
+	
+	private RoQZooKeeperClient zk;
 
 	/**
 	 * Constructor.
 	 * 
 	 * @param globalConfigAddress
 	 *            the address on which the global config server runs.
+	 * @param zk the ZooKeeper client
 	 */
-	public MngtController(String globalConfigAddress, String dbName, int period, GCMPropertyDAO props) {
+	public MngtController(String globalConfigAddress, String dbName, int period, GCMPropertyDAO props, RoQZooKeeperClient zk) {
 		try {
 			this.period = period;
 			this.dbName = dbName;
 			this.properties= props;
 			this.scalingConfigListener = new HashMap<String, ZMQ.Socket>();
+			this.zk = zk;
 			
 			// Get the various ZMQ ports used by the MngtController
 			int interfacePort = properties.ports.get("MngtController.interface");
@@ -599,24 +605,31 @@ public class MngtController implements Runnable, IStoppable {
 							//Request for getting the properties of the cloud user
 						case RoQConstant.BSON_CONFIG_GET_CLOUD_PROPERTIES:
 							logger.debug("GET Cloud properties request...");
-							if(this.properties!=null){
-								BSONObject prop = new BasicBSONObject();
-								prop.put("cloud.use", this.properties.isUseCloud());
-								if(this.properties.isUseCloud()){
-									prop.put("cloud.user", this.properties.getCloudUser());
-									prop.put("cloud.password", this.properties.getCloudPasswd());
-									prop.put("cloud.endpoint", this.properties.getCloudEndPoint());
-									prop.put("cloud.gateway", this.properties.getCloudGateWay());
-									prop.put("RESULT",RoQConstant.OK );
-								}
-								logger.debug("Sending cloud properties to client :"+ prop.toString());
-								mngtRepSocket.send(
-										BSON.encode(prop), 0);
-							}else{
+							
+							// First, Get the cloud config from ZooKeeper
+							byte[] serializedConfig = zk.getCloudConfig();
+							if (serializedConfig == null) {
 								mngtRepSocket.send(
 										serializer.serialiazeConfigAnswer(RoQConstant.FAIL, "The property object is null"), 0);
+								break;
 							}
 							
+							// Then, build a BSON object
+							CloudConfig cloudConfig = serializationUtils.deserializeObject(serializedConfig);
+							BSONObject prop = new BasicBSONObject();
+							prop.put("cloud.use", cloudConfig.inUse);
+							if(cloudConfig.inUse){
+								prop.put("cloud.user",     cloudConfig.user);
+								prop.put("cloud.password", cloudConfig.password);
+								prop.put("cloud.endpoint", cloudConfig.endpoint);
+								prop.put("cloud.gateway",  cloudConfig.gateway);
+								prop.put("RESULT",RoQConstant.OK );
+							}
+							
+							// Send it
+							logger.debug("Sending cloud properties to client :"+ prop.toString());
+							mngtRepSocket.send(
+									BSON.encode(prop), 0);
 							break;
 						default:
 							mngtRepSocket.send(

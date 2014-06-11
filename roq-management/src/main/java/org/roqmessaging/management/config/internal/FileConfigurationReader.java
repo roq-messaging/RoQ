@@ -61,7 +61,33 @@ public class FileConfigurationReader {
 		
 		return configDao;
 	}
+	
+	/**
+	 * @param file the file which contains the cloud configuration
+	 * @return an instance of CloudConfig
+	 * @throws ConfigurationException
+	 */
+	public CloudConfig loadCloudConfiguration(String file) throws ConfigurationException {
+		
+		CloudConfig cloudConfig = new CloudConfig();
+		
+		try {
+			PropertiesConfiguration config = new PropertiesConfiguration();
+			config.load(file);
 
+			cloudConfig.inUse = config.getBoolean("cloud.use");
+			if (cloudConfig.inUse) {
+				cloudConfig.endpoint = config.getString("cloud.endpoint");
+				cloudConfig.user = config.getString("cloud.user");
+				cloudConfig.password = config.getString("cloud.password");
+				cloudConfig.gateway = config.getString("cloud.gateway");
+			}
+		} catch (Exception configE) {
+			logger.error("Error while reading configuration file - skipped but set the default configuration", configE);
+		}
+		
+		return cloudConfig;
+	}
 	/**
 	 * @param file
 	 *            the HCM property file

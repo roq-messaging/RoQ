@@ -24,6 +24,7 @@ import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.RoQConstantInternal;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.management.config.internal.CloudConfig;
 import org.roqmessaging.management.config.internal.GCMPropertyDAO;
 import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.serializer.IRoQSerializer;
@@ -65,7 +66,7 @@ public class ScalingProcess extends KPISubscriber {
 	// The shut down monitor
 	private ShutDownMonitor shutDownMonitor = null;
 	// The cloud properties
-	private GCMPropertyDAO cloudProps = null;
+	private CloudConfig cloudProps = null;
 	// The port to listen
 	private int listnerPort = 0;
 
@@ -194,7 +195,7 @@ public class ScalingProcess extends KPISubscriber {
 	/**
 	 * @return the configuration properties for cloud endpoint.
 	 */
-	private GCMPropertyDAO getCloudConfigProperties() {
+	private CloudConfig getCloudConfigProperties() {
 		try {
 			// 1. Launch a get autoscaling Queue request
 			BSONObject bsonObject = new BasicBSONObject();
@@ -208,18 +209,17 @@ public class ScalingProcess extends KPISubscriber {
 
 			// 3. Check the result
 			BSONObject props = BSON.decode(requestSocket.recv(0));
-			GCMPropertyDAO result = new GCMPropertyDAO();
+			CloudConfig result = new CloudConfig();
 			if ((Boolean) props.get("cloud.use")) {
 				logger.info("A cloud configuration has been provided");
-				result.setUseCloud(true);
-				result.setCloudGateWay((String) props.get("cloud.gateway"));
-				result.setCloudUser((String) props.get("cloud.user"));
-				result.setCloudPasswd((String) props.get("cloud.password"));
-				result.setCloudEndPoint((String) props.get("cloud.endpoint"));
+				result.inUse = true;
+				result.gateway = (String) props.get("cloud.gateway");
+				result.user = (String) props.get("cloud.user");
+				result.password = (String) props.get("cloud.password");
+				result.endpoint = (String) props.get("cloud.endpoint");
 			} else {
 				// No cloud configuration has been defined
 				logger.info("No cloud configuration has been provided");
-				result.setUseCloud(false);
 			}
 			return result;
 		} catch (Exception e) {
