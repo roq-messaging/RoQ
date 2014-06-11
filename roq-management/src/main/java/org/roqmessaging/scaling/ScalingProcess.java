@@ -25,7 +25,6 @@ import org.roqmessaging.core.RoQConstantInternal;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.config.internal.CloudConfig;
-import org.roqmessaging.management.config.internal.GCMPropertyDAO;
 import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;

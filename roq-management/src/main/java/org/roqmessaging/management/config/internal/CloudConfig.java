@@ -3,12 +3,17 @@ package org.roqmessaging.management.config.internal;
 import java.io.Serializable;
 
 public class CloudConfig implements Serializable {
-
+	
 	private static final long serialVersionUID = 1L;
+	//Define whether RoQ should use a cloud or not
 	public boolean inUse = false;
+	//The user  for the cloud server
 	public String  user;
+	//PASSWD for the cloud server
 	public String  password;
+	//The gateway for identifying the subnetwork gateway
 	public String  gateway;
+	//API end point for the cloud server
 	public String  endpoint;
 	
 	// Auto-generated code below
