@@ -90,9 +90,7 @@ public class BasicSetupTest {
 		}
 		//1. Create a fake logical queue
 		// if we use the logical q Factory API we would not need to cheat
-		configManager.addQueueName("queue1", "tcp://localhost:"+basePort);
-		configManager.addQueueStatMonitor("queue1", "tcp://localhost:"+stat);
-		configManager.addQueueLocation("queue1", "localhost");
+		configManager.addQueue("queue1", "tcp://localhost:"+basePort, "tcp://localhost:"+stat, "localhost");
 		Thread thread = new Thread(configManager);
 		thread.start();
 	}

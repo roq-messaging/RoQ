@@ -4,7 +4,7 @@ public class Metadata {
 	public static class HCM {
 		// address format: "x.y.z"
 		public String address;
-		HCM(String address) {
+		public HCM(String address) {
 			this.address = address;
 		}
 		@Override
@@ -27,7 +27,7 @@ public class Metadata {
 	
 	public static class Queue {
 		public String name;
-		Queue(String name) {
+		public Queue(String name) {
 			this.name = name;
 		}
 		@Override
@@ -51,7 +51,7 @@ public class Metadata {
 	public static class Monitor {
 		// address format: "tcp://x.y.z:port"
 		public String address;
-		Monitor(String address) {
+		public Monitor(String address) {
 			this.address = address;
 		}
 		@Override
@@ -75,7 +75,7 @@ public class Metadata {
 	public static class StatMonitor {
 		// address format: "tcp://x.y.z:port"
 		public String address;
-		StatMonitor(String address) {
+		public StatMonitor(String address) {
 			this.address = address;
 		}
 		@Override
