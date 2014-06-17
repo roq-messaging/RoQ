@@ -39,7 +39,10 @@ public class TestLogicalQStat extends RoQTestCase {
 			//2. Attach subscriber
 			attachSUbscriber(qName);
 			//3. Create subscriber
-			KPILogicalQSubscriber subscriber = new KPILogicalQSubscriber(RoQUtils.getInstance().getLocalIP(), qName);
+			KPILogicalQSubscriber subscriber = new KPILogicalQSubscriber(
+					launcher.configurationServer,
+					launcher.configurationServerInterfacePort,
+					qName);
 			subscriber.subscribe();
 			new Thread(subscriber).start();
 			subscriber.setProducerToCheck(0);

@@ -34,7 +34,8 @@ public class RoQAllLocalLauncher {
 	private Logger logger = Logger.getLogger(RoQAllLocalLauncher.class);
 	private GlobalConfigurationManager configurationManager = null;
 	private HostConfigManager hostConfigManager = null;
-	private String configurationServer = "?";
+	String configurationServer = "?";
+	int    configurationServerInterfacePort;
 	private String configFile = "GCM.properties";
 
 	/**
@@ -51,6 +52,7 @@ public class RoQAllLocalLauncher {
 		this.logger.info("Initial setup Start global config thread");
 		this.logger.info("Start global config...");
 		configurationManager = new GlobalConfigurationManager(this.configFile);
+		configurationServerInterfacePort = configurationManager.getInterfacePort();
 		Thread configThread = new Thread(configurationManager);
 		configThread.start();
 		// 2. Start the host configuration manager locally
@@ -135,10 +137,17 @@ public class RoQAllLocalLauncher {
 	}
 
 	/**
-	 * @return the configurationServer
+	 * @return the GCM address
 	 */
 	public String getConfigurationServer() {
 		return configurationServer;
+	}
+	
+	/**
+	 * @return the GCM topology port (req port for getting the topology)
+	 */
+	public int getConfigurationServerInterfacePort() {
+		return configurationServerInterfacePort;
 	}
 
 	

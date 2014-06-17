@@ -540,4 +540,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		return returnValue;
 	}
 
+	public int getInterfacePort() {
+		return properties.ports.get("GlobalConfigurationManager.interface");
+	}
+
 }

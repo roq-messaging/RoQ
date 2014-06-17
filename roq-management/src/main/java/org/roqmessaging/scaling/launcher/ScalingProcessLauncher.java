@@ -28,7 +28,7 @@ public class ScalingProcessLauncher {
 	/**
 	 * Must contain 5 attributes: 
 	 * 1. The GCM IP address <br>
-	 * 2. The GCM topology port (port 5000 by default)<br>
+	 * 2. The GCM interface port (port 5000 by default)<br>
 	 * 3. The GCM admin port (MngtController, port 5003 by default) <br>
 	 * 4. The qName <br>
 	 * 5. The port on which the process will subscribe to queue configuration update<br>
@@ -51,13 +51,13 @@ public class ScalingProcessLauncher {
 		System.out.println("Launching Scaling process with arg "+displayArg(args));
 		if (args.length != 5) {
 			System.out
-					.println("The arguments should be <GCM IP address> <GCM topology port> <GCM admin port> <Queue Name> <Listener port>  ");
+					.println("The arguments should be <GCM IP address> <GCM interface port> <GCM admin port> <Queue Name> <Listener port>  ");
 			return;
 		}
 		
 		try {
 			String gcm_address = args[0];
-			int gcm_topologyPort = Integer.parseInt(args[1]);
+			int gcm_interfacePort = Integer.parseInt(args[1]);
 			int gcm_adminPort = Integer.parseInt(args[2]);
 			String qName = args[3];
 			int listenerPort = Integer.parseInt(args[4]);
@@ -65,7 +65,7 @@ public class ScalingProcessLauncher {
 			System.out.println("Starting Scaling process for queue " + qName + ", using listener port " + listenerPort);
 			
 			// Instanciate the exchange
-			final ScalingProcess scalingProcess = new ScalingProcess(gcm_address, gcm_topologyPort, gcm_adminPort, qName, listenerPort);
+			final ScalingProcess scalingProcess = new ScalingProcess(gcm_address, gcm_interfacePort, gcm_adminPort, qName, listenerPort);
 			scalingProcess.subscribe();
 			// Launch the thread
 			Thread t = new Thread(scalingProcess);

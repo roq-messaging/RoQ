@@ -75,14 +75,16 @@ public class ScalingProcess extends KPISubscriber {
 	 * 
 	 * @param gcm_address
 	 *            the GCM IP address
+	 * @param gcm_interfacePort
+	 *            the port used by the GCM for the interface to the topology
 	 * @param qName
 	 *            the name of the queue we want to connect.
 	 * @param listnerPort
 	 *            is the port on which the scaling process will listen for push
 	 *            request when a new configuration will be published
 	 */
-	public ScalingProcess(String gcm_address, int gcm_topologyPort, int gcm_adminPort, String qName, int listnerPort) {
-		super(gcm_address, gcm_topologyPort, qName);
+	public ScalingProcess(String gcm_address, int gcm_interfacePort, int gcm_adminPort, String qName, int listnerPort) {
+		super(gcm_address, gcm_interfacePort, qName);
 		this.qName = qName;
 		this.listnerPort = listnerPort;
 		this.serializer = new RoQBSONSerializer();
