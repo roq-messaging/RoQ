@@ -133,6 +133,32 @@ public class RoQZooKeeperClient {
 		RoQZKHelpers.deleteZNode(client, getZKPath(queue));
 	}
 	
+	/**
+	 * @param queue
+	 * @param flag  if true, the queue is marked as running,
+	 *              otherwise it is marked as stopped
+	 */
+	public void setRunning(Metadata.Queue queue, boolean flag) {
+		log.info("");
+		if (flag) {
+			// create a "running" node for the selected queue
+			RoQZKHelpers.createZNode(client, RoQZKHelpers.makePath(getZKPath(queue), "running"));
+		} else {
+			// delete the "running" node for the selected queue
+			// to mark it as stopped
+			RoQZKHelpers.deleteZNode(client, RoQZKHelpers.makePath(getZKPath(queue), "running"));
+		}
+	}
+
+	/**
+	 * @param queue
+	 * @return true if the queue is marked as running, false otherwise
+	 */
+	public boolean isRunning(Metadata.Queue queue) {
+		log.info("");
+		return RoQZKHelpers.zNodeExists(client, RoQZKHelpers.makePath(getZKPath(queue), "running"));
+	}
+	
 	public List<Metadata.Queue> getQueueList() {
 		log.info("");
 		
