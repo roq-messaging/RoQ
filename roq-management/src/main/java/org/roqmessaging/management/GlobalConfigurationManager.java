@@ -261,13 +261,28 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			logger.debug("Sending back the topology - list of local host");
 			break;
 			
+		case RoQConstant.CONFIG_START_QUEUE:
+			logger.debug("Recieveing start Q request from a client ");
+			if (info.length == 2) {
+				logger.debug("The request format is valid we 2 part:  "+ info[1]);
+				
+				String queueName = info[1];
+				// register the queue
+				setQueueStarted(queueName);
+				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+			} else {
+				logger.error("The start queue request sent does not contain 2 part: ID, quName");
+				this.clientReqSocket.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
+			}
+			break;
+			
 		case RoQConstant.CONFIG_STOP_QUEUE:
 			logger.debug("Recieveing stop Q request from a client ");
 			if (info.length == 2) {
 				logger.debug("The request format is valid we 2 part:  "+ info[1]);
 
 				String queueName = info[1];
-				stopQueue(queueName);
+				setQueueStopped(queueName);
 				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
 			} else {
 				logger.error("The stop queue request sent does not contain 2 part: ID, quName");
@@ -397,6 +412,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		Metadata.HCM hcm = new Metadata.HCM(hcmAddress);
 
 		zk.createQueue(queue, hcm, monitor, statMonitor);
+		setQueueStarted(queueName);
 	}
 
 	/**
@@ -408,10 +424,18 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	}
 	
 	/**
+	 * Set the "running" flag for the given queue
+	 * @param queueName the name of the logical queue
+	 */
+	public void setQueueStarted(String queueName) {
+		zk.setRunning(new Metadata.Queue(queueName), true);
+	}
+
+	/**
 	 * Clear the "running" flag for the given queue
 	 * @param queueName the logical queue name
 	 */
-	public void stopQueue(String queueName) {
+	public void setQueueStopped(String queueName) {
 		zk.setRunning(new Metadata.Queue(queueName), false);
 	}
 

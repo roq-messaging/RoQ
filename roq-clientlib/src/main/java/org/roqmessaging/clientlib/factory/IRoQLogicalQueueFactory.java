@@ -40,6 +40,14 @@ public interface IRoQLogicalQueueFactory {
 	public boolean removeQueue(String queueName); 
 	
 	/**
+	 * Starts an existing logical queue.
+	 * @param queueName the name of the queue to start.
+	 * @param host the address to create the queue
+	 * @return true if we the queue was successfully started.
+	 */
+	public boolean startQueue(String queueName, String host);
+	
+	/**
 	 * Stops an existing logical queue.
 	 * @param queueName the name of the queue to stop.
 	 * @return true if we the queue was successfully stopped.

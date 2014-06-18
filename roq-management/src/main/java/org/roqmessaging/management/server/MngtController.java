@@ -316,8 +316,9 @@ public class MngtController implements Runnable, IStoppable {
 							}
 							// 1. Get the name
 							qName = (String) request.get("QName");
-							// 2. Get the queue in DB
-							if (!factory.startQueue(qName)) {
+							host = zk.getHCM(new Metadata.Queue(qName)).address;
+
+							if (!factory.startQueue(qName, host)) {
 								sendReply_fail("ERROR when starting  queue, check logs of the logical queue factory");
 							} else {
 								sendReply_ok("SUCCESS");
