@@ -23,9 +23,9 @@ package org.roqmessaging.management.config.scaling;
  */
 public class AutoScalingConfig {
 	//The 3 rules composing the configuration
-	private HostScalingRule hostRule = null;
-	private LogicalQScalingRule qRule = null;
-	private XchangeScalingRule xgRule=null;
+	public HostScalingRule hostRule = null;
+	public LogicalQScalingRule qRule = null;
+	public XchangeScalingRule xgRule=null;
 	//the configuration name
 	private String name = null;
 	

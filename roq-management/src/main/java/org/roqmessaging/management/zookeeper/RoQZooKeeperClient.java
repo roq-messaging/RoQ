@@ -71,7 +71,7 @@ public class RoQZooKeeperClient {
 			// Do not delete the gcm node because it is used for leader election
 			// and it is handled by leaderLatch.
 			if (!node.equals(cfg.znode_gcm)) {
-				RoQZKHelpers.deleteZNode(client, "/"+node);
+				RoQZKHelpers.deleteZNodeAndChildren(client, "/"+node);
 				log.info("--root node " +node +" deleted");
 			}
 		}
@@ -80,7 +80,7 @@ public class RoQZooKeeperClient {
 	// Create the znode for the HCM if it does not already exist.
 	public void addHCM(Metadata.HCM hcm) {
 		log.info("");
-		RoQZKHelpers.createZNode(client, getZKPath(hcm));
+		RoQZKHelpers.createZNodeAndParents(client, getZKPath(hcm));
 	}
 	
 	// Remove the znode if it exists.
@@ -115,22 +115,26 @@ public class RoQZooKeeperClient {
 	public void createQueue(Metadata.Queue queue, Metadata.HCM hcm, Metadata.Monitor monitor, Metadata.StatMonitor statMonitor) {
 		log.info("");
 		
+		String queuePath = getZKPath(queue);
 		String path;
 		
-		path = RoQZKHelpers.makePath(getZKPath(queue), "monitor");
+		queuePath = getZKPath(queue);
+		RoQZKHelpers.createZNodeAndParents(client, queuePath);
+		
+		path = RoQZKHelpers.makePath(queuePath, "monitor");
 		RoQZKHelpers.createZNode(client, path, monitor.address);
 		
-		path = RoQZKHelpers.makePath(getZKPath(queue), "stat-monitor");
+		path = RoQZKHelpers.makePath(queuePath, "stat-monitor");
 		RoQZKHelpers.createZNode(client, path, statMonitor.address);
 		
-		path = RoQZKHelpers.makePath(getZKPath(queue), "hcm");
+		path = RoQZKHelpers.makePath(queuePath, "hcm");
 		RoQZKHelpers.createZNode(client, path, hcm.address);
 	}
 	
 	public void removeQueue(Metadata.Queue queue) {
 		log.info("");
 		
-		RoQZKHelpers.deleteZNode(client, getZKPath(queue));
+		RoQZKHelpers.deleteZNodeAndChildren(client, getZKPath(queue));
 	}
 	
 	/**
@@ -209,12 +213,35 @@ public class RoQZooKeeperClient {
 	
 	public void setCloudConfig(byte[] cloudConfig) {
 		log.info("");
-		RoQZKHelpers.createZNode(client, cfg.znode_cloud, cloudConfig);
+		RoQZKHelpers.createZNodeAndParents(client, cfg.znode_cloud);
+		RoQZKHelpers.setData(client, cfg.znode_cloud, cloudConfig);
 	}
 	
 	public byte[] getCloudConfig() {
 		log.info("");
 		return RoQZKHelpers.getData(client, cfg.znode_cloud);
+	}
+	
+	public void setHostScalingConfig(byte[] scalingConfig, Metadata.Queue queue) {
+		log.info("");
+		setScalingConfig(scalingConfig, queue, "host");
+	}
+	public void setExchangeScalingConfig(byte[] scalingConfig, Metadata.Queue queue) {
+		log.info("");
+		setScalingConfig(scalingConfig, queue, "exchange");
+	}
+	public void setQueueScalingConfig(byte[] scalingConfig, Metadata.Queue queue) {
+		log.info("");
+		setScalingConfig(scalingConfig, queue, "queue");
+	}
+	public byte[] getHostScalingConfig(Metadata.Queue queue) {
+		return getScalingConfig(queue, "host");
+	}
+	public byte[] getExchangeScalingConfig(Metadata.Queue queue) {
+		return getScalingConfig(queue, "exchange");
+	}
+	public byte[] getQueueScalingConfig(Metadata.Queue queue) {
+		return getScalingConfig(queue, "queue");
 	}
 	
 	// Private methods
@@ -223,5 +250,17 @@ public class RoQZooKeeperClient {
 	}
 	private String getZKPath(Metadata.HCM hcm) {
 		return RoQZKHelpers.makePath(cfg.znode_hcm, hcm.address);
+	}
+	private void setScalingConfig(byte[] scalingConfig, Metadata.Queue queue, String leafNode) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(getZKPath(queue), cfg.znode_scaling, leafNode);
+		
+		RoQZKHelpers.createZNodeAndParents(client, path);
+		RoQZKHelpers.setData(client, path, scalingConfig);
+	}
+	private byte[] getScalingConfig(Metadata.Queue queue, String leafNode) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(getZKPath(queue), cfg.znode_scaling, leafNode);
+		return RoQZKHelpers.getData(client, path);
 	}
 }

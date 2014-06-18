@@ -246,6 +246,7 @@ public class MngtController implements Runnable, IStoppable {
 						// Variables
 						String qName = "?";
 						String host = "?";
+						AutoScalingConfig config = null;
 
 						// 2. Getting the command ID
 						switch ((Integer) request.get("CMD")) {
@@ -431,7 +432,12 @@ public class MngtController implements Runnable, IStoppable {
 							qName = (String) request.get("QName");
 							logger.debug("Getting autoscaling configuration for " + qName);
 							
-							AutoScalingConfig config = zk.getScalingConfig(new Metadata.Queue(qName));
+							config = new AutoScalingConfig();
+							Metadata.Queue queue = new Metadata.Queue(qName);
+							config.hostRule = serializationUtils.deserializeObject(zk.getHostScalingConfig(queue));
+							config.xgRule   = serializationUtils.deserializeObject(zk.getExchangeScalingConfig(queue));
+							config.qRule    = serializationUtils.deserializeObject(zk.getQueueScalingConfig(queue));
+							
 							if (config != null) {
 								mngtRepSocket.send(
 										this.serializer.serialiazeAutoScalingConfigAnswer(qName, config), 0);
@@ -506,7 +512,7 @@ public class MngtController implements Runnable, IStoppable {
 								break;
 							}
 							// 1. Get the qname
-							AutoScalingConfig config = new AutoScalingConfig();
+							config = new AutoScalingConfig();
 							qName = (String) request.get("QName");
 							logger.debug("Adding autoscaling configuration for " + qName);
 							
