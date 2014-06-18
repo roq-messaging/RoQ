@@ -381,8 +381,8 @@ public class MngtController implements Runnable, IStoppable {
 
 						case RoQConstant.BSON_CONFIG_STOP_QUEUE:
 							logger.debug("Stop queue Request");
-							// Stopping a queue is just removing from the global
-							// configuration
+							// Stopping a queue is just clearing its "running" flag
+							// from the global configuration
 							// 1. Check the request
 							if (!checkField(request, "QName")) {
 								sendReply_fail("ERROR: Missing field in the request: <QName>");

@@ -219,7 +219,32 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		}
 		return true;
 	}
-
+	
+	public boolean stopQueue(String queueName) {
+		try {
+			this.lockRemoveQ.lock();
+			this.refreshTopology();
+			// 1. Get the monitor address & Remove the entry in the global
+			// configuration
+			logger.info("Stopping Q " + queueName);
+			
+			// 1. Clean local cache
+			configurationState.getQueueMonitorMap().remove(queueName);
+			// 2. Ask the global configuration to remove the queue
+			globalConfigReq.send((Integer.toString(RoQConstant.CONFIG_STOP_QUEUE) + "," + queueName).getBytes(), 0);
+			String result = new String(globalConfigReq.recv(0));
+			if (Integer.parseInt(result) != RoQConstant.OK) {
+				logger.error("Error when removing the queue " + queueName + " from global config",
+						new IllegalStateException("The queue creation for  " + queueName
+								+ " failed on the global configuration server"));
+				return false;
+			}
+		} finally {
+			this.lockRemoveQ.unlock();
+		}
+		return true;
+	}
+	
 	/**
 	 * Reload cache from the global configuration server
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#refreshTopology()

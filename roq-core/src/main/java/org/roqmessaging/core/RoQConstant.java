@@ -205,6 +205,8 @@ public interface RoQConstant {
 	 */
 	public static int CONFIG_INFO_EXCHANGE = 1011;
 	
+	public static int CONFIG_STOP_QUEUE = 1012;
+	
 	
 	/**
 	 * Send to shut donw a {@linkplain IStoppable} element

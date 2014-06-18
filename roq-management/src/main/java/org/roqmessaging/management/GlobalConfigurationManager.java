@@ -261,7 +261,20 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			logger.debug("Sending back the topology - list of local host");
 			break;
 			
-		//A create queue request
+		case RoQConstant.CONFIG_STOP_QUEUE:
+			logger.debug("Recieveing stop Q request from a client ");
+			if (info.length == 2) {
+				logger.debug("The request format is valid we 2 part:  "+ info[1]);
+
+				String queueName = info[1];
+				stopQueue(queueName);
+				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+			} else {
+				logger.error("The stop queue request sent does not contain 2 part: ID, quName");
+				this.clientReqSocket.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
+			}
+			break;
+		
 		case RoQConstant.CONFIG_REMOVE_QUEUE:
 			logger.debug("Recieveing remove Q request from a client ");
 			if (info.length == 2) {
@@ -276,7 +289,6 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				}
 			break;
 			
-			//A remove  queue request
 		case RoQConstant.CONFIG_CREATE_QUEUE:
 			logger.debug("Recieveing create Q request from a client ");
 			if (info.length >3) {
@@ -393,6 +405,14 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 */
 	public void removeQueue(String queueName) {
 		zk.removeQueue(new Metadata.Queue(queueName));
+	}
+	
+	/**
+	 * Clear the "running" flag for the given queue
+	 * @param queueName the logical queue name
+	 */
+	public void stopQueue(String queueName) {
+		zk.setRunning(new Metadata.Queue(queueName), false);
 	}
 
 
