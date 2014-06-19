@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.management.config.scaling;
 
+import java.io.Serializable;
 import java.util.HashMap;
 
 import org.apache.log4j.Logger;
@@ -25,15 +26,15 @@ import org.roqmessaging.core.RoQConstantInternal;
  * 
  * @author sskhiri
  */
-public class XchangeScalingRule implements IAutoScalingRule {
+public class XchangeScalingRule implements IAutoScalingRule, Serializable {
 	//Logger
-	private Logger logger = Logger.getLogger(HostScalingRule.class);
+	private static final Logger logger = Logger.getLogger(HostScalingRule.class);
 	//The key ID
 	private long ID = 0;
 	//KPI on the number of message throughput the last minute
-	private int Throughput_Limit = 0;
+	public int Throughput_Limit = 0;
 	//KPI on Time_Spend, can be used for rampup of xchange nodes
-	private float Time_Limit = 0;
+	public float Time_Limit = 0;
 	
 	/**
 	 * @see org.roqmessaging.management.config.scaling.IAutoScalingRule#isOverLoaded(java.util.HashMap)
@@ -112,6 +113,23 @@ public class XchangeScalingRule implements IAutoScalingRule {
 	@Override
 	public String toString() {
 		return "Exchange scaling rule  id = "+getID()+" ["+ this.getID()+", "+ this.getEvent_Limit()+", "+ this.Time_Limit+"]";
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		XchangeScalingRule other = (XchangeScalingRule) obj;
+		if (Throughput_Limit != other.Throughput_Limit)
+			return false;
+		if (Float.floatToIntBits(Time_Limit) != Float
+				.floatToIntBits(other.Time_Limit))
+			return false;
+		return true;
 	}
 
 }

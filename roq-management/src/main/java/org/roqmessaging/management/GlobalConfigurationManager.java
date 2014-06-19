@@ -244,6 +244,11 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			// Furthermore, to limit the number of calls, Metadata.Queue could contain instances
 			// of Metadata.HCM, Metadata.Monitor and Metadata.StatMonitor.
 			for (Metadata.Queue queue : zk.getQueueList()) {
+				// Only return running queues
+				if (!zk.isRunning(queue)) {
+					continue;
+				}
+				
 				Metadata.Monitor m = zk.getMonitor(queue);
 				Metadata.StatMonitor sm = zk.getStatMonitor(queue);
 				Metadata.HCM hcm = zk.getHCM(queue);
