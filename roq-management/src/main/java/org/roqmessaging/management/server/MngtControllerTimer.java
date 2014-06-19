@@ -67,14 +67,14 @@ public class MngtControllerTimer extends TimerTask {
 	public void run() {
 		logger.debug("Sending stored topology");
 		try {
-			// 1. Get the configuration
-			ArrayList<QueueManagementState> queues =  this.controller.getStorage().getQueues();
-			ArrayList<String> hosts = this.controller.getStorage().getHosts();
+			// Get the queues
+			ArrayList<QueueManagementState> queues = controller.getQueues();
+			ArrayList<String> hostAddresses = controller.getHosts();
 			
 			// 2. Serialization &  Publish the configuration
 			this.mngtPubSocket.send(this.serializer.serialiseCMDID(RoQConstant.MNGT_UPDATE_CONFIG), ZMQ.SNDMORE);
 			this.mngtPubSocket.send(this.serializer.serialiseQueues(queues), ZMQ.SNDMORE);
-			this.mngtPubSocket.send(this.serializer.serialiseHosts(hosts), 0);
+			this.mngtPubSocket.send(this.serializer.serialiseHosts(hostAddresses), 0);
 			
 		} catch (Exception e) {
 			logger.error("Error while sending MNGT config to management console", e);

@@ -27,10 +27,14 @@ public class QueueManagementState {
 	private String host = null;
 	//Is it running
 	private boolean running = false;
-	//The auto-scaling configuration name
-	private String autoScalingCfgRef =null;
 	
 	
+	public QueueManagementState(String name, String host, boolean running) {
+		super();
+		this.name = name;
+		this.host = host;
+		this.running = running;
+	}
 	/**
 	 * @param name the Q name
 	 * @param host the physical host on which the monitor runs
@@ -41,7 +45,6 @@ public class QueueManagementState {
 		this.name = name;
 		this.host = host;
 		this.running = running;
-		this.autoScalingCfgRef= autoScalingCfg;
 	}
 	/**
 	 * @return the name
@@ -87,19 +90,4 @@ public class QueueManagementState {
 	public String toString() {
 		return "Queue: " + this.name +" running on "+ this.host + " is "+ (isRunning()?"ON":"OFF");
 	}
-	/**
-	 * @return the autoScalingCfgRef
-	 */
-	public String getAutoScalingCfgRef() {
-		return autoScalingCfgRef;
-	}
-	/**
-	 * @param autoScalingCfgRef the autoScalingCfgRef to set
-	 */
-	public void setAutoScalingCfgRef(String autoScalingCfgRef) {
-		this.autoScalingCfgRef = autoScalingCfgRef;
-	}
-	
-	
-
 }

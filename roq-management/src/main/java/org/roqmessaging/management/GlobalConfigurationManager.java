@@ -61,8 +61,6 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	
 	//The management controller that maintains the off line configuration
 	private MngtController mngtController = null;
-	//The SQL DB name
-	private String dbName = "Management.db";
 	//Handles on timers:
 	private GlobalConfigTimer configTimerTask = null;
 	//Handles on the management timer that send update to the magements.
@@ -122,10 +120,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 
 			// The Management controller - the start is in the run to take the
 			// period attribute
-			this.mngtController = new MngtController("localhost", dbName, (properties.getPeriod() + 500), this.properties, this.zk);
-			if (properties.isFormatDB()) {
-				this.mngtController.getStorage().formatDB();
-			}
+			this.mngtController = new MngtController("localhost", (properties.getPeriod() + 500), this.properties, this.zk);
 			new Thread(mngtController).start();
 		} catch (Exception e) {
 			logger.error("Error in constructor", e);

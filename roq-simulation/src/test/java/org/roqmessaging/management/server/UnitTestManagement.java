@@ -16,7 +16,6 @@ package org.roqmessaging.management.server;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
@@ -105,32 +104,30 @@ public class UnitTestManagement {
 
 			//4. Check queues
 			logger.debug("Checking queues size at management");
-			ArrayList<QueueManagementState>queues = this.globalConfigurationManager.getMngtController().getStorage().getQueues();
+			ArrayList<QueueManagementState>queues = this.globalConfigurationManager.getMngtController().getQueues();
 			Assert.assertEquals(3, queues.size());
-			ArrayList<String> hosts = this.globalConfigurationManager.getMngtController().getStorage().getHosts();
+			ArrayList<String> hosts = this.globalConfigurationManager.getMngtController().getHosts();
 			Assert.assertEquals(2, hosts.size());
 			
 			//5. Removes Qs
 			logger.debug("Checking queues size at management aftrer remove");
 			this.globalConfigurationManager.removeQueue("TestQueue");
 			Thread.sleep(5000);
-			QueueManagementState testQueue = this.globalConfigurationManager.getMngtController().getStorage().getQueue("TestQueue");
+			QueueManagementState testQueue = this.globalConfigurationManager.getMngtController().getQueue("TestQueue");
 			Assert.assertTrue(!testQueue.isRunning());
 			
-			ArrayList<QueueManagementState>allQs = this.globalConfigurationManager.getMngtController().getStorage().getQueues();
+			ArrayList<QueueManagementState>allQs = this.globalConfigurationManager.getMngtController().getQueues();
 			Assert.assertEquals(3, allQs.size());
 			
 			
 			this.globalConfigurationManager.removeQueue("queue2");
 			Thread.sleep(5000);
-			this.globalConfigurationManager.getMngtController().getStorage().getQueues();
-			QueueManagementState q2 = this.globalConfigurationManager.getMngtController().getStorage().getQueue("queue2");
+			this.globalConfigurationManager.getMngtController().getQueues();
+			QueueManagementState q2 = this.globalConfigurationManager.getMngtController().getQueue("queue2");
 			Assert.assertEquals(false, q2.isRunning());
 			
 		} catch (InterruptedException e) {
 			logger.error("Error while waiting", e);
-		} catch (SQLException e) {
-			logger.error("Error while exec SQL", e);
 		}
 
 	}
