@@ -22,6 +22,7 @@ import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.curator.test.TestingServer;
 import org.apache.log4j.Logger;
 import org.bson.BSON;
 import org.bson.BSONObject;
@@ -31,6 +32,9 @@ import org.junit.Test;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.GlobalConfigurationManager;
+import org.roqmessaging.management.config.internal.CloudConfig;
+import org.roqmessaging.management.config.internal.FileConfigurationReader;
+import org.roqmessaging.management.config.internal.GCMPropertyDAO;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
@@ -49,7 +53,32 @@ public class UnitTestManagement {
 	
 	//under test
 	private GlobalConfigurationManager globalConfigurationManager = null;
+	private TestingServer zkServer;
+	private String configFile = "testGCM.properties";
 
+	/**
+	 * Helper method to create an instance of {@link GlobalConfigurationManager}
+	 * based on the provided configuration file and zookeeper connection string.
+	 * The function takes care to overwrite the "zkConfig.servers" property
+	 * with the one provided to ensure that the GCM connects to the correct
+	 * zookeeper server.
+	 * 
+	 * @param configFile       the gcm configuration file
+	 * @param zkConnectString  the comma-separated string of ip:port zookeeper addresses
+	 * @return                 a new instance of {@link GlobalConfigurationManager}
+	 * @throws Exception
+	 */
+	private GlobalConfigurationManager createGCM(String configFile, String zkConnectString) throws Exception {
+		logger.info("Creating GCM");
+		// Ignore the "zk.servers" property defined in the configuration file
+		// and overwrite it with the connection string provided by the TestingServer class.
+		GCMPropertyDAO gcmConfig = new FileConfigurationReader().loadGCMConfiguration(configFile);
+		gcmConfig.zkConfig.servers = zkConnectString;
+		
+		CloudConfig cloudConfig = new FileConfigurationReader().loadCloudConfiguration(configFile);
+		return new GlobalConfigurationManager(gcmConfig, cloudConfig);
+	}
+	
 	/**
 	 * @throws java.lang.Exception
 	 */
@@ -68,7 +97,9 @@ public class UnitTestManagement {
 		statement.executeUpdate("drop table if exists Queues");
 		
 		//Start the config
-		globalConfigurationManager = new GlobalConfigurationManager("testGCM.properties");
+		zkServer = new TestingServer();
+		globalConfigurationManager = createGCM(configFile, zkServer.getConnectString());
+		logger.info("GCM created");
 		new Thread(globalConfigurationManager).start();
 		
 		//Launching a thread that listens the broadcast channel for management update
@@ -82,6 +113,7 @@ public class UnitTestManagement {
 	@After
 	public void tearDown() throws Exception {
 		this.globalConfigurationManager.getShutDownMonitor().shutDown();
+		this.zkServer.close();
 		Thread.sleep(2000);
 	}
 

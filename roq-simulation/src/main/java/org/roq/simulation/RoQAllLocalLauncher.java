@@ -16,10 +16,14 @@ package org.roq.simulation;
 
 import java.io.File;
 
+import org.apache.curator.test.TestingServer;
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.GlobalConfigurationManager;
 import org.roqmessaging.management.HostConfigManager;
+import org.roqmessaging.management.config.internal.CloudConfig;
+import org.roqmessaging.management.config.internal.FileConfigurationReader;
+import org.roqmessaging.management.config.internal.GCMPropertyDAO;
 import org.roqmessaging.management.server.MngtController;
 
 /**
@@ -31,13 +35,37 @@ import org.roqmessaging.management.server.MngtController;
  * @author sskhiri
  */
 public class RoQAllLocalLauncher {
-	private Logger logger = Logger.getLogger(RoQAllLocalLauncher.class);
+	private static final Logger logger = Logger.getLogger(RoQAllLocalLauncher.class);
 	private GlobalConfigurationManager configurationManager = null;
 	private HostConfigManager hostConfigManager = null;
 	String configurationServer = "?";
 	int    configurationServerInterfacePort;
+	private TestingServer zkServer;
 	private String configFile = "GCM.properties";
 
+	/**
+	 * Helper method to create an instance of {@link GlobalConfigurationManager}
+	 * based on the provided configuration file and zookeeper connection string.
+	 * The function takes care to overwrite the "zkConfig.servers" property
+	 * with the one provided to ensure that the GCM connects to the correct
+	 * zookeeper server.
+	 * 
+	 * @param configFile       the gcm configuration file
+	 * @param zkConnectString  the comma-separated string of ip:port zookeeper addresses
+	 * @return                 a new instance of {@link GlobalConfigurationManager}
+	 * @throws Exception
+	 */
+	private GlobalConfigurationManager createGCM(String configFile, String zkConnectString) throws Exception {
+		logger.info("Creating GCM");
+		// Ignore the "zk.servers" property defined in the configuration file
+		// and overwrite it with the connection string provided by the TestingServer class.
+		GCMPropertyDAO gcmConfig = new FileConfigurationReader().loadGCMConfiguration(configFile);
+		gcmConfig.zkConfig.servers = zkConnectString;
+		
+		CloudConfig cloudConfig = new FileConfigurationReader().loadCloudConfiguration(configFile);
+		return new GlobalConfigurationManager(gcmConfig, cloudConfig);
+	}
+	
 	/**
 	 * Starts:<br>
 	 * 1. The global configuration manager<br>
@@ -49,18 +77,22 @@ public class RoQAllLocalLauncher {
 	public void setUp() throws Exception {
 		// 1. Start the configuration
 		this.configurationServer =RoQUtils.getInstance().getLocalIP().toString();
-		this.logger.info("Initial setup Start global config thread");
-		this.logger.info("Start global config...");
-		configurationManager = new GlobalConfigurationManager(this.configFile);
+		logger.info("Initial setup Start global config thread");
+		
+		logger.info("Start global config...");
+		zkServer = new TestingServer();
+		configurationManager = createGCM(configFile, zkServer.getConnectString());
+		logger.info("GCM created");
+		
 		configurationServerInterfacePort = configurationManager.getInterfacePort();
 		Thread configThread = new Thread(configurationManager);
 		configThread.start();
 		// 2. Start the host configuration manager locally
-		this.logger.info("Start host config....");
+		logger.info("Start host config....");
 		hostConfigManager = new HostConfigManager("testHCM.properties");
 		Thread hostThread = new Thread(hostConfigManager);
 		hostThread.start();
-		this.logger.info("Start factory config...");
+		logger.info("Start factory config...");
 	}
 
 	/**
@@ -71,6 +103,7 @@ public class RoQAllLocalLauncher {
 		this.hostConfigManager.getShutDownMonitor().shutDown();
 		Thread.sleep(3000);
 		this.configurationManager.getShutDownMonitor().shutDown();
+		this.zkServer.close();
 		Thread.sleep(6000);
 	}
 
