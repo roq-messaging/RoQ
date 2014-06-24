@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.Logger;
 import org.bson.BSONDecoder;
 import org.bson.BSONObject;
@@ -75,58 +76,74 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	
 	/**
 	 * Constructor.
-	 * @param configFile the file location of the properties. By default, is the GCM.properties in the resources.
+	 * 
+	 * @param properties  the gcm configuration
+	 * @param cloudConfig the cloud configuration parameters
+	 */
+	public GlobalConfigurationManager(GCMPropertyDAO properties, CloudConfig cloudConfig) {
+		init(properties, cloudConfig);
+	}
+	/**
+	 * Constructor.
+	 * @param configFile the file containing the GCM properties
 	 */
 	public GlobalConfigurationManager(String configFile) {
+		FileConfigurationReader reader = new FileConfigurationReader();
+		
 		try {
-			this.logger.info("Started global config Runnable");
-
-			// Init variables and pointers
-			this.running = true;
-			this.serializationUtils = new RoQSerializationUtils();
-
-			// Read the GCM configuration from file
-			FileConfigurationReader reader = new FileConfigurationReader();
-			this.properties = reader.loadGCMConfiguration(configFile);
-			logger.info("Configuration from props: " + properties.toString());
-			
-			
-			// Initialization of the ZMQ port for the GCM interface
-			int port = properties.ports.get("GlobalConfigurationManager.interface");
-			this.context = ZMQ.context(1);
-			this.clientReqSocket = context.socket(ZMQ.REP);
-			this.clientReqSocket.bind("tcp://*:"+port);
-
-			// Setup and start the zookeeper client
-			this.zk = new RoQZooKeeperClient(properties.zkConfig);
-			this.zk.start();
-			
-			// clear zookeeper storage if requested
-			if (properties.isFormatDB()) {
-				zk.clear();
-			}
-			
-			// Read the cloud configuration from file
-			// serialize it and save it to ZooKeeper
-			logger.info("Reading cloud configuration from file");
-			CloudConfig cloudConfig = reader.loadCloudConfiguration(configFile);
-			logger.info("Writing cloud configuration to zookeeper");
-			this.zk.setCloudConfig(serializationUtils.serialiseObject(cloudConfig));
-			
-			// Start the shutdown thread
-			int shutDownPort = properties.ports.get("GlobalConfigurationManager.shutDown");
-			this.shutDownMonitor = new ShutDownMonitor(shutDownPort, this);
-			new Thread(this.shutDownMonitor).start();
-
-			// The Management controller - the start is in the run to take the
-			// period attribute
-			this.mngtController = new MngtController("localhost", (properties.getPeriod() + 500), this.properties, this.zk);
-			new Thread(mngtController).start();
-		} catch (Exception e) {
+			init(reader.loadGCMConfiguration(configFile),
+					reader.loadCloudConfiguration(configFile));
+		} catch (ConfigurationException e) {
 			logger.error("Error in constructor", e);
 		}
 	}
 
+	/**
+	 * Performs all variable initializations and starts the
+	 * ZooKeeper client and the MngtController instance.
+	 * 
+	 * @param properties  the gcm configuration
+	 * @param cloudConfig the cloud configuration parameters
+	 */
+	private void init(GCMPropertyDAO properties, CloudConfig cloudConfig) {
+		this.logger.info("Started global config Runnable");
+
+		// Init variables and pointers
+		this.running = true;
+		this.serializationUtils = new RoQSerializationUtils();
+
+		this.properties = properties;
+		logger.info("Configuration from props: " + properties.toString());
+		
+		// Initialization of the ZMQ port for the GCM interface
+		int port = properties.ports.get("GlobalConfigurationManager.interface");
+		this.context = ZMQ.context(1);
+		this.clientReqSocket = context.socket(ZMQ.REP);
+		this.clientReqSocket.bind("tcp://*:"+port);
+
+		// Setup and start the zookeeper client
+		this.zk = new RoQZooKeeperClient(properties.zkConfig);
+		this.zk.start();
+		
+		// clear zookeeper storage if requested
+		if (properties.isFormatDB()) {
+			zk.clear();
+		}
+		
+		logger.info("Writing cloud configuration to zookeeper");
+		this.zk.setCloudConfig(serializationUtils.serialiseObject(cloudConfig));
+		
+		// Start the shutdown thread
+		int shutDownPort = properties.ports.get("GlobalConfigurationManager.shutDown");
+		this.shutDownMonitor = new ShutDownMonitor(shutDownPort, this);
+		new Thread(this.shutDownMonitor).start();
+
+		// The Management controller - the start is in the run to take the
+		// period attribute
+		this.mngtController = new MngtController("localhost", (properties.getPeriod() + 500), this.properties, this.zk);
+		new Thread(mngtController).start();
+	}
+	
 	/**
 	 * Start the timer that periodically triggers the
 	 * run() method of GlobalConfigTimer.
@@ -460,6 +477,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		//deactivate the timer
 		configTimerTask.shutDown();
 		this.mngtController.getShutDownMonitor().shutDown();
+		zk.close();
 		this.logger.info("Shutting down config server");
 	}
 	
