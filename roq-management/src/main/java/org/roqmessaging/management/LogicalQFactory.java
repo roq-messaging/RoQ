@@ -219,7 +219,73 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		}
 		return true;
 	}
-
+	
+	public boolean startQueue(String queueName, String targetAddress) {
+		try {
+			this.lockCreateQ.lock();
+			if (!this.initialized)
+				this.refreshTopology();
+			if(!checkForCreateNewQ(queueName, targetAddress))return false ;
+			// The name does not exist yet
+			//2. Sends the create event to the hostConfig manager thread
+			ZMQ.Socket hostSocket = this.configurationState.getHostManagerMap().get(targetAddress);
+			hostSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName).getBytes(), 0);
+			String[] resultHost = new String(hostSocket.recv(0)).split(",");
+			
+			if (Integer.parseInt(resultHost[0]) != RoQConstant.CONFIG_CREATE_QUEUE_OK) {
+				logger.error("The queue creation for  " + queueName
+						+ " failed on the local host server");
+				return false;
+			} else {
+				logger.info("Created queue " + queueName + " @ " + resultHost[1]);
+				// 3.B. Create the entry in the global config
+				globalConfigReq.send(
+						(Integer.toString(RoQConstant.CONFIG_START_QUEUE) + "," + queueName)
+								.getBytes(), 0);
+				String result = new String(globalConfigReq.recv(0));
+				if (Integer.parseInt(result) != RoQConstant.OK) {
+					logger.error("The queue start for  " + queueName
+							+ " failed on the global configuration server");
+					return false;
+				}else{
+					try {
+						Thread.sleep(2000);
+					} catch (InterruptedException e) {
+						logger.warn(e);
+					}
+					return true;
+				}
+			}
+		} finally {
+			this.lockCreateQ.unlock();
+		}
+	}
+	
+	public boolean stopQueue(String queueName) {
+		try {
+			this.lockRemoveQ.lock();
+			this.refreshTopology();
+			// 1. Get the monitor address & Remove the entry in the global
+			// configuration
+			logger.info("Stopping Q " + queueName);
+			
+			// 1. Clean local cache
+			configurationState.getQueueMonitorMap().remove(queueName);
+			// 2. Ask the global configuration to remove the queue
+			globalConfigReq.send((Integer.toString(RoQConstant.CONFIG_STOP_QUEUE) + "," + queueName).getBytes(), 0);
+			String result = new String(globalConfigReq.recv(0));
+			if (Integer.parseInt(result) != RoQConstant.OK) {
+				logger.error("Error when removing the queue " + queueName + " from global config",
+						new IllegalStateException("The queue creation for  " + queueName
+								+ " failed on the global configuration server"));
+				return false;
+			}
+		} finally {
+			this.lockRemoveQ.unlock();
+		}
+		return true;
+	}
+	
 	/**
 	 * Reload cache from the global configuration server
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#refreshTopology()

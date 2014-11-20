@@ -316,8 +316,9 @@ public class MngtController implements Runnable, IStoppable {
 							}
 							// 1. Get the name
 							qName = (String) request.get("QName");
-							// 2. Get the queue in DB
-							if (!factory.startQueue(qName)) {
+							host = zk.getHCM(new Metadata.Queue(qName)).address;
+
+							if (!factory.startQueue(qName, host)) {
 								sendReply_fail("ERROR when starting  queue, check logs of the logical queue factory");
 							} else {
 								sendReply_ok("SUCCESS");
@@ -381,8 +382,8 @@ public class MngtController implements Runnable, IStoppable {
 
 						case RoQConstant.BSON_CONFIG_STOP_QUEUE:
 							logger.debug("Stop queue Request");
-							// Stopping a queue is just removing from the global
-							// configuration
+							// Stopping a queue is just clearing its "running" flag
+							// from the global configuration
 							// 1. Check the request
 							if (!checkField(request, "QName")) {
 								sendReply_fail("ERROR: Missing field in the request: <QName>");
