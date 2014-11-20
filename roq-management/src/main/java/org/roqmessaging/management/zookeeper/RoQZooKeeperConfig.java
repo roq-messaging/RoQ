@@ -14,4 +14,6 @@ public class RoQZooKeeperConfig {
 	public String znode_hcm = "hcm-list";
 	// Parent ZNode for all queues
 	public String znode_queues = "queues";
+	// ZNode used to store the cloud configuration
+	public String znode_cloud = "cloud";
 }

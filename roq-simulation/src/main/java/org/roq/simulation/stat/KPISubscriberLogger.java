@@ -40,13 +40,16 @@ public class KPISubscriberLogger extends KPISubscriber {
 	private Logger logger = Logger.getLogger(KPISubscriber.class);
 
 	/**
-	 * @param globalConfiguration
-	 *            the IP address of the global configuration
+	 * @param gcm_address
+	 *            the IP address of the global configuration manager
+	 * @param gcm_interfacePort
+	 *            the port used by the global configuration manager
+	 *            to provide an interface to the topology
 	 * @param qName
 	 *            the queue from which we want receive statistic.
 	 */
-	public KPISubscriberLogger(String globalConfiguration, String qName, boolean useFile) {
-		super(globalConfiguration, qName);
+	public KPISubscriberLogger(String gcm_address, int gcm_interfacePort, String qName, boolean useFile) {
+		super(gcm_address, gcm_interfacePort, qName);
 		// init file if required
 		if (useFile) {
 			try {

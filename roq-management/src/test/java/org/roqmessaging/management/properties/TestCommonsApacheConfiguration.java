@@ -20,6 +20,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.log4j.Logger;
 import org.junit.Test;
+import org.roqmessaging.management.config.internal.CloudConfig;
 import org.roqmessaging.management.config.internal.FileConfigurationReader;
 import org.roqmessaging.management.config.internal.GCMPropertyDAO;
 import org.roqmessaging.management.config.internal.HostConfigDAO;
@@ -61,20 +62,23 @@ public class TestCommonsApacheConfiguration {
 			logger.info("format DB = "+ dao.isFormatDB());
 			Assert.assertEquals(false, dao.isFormatDB());
 			
-			logger.info("use cloud  = "+ dao.isUseCloud());
-			Assert.assertEquals(true, dao.isUseCloud());
-			
-			logger.info("user cloud  = "+ dao.getCloudUser());
-			Assert.assertEquals("sabri", dao.getCloudUser());
-			
-			logger.info("user Passwd  = "+ dao.getCloudPasswd());
-			Assert.assertEquals("sabsab", dao.getCloudPasswd());
-			
-			logger.info("end point cloud  = "+ dao.getCloudEndPoint());
-			Assert.assertEquals("http://inferno.local:2633/RPC2", dao.getCloudEndPoint());
-
 			logger.info("GCM base port  = "+ dao.ports.get("GlobalConfigurationManager.interface"));
 			Assert.assertEquals(5000, dao.ports.get("GlobalConfigurationManager.interface"));
+			
+			
+			CloudConfig cloudConfig = reader.loadCloudConfiguration("GCM-test.properties");
+			logger.info("use cloud  = "+ cloudConfig.inUse);
+			Assert.assertEquals(true, cloudConfig.inUse);
+			
+			logger.info("user cloud  = "+ cloudConfig.user);
+			Assert.assertEquals("sabri", cloudConfig.user);
+			
+			logger.info("user Passwd  = "+ cloudConfig.password);
+			Assert.assertEquals("sabsab", cloudConfig.password);
+			
+			logger.info("end point cloud  = "+ cloudConfig.endpoint);
+			Assert.assertEquals("http://inferno.local:2633/RPC2", cloudConfig.endpoint);
+			
 			
 			HostConfigDAO hostDao = reader.loadHCMConfiguration("HCM.properties");
 			logger.info("gcm.address = "+ hostDao.getGcmAddress());

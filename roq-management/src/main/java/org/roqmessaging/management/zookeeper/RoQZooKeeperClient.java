@@ -181,6 +181,16 @@ public class RoQZooKeeperClient {
 		return new Metadata.StatMonitor(data);
 	}
 	
+	public void setCloudConfig(byte[] cloudConfig) {
+		log.info("");
+		RoQZKHelpers.createZNode(client, cfg.znode_cloud, cloudConfig);
+	}
+	
+	public byte[] getCloudConfig() {
+		log.info("");
+		return RoQZKHelpers.getData(client, cfg.znode_cloud);
+	}
+	
 	// Private methods
 	private String getZKPath(Metadata.Queue queue) {
 		return RoQZKHelpers.makePath(cfg.znode_queues, queue.name);

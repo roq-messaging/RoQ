@@ -30,11 +30,15 @@ public class KPILogicalQSubscriber extends KPISubscriber {
 	private int producerToCheck =0;
 
 	/**
-	 * @param configurationServer the configuration server to bind
-	 * @param qName
+	 * @param gcm_address
+	 *            the IP address of the global configuration manager
+	 * @param gcm_interfacePort
+	 *            the port used by the global configuration manager
+	 *            to provide an interface to the topology
+	 * @param qName the logical queue name
 	 */
-	public KPILogicalQSubscriber(String configurationServer, String qName) {
-		super(configurationServer, qName);
+	public KPILogicalQSubscriber(String gcm_address, int gcm_interfacePort, String qName) {
+		super(gcm_address, gcm_interfacePort, qName);
 	}
 
 	/**

@@ -29,16 +29,6 @@ public class GCMPropertyDAO {
 	
 	//Define whether we format the DB
 	private boolean formatDB = false;
-	//Define whether RoQ should use a cloud or not
-	private boolean useCloud= false;
-	//The user  for the cloud server
-	private String cloudUser = "roq";
-	//PASSWD for the cloud server
-	private String cloudPasswd = "roq";
-	//The gateway for identifying the subnetwork gateway
-	private String cloudGateWay = "??";
-	//API end point for the cloud server
-	private String cloudEndPoint = "??";
 	// Class which contains the ports used for the various components of the GCM.
 	public GCMPorts ports = new GCMPorts();
 	// ZooKeeper configuration
@@ -78,75 +68,5 @@ public class GCMPropertyDAO {
 	@Override
 	public String toString() {
 		return "GCM "+ this.getPeriod()+" formatDB "+ this.isFormatDB();
-	}
-
-	/**
-	 * @return the useCloud
-	 */
-	public boolean isUseCloud() {
-		return useCloud;
-	}
-
-	/**
-	 * @param useCloud the useCloud to set
-	 */
-	public void setUseCloud(boolean useCloud) {
-		this.useCloud = useCloud;
-	}
-
-	/**
-	 * @return the cloudUser
-	 */
-	public String getCloudUser() {
-		return cloudUser;
-	}
-
-	/**
-	 * @param cloudUser the cloudUser to set
-	 */
-	public void setCloudUser(String cloudUser) {
-		this.cloudUser = cloudUser;
-	}
-
-	/**
-	 * @return the cloudPasswd
-	 */
-	public String getCloudPasswd() {
-		return cloudPasswd;
-	}
-
-	/**
-	 * @param cloudPasswd the cloudPasswd to set
-	 */
-	public void setCloudPasswd(String cloudPasswd) {
-		this.cloudPasswd = cloudPasswd;
-	}
-
-	/**
-	 * @return the cloudGateWay
-	 */
-	public String getCloudGateWay() {
-		return cloudGateWay;
-	}
-
-	/**
-	 * @param cloudGateWay the cloudGateWay to set
-	 */
-	public void setCloudGateWay(String cloudGateWay) {
-		this.cloudGateWay = cloudGateWay;
-	}
-
-	/**
-	 * @return the cloudEndPoint
-	 */
-	public String getCloudEndPoint() {
-		return cloudEndPoint;
-	}
-
-	/**
-	 * @param cloudEndPoint the cloudEndPoint to set
-	 */
-	public void setCloudEndPoint(String cloudEndPoint) {
-		this.cloudEndPoint = cloudEndPoint;
 	}
 }

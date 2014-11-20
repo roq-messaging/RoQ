@@ -75,7 +75,11 @@ public class TestStatMonitor {
 			Thread.sleep(3000);
 			
 			// 2. Init the KPI subscriber
-			kpiSubscriber = new KPISubscriberLogger(launcher.getConfigurationServer(), "queue1", false);
+			kpiSubscriber = new KPISubscriberLogger(
+					launcher.getConfigurationServer(),
+					launcher.getConfigurationServerInterfacePort(),
+					"queue1",
+					false);
 			kpiSubscriber.subscribe();
 			new Thread(kpiSubscriber).start();
 
