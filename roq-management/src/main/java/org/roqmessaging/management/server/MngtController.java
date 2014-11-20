@@ -40,6 +40,7 @@ import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
+import org.roqmessaging.management.zookeeper.Metadata;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Poller;
@@ -190,13 +191,14 @@ public class MngtController implements Runnable, IStoppable {
 		poller.register(mngtSubSocket);// 0
 		poller.register(mngtRepSocket);
 		// Init variables
-		int infoCode = 0;
+		// int infoCode = 0;
 
 		// Start the running loop
 		while (this.active) {
 			// Set the poll time out, it returns either when something arrive or
 			// when it time out
 			poller.poll(100);
+			/*
 			if (poller.pollin(0)) {
 				logger.debug("Recieving Message in the update broadcast update channel");
 				// An event arrives start analysing code
@@ -230,6 +232,7 @@ public class MngtController implements Runnable, IStoppable {
 					break;
 				}
 			}
+			*/
 			// Pollin 1 = Management facade interface in BSON
 			if (poller.pollin(1)) {
 				try {
@@ -237,8 +240,7 @@ public class MngtController implements Runnable, IStoppable {
 					BSONObject request = BSON.decode(mngtRepSocket.recv(0));
 					if (isMultiPart(mngtRepSocket)) {
 						// Send an error message
-						mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-								"ERROR the client used a multi part ZMQ message while only on is required."), 0);
+						sendReply_fail("ERROR the client used a multi part ZMQ message while only on is required.");
 					}
 					if (checkField(request, "CMD")) {
 						// Variables
@@ -247,6 +249,20 @@ public class MngtController implements Runnable, IStoppable {
 
 						// 2. Getting the command ID
 						switch ((Integer) request.get("CMD")) {
+						
+						case RoQConstant.BSON_CONFIG_REMOVE_QUEUE:
+							logger.debug("Processing a REMOVE QUEUE REQUEST");
+							if (!checkField(request, "QName")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>");
+								break;
+							}
+							qName = (String) request.get("QName");
+							logger.debug("Remove " + qName);
+							if (!this.factory.removeQueue(qName)) {
+								sendReply_fail("ERROR when stopping Running queue, check logs of the logical queue factory");
+							}
+							break;
+						/*
 						case RoQConstant.BSON_CONFIG_REMOVE_QUEUE:
 							logger.debug("Processing a REMOVE QUEUE REQUEST");
 							if (!checkField(request, "QName")) {
@@ -288,7 +304,28 @@ public class MngtController implements Runnable, IStoppable {
 								logger.error("Error while processing the REMOVE Q", e);
 							}
 							break;
-
+						 	*/
+						case RoQConstant.BSON_CONFIG_START_QUEUE:
+							logger.info("Start  Q Request ... checking whether the Queue is known ...");
+							logger.debug("Incoming request:" + request.toString());
+							// Starting a queue
+							// Just create a queue on a host
+							if (!checkField(request, "QName")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>");
+								break;
+							}
+							// 1. Get the name
+							qName = (String) request.get("QName");
+							// 2. Get the queue in DB
+							if (!factory.startQueue(qName)) {
+								sendReply_fail("ERROR when starting  queue, check logs of the logical queue factory");
+							} else {
+								sendReply_ok("SUCCESS");
+							}
+							
+							logger.debug("Create queue name = " + qName + " on " + host + " from a start command");
+							break;
+						/*
 						case RoQConstant.BSON_CONFIG_START_QUEUE:
 							logger.info("Start  Q Request ... checking whether the Queue is known ...");
 							logger.debug("Incoming request:" + request.toString());
@@ -319,12 +356,14 @@ public class MngtController implements Runnable, IStoppable {
 
 							logger.debug("Create queue name = " + qName + " on " + host + " from a start command");
 							break;
-
+							*/
 						case RoQConstant.BSON_CONFIG_CREATE_QUEUE:
 							logger.debug("Create Q request ...");
 							// Starting a queue
 							// Just create a queue on a host
-							if (!checkField(request, "QName") || !checkField(request, "Host")) {
+							if (!checkField(request, "QName")
+								|| !checkField(request, "Host")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>, <Host>");
 								break;
 							}
 							// 1. Get the name
@@ -333,10 +372,9 @@ public class MngtController implements Runnable, IStoppable {
 							// Just create queue the timer will update the
 							// management server configuration
 							if (!factory.createQueue(qName, host)) {
-								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-										"ERROR when starting  queue, check logs of the logical queue factory"), 0);
+								sendReply_fail("ERROR when starting  queue, check logs of the logical queue factory");
 							} else {
-								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK, "SUCCESS"), 0);
+								sendReply_ok("SUCCESS");
 							}
 							logger.debug("Create queue name = " + qName + " on " + host);
 							break;
@@ -347,41 +385,60 @@ public class MngtController implements Runnable, IStoppable {
 							// configuration
 							// 1. Check the request
 							if (!checkField(request, "QName")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>");
 								break;
 							}
 							// 2. Get the Qname
 							qName = (String) request.get("QName");
 							logger.debug("Stop queue name = " + qName);
 							// 3. Remove the queue
-							if (!this.factory.removeQueue(qName)) {
-								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-										"ERROR when stopping Running queue, check logs of the logical queue factory"),
-										0);
+							if (!this.factory.stopQueue(qName)) {
+								sendReply_fail("ERROR when stopping Running queue, check logs of the logical queue factory");
 							} else {
-								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK, "SUCCESS"), 0);
+								sendReply_ok("SUCCESS");
 							}
 							break;
 
 						case RoQConstant.BSON_CONFIG_CREATE_XCHANGE:
 							logger.debug("Create Xchange request");
-							if (!checkField(request, "QName") || !checkField(request, "Host")) {
+							if (!checkField(request, "QName")
+								|| !checkField(request, "Host")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>, <Host>");
 								break;
 							}
 							// 1. Get the host
 							host = (String) request.get("Host");
 							qName = (String) request.get("QName");
 							logger.debug("Create Xchange on queue " + qName + " on " + host);
-							if (this.factory.createExchange(qName, host)) {
-								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK, "SUCCESS"), 0);
+							if (!this.factory.createExchange(qName, host)) {
+								sendReply_fail("ERROR when creating Xchange check logs of the logical queue factory");
 							} else {
-								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-										"ERROR when creating Xchange check logs of the logical queue factory"), 0);
+								sendReply_ok("SUCCESS");
 							}
 							break;
 
 						/*
 						 * Auto scaling configuration requests
 						 */
+						case RoQConstant.BSON_CONFIG_GET_AUTOSCALING_RULE:
+							logger.debug("GET autoscaling rule request received ...");
+							if (!checkField(request, "QName")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>");
+								break;
+							}
+							// 1. Get the qname
+							qName = (String) request.get("QName");
+							logger.debug("Getting autoscaling configuration for " + qName);
+							
+							AutoScalingConfig config = zk.getScalingConfig(new Metadata.Queue(qName));
+							if (config != null) {
+								mngtRepSocket.send(
+										this.serializer.serialiazeAutoScalingConfigAnswer(qName, config), 0);
+							} else {
+								sendReply_fail("ERROR NO auto scaling rule defined for this queue");
+							}
+							break;
+						/*	
 						case RoQConstant.BSON_CONFIG_GET_AUTOSCALING_RULE:
 							logger.debug("GET autoscaling rule request received ...");
 							if (!checkField(request, "QName"))
@@ -414,15 +471,11 @@ public class MngtController implements Runnable, IStoppable {
 								queueS = null;
 							}
 							break;
-
+							*/
 						case RoQConstant.BSON_CONFIG_REGISTER_FOR_AUTOSCALING_RULE_UPDATE:
 							logger.debug("REGISTER FOR  autoscaling rule request received ...");
 							if (!checkField(request, "QName") && !checkField(request, "Address")) {
-								mngtRepSocket
-										.send(serializer
-												.serialiazeConfigAnswer(RoQConstant.FAIL,
-														"ERROR when registrating  Missing field in the request :<QName>, <Address>"),
-												0);
+								sendReply_fail("ERROR: Missing field in the request: <QName>, <Address>");
 								break;
 							}
 							try {
@@ -438,15 +491,69 @@ public class MngtController implements Runnable, IStoppable {
 								push.connect(addressCallBack);
 								// 2.2 Add the socket in the hash map
 								this.scalingConfigListener.put(qName, push);
-								mngtRepSocket	.send(serializer.serialiazeConfigAnswer(RoQConstant.OK,
-												"Registrated on "+addressCallBack),0);
+								sendReply_ok("Registrated on "+addressCallBack);
 							} catch (Exception e) {
 								logger.error("Error when registrating the listener, the request was " + request, e);
-								mngtRepSocket	.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-										e.getMessage()),0);
+								sendReply_fail(e.getMessage());
 							}
 							break;
 
+						case RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE:
+							logger.debug("ADD autoscaling rule request received ...");
+							if (!checkField(request, "QName")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>");
+								break;
+							}
+							// 1. Get the qname
+							AutoScalingConfig config = new AutoScalingConfig();
+							qName = (String) request.get("QName");
+							logger.debug("Adding autoscaling configuration for " + qName);
+							
+							// Decode host rule if it is present in the request
+							BSONObject hostRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_HOST);
+							if (hostRule != null) {
+								config.setHostRule(
+										new HostScalingRule(
+												((Integer) hostRule.get(RoQConstant.BSON_AUTOSCALING_HOST_RAM)).intValue(),
+												((Integer) hostRule.get(RoQConstant.BSON_AUTOSCALING_HOST_CPU)).intValue()));
+								logger.debug("Host scaling rule decoded : " + config.getHostRule().toString());
+							}
+							
+							// Decode exchange rule if it is present in the request
+							BSONObject exchangeRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_XCHANGE);
+							if (exchangeRule != null) {
+								config.setXgRule(
+										new XchangeScalingRule(
+												((Integer) hostRule.get(RoQConstant.BSON_AUTOSCALING_XCHANGE_THR)).intValue(),
+												0));
+								logger.debug("Xchange scaling rule : " + config.getXgRule().toString());
+							}
+							
+							// Decode queue rule if it is present in the request
+							BSONObject queueRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_QUEUE);
+							if (queueRule != null) {
+								config.setqRule(
+										new LogicalQScalingRule(
+												((Integer) hostRule.get(RoQConstant.BSON_AUTOSCALING_Q_PROD_EXCH)).intValue(),
+												((Integer) hostRule.get(RoQConstant.BSON_AUTOSCALING_Q_THR_EXCH)).intValue()));
+								logger.debug("Queue scaling rule : " + config.getqRule().toString());
+							}
+							
+							if (!factory.setScalingRule(config)) {
+								sendReply_fail("ERROR when setting scaling rule");
+							}
+							
+							//The scaling rule has been updated need to check whether there was a listener for this Q
+							if(this.scalingConfigListener.containsKey(qName)){
+								this.logger.info("New scaling rule have been defined for "+ qName +": notifying the listener");
+								this.scalingConfigListener.get(qName).send(
+										this.serializer.serialiazeAutoScalingConfigAnswer(qName, config),
+										0);
+							}
+							sendReply_ok("The autoscaling config has been created for the Q " + qName);
+							break;
+							
+						/*
 						case RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE:
 							logger.debug("ADD autoscaling rule request received ...");
 							if (!checkField(request, "QName")
@@ -601,6 +708,7 @@ public class MngtController implements Runnable, IStoppable {
 														+ qName), 0);
 							}
 							break;
+							*/
 							
 							//Request for getting the properties of the cloud user
 						case RoQConstant.BSON_CONFIG_GET_CLOUD_PROPERTIES:
@@ -646,6 +754,20 @@ public class MngtController implements Runnable, IStoppable {
 		cleanStop();
 		logger.info("Management controller stopped.");
 	}
+	
+	private void sendReply_ok(String string) {
+		mngtRepSocket.send(
+			serializer.serialiazeConfigAnswer(
+				RoQConstant.OK, string),
+			0);
+	}
+
+	private void sendReply_fail(String string) {
+		mngtRepSocket.send(
+			serializer.serialiazeConfigAnswer(
+				RoQConstant.FAIL, string),
+			0);
+	}
 
 	/**
 	 * Clean all the timers and socket of the thread.
@@ -656,8 +778,10 @@ public class MngtController implements Runnable, IStoppable {
 		this.controllerTimer.cancel();
 		this.publicationTimer.cancel();
 		this.publicationTimer.purge();
-		logger.debug("Removing host configurations ...");
-		this.cleanMngtConfig();
+		// This call was commented out because stopping a GCM
+		// does not mean that hosts are also stopped
+		// logger.debug("Removing host configurations ...");
+		// this.cleanMngtConfig();
 		logger.debug("Closing sockets ...");
 		this.mngtSubSocket.setLinger(0);
 		this.mngtRepSocket.setLinger(0);
@@ -721,14 +845,17 @@ public class MngtController implements Runnable, IStoppable {
 	 * Clean the management configuration by removing non persistant information
 	 * such as the host name that must be dynamic when hosts starts.
 	 */
+	/*
 	private void cleanMngtConfig() {
+		
 		try {
-			this.storage.removeHosts();
+			// this.storage.removeHosts();
 		} catch (SQLException e) {
 			logger.error("Error when deleting the hosts from configuration", e);
 		}
+		
 	}
-
+	*/
 	/**
 	 * @param socket
 	 *            the socket to check
