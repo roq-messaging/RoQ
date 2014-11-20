@@ -210,7 +210,6 @@ public class TestMngtStorageCreateTables {
 		QueueManagementState q2State = facade.getQueue("Queue2");
 		Assert.assertNotNull(q2State);
 		Assert.assertEquals(true, q2State.isRunning());
-		Assert.assertEquals("conf1", q2State.getAutoScalingCfgRef());
 		// Check whether the Queue3 has been added
 		QueueManagementState q3State = facade.getQueue("Queue3");
 		Assert.assertNotNull(q3State);

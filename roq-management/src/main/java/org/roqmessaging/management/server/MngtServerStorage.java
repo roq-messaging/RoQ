@@ -394,7 +394,7 @@ public class MngtServerStorage {
 				+ "where Queues.MainhostRef=Hosts.IP_Address;");
 		while (rs.next()) {
 			QueueManagementState state = new QueueManagementState(rs.getString("name"), rs.getString("IP_Address"),
-					rs.getBoolean("State"), rs.getString("autoscalingCfg"));
+					rs.getBoolean("State"));
 			logger.debug("name = " + state.getName() + ", State = " + state.isRunning() + " IP = " + state.getHost() +" AS config: "+rs.getInt("autoscalingCfg"));
 			result.add(state);
 		}
@@ -529,7 +529,7 @@ public class MngtServerStorage {
 			logger.debug("Getting Q " + rs.getString("name") + ": " + rs.getString("IP_Address")
 					+ " "+(rs.getInt("State") == 0 ? false : true) +" AS config  "+rs.getInt("autoscalingCfg"));
 			QueueManagementState result = new QueueManagementState(rs.getString("name"), rs.getString("IP_Address"),
-					rs.getInt("State") == 0 ? false : true, rs.getString("autoscalingCfg"));
+					rs.getInt("State") == 0 ? false : true);
 			statement.close();
 			return result;
 		}

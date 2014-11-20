@@ -206,7 +206,7 @@ public class RoQBSONSerializer implements IRoQSerializer {
 		//Through the list of decoded object, we re build the states
 		for (BSONObject bsonObject : dedodedList) {
 			QueueManagementState state_i =  new QueueManagementState((String) bsonObject.get("Name"),
-					(String) bsonObject.get("Host"),  (Boolean) bsonObject.get("State"), ((String)bsonObject.get("ASConfig")));
+					(String) bsonObject.get("Host"),  (Boolean) bsonObject.get("State"));
 			queues.add(state_i);
 			logger.debug(state_i.toString());
 		}

@@ -77,11 +77,11 @@ public class BSONUnitTest {
 	@Test
 	public void testQueueEncoding() throws Exception {
 		List<QueueManagementState> queues = new ArrayList<QueueManagementState>();
-		QueueManagementState q1 = new QueueManagementState("queue1", "127.0.1.1", false, "conf1");
+		QueueManagementState q1 = new QueueManagementState("queue1", "127.0.1.1", false);
 		queues.add(q1);
-		QueueManagementState q2 = new QueueManagementState("queue2", "127.0.1.2", false, "conf2");
+		QueueManagementState q2 = new QueueManagementState("queue2", "127.0.1.2", false);
 		queues.add(q2);
-		QueueManagementState q3 = new QueueManagementState("queue3", "127.0.1.3", false,"conf3");
+		QueueManagementState q3 = new QueueManagementState("queue3", "127.0.1.3", false);
 		queues.add(q3);
 		
 		testQueues(queues);

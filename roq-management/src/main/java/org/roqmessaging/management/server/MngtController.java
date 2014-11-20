@@ -14,9 +14,10 @@
  */
 package org.roqmessaging.management.server;
 
-import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Timer;
 
 import org.apache.log4j.Logger;
@@ -38,6 +39,7 @@ import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
 import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
+import org.roqmessaging.management.server.state.QueueManagementState;
 import org.roqmessaging.management.zookeeper.Metadata;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
 import org.zeromq.ZMQ;
@@ -73,12 +75,8 @@ public class MngtController implements Runnable, IStoppable {
 	private ShutDownMonitor shutDownMonitor = null;
 	// utils for serialization
 	private RoQSerializationUtils serializationUtils = null;
-	// Management infra
-	private MngtServerStorage storage = null;
 	// The BSON serialiazer
 	private IRoQSerializer serializer = null;
-	// The DB file
-	private String dbName = "Management.db";
 	// The publication period of the configuration
 	private int period = 60000;
 	// The map that register for a queue the configuration listener [Qname, Push
@@ -100,10 +98,9 @@ public class MngtController implements Runnable, IStoppable {
 	 *            the address on which the global config server runs.
 	 * @param zk the ZooKeeper client
 	 */
-	public MngtController(String globalConfigAddress, String dbName, int period, GCMPropertyDAO props, RoQZooKeeperClient zk) {
+	public MngtController(String globalConfigAddress, int period, GCMPropertyDAO props, RoQZooKeeperClient zk) {
 		try {
 			this.period = period;
-			this.dbName = dbName;
 			this.properties= props;
 			this.scalingConfigListener = new HashMap<String, ZMQ.Socket>();
 			this.zk = zk;
@@ -152,7 +149,6 @@ public class MngtController implements Runnable, IStoppable {
 		mngtRepSocket.bind("tcp://*:"+interfacePort);
 		// init variable
 		this.serializationUtils = new RoQSerializationUtils();
-		this.storage = new MngtServerStorage(DriverManager.getConnection("jdbc:sqlite:" + this.dbName));
 		this.factory = new LogicalQFactory(globalConfigAddress);
 		this.serializer = new RoQBSONSerializer();
 		// Shutdown thread configuration
@@ -933,20 +929,37 @@ public class MngtController implements Runnable, IStoppable {
 	public ShutDownMonitor getShutDownMonitor() {
 		return shutDownMonitor;
 	}
-
-	/**
-	 * @return the storage
-	 */
-	public MngtServerStorage getStorage() {
-		return storage;
+	
+	public ArrayList<String> getHosts() {
+		// Get the hosts
+		List<Metadata.HCM> hosts = zk.getHCMList();
+		ArrayList<String> hostAddresses = new ArrayList<String>();
+		for (Metadata.HCM hcm : hosts) {
+			hostAddresses.add(hcm.address);
+		}
+		return hostAddresses;
 	}
 
-	/**
-	 * @param storage
-	 *            the storage to set
-	 */
-	public void setStorage(MngtServerStorage storage) {
-		this.storage = storage;
+	public ArrayList<QueueManagementState> getQueues() {
+		ArrayList<QueueManagementState> queues = new ArrayList<QueueManagementState>();
+		
+		for (Metadata.Queue queue : zk.getQueueList()) {
+			queues.add(new QueueManagementState(
+					queue.name,
+					zk.getHCM(queue).address,
+					zk.isRunning(queue)));
+		}
+		return queues;
+	}
+
+	public QueueManagementState getQueue(String queueName) {
+		Metadata.Queue queue = new Metadata.Queue(queueName);
+		
+		QueueManagementState qms = new QueueManagementState(
+				queue.name,
+				zk.getHCM(queue).address,
+				zk.isRunning(queue));
+		return qms;
 	}
 
 }

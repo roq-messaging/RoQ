@@ -185,6 +185,7 @@ public class RoQZooKeeperClient {
 		log.info("");
 		String path = RoQZKHelpers.makePath(getZKPath(queue), "hcm");
 		String data = RoQZKHelpers.getDataString(client, path);
+		log.info("HCM address: " + data);
 		if (data == null) {
 			return null;
 		}
@@ -195,6 +196,7 @@ public class RoQZooKeeperClient {
 		log.info("");
 		String path = RoQZKHelpers.makePath(getZKPath(queue), "monitor");
 		String data = RoQZKHelpers.getDataString(client, path);
+		log.info("Monitor address: " + data);
 		if (data == null) {
 			return null;
 		}
@@ -205,6 +207,7 @@ public class RoQZooKeeperClient {
 		log.info("");
 		String path = RoQZKHelpers.makePath(getZKPath(queue), "stat-monitor");
 		String data = RoQZKHelpers.getDataString(client, path);
+		log.info("StatMonitor address: " + data);
 		if (data == null) {
 			return null;
 		}

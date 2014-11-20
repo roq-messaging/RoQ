@@ -41,7 +41,7 @@ public class TestMngtController extends RoQTestCase {
 	@Test
 	public void testQlifeCycle() {
 		try {
-			 MngtController mngtController = this.launcher.getMngtController();
+			MngtController mngtController = this.launcher.getMngtController();
 			logger.info("---> Test 1 create  2 Qs");
 			// 1. Create Q
 			 this.factory.createQueue("queue1", RoQUtils.getInstance().getLocalIP().toString());
@@ -56,21 +56,21 @@ public class TestMngtController extends RoQTestCase {
 			
 			//4. Test queues
 			logger.info("---> Test 2 check  2 Qs");
-			ArrayList<QueueManagementState> queues = mngtController.getStorage().getQueues();
+			ArrayList<QueueManagementState> queues = mngtController.getQueues();
 			Assert.assertEquals(2, queues.size());
 			
 			logger.info("---> Test 3 check  3 Qs");
 			 this.factory.createQueue("queue2", RoQUtils.getInstance().getLocalIP().toString());
 			//3. Sleep for test
 			Thread.sleep(5000);
-			Assert.assertEquals(3,  mngtController.getStorage().getQueues().size());
-			Assert.assertEquals(true,  mngtController.getStorage().getQueue("queue2").isRunning());
+			Assert.assertEquals(3,  mngtController.getQueues().size());
+			Assert.assertTrue(mngtController.getQueue("queue2").isRunning());
 			
 			logger.info("---> Test 4 Remove  1Q and check 2 Qs");
 			this.factory.removeQueue("queue1");
 			Thread.sleep(5000);
-			Assert.assertEquals(3,  mngtController.getStorage().getQueues().size());
-			Assert.assertEquals(false,  mngtController.getStorage().getQueue("queue1").isRunning());
+			Assert.assertEquals(3,  mngtController.getQueues().size());
+			Assert.assertFalse(mngtController.getQueue("queue1").isRunning());
 			
 			//Clean all
 			this.factory.removeQueue("queueTest");
