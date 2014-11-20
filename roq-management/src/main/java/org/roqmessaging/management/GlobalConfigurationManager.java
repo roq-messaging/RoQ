@@ -14,7 +14,10 @@
  */
 package org.roqmessaging.management;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 
 import org.apache.log4j.Logger;
@@ -30,6 +33,8 @@ import org.roqmessaging.management.config.internal.GCMPropertyDAO;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.MngtController;
+import org.roqmessaging.management.zookeeper.Metadata;
+import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Poller;
 
@@ -48,8 +53,6 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private ZMQ.Socket clientReqSocket = null;
 	private ZMQ.Context context;
 	private GCMPropertyDAO properties=null;
-	//The GCM state
-	private GlobalConfigurationState stateDAO = null;
 	//The shutdown monitor
 	private ShutDownMonitor shutDownMonitor = null;
 	//utils
@@ -69,6 +72,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	
 	private Logger logger = Logger.getLogger(GlobalConfigurationManager.class);
 
+	private RoQZooKeeperClient zk;
 	
 	/**
 	 * Constructor.
@@ -81,7 +85,6 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			// Init variables and pointers
 			this.running = true;
 			this.serializationUtils = new RoQSerializationUtils();
-			this.stateDAO = new GlobalConfigurationState();
 
 			// Read configuration from file
 			FileConfigurationReader reader = new FileConfigurationReader();
@@ -94,6 +97,10 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			this.clientReqSocket = context.socket(ZMQ.REP);
 			this.clientReqSocket.bind("tcp://*:"+port);
 
+			// Setup and start the zookeeper client
+			this.zk = new RoQZooKeeperClient(properties.zkConfig);
+			this.zk.start();
+			
 			// Start the shutdown thread
 			int shutDownPort = properties.ports.get("GlobalConfigurationManager.shutDown");
 			this.shutDownMonitor = new ShutDownMonitor(shutDownPort, this);
@@ -102,8 +109,10 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			// The Management controller - the start is in the run to take the
 			// period attribute
 			this.mngtController = new MngtController("localhost", dbName, (properties.getPeriod() + 500), this.properties);
-			if (properties.isFormatDB())
+			if (properties.isFormatDB()) {
+				zk.clear();
 				this.mngtController.getStorage().formatDB();
+			}
 			new Thread(mngtController).start();
 		} catch (Exception e) {
 			logger.error("Error in constructor", e);
@@ -124,6 +133,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * Main run
 	 * @see java.lang.Runnable#run()
 	 */
+	@Override
 	public void run() {
 		this.running = true;
 		
@@ -167,23 +177,26 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		if(request.containsField("CMD")){
 			int cmd = (Integer) request.get("CMD");
 			if(cmd == RoQConstant.BSON_CONFIG_GET_HOST_BY_QNAME){
-				String qName = (String) request.get("QName");
-				logger.debug("GET HOST BY QNAME = "+ qName);
+				String queueName = (String) request.get("QName");
+				logger.debug("GET HOST BY QNAME = "+ queueName);
 				
-				//Get the host for this QName
-				if(this.stateDAO.getQueueMonitorMap().containsKey(qName) && this.stateDAO.getQueueMonitorStatMap().containsKey(qName)){
-					//Replace the stat monitor port to the subscription port
-					String subscribingKPIMonitor = this.stateDAO.getQueueMonitorStatMap().get(qName);
-					int basePort = RoQSerializationUtils.extractBasePort(subscribingKPIMonitor);
-					String portOff = subscribingKPIMonitor.substring(0, subscribingKPIMonitor.length() - "xxxx".length());
-					subscribingKPIMonitor= portOff+(basePort+1);
-					logger.debug("Answering back:"+ this.stateDAO.getQueueMonitorMap().get(qName)+","+subscribingKPIMonitor);
-					this.clientReqSocket.send(this.serialiazer.serialiazeMonitorInfo(this.stateDAO.getQueueMonitorMap().get(qName),subscribingKPIMonitor), 0);
-				}else{
-					logger.warn(" No logical queue as:"+qName);
+				String[] fields = getHostByQueueName_bson(queueName);
+				if (fields == null) {
+					logger.warn(" No logical queue as:"+queueName);
 					this.clientReqSocket.send(serialiazer.serialiazeConfigAnswer(RoQConstant.FAIL,
-							"The Queue "+qName+"  is not registred."), 0);
+							"The Queue "+queueName+"  is not registred."), 0);
+				} else {
+					String monitor = fields[0];
+					String statMonitorKpiPub = fields[1];
+					
+					logger.debug("Answering back:"+ monitor + "," + statMonitorKpiPub);
+					this.clientReqSocket.send(
+							this.serialiazer.serialiazeMonitorInfo(
+									monitor, statMonitorKpiPub),
+							0);
 				}
+			} else {
+				this.logger.error("Unrecognized BSON command: " + cmd);
 			}
 		}else{
 			this.logger.error("The BSON object does not contain the CMD field ", new IllegalStateException("Expecting the CDM field in the request BSON object"));
@@ -205,10 +218,33 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			// A client is asking for the topology of all local host
 			// manager
 			logger.debug("Recieveing init request from a client ");
-			this.clientReqSocket.send( this.serializationUtils.serialiseObject(this.stateDAO.getHostManagerAddresses()), ZMQ.SNDMORE);
-			this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.stateDAO.getQueueMonitorMap()), ZMQ.SNDMORE);
-			this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.stateDAO.getQueueHostLocation()), ZMQ.SNDMORE);
-			this.clientReqSocket.send(this.serializationUtils.serialiseObject(this.stateDAO.getQueueMonitorStatMap()), 0);
+			
+			List<String> hcmStringList = getHostManagerAddresses();
+			Map<String, String> queueMonitorMap = new HashMap<String, String>();
+			Map<String, String> queueStatMonitorMap = new HashMap<String, String>();
+			Map<String, String> queueHCMMap = new HashMap<String, String>();
+
+			// This is very ugly because for the moment the client does not cache anything,
+			// meaning that each call represents a ZooKeeper transaction.
+			// That should change.
+			// 
+			// Furthermore, to limit the number of calls, Metadata.Queue could contain instances
+			// of Metadata.HCM, Metadata.Monitor and Metadata.StatMonitor.
+			for (Metadata.Queue queue : zk.getQueueList()) {
+				Metadata.Monitor m = zk.getMonitor(queue);
+				Metadata.StatMonitor sm = zk.getStatMonitor(queue);
+				Metadata.HCM hcm = zk.getHCM(queue);
+
+				queueMonitorMap.put(queue.name, m.address);
+				queueStatMonitorMap.put(queue.name, sm.address);
+				queueHCMMap.put(queue.name, hcm.address);
+			}
+
+			this.clientReqSocket.send(this.serializationUtils.serialiseObject(hcmStringList),       ZMQ.SNDMORE);
+			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueMonitorMap),     ZMQ.SNDMORE);
+			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueHCMMap),         ZMQ.SNDMORE);
+			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueStatMonitorMap), 0);
+			
 			logger.debug("Sending back the topology - list of local host");
 			break;
 			
@@ -217,8 +253,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			logger.debug("Recieveing remove Q request from a client ");
 			if (info.length == 2) {
 				logger.debug("The request format is valid we 2 part:  "+ info[1]);
-				// register the queue
-				removeQueue(info[1]);
+
+				String queueName = info[1];
+				removeQueue(queueName);
 				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
 			}else{
 					logger.error("The remove queue request sent does not contain 2 part: ID, quName");
@@ -231,15 +268,13 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			logger.debug("Recieveing create Q request from a client ");
 			if (info.length >3) {
 				logger.debug("The request format is valid we 4 part:  "+ info[1] +" "+ info[2]+ " "+ info[3]+ " "+ info[4]);
-				// The logical queue config is sent int the part 2
-				String qName = info[1];
-				String monitorHost = info[2];
-				String statMonitorHost = info[3];
-				String targetAddress = info[4];
+				
+				String queueName = info[1];
+				String monitorAddress = info[2];
+				String statMonitorAddress = info[3];
+				String hcmAddress = info[4];
 				// register the queue
-				addQueueName(qName, monitorHost);
-				addQueueStatMonitor(qName, statMonitorHost);
-				addQueueLocation(qName, targetAddress);
+				addQueue(queueName, monitorAddress, statMonitorAddress, hcmAddress);
 				this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK).getBytes(), 0);
 			}else{
 					logger.error("The create queue request sent does not contain 3 part: ID, quName, Monitor host");
@@ -253,7 +288,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			if (info.length == 2) {
 				logger.debug("The request format is valid adding as host : "+ info[1]);
 				// The logical queue config is sent int the part 2
-				addHostManager(info[1]);
+				String hcmAddress = info[1];
+				addHostManager(hcmAddress);
+				
 				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
 			}else{
 				this.clientReqSocket.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
@@ -275,13 +312,21 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		case RoQConstant.CONFIG_GET_HOST_BY_QNAME:
 			logger.debug("Recieveing GET HOST request from a client ");
 			if (info.length == 2) {
-				logger.debug("The request format is valid - Asking for translating  "+ info[1]);
-				if(this.stateDAO.getQueueMonitorMap().containsKey(info[1])){
-					logger.debug("Answering back:"+ this.stateDAO.getQueueMonitorMap().get(info[1])+","+this.stateDAO.getQueueMonitorStatMap().get(info[1]));
-					this.clientReqSocket.send((this.stateDAO.getQueueMonitorMap().get(info[1])+","+this.stateDAO.getQueueMonitorStatMap().get(info[1])).getBytes(), 0);
-				}else{
-					logger.warn(" No logical queue as:"+info[1]);
-					this.clientReqSocket.send(("").getBytes(), 0);
+				String queueName = info[1];
+				
+				logger.debug("The request format is valid - Asking for translating  "+ queueName);
+				
+				String[] fields = getHostByQueueName(queueName);
+				if (fields == null) {
+					logger.warn(" No logical queue as:"+queueName);
+					clientReqSocket.send("".getBytes(), 0);
+				} else {
+					String monitor = fields[0];
+					String statMonitor = fields[1];
+					
+					String reply = monitor + "," + statMonitor;
+					logger.debug("Answering back:" + reply);
+					this.clientReqSocket.send(reply.getBytes(), 0);
 				}
 			}
 			break;
@@ -290,19 +335,23 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		case RoQConstant.BSON_CONFIG_GET_HOST_BY_QNAME:
 			logger.debug("Recieveing GET HOST by QNAME in BSON request from a client ");
 			if (info.length == 2) {
-				logger.debug("The request format is valid - Asking for translating  "+ info[1]);
-				if(this.stateDAO.getQueueMonitorMap().containsKey(info[1]) && this.stateDAO.getQueueMonitorStatMap().containsKey(info[1])){
-					//Replace the stat monitor port to the subscription port
-					String subscribingKPIMonitor = this.stateDAO.getQueueMonitorStatMap().get(info[1]);
-					int basePort = RoQSerializationUtils.extractBasePort(subscribingKPIMonitor);
-					String portOff = subscribingKPIMonitor.substring(0, subscribingKPIMonitor.length() - "xxxx".length());
-					subscribingKPIMonitor= portOff+(basePort+1);
-					logger.debug("Answering back:"+ this.stateDAO.getQueueMonitorMap().get(info[1])+","+subscribingKPIMonitor);
-					this.clientReqSocket.send(this.serialiazer.serialiazeMonitorInfo(this.stateDAO.getQueueMonitorMap().get(info[1]),subscribingKPIMonitor), 0);
-				}else{
-					logger.warn(" No logical queue as:"+info[1]);
+				String queueName = info[1];
+				logger.debug("The request format is valid - Asking for translating  "+ queueName);
+				
+				String[] fields = getHostByQueueName_bson(queueName);
+				if (fields == null) {
+					logger.warn(" No logical queue as:"+queueName);
 					this.clientReqSocket.send(serialiazer.serialiazeConfigAnswer(RoQConstant.FAIL,
-							"The Queue "+info[1]+"  is not registred."), 0);
+							"The Queue "+queueName+"  is not registred."), 0);
+				} else {
+					String monitor = fields[0];
+					String statMonitorKpiPub = fields[1];
+					
+					logger.debug("Answering back:"+ monitor + "," + statMonitorKpiPub);
+					this.clientReqSocket.send(
+							this.serialiazer.serialiazeMonitorInfo(
+									monitor, statMonitorKpiPub),
+							0);
 				}
 			}
 			break;
@@ -311,51 +360,42 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	}
 
 	/**
-	 * @param qName the name of the logical queue
-	 * @param targetAddress the target host address to register
+	 * @param queueName the name of the logical queue
+	 * @param monitorAddress address of the queue's Monitor in the format "tcp://x.y.z:port"
+	 * @param statMonitorAddress address of the queue's StatisticMonitor in the format "tcp://x.y.z:port"
+	 * @param hcmAddress ip address of the host that handles the queue 
 	 */
-	public void addQueueLocation(String qName, String targetAddress) {
-		logger.debug("Adding the logical queue to the target address" + targetAddress);
-		this.stateDAO.getQueueHostLocation().put(qName, targetAddress);
-		
+	public void addQueue(String queueName, String monitorAddress, String statMonitorAddress, String hcmAddress) {
+		Metadata.Queue queue = new Metadata.Queue(queueName);
+		Metadata.Monitor monitor = new Metadata.Monitor(monitorAddress);
+		Metadata.StatMonitor statMonitor = new Metadata.StatMonitor(statMonitorAddress);
+		Metadata.HCM hcm = new Metadata.HCM(hcmAddress);
+
+		zk.createQueue(queue, hcm, monitor, statMonitor);
 	}
 
 	/**
 	 * Removes all reference of the this queue
-	 * @param qName the logical queue name
+	 * @param queueName the logical queue name
 	 */
-	public void removeQueue(String qName) {
-		if ((this.stateDAO.getQueueMonitorMap().remove(qName)==null) ||  (this.stateDAO.getQueueMonitorStatMap().remove(qName)==null) || (this.stateDAO.getQueueHostLocation().remove(qName)==null)){
-			logger.error("Error while removing queue", new IllegalStateException("The queue name " + qName +" is not registred in the global configuration"));
-		}else{
-			logger.info("Removing queue "+ qName + " from global configuration");
-		}
-		
+	public void removeQueue(String queueName) {
+		zk.removeQueue(new Metadata.Queue(queueName));
 	}
 
-	/**
-	 * @param qName the name of the logical queue
-	 * @param statMonitorHost the stat port address of the corresponding monitor
-	 */
-	public void addQueueStatMonitor(String qName, String statMonitorHost) {
-		this.stateDAO.getQueueMonitorStatMap().put(qName, statMonitorHost);
-		logger.debug("Adding stat monitor address for "+ qName +" @"+ statMonitorHost +" in global configuration");
-		
-	}
 
 
 	/**
 	 * @param host the ip address of the host to remove.
 	 */
 	public void removeHostManager(String host) {
-		if(this.stateDAO.getHostManagerAddresses().remove(host)) logger.info("Removed host successfully "+ host);
-		else  logger.error("Removed host failed on the hashmap "+ host);
+		zk.removeHCM(new Metadata.HCM(host));
 	}
 
 
 	/**
 	 * Stop the active thread
 	 */
+	@Override
 	public void  shutDown(){
 		this.running = false;
 		logger.info("Shutting down the global configuration manager  - closing GCM elements...");
@@ -372,24 +412,14 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * manager per host machine.
 	 */
 	public void addHostManager(String host){
-		this.logger.info("Adding new host manager reference : "+ host);
-		if (!this.stateDAO.getHostManagerAddresses().contains(host)){
-			stateDAO.getHostManagerAddresses().add(host);
-		}
+		zk.addHCM(new Metadata.HCM(host));
 	}
 	
-	/**
-	 * @param qName the logical queue name
-	 * @param host as tcp://ip:port, tcp://ip:statport
-	 */
-	public void addQueueName(String qName, String host){
-		this.stateDAO.getQueueMonitorMap().put(qName, host);
-		logger.debug("Created queue "+ qName +" @"+ host +" in global configuration");
-	}
 
 	/**
 	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
 	 */
+	@Override
 	public String getName() {
 		return "Global config manager";
 	}
@@ -405,7 +435,16 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * @return the queueHostLocation
 	 */
 	public HashMap<String, String> getQueueHostLocation() {
-		return this.stateDAO.getQueueHostLocation();
+		HashMap<String, String> queueHCMMap = new HashMap<String, String>();
+
+		// This is very ugly because for the moment the client does not cache anything,
+		// meaning that each call represents a ZooKeeper transaction.
+		// That should change.
+		for (Metadata.Queue queue : zk.getQueueList()) {
+			Metadata.HCM hcm = zk.getHCM(queue);
+			queueHCMMap.put(queue.name, hcm.address);
+		}
+		return queueHCMMap;
 	}
 
 
@@ -427,9 +466,65 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	/**
 	 * @return the list of host manager addresses
 	 */
-	public Object getHostManagerAddresses() {
-		return this.stateDAO.getHostManagerAddresses();
+	public List<String> getHostManagerAddresses() {
+		List<Metadata.HCM> hcmList = zk.getHCMList();
+		List<String> returnValue = new ArrayList<String>();
+		
+		for (Metadata.HCM hcm : hcmList) {
+			returnValue.add(hcm.address);
+		}
+		
+		return returnValue;
 	}
 	
+	/**
+	 * Method used to get the reply to a BSON_CONFIG_GET_HOST_BY_QNAME message.
+	 * It should be noted that the name is badly chosen since that message
+	 * does not return a host, but rather monitor and stat monitor addresses.
+	 * 
+	 * @param queueName name of the logical queue
+	 * @return monitor address (base port) and stat monitor address,
+	 * 		or null of they don't exist.
+	 * 
+	 *  Note: the stat monitor address returned here is in fact the ip and port
+	 *  of the socket used by the stat monitor to publish kpi numbers. 
+	 */
+	private String[] getHostByQueueName_bson(String queueName) {
+		Metadata.Queue queue = new Metadata.Queue(queueName);
+		Metadata.Monitor monitor = zk.getMonitor(queue);
+		Metadata.StatMonitor statMonitor = zk.getStatMonitor(queue);
+		
+		if ((monitor == null) || (statMonitor == null)) {
+			return null;
+		}
+		String statMonitorAddress = statMonitor.address;
+		int basePort = RoQSerializationUtils.extractBasePort(statMonitorAddress);
+		String statMonitorKpiPub = statMonitorAddress.substring(0, statMonitorAddress.length() - "xxxx".length());
+		statMonitorKpiPub += basePort + 1;
+		
+		String[] returnValue = {monitor.address, statMonitorKpiPub};
+		return returnValue;
+	}
+	
+	/**
+	 * Method used to get the reply to a CONFIG_GET_HOST_BY_QNAME message.
+	 * It should be noted that the name is badly chosen since that message
+	 * does not return a host, but rather monitor and stat monitor addresses.
+	 * 
+	 * @param queueName name of the logical queue
+	 * @return monitor address (base port) and stat monitor address (base port),
+	 * 		or null of they don't exist.
+	 */
+	private String[] getHostByQueueName(String queueName) {
+		Metadata.Queue queue = new Metadata.Queue(queueName);
+		Metadata.Monitor monitor = zk.getMonitor(queue);
+		Metadata.StatMonitor statMonitor = zk.getStatMonitor(queue);
+		
+		if ((monitor == null) || (statMonitor == null)) {
+			return null;
+		}
+		String[] returnValue = {monitor.address, statMonitor.address};
+		return returnValue;
+	}
 
 }
