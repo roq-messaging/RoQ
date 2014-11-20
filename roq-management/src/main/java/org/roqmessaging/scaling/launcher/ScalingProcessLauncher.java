@@ -26,10 +26,12 @@ public class ScalingProcessLauncher {
 
 
 	/**
-	 * Must contain 3 attributes: 
+	 * Must contain 5 attributes: 
 	 * 1. The GCM IP address <br>
-	 * 2. The qName <br>
-	 * 3. The port on which the process will subscribe to queue configuration update<br>
+	 * 2. The GCM topology port (port 5000 by default)<br>
+	 * 3. The GCM admin port (MngtController, port 5003 by default) <br>
+	 * 4. The qName <br>
+	 * 5. The port on which the process will subscribe to queue configuration update<br>
 	 * 
 	 * example: "127.0.0.1 queueTest 5802 
 	 * 
@@ -47,23 +49,29 @@ public class ScalingProcessLauncher {
 	 */
 	public static void main(String[] args) throws InterruptedException {
 		System.out.println("Launching Scaling process with arg "+displayArg(args));
-		if (args.length != 3) {
+		if (args.length != 5) {
 			System.out
-					.println("The argument should be <GCM IP addresse> <Queue Name> < Listener port>  ");
+					.println("The arguments should be <GCM IP address> <GCM topology port> <GCM admin port> <Queue Name> <Listener port>  ");
 			return;
 		}
-		System.out.println("Starting Scaling process for queue " + args[1] + ", using a listener port= " + args[2]);
 		
 		try {
-			int listenerPort = Integer.parseInt(args[2]);
+			String gcm_address = args[0];
+			int gcm_topologyPort = Integer.parseInt(args[1]);
+			int gcm_adminPort = Integer.parseInt(args[2]);
+			String qName = args[3];
+			int listenerPort = Integer.parseInt(args[4]);
+			
+			System.out.println("Starting Scaling process for queue " + qName + ", using listener port " + listenerPort);
+			
 			// Instanciate the exchange
-			final ScalingProcess scalingProcess = new ScalingProcess(args[0], args[1], listenerPort);
+			final ScalingProcess scalingProcess = new ScalingProcess(gcm_address, gcm_topologyPort, gcm_adminPort, qName, listenerPort);
 			scalingProcess.subscribe();
 			// Launch the thread
 			Thread t = new Thread(scalingProcess);
 			t.start();
 		} catch (NumberFormatException e) {
-			System.out.println(" The arguments are not valid, must: <int: front port> <int: back port>");
+			System.out.println(" The arguments are not valid.");
 		}
 	}
 	

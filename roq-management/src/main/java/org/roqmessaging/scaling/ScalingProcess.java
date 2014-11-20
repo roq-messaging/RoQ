@@ -73,7 +73,7 @@ public class ScalingProcess extends KPISubscriber {
 	 * Notice the scaling process starts a shutdown monitor on the listener port
 	 * +1. We advice to start it on port 5802.
 	 * 
-	 * @param globalConfiguration
+	 * @param gcm_address
 	 *            the GCM IP address
 	 * @param qName
 	 *            the name of the queue we want to connect.
@@ -81,8 +81,8 @@ public class ScalingProcess extends KPISubscriber {
 	 *            is the port on which the scaling process will listen for push
 	 *            request when a new configuration will be published
 	 */
-	public ScalingProcess(String globalConfiguration, String qName, int listnerPort) {
-		super(globalConfiguration, qName);
+	public ScalingProcess(String gcm_address, int gcm_topologyPort, int gcm_adminPort, String qName, int listnerPort) {
+		super(gcm_address, gcm_topologyPort, qName);
 		this.qName = qName;
 		this.listnerPort = listnerPort;
 		this.serializer = new RoQBSONSerializer();
@@ -90,7 +90,7 @@ public class ScalingProcess extends KPISubscriber {
 		this.context = ZMQ.context(1);
 		// Prepare the request socket to the management controller
 		this.requestSocket = this.context.socket(ZMQ.REQ);
-		this.requestSocket.connect("tcp://" + globalConfiguration + ":5003");
+		this.requestSocket.connect("tcp://" + gcm_address + ":" + gcm_adminPort);
 	}
 
 	/**

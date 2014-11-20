@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.management.config.internal;
 
+import org.roqmessaging.management.zookeeper.RoQZooKeeperConfig;
+
 /**
  * Class GCMPropertyDAO
  * <p> Description: data object representing the file configuration of the GCM.
@@ -37,8 +39,10 @@ public class GCMPropertyDAO {
 	private String cloudGateWay = "??";
 	//API end point for the cloud server
 	private String cloudEndPoint = "??";
-	
-	
+	// Class which contains the ports used for the various components of the GCM.
+	public GCMPorts ports = new GCMPorts();
+	// ZooKeeper configuration
+	public RoQZooKeeperConfig zkConfig = new RoQZooKeeperConfig();
 
 	/**
 	 * @return the period

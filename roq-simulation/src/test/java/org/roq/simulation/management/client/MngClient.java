@@ -52,6 +52,7 @@ public class MngClient {
 		// ZMQ init
 		this.context = ZMQ.context(1);
 		this.requestSocket = this.context.socket(ZMQ.REQ);
+		// TODO Find a way to configure this port 
 		this.requestSocket.connect("tcp://" + gcmAddr + ":5003");
 	}
 	

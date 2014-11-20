@@ -32,6 +32,9 @@ public class HostConfigDAO {
 	private boolean exchangeInHcmVm = true;
 	private int exchangeHeap = 256;
 	
+	// Class which contains the ports used for the various components of the GCM.
+	public GCMPorts ports = new GCMPorts();
+	
 	/**
 	 * @return the networkInterface
 	 */

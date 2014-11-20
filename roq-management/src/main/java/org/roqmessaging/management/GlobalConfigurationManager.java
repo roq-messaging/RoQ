@@ -76,26 +76,28 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 */
 	public GlobalConfigurationManager(String configFile) {
 		try {
-			this.stateDAO = new GlobalConfigurationState();
 			this.logger.info("Started global config Runnable");
-
-			// ZMQ init
-			this.context = ZMQ.context(1);
-			this.clientReqSocket = context.socket(ZMQ.REP);
-			this.clientReqSocket.bind("tcp://*:5000");
 
 			// Init variables and pointers
 			this.running = true;
 			this.serializationUtils = new RoQSerializationUtils();
-
-			// The shutdown thread
-			this.shutDownMonitor = new ShutDownMonitor(5001, this);
-			new Thread(this.shutDownMonitor).start();
+			this.stateDAO = new GlobalConfigurationState();
 
 			// Read configuration from file
 			FileConfigurationReader reader = new FileConfigurationReader();
 			this.properties = reader.loadGCMConfiguration(configFile);
-			logger.info("Configuration from props: "+properties.toString());
+			logger.info("Configuration from props: " + properties.toString());
+						
+			// Initialization of the ZMQ port for the GCM interface
+			int port = properties.ports.get("GlobalConfigurationManager.interface");
+			this.context = ZMQ.context(1);
+			this.clientReqSocket = context.socket(ZMQ.REP);
+			this.clientReqSocket.bind("tcp://*:"+port);
+
+			// Start the shutdown thread
+			int shutDownPort = properties.ports.get("GlobalConfigurationManager.shutDown");
+			this.shutDownMonitor = new ShutDownMonitor(shutDownPort, this);
+			new Thread(this.shutDownMonitor).start();
 
 			// The Management controller - the start is in the run to take the
 			// period attribute
@@ -109,15 +111,25 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	}
 
 	/**
+	 * Start the timer that periodically triggers the
+	 * run() method of GlobalConfigTimer.
+	 */
+	private void startGlobalConfigTimer() {
+		int port = properties.ports.get("GlobalConfigTimer.pub");
+		mngtTimer = new Timer("Management config publisher");
+		configTimerTask = new GlobalConfigTimer(port, this);
+		mngtTimer.schedule(configTimerTask, 500, this.properties.getPeriod());
+	}
+	/**
 	 * Main run
 	 * @see java.lang.Runnable#run()
 	 */
 	public void run() {
 		this.running = true;
-		//Init the timer for management subscriber
-		mngtTimer = new Timer("Management config publisher");
-		configTimerTask = new GlobalConfigTimer(this);
-		mngtTimer.schedule(configTimerTask, 500, this.properties.getPeriod());
+		
+		// Start the timer that periodically triggers the
+		// run() method of GlobalConfigTimer.
+		startGlobalConfigTimer();
 		
 		//ZMQ init
 		ZMQ.Poller items = new Poller(3);

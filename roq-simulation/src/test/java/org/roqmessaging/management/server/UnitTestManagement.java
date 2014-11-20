@@ -156,6 +156,7 @@ public class UnitTestManagement {
 			logger.debug("Starting Test config Listener ...");
 			ZMQ.Context context = ZMQ.context(1);
 			ZMQ.Socket sub = context.socket(ZMQ.SUB);
+			// TODO Change port 5004 to port 5005, which is the one used by MngtControllerTimer
 			sub.connect("tcp://"+RoQUtils.getInstance().getLocalIP()+":5004");
 			sub.subscribe("".getBytes());
 			

@@ -51,6 +51,10 @@ public class FileConfigurationReader {
 				configDao.setCloudPasswd(config.getString("cloud.password"));
 				configDao.setCloudGateWay(config.getString("cloud.gateway"));
 			}
+			// initialize the ports used by the GCM
+			configDao.ports.setBasePort(config.getInt("ports.base"));
+			// intialize the zookeeper configuration
+			configDao.zkConfig.servers = config.getString("zk.servers");
 		} catch (Exception configE) {
 			logger.error("Error while reading configuration file - skipped but set the default configuration", configE);
 		}
@@ -73,6 +77,8 @@ public class FileConfigurationReader {
 			config.load(file);
 			// 3. Set the properties
 			configDao.setGcmAddress(config.getString("gcm.address")!=null?config.getString("gcm.address"):configDao.getGcmAddress());
+			configDao.ports.setBasePort(config.getInt("gcm.ports.base"));
+			
 			configDao.setExchangeFrontEndPort(config.getInt("exchange.base.port"));
 			configDao.setMonitorBasePort(config.getInt("monitor.base.port"));
 			configDao.setStatMonitorBasePort(config.getInt("statmonitor.base.port"));

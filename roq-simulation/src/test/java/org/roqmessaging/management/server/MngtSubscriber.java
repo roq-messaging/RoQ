@@ -47,6 +47,7 @@ public class MngtSubscriber implements Runnable, IStoppable {
 		this.context = ZMQ.context(1);
 		// 2. Register a socket to the stat monitor
 		mngtSubSocket = context.socket(ZMQ.SUB);
+		// TODO Change port 5004 to port 5005, which is the one used by MngtControllerTimer
 		mngtSubSocket.connect("tcp://"+RoQUtils.getInstance().getLocalIP()+":5004");
 		mngtSubSocket.subscribe("".getBytes());
 		logger.debug(" connected to tcp://"+RoQUtils.getInstance().getLocalIP()+":5004");

@@ -47,14 +47,15 @@ import org.zeromq.ZMQ.Socket;
  * Class MngtController
  * <p>
  * Description: Controller that loads/receive data from the
- * {@linkplain GlobalConfigurationManager} and refresh the stored data. Global
- * config manager: 5000 <br>
- * Shut down config manager 5001<br>
- * Global config manager pub sub port 5002<br>
- * Mngt request server port 5003<br>
- * Shutdown monitor port 5004<br>
- * Management timer port 5005
+ * {@linkplain GlobalConfigurationManager} and refreshes the stored data. 
+ * Global config manager         base port <br>
+ * Shut down config manager      base port +1<br>
+ * Global config manager publish base port +2<br>
+ * Mngt request server           base port +3<br>
+ * Shutdown monitor              base port +4<br>
+ * Management timer              base port +5<br>
  * 
+ * Note: the base port is provided in the GCM configuration file.
  * 
  * @author sskhiri
  */
@@ -101,7 +102,14 @@ public class MngtController implements Runnable, IStoppable {
 			this.dbName = dbName;
 			this.properties= props;
 			this.scalingConfigListener = new HashMap<String, ZMQ.Socket>();
-			init(globalConfigAddress, 5004);
+			
+			// Get the various ZMQ ports used by the MngtController
+			int interfacePort = properties.ports.get("MngtController.interface");
+			int shutDownPort  = properties.ports.get("MngtController.shutDown");
+			int globalConfigTimerPort  = properties.ports.get("GlobalConfigTimer.pub");
+			
+			// Initialize the connections
+			init(globalConfigAddress, interfacePort, shutDownPort, globalConfigTimerPort);
 		} catch (SQLException e) {
 			logger.error("Error while initiating the SQL connection", e);
 		} catch (ClassNotFoundException e) {
@@ -110,37 +118,53 @@ public class MngtController implements Runnable, IStoppable {
 	}
 
 	/**
-	 * We start start the global conifg at 5000 + 5001 for its shutdown port,
-	 * 5002 for the configuration timer + 5003 for its request server
+	 * Initialize connections for the admin interface, the shut down port and
+	 * the subscription to the host information published by the
+	 * GlobalConfigurationManager through its instance of GlobalConfigTimer.
 	 * 
 	 * @param globalConfigAddress
-	 *            the global configuration server
-	 * @param shuttDownPort
+	 *            the global configuration server address
+	 * @param interfacePort
+	 *            the port used for the admin interface
+	 * @param shutDownPort
 	 *            the port on which the shut down thread listens
+	 * @param globalConfigTimerPort
+	 *            the port on which the GlobalConfigTimer periodically publishes its data
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 *             whenthe JDBC driver has not been found
 	 */
-	private void init(String globalConfigAddress, int shuttDownPort) throws SQLException, ClassNotFoundException {
+	private void init(String globalConfigAddress, int interfacePort, int shutDownPort, int globalConfigTimerPort) 
+			throws SQLException, ClassNotFoundException {
 		Class.forName("org.sqlite.JDBC");
 		// Init ZMQ subscriber API for configuration
 		context = ZMQ.context(1);
 		mngtSubSocket = context.socket(ZMQ.SUB);
-		mngtSubSocket.connect("tcp://" + globalConfigAddress + ":5002");
+		mngtSubSocket.connect("tcp://" + globalConfigAddress + ":" + globalConfigTimerPort);
 		mngtSubSocket.subscribe("".getBytes());
 		// Init ZMQ subscriber API for configuration
 		mngtRepSocket = context.socket(ZMQ.REP);
-		mngtRepSocket.bind("tcp://*:5003");
+		mngtRepSocket.bind("tcp://*:"+interfacePort);
 		// init variable
 		this.serializationUtils = new RoQSerializationUtils();
 		this.storage = new MngtServerStorage(DriverManager.getConnection("jdbc:sqlite:" + this.dbName));
 		this.factory = new LogicalQFactory(globalConfigAddress);
 		this.serializer = new RoQBSONSerializer();
 		// Shutdown thread configuration
-		this.shutDownMonitor = new ShutDownMonitor(shuttDownPort, this);
+		this.shutDownMonitor = new ShutDownMonitor(shutDownPort, this);
 		new Thread(this.shutDownMonitor).start();
 	}
-
+	
+	/**
+	 * Start a timer which periodically triggers the run() method of the
+	 * MngtControllerTimer.
+	 */
+	private void startMngtControllerTimer() {
+		int port = properties.ports.get("MngtControllerTimer.pub");
+		controllerTimer  = new MngtControllerTimer(this.period, this, port);
+		publicationTimer = new Timer();
+		publicationTimer.schedule(controllerTimer, period, period);
+	}
 	/**
 	 * Runs in a while loop and wait for updated information from the
 	 * {@linkplain GlobalConfigurationManager}
@@ -151,10 +175,9 @@ public class MngtController implements Runnable, IStoppable {
 		logger.debug("Starting " + getName());
 		this.active = true;
 
-		// Launching the timer
-		controllerTimer = new MngtControllerTimer(this.period, this, 5005);
-		publicationTimer = new Timer();
-		publicationTimer.schedule(controllerTimer, period, period);
+		// Start a timer which periodically triggers the run() method of the
+		// MngtControllerTimer, publishing data that no one listens to.
+		startMngtControllerTimer();
 
 		// ZMQ init of the subscriber socket
 		ZMQ.Poller poller = new Poller(2);

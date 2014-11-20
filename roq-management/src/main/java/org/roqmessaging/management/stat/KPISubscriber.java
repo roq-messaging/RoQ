@@ -40,7 +40,8 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	//KPI socket
 	protected ZMQ.Socket kpiSocket = null;
 	//The configuration server
-	protected String configurationServer = null;
+	protected String gcm_address = null;
+	protected int gcm_topologyPort = 0;
 	//the Qname to subscriber
 	protected String qName = null;
 	//Define whether the thread must continue to run
@@ -50,16 +51,17 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	protected Logger logger = Logger.getLogger(KPISubscriber.class);
 	
 	/**
-	 * @param globalConfiguration the IP address of the global configuration
+	 * @param gcm_address the IP address of the global configuration
 	 * @param qName the queue from which we want receive statistic. 
 	 */
-	public KPISubscriber(String globalConfiguration, String qName) {
+	public KPISubscriber(String gcm_address, int gcm_topologyPort, String qName) {
 		try {
 			// ZMQ Init
 			logger.debug("Init ZMQ context");
 			this.context = ZMQ.context(1);
 			// Copy parameters
-			this.configurationServer = globalConfiguration;
+			this.gcm_address = gcm_address;
+			this.gcm_topologyPort = gcm_topologyPort;
 			this.qName = qName;
 		} catch (Exception e) {
 			logger.error("Error while initiating the KPI statistic channel", e);
@@ -76,7 +78,7 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 		// 1. Get the location in BSON
 		// 1.1 Create the request socket
 		ZMQ.Socket globalConfigReq = context.socket(ZMQ.REQ);
-		String gcm = "tcp://" + this.configurationServer + ":5000";
+		String gcm = "tcp://" + this.gcm_address + ":" + this.gcm_topologyPort;
 		logger.debug("Sending request to GCM = "+ gcm);
 		globalConfigReq.connect(gcm);
 
