@@ -14,11 +14,11 @@
  */
 package org.roqmessaging.management.config.scaling;
 
+import java.io.Serializable;
 import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstantInternal;
-import org.roqmessaging.management.HostConfigManager;
 
 /**
  * Class HostScalingRule
@@ -27,13 +27,13 @@ import org.roqmessaging.management.HostConfigManager;
  * 
  * @author sskhiri
  */
-public class HostScalingRule implements IAutoScalingRule {
+public class HostScalingRule implements IAutoScalingRule, Serializable {
 	//Logger
-	private Logger logger = Logger.getLogger(HostScalingRule.class);
+	private static final Logger logger = Logger.getLogger(HostScalingRule.class);
 	//KPI on RAM memory
-	private int RAM_Limit = 100;
+	public int RAM_Limit = 100;
 	//KPI on CPU
-	private int CPU_Limit = 100;
+	public int CPU_Limit = 100;
 	//The key ID
 	private long ID = 0;
 	
@@ -120,6 +120,22 @@ public class HostScalingRule implements IAutoScalingRule {
 	public String toString() {
 		// TODO Auto-generated method stub
 		return "Host scaling rule id = "+getID()+" [cpu:"+this.getCPU_Limit() +", ram:"+ this.getRAM_Limit()+"]";
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		HostScalingRule other = (HostScalingRule) obj;
+		if (CPU_Limit != other.CPU_Limit)
+			return false;
+		if (RAM_Limit != other.RAM_Limit)
+			return false;
+		return true;
 	}
 	
 

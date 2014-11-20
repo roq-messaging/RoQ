@@ -16,4 +16,7 @@ public class RoQZooKeeperConfig {
 	public String znode_queues = "queues";
 	// ZNode used to store the cloud configuration
 	public String znode_cloud = "cloud";
+	// ZNode used to store a queue's scaling config
+	// Path is thus /"RoQ"/"queues"/queue/"scaling"
+	public String znode_scaling = "scaling";
 }

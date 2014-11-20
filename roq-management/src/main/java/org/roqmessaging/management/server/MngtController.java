@@ -17,7 +17,6 @@ package org.roqmessaging.management.server;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Timer;
 
 import org.apache.log4j.Logger;
@@ -39,7 +38,6 @@ import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
 import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
-import org.roqmessaging.management.server.state.QueueManagementState;
 import org.roqmessaging.management.zookeeper.Metadata;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
 import org.zeromq.ZMQ;
@@ -246,6 +244,8 @@ public class MngtController implements Runnable, IStoppable {
 						// Variables
 						String qName = "?";
 						String host = "?";
+						AutoScalingConfig config = null;
+						Metadata.Queue queue = null;
 
 						// 2. Getting the command ID
 						switch ((Integer) request.get("CMD")) {
@@ -431,12 +431,30 @@ public class MngtController implements Runnable, IStoppable {
 							qName = (String) request.get("QName");
 							logger.debug("Getting autoscaling configuration for " + qName);
 							
-							AutoScalingConfig config = zk.getScalingConfig(new Metadata.Queue(qName));
-							if (config != null) {
+							byte[] temp;
+							config = new AutoScalingConfig();
+							queue = new Metadata.Queue(qName);
+							
+							temp = zk.getHostScalingConfig(queue);
+							if (temp != null) {
+								config.hostRule = serializationUtils.deserializeObject(temp);
+							}
+							temp = zk.getExchangeScalingConfig(queue);
+							if (temp != null) {
+								config.xgRule   = serializationUtils.deserializeObject(temp);
+							}
+							temp = zk.getQueueScalingConfig(queue);
+							if (temp != null) {
+								config.qRule    = serializationUtils.deserializeObject(temp);
+							}
+							
+							if ((config.hostRule == null)
+									&& (config.xgRule == null)
+									&& (config.qRule  == null)) {
+								sendReply_fail("ERROR NO auto scaling rule defined for this queue");
+							} else {
 								mngtRepSocket.send(
 										this.serializer.serialiazeAutoScalingConfigAnswer(qName, config), 0);
-							} else {
-								sendReply_fail("ERROR NO auto scaling rule defined for this queue");
 							}
 							break;
 						/*	
@@ -506,17 +524,16 @@ public class MngtController implements Runnable, IStoppable {
 								break;
 							}
 							// 1. Get the qname
-							AutoScalingConfig config = new AutoScalingConfig();
+							config = new AutoScalingConfig();
 							qName = (String) request.get("QName");
 							logger.debug("Adding autoscaling configuration for " + qName);
 							
 							// Decode host rule if it is present in the request
 							BSONObject hostRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_HOST);
 							if (hostRule != null) {
-								config.setHostRule(
-										new HostScalingRule(
-												((Integer) hostRule.get(RoQConstant.BSON_AUTOSCALING_HOST_RAM)).intValue(),
-												((Integer) hostRule.get(RoQConstant.BSON_AUTOSCALING_HOST_CPU)).intValue()));
+								config.setHostRule(new HostScalingRule(
+										((Integer) hostRule.get(RoQConstant.BSON_AUTOSCALING_HOST_RAM)).intValue(),
+										((Integer) hostRule.get(RoQConstant.BSON_AUTOSCALING_HOST_CPU)).intValue()));
 								logger.debug("Host scaling rule decoded : " + config.getHostRule().toString());
 							}
 							
@@ -540,9 +557,11 @@ public class MngtController implements Runnable, IStoppable {
 								logger.debug("Queue scaling rule : " + config.getqRule().toString());
 							}
 							
-							if (!factory.setScalingRule(config)) {
-								sendReply_fail("ERROR when setting scaling rule");
-							}
+							// save scaling config to zookeeper
+							queue = new Metadata.Queue(qName);
+							zk.setHostScalingConfig(serializationUtils.serialiseObject(config.hostRule), queue);
+							zk.setExchangeScalingConfig(serializationUtils.serialiseObject(config.xgRule), queue);
+							zk.setQueueScalingConfig(serializationUtils.serialiseObject(config.qRule), queue);
 							
 							//The scaling rule has been updated need to check whether there was a listener for this Q
 							if(this.scalingConfigListener.containsKey(qName)){
@@ -791,56 +810,56 @@ public class MngtController implements Runnable, IStoppable {
 		
 	}
 
-	/**
-	 * @param qRule
-	 *            the bson object representing the rule
-	 * @param qRuleID
-	 *            the rule ID
-	 */
-	private void rollbacklQrule(BSONObject qRule, int qRuleID) {
-		if (qRule != null) {
-			logger.debug("Rolling back q rule");
-			try {
-				this.storage.removeQScalingRuleByID(qRuleID);
-			} catch (SQLException e) {
-				logger.error("Error while rollbacking Qrule", e);
-			}
-		}
-	}
+//	/**
+//	 * @param qRule
+//	 *            the bson object representing the rule
+//	 * @param qRuleID
+//	 *            the rule ID
+//	 */
+//	private void rollbacklQrule(BSONObject qRule, int qRuleID) {
+//		if (qRule != null) {
+//			logger.debug("Rolling back q rule");
+//			try {
+//				this.storage.removeQScalingRuleByID(qRuleID);
+//			} catch (SQLException e) {
+//				logger.error("Error while rollbacking Qrule", e);
+//			}
+//		}
+//	}
 
-	/**
-	 * @param xRule
-	 *            the bson object representing the rule
-	 * @param xRuleID
-	 *            the rule ID
-	 */
-	private void rollbacklXrule(BSONObject xRule, int xRuleID) {
-		if (xRule != null) {
-			logger.debug("Rolling back Xchange  rule");
-			try {
-				this.storage.removeXchangeScalingRuleByID(xRuleID);
-			} catch (SQLException e) {
-				logger.error("Error while rollbacking Xchange rule", e);
-			}
-		}
-	}
+//	/**
+//	 * @param xRule
+//	 *            the bson object representing the rule
+//	 * @param xRuleID
+//	 *            the rule ID
+//	 */
+//	private void rollbacklXrule(BSONObject xRule, int xRuleID) {
+//		if (xRule != null) {
+//			logger.debug("Rolling back Xchange  rule");
+//			try {
+//				this.storage.removeXchangeScalingRuleByID(xRuleID);
+//			} catch (SQLException e) {
+//				logger.error("Error while rollbacking Xchange rule", e);
+//			}
+//		}
+//	}
 
-	/**
-	 * @param hRule
-	 *            the bson host rule
-	 * @param hRuleID
-	 *            the rule ID
-	 */
-	private void rollbacklHrule(BSONObject hRule, int hRuleID) {
-		if (hRule != null) {
-			logger.debug("Rolling back Xchange  rule");
-			try {
-				this.storage.removeHostcalingRuleByID(hRuleID);
-			} catch (SQLException e) {
-				logger.error("Error while rollbacking Xchange rule", e);
-			}
-		}
-	}
+//	/**
+//	 * @param hRule
+//	 *            the bson host rule
+//	 * @param hRuleID
+//	 *            the rule ID
+//	 */
+//	private void rollbacklHrule(BSONObject hRule, int hRuleID) {
+//		if (hRule != null) {
+//			logger.debug("Rolling back Xchange  rule");
+//			try {
+//				this.storage.removeHostcalingRuleByID(hRuleID);
+//			} catch (SQLException e) {
+//				logger.error("Error while rollbacking Xchange rule", e);
+//			}
+//		}
+//	}
 
 	/**
 	 * Clean the management configuration by removing non persistant information

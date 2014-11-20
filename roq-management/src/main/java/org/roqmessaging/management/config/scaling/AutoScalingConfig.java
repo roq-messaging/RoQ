@@ -23,11 +23,11 @@ package org.roqmessaging.management.config.scaling;
  */
 public class AutoScalingConfig {
 	//The 3 rules composing the configuration
-	private HostScalingRule hostRule = null;
-	private LogicalQScalingRule qRule = null;
-	private XchangeScalingRule xgRule=null;
+	public HostScalingRule hostRule;
+	public LogicalQScalingRule qRule;
+	public XchangeScalingRule xgRule;
 	//the configuration name
-	private String name = null;
+	private String name;
 	
 	/**
 	 * @param hostRule the rule at the host level
@@ -100,6 +100,33 @@ public class AutoScalingConfig {
 	 */
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		AutoScalingConfig other = (AutoScalingConfig) obj;
+		if (hostRule == null) {
+			if (other.hostRule != null)
+				return false;
+		} else if (!hostRule.equals(other.hostRule))
+			return false;
+		if (qRule == null) {
+			if (other.qRule != null)
+				return false;
+		} else if (!qRule.equals(other.qRule))
+			return false;
+		if (xgRule == null) {
+			if (other.xgRule != null)
+				return false;
+		} else if (!xgRule.equals(other.xgRule))
+			return false;
+		return true;
 	}
 	
 	

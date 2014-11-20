@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.management.config.scaling;
 
+import java.io.Serializable;
 import java.util.HashMap;
 
 import org.apache.log4j.Logger;
@@ -25,14 +26,14 @@ import org.roqmessaging.core.RoQConstantInternal;
  * 
  * @author sskhiri
  */
-public class LogicalQScalingRule implements IAutoScalingRule {
-	private Logger log = Logger.getLogger(LogicalQScalingRule.class);
+public class LogicalQScalingRule implements IAutoScalingRule, Serializable {
+	private static final Logger log = Logger.getLogger(LogicalQScalingRule.class);
 	//The key ID
 	private long ID = 0;
 	//Defines the max number of producer per exchange limit
-	private int producerPerXchangeLimit=100;
+	public int producerPerXchangeLimit=100;
 	//Defines the max throughput per exchange limit
-	private int througputPerXchangeLimit=100;
+	public int througputPerXchangeLimit=100;
 	
 	/**
 	 * @param exchangeNumberLimit the exchange limit
@@ -128,6 +129,22 @@ public class LogicalQScalingRule implements IAutoScalingRule {
 	 */
 	public void setID(long iD) {
 		ID = iD;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		LogicalQScalingRule other = (LogicalQScalingRule) obj;
+		if (producerPerXchangeLimit != other.producerPerXchangeLimit)
+			return false;
+		if (througputPerXchangeLimit != other.througputPerXchangeLimit)
+			return false;
+		return true;
 	}
 
 }
