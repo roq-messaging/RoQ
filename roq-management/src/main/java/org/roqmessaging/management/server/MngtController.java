@@ -66,7 +66,6 @@ public class MngtController implements Runnable, IStoppable {
 	private Logger logger = Logger.getLogger(MngtController.class);
 	// ZMQ
 	private ZMQ.Context context = null;
-	private ZMQ.Socket mngtSubSocket = null;
 	private ZMQ.Socket mngtRepSocket = null;
 	// Logical queue factory
 	private IRoQLogicalQueueFactory factory = null;
@@ -108,10 +107,9 @@ public class MngtController implements Runnable, IStoppable {
 			// Get the various ZMQ ports used by the MngtController
 			int interfacePort = properties.ports.get("MngtController.interface");
 			int shutDownPort  = properties.ports.get("MngtController.shutDown");
-			int globalConfigTimerPort  = properties.ports.get("GlobalConfigTimer.pub");
 			
 			// Initialize the connections
-			init(globalConfigAddress, interfacePort, shutDownPort, globalConfigTimerPort);
+			init(globalConfigAddress, interfacePort, shutDownPort);
 		} catch (SQLException e) {
 			logger.error("Error while initiating the SQL connection", e);
 		} catch (ClassNotFoundException e) {
@@ -130,21 +128,14 @@ public class MngtController implements Runnable, IStoppable {
 	 *            the port used for the admin interface
 	 * @param shutDownPort
 	 *            the port on which the shut down thread listens
-	 * @param globalConfigTimerPort
-	 *            the port on which the GlobalConfigTimer periodically publishes its data
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 *             whenthe JDBC driver has not been found
 	 */
-	private void init(String globalConfigAddress, int interfacePort, int shutDownPort, int globalConfigTimerPort) 
+	private void init(String globalConfigAddress, int interfacePort, int shutDownPort) 
 			throws SQLException, ClassNotFoundException {
 		Class.forName("org.sqlite.JDBC");
-		// Init ZMQ subscriber API for configuration
 		context = ZMQ.context(1);
-		mngtSubSocket = context.socket(ZMQ.SUB);
-		mngtSubSocket.connect("tcp://" + globalConfigAddress + ":" + globalConfigTimerPort);
-		mngtSubSocket.subscribe("".getBytes());
-		// Init ZMQ subscriber API for configuration
 		mngtRepSocket = context.socket(ZMQ.REP);
 		mngtRepSocket.bind("tcp://*:"+interfacePort);
 		// init variable
@@ -182,7 +173,6 @@ public class MngtController implements Runnable, IStoppable {
 
 		// ZMQ init of the subscriber socket
 		ZMQ.Poller poller = new Poller(2);
-		poller.register(mngtSubSocket);// 0
 		poller.register(mngtRepSocket);
 		// Init variables
 		// int infoCode = 0;
@@ -192,43 +182,9 @@ public class MngtController implements Runnable, IStoppable {
 			// Set the poll time out, it returns either when something arrive or
 			// when it time out
 			poller.poll(100);
-			/*
+			
+			// Pollin 0 = Management facade interface in BSON
 			if (poller.pollin(0)) {
-				logger.debug("Recieving Message in the update broadcast update channel");
-				// An event arrives start analysing code
-				String info = new String(mngtSubSocket.recv(0));
-				// Check if exchanges are present: this happens when the queue
-				// is shutting down a client is asking for a
-				// connection
-				infoCode = Integer.parseInt(info);
-				switch (infoCode) {
-				case RoQConstant.MNGT_UPDATE_CONFIG:
-					// Infocode, map(Q Name, host)
-					logger.debug("Recieving update configuration message");
-					if (mngtSubSocket.hasReceiveMore()) {
-						// The new hashmap QName, target host location
-						HashMap<String, String> newConfig = this.serializationUtils.deserializeObject(mngtSubSocket
-								.recv(0));
-						// The lis of hosts
-						List<String> hosts = this.serializationUtils.deserializeObject(mngtSubSocket.recv(0));
-						try {
-							storage.updateConfiguration(newConfig, hosts);
-						} catch (SQLException e) {
-							logger.error("Error while updating the configuration", e);
-						}
-					} else {
-						// Problem expected map here
-						logger.error("Error, expected map of (Qname, host", new IllegalStateException(
-								"Expected a second message" + " in the envelope"));
-					}
-					break;
-				default:
-					break;
-				}
-			}
-			*/
-			// Pollin 1 = Management facade interface in BSON
-			if (poller.pollin(1)) {
 				try {
 					// 1. Checking the command ID
 					BSONObject request = BSON.decode(mngtRepSocket.recv(0));
@@ -258,49 +214,6 @@ public class MngtController implements Runnable, IStoppable {
 								sendReply_fail("ERROR when stopping Running queue, check logs of the logical queue factory");
 							}
 							break;
-						/*
-						case RoQConstant.BSON_CONFIG_REMOVE_QUEUE:
-							logger.debug("Processing a REMOVE QUEUE REQUEST");
-							if (!checkField(request, "QName")) {
-								break;
-							}
-							qName = (String) request.get("QName");
-							logger.debug("Remove " + qName);
-							// Removing Q
-							// 1. Check whether the queue is running
-							try {
-								QueueManagementState state = this.storage.getQueue(qName);
-								if (state != null) {
-									if (state.isRunning()) {
-										// 2. if running ask the global
-										// configuration
-										// manager to remove it
-										if (!this.factory.removeQueue(qName)) {
-											mngtRepSocket
-													.send(serializer
-															.serialiazeConfigAnswer(RoQConstant.FAIL,
-																	"ERROR when stopping Running queue, check logs of the logical queue factory"),
-															0);
-										} else {
-											mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK,
-													"The queue has been removed."), 0);
-										}
-										break;
-									}
-								} else {
-									mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-											"ERROR when stopping Running queue, the name does not exist"), 0);
-									break;
-								}
-								// 3. ask the storage manager to remove it
-								this.storage.removeQueue(qName);
-								// 4. send back OK
-								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK, "SUCCESS"), 0);
-							} catch (Exception e) {
-								logger.error("Error while processing the REMOVE Q", e);
-							}
-							break;
-						 	*/
 						case RoQConstant.BSON_CONFIG_START_QUEUE:
 							logger.info("Start  Q Request ... checking whether the Queue is known ...");
 							logger.debug("Incoming request:" + request.toString());
@@ -322,38 +235,6 @@ public class MngtController implements Runnable, IStoppable {
 							
 							logger.debug("Create queue name = " + qName + " on " + host + " from a start command");
 							break;
-						/*
-						case RoQConstant.BSON_CONFIG_START_QUEUE:
-							logger.info("Start  Q Request ... checking whether the Queue is known ...");
-							logger.debug("Incoming request:" + request.toString());
-							// Starting a queue
-							// Just create a queue on a host
-							if (!checkField(request, "QName")) {
-								break;
-							}
-							// 1. Get the name
-							qName = (String) request.get("QName");
-							// 2. Get the queue in DB
-							QueueManagementState queue = this.storage.getQueue(qName);
-							// 3. Get the host
-							if (queue == null) {
-								mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-										"ERROR when starting  queue, the queue " + qName + " is not present in DB"), 0);
-							} else {
-								host = queue.getHost();
-								// Just create queue the timer will update the
-								// management server configuration
-								if (!factory.createQueue(qName, host)) {
-									mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-											"ERROR when starting  queue, check logs of the logical queue factory"), 0);
-								} else {
-									mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.OK, "SUCCESS"), 0);
-								}
-							}
-
-							logger.debug("Create queue name = " + qName + " on " + host + " from a start command");
-							break;
-							*/
 						case RoQConstant.BSON_CONFIG_CREATE_QUEUE:
 							logger.debug("Create Q request ...");
 							// Starting a queue
@@ -453,40 +334,6 @@ public class MngtController implements Runnable, IStoppable {
 										this.serializer.serialiazeAutoScalingConfigAnswer(qName, config), 0);
 							}
 							break;
-						/*	
-						case RoQConstant.BSON_CONFIG_GET_AUTOSCALING_RULE:
-							logger.debug("GET autoscaling rule request received ...");
-							if (!checkField(request, "QName"))
-								break;
-							// 1. Get the qname
-							qName = (String) request.get("QName");
-							logger.debug("Getting autoscaling configuration for " + qName);
-							// 2. Get the queue management state
-							QueueManagementState queueS = this.storage.getQueue(qName);
-							if (queueS == null) {
-								mngtRepSocket
-										.send(serializer
-												.serialiazeConfigAnswer(RoQConstant.FAIL,
-														"ERROR when creating autoscaling rule, the queue name does not exist in DB"),
-												0);
-							} else {
-								// 3. If the reference exist get the auto
-								// scaling config
-								if (queueS.getAutoScalingCfgRef() != null) {
-									AutoScalingConfig config = this.storage.getAutoScalingCfg(queueS
-											.getAutoScalingCfgRef());
-									if (config != null) {
-										mngtRepSocket.send(
-												this.serializer.serialiazeAutoScalingConfigAnswer(qName, config), 0);
-									} else {
-										mngtRepSocket.send(serializer.serialiazeConfigAnswer(RoQConstant.FAIL,
-												"ERROR NO auto scaling rule defined for this queue"), 0);
-									}
-								}
-								queueS = null;
-							}
-							break;
-							*/
 						case RoQConstant.BSON_CONFIG_REGISTER_FOR_AUTOSCALING_RULE_UPDATE:
 							logger.debug("REGISTER FOR  autoscaling rule request received ...");
 							if (!checkField(request, "QName") && !checkField(request, "Address")) {
@@ -569,163 +416,6 @@ public class MngtController implements Runnable, IStoppable {
 							sendReply_ok("The autoscaling config has been created for the Q " + qName);
 							break;
 							
-						/*
-						case RoQConstant.BSON_CONFIG_ADD_AUTOSCALING_RULE:
-							logger.debug("ADD autoscaling rule request received ...");
-							if (!checkField(request, "QName")
-									|| ((!request.containsField(RoQConstant.BSON_AUTOSCALING_HOST))
-											&& (!request.containsField(RoQConstant.BSON_QUEUES)) && (!request
-												.containsField(RoQConstant.BSON_QUEUES)))) {
-								break;
-							}
-							// 1. Get the qname
-							qName = (String) request.get("QName");
-							logger.debug("Adding autoscaling configuration for " + qName);
-							// 2. Check if the q exist
-							QueueManagementState queueState = this.storage.getQueue(qName);
-							if (queueState == null) {
-								mngtRepSocket
-										.send(serializer
-												.serialiazeConfigAnswer(RoQConstant.FAIL,
-														"ERROR when creating autoscaling rule, the queue name does not exist in DB"),
-												0);
-								break;
-							} else {
-								// For the Host scaling rule
-								AutoScalingConfig config = new AutoScalingConfig();
-								config.setName((String) request.get(RoQConstant.BSON_AUTOSCALING_CFG_NAME));
-								if (config.getName() == null) {
-									mngtRepSocket
-											.send(serializer
-													.serialiazeConfigAnswer(RoQConstant.FAIL,
-															"ERROR when creating autoscaling rule, the configuration name in BSON msg is NULL"),
-													0);
-									break;
-								}
-								// Check if it exist- security check for
-								// avoiding rollbacking
-								if (storage.getAutoScalingCfg(config.getName()) != null) {
-									mngtRepSocket
-											.send(serializer
-													.serialiazeConfigAnswer(RoQConstant.FAIL,
-															"ERROR when creating autoscaling rule, the auto scaling configuration name already exist and must be unique."),
-													0);
-									break;
-								}
-								// Init the FK id
-								int qRuleID = -1, xRuleID = -1, hRuleID = -1;
-
-								// 3.1. Decoding all rules and storing them in
-								// DB
-								// Decode host rule
-								BSONObject hRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_HOST);
-								if (hRule != null) {
-									config.setHostRule(new HostScalingRule(((Integer) hRule
-											.get(RoQConstant.BSON_AUTOSCALING_HOST_RAM)).intValue(), ((Integer) hRule
-											.get(RoQConstant.BSON_AUTOSCALING_HOST_CPU)).intValue()));
-									logger.debug("Host scaling rule decoded : " + config.getHostRule().toString());
-									hRuleID = this.storage.addAutoScalingRule(config.getHostRule());
-									if (hRuleID != -1) {
-										config.getHostRule().setID(hRuleID);
-									} else {
-										mngtRepSocket
-												.send(serializer
-														.serialiazeConfigAnswer(RoQConstant.FAIL,
-																"ERROR when creating autoscaling rule in DB - the Row ID has been returned as -1"),
-														0);
-										break;
-									}
-								}
-								// Decode Xchange rule
-								BSONObject xRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_XCHANGE);
-								if (xRule != null) {
-									config.setXgRule(new XchangeScalingRule(((Integer) xRule
-											.get(RoQConstant.BSON_AUTOSCALING_XCHANGE_THR)).intValue(), 0f));
-									logger.debug("Xchange scaling rule : " + config.getHostRule().toString());
-									xRuleID = this.storage.addAutoScalingRule(config.getXgRule());
-									if (xRuleID != -1) {
-										config.getXgRule().setID(xRuleID);
-									} else {
-										rollbacklHrule(hRule, hRuleID);
-										mngtRepSocket
-												.send(serializer
-														.serialiazeConfigAnswer(RoQConstant.FAIL,
-																"ERROR when creating autoscaling rule in DB - the Row ID has been returned as -1"),
-														0);
-										break;
-									}
-								}
-								// decode Q rule
-								BSONObject qRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_QUEUE);
-								if (qRule != null) {
-									config.setqRule(new LogicalQScalingRule(((Integer) qRule
-											.get(RoQConstant.BSON_AUTOSCALING_Q_PROD_EXCH)).intValue(),
-											((Integer) qRule.get(RoQConstant.BSON_AUTOSCALING_Q_THR_EXCH)).intValue()));
-									logger.debug("Host scaling rule : " + config.getHostRule().toString());
-									// 3.1. Create the auto scaling
-									// configuration
-									qRuleID = this.storage.addAutoScalingRule(config.getqRule());
-									if (qRuleID != -1) {
-										config.getqRule().setID(qRuleID);
-									} else {
-										rollbacklHrule(hRule, hRuleID);
-										rollbacklXrule(xRule, xRuleID);
-										mngtRepSocket
-												.send(serializer
-														.serialiazeConfigAnswer(RoQConstant.FAIL,
-																"ERROR when creating autoscaling rule in DB - the Row ID has been returned as -1"),
-														0);
-										break;
-									}
-								}
-								// 3.2. Create an auto scaling rule config
-								if ((qRuleID != -1) || (xRuleID != -1) || (hRuleID != -1)) {
-									if (this.storage.addAutoScalingConfig(config.getName(),
-											hRuleID == -1 ? 0 : hRuleID, qRuleID == -1 ? 0 : qRuleID, xRuleID == -1 ? 0
-													: xRuleID) == false) {
-										// this means we did not manage to
-										// create the configuration=> rollback
-										rollbacklHrule(hRule, hRuleID);
-										rollbacklXrule(xRule, xRuleID);
-										rollbacklQrule(qRule, qRuleID);
-										mngtRepSocket
-												.send(serializer
-														.serialiazeConfigAnswer(RoQConstant.FAIL,
-																"ERROR when creating autoscaling rule in DB - the rule name and configuration cannot be created. See log files."),
-														0);
-										break;
-									}
-									// 3.3. Update the queue to point to this
-									// configuration
-									if (this.storage.updateAutoscalingQueueConfig(qName, config.getName()) == false) {
-										rollbacklHrule(hRule, hRuleID);
-										rollbacklXrule(xRule, xRuleID);
-										rollbacklQrule(qRule, qRuleID);
-										mngtRepSocket
-												.send(serializer
-														.serialiazeConfigAnswer(
-																RoQConstant.FAIL,
-																"ERROR when creating autoscaling rule in DB - the auto scaling rule cannot be associated with the queue. See log files."),
-														0);
-										break;
-									}else{
-										//The scaling rule has been updated need to check whether there was a listener for this Q
-										if(this.scalingConfigListener.containsKey(qName)){
-											this.logger.info("New scaling rule have been defined for "+ qName +": notifying the listener");
-											this.scalingConfigListener.get(qName).send(this.serializer.serialiazeAutoScalingConfigAnswer(qName, config), 0);
-										}
-									}
-								} else {
-									logger.warn("Huum strange, no rules has been defined for this scaling rule.");
-								}
-								mngtRepSocket.send(
-										serializer.serialiazeConfigAnswer(RoQConstant.OK,
-												"The autoscaling " + config.getName() + " has been created for the Q "
-														+ qName), 0);
-							}
-							break;
-							*/
-							
 							//Request for getting the properties of the cloud user
 						case RoQConstant.BSON_CONFIG_GET_CLOUD_PROPERTIES:
 							logger.debug("GET Cloud properties request...");
@@ -799,79 +489,11 @@ public class MngtController implements Runnable, IStoppable {
 		// logger.debug("Removing host configurations ...");
 		// this.cleanMngtConfig();
 		logger.debug("Closing sockets ...");
-		this.mngtSubSocket.setLinger(0);
 		this.mngtRepSocket.setLinger(0);
-		this.mngtSubSocket.close();
 		this.mngtRepSocket.close();
 		
 	}
-
-//	/**
-//	 * @param qRule
-//	 *            the bson object representing the rule
-//	 * @param qRuleID
-//	 *            the rule ID
-//	 */
-//	private void rollbacklQrule(BSONObject qRule, int qRuleID) {
-//		if (qRule != null) {
-//			logger.debug("Rolling back q rule");
-//			try {
-//				this.storage.removeQScalingRuleByID(qRuleID);
-//			} catch (SQLException e) {
-//				logger.error("Error while rollbacking Qrule", e);
-//			}
-//		}
-//	}
-
-//	/**
-//	 * @param xRule
-//	 *            the bson object representing the rule
-//	 * @param xRuleID
-//	 *            the rule ID
-//	 */
-//	private void rollbacklXrule(BSONObject xRule, int xRuleID) {
-//		if (xRule != null) {
-//			logger.debug("Rolling back Xchange  rule");
-//			try {
-//				this.storage.removeXchangeScalingRuleByID(xRuleID);
-//			} catch (SQLException e) {
-//				logger.error("Error while rollbacking Xchange rule", e);
-//			}
-//		}
-//	}
-
-//	/**
-//	 * @param hRule
-//	 *            the bson host rule
-//	 * @param hRuleID
-//	 *            the rule ID
-//	 */
-//	private void rollbacklHrule(BSONObject hRule, int hRuleID) {
-//		if (hRule != null) {
-//			logger.debug("Rolling back Xchange  rule");
-//			try {
-//				this.storage.removeHostcalingRuleByID(hRuleID);
-//			} catch (SQLException e) {
-//				logger.error("Error while rollbacking Xchange rule", e);
-//			}
-//		}
-//	}
-
-	/**
-	 * Clean the management configuration by removing non persistant information
-	 * such as the host name that must be dynamic when hosts starts.
-	 */
-	/*
-	private void cleanMngtConfig() {
-		
-		try {
-			// this.storage.removeHosts();
-		} catch (SQLException e) {
-			logger.error("Error when deleting the hosts from configuration", e);
-		}
-		
-	}
-	*/
+	
 	/**
 	 * @param socket
 	 *            the socket to check
@@ -961,5 +583,4 @@ public class MngtController implements Runnable, IStoppable {
 				zk.isRunning(queue));
 		return qms;
 	}
-
 }
