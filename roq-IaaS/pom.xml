@@ -7,6 +7,7 @@
 		<groupId>org.roqmessaging</groupId>
 		<artifactId>roq-parent</artifactId>
 		<version>1.1</version>
+    <relativePath>../roq-parent/pom.xml</relativePath>
 	</parent>
 	<groupId>org.roqmessaging.core</groupId>
 	<artifactId>roq-IaaS</artifactId>

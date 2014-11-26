@@ -12,7 +12,8 @@
 	<parent>
 		<groupId>org.roqmessaging</groupId>
 		<artifactId>roq-parent</artifactId>
-		<version>1.1</version>
+    <version>1.1</version>
+    <relativePath>../roq-parent/pom.xml</relativePath>
 	</parent>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
