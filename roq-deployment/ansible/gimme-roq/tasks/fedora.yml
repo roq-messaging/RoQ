@@ -20,8 +20,8 @@
   environment:
        JAVA_HOME: /etc/alternatives/java_sdk_1.7.0
 
-- name: Acquire Zookeeper install script
-  get_url: url=https://github.com/roq-messaging/RoQ/raw/develop/install-zk.sh dest=~/install-zk.sh mode=554 force=yes
+- name: Copy ZK install script
+  copy: src=install-zk.sh dest="~/install-zk.sh" mode=554
 
 - name: Install Zookeeper
   shell: "bash ~/install-zk.sh /bin/zookeeperROQ"
