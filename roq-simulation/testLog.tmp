@@ -1,0 +1,231 @@
+[INFO] Scanning for projects...
+[INFO] ------------------------------------------------------------------------
+[INFO] Building roq-simulation
+[INFO]    task-segment: [test]
+[INFO] ------------------------------------------------------------------------
+[INFO] [resources:resources {execution: default-resources}]
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 3 resources
+[INFO] [compiler:compile {execution: default-compile}]
+[INFO] Nothing to compile - all classes are up to date
+[INFO] [resources:testResources {execution: default-testResources}]
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /home/benjamin/Roq/RoQ/roq-simulation/src/test/resources
+[INFO] [compiler:testCompile {execution: default-testCompile}]
+[INFO] Nothing to compile - all classes are up to date
+[INFO] [surefire:test {execution: default-test}]
+[INFO] Surefire report directory: /home/benjamin/Roq/RoQ/roq-simulation/target/surefire-reports
+
+-------------------------------------------------------
+ T E S T S
+-------------------------------------------------------
+Running org.roq.simulation.BasicSetupTest
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.017 sec
+Running org.roq.simulation.TestScalingStatMonitor
+09:15:10,010  INFO [main] (RoQTestCase:setUp:55)   Setup TEST
+09:15:13,042  INFO [main] (RoQAllLocalLauncher:setUp:80)   Initial setup Start global config thread
+09:15:13,042  INFO [main] (RoQAllLocalLauncher:setUp:82)   Start global config...
+09:15:13,304  INFO [Thread-0] (ZooKeeperServerMain:runFromConfig:95)   Starting server
+09:15:13,313  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:zookeeper.version=3.4.6-1569965, built on 02/20/2014 09:09 GMT
+09:15:13,313  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:host.name=benjamin-P500CA
+09:15:13,313  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:java.version=1.7.0_75
+09:15:13,313  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:java.vendor=Oracle Corporation
+09:15:13,314  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:java.home=/usr/lib/jvm/java-7-openjdk-amd64/jre
+09:15:13,314  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:java.class.path=/home/benjamin/Roq/RoQ/roq-simulation/target/test-classes:/home/benjamin/Roq/RoQ/roq-simulation/target/classes:/home/benjamin/.m2/repository/junit/junit/4.10/junit-4.10.jar:/home/benjamin/.m2/repository/org/hamcrest/hamcrest-core/1.1/hamcrest-core-1.1.jar:/home/benjamin/.m2/repository/org/roqmessaging/core/roq-core/1.0-SNAPSHOT/roq-core-1.0-SNAPSHOT.jar:/home/benjamin/.m2/repository/log4j/log4j/1.2.16/log4j-1.2.16.jar:/home/benjamin/.m2/repository/org/zeromq/jzmq/2.1.2/jzmq-2.1.2.jar:/home/benjamin/.m2/repository/org/mongodb/bson/2.7.3/bson-2.7.3.jar:/home/benjamin/.m2/repository/org/mongodb/mongo-java-driver/2.7.3/mongo-java-driver-2.7.3.jar:/home/benjamin/.m2/repository/com/google/guava/guava/14.0.1/guava-14.0.1.jar:/home/benjamin/.m2/repository/org/roqmessaging/roq-clientlib/1.0-SNAPSHOT/roq-clientlib-1.0-SNAPSHOT.jar:/home/benjamin/.m2/repository/commons-configuration/commons-configuration/1.8/commons-configuration-1.8.jar:/home/benjamin/.m2/repository/commons-lang/commons-lang/2.6/commons-lang-2.6.jar:/home/benjamin/.m2/repository/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar:/home/benjamin/.m2/repository/org/roqmessaging/roq-management/1.0-SNAPSHOT/roq-management-1.0-SNAPSHOT.jar:/home/benjamin/.m2/repository/org/xerial/sqlite-jdbc/3.6.16/sqlite-jdbc-3.6.16.jar:/home/benjamin/.m2/repository/org/xerial/thirdparty/nestedvm/1.0/nestedvm-1.0.jar:/home/benjamin/.m2/repository/org/infinispan/infinispan-spring/5.1.5.FINAL/infinispan-spring-5.1.5.FINAL.jar:/home/benjamin/.m2/repository/org/springframework/spring-context/3.1.0.RELEASE/spring-context-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/springframework/spring-aop/3.1.0.RELEASE/spring-aop-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/aopalliance/aopalliance/1.0/aopalliance-1.0.jar:/home/benjamin/.m2/repository/org/springframework/spring-asm/3.1.0.RELEASE/spring-asm-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/springframework/spring-beans/3.1.0.RELEASE/spring-beans-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/springframework/spring-core/3.1.0.RELEASE/spring-core-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/springframework/spring-expression/3.1.0.RELEASE/spring-expression-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/infinispan/infinispan-core/5.1.5.FINAL/infinispan-core-5.1.5.FINAL.jar:/home/benjamin/.m2/repository/org/jgroups/jgroups/3.0.10.Final/jgroups-3.0.10.Final.jar:/home/benjamin/.m2/repository/org/jboss/spec/javax/transaction/jboss-transaction-api_1.1_spec/1.0.0.Final/jboss-transaction-api_1.1_spec-1.0.0.Final.jar:/home/benjamin/.m2/repository/org/jboss/marshalling/jboss-marshalling-river/1.3.11.GA/jboss-marshalling-river-1.3.11.GA.jar:/home/benjamin/.m2/repository/org/jboss/marshalling/jboss-marshalling/1.3.11.GA/jboss-marshalling-1.3.11.GA.jar:/home/benjamin/.m2/repository/org/jboss/logging/jboss-logging/3.1.0.GA/jboss-logging-3.1.0.GA.jar:/home/benjamin/.m2/repository/org/codehaus/woodstox/woodstox-core-asl/4.1.1/woodstox-core-asl-4.1.1.jar:/home/benjamin/.m2/repository/org/codehaus/woodstox/stax2-api/3.1.1/stax2-api-3.1.1.jar:/home/benjamin/.m2/repository/org/rhq/helpers/rhq-pluginAnnotations/3.0.4/rhq-pluginAnnotations-3.0.4.jar:/home/benjamin/.m2/repository/commons-pool/commons-pool/1.6/commons-pool-1.6.jar:/home/benjamin/.m2/repository/org/apache/curator/curator-recipes/2.5.0/curator-recipes-2.5.0.jar:/home/benjamin/.m2/repository/org/apache/curator/curator-framework/2.5.0/curator-framework-2.5.0.jar:/home/benjamin/.m2/repository/org/apache/curator/curator-client/2.5.0/curator-client-2.5.0.jar:/home/benjamin/.m2/repository/org/slf4j/slf4j-api/1.6.1/slf4j-api-1.6.1.jar:/home/benjamin/.m2/repository/org/apache/zookeeper/zookeeper/3.4.6/zookeeper-3.4.6.jar:/home/benjamin/.m2/repository/org/slf4j/slf4j-log4j12/1.6.1/slf4j-log4j12-1.6.1.jar:/home/benjamin/.m2/repository/jline/jline/0.9.94/jline-0.9.94.jar:/home/benjamin/.m2/repository/io/netty/netty/3.7.0.Final/netty-3.7.0.Final.jar:/home/benjamin/.m2/repository/org/apache/curator/curator-test/2.5.0/curator-test-2.5.0.jar:/home/benjamin/.m2/repository/org/javassist/javassist/3.18.1-GA/javassist-3.18.1-GA.jar:/home/benjamin/.m2/repository/org/apache/commons/commons-math/2.2/commons-math-2.2.jar:/home/benjamin/.m2/repository/com/googlecode/json-simple/json-simple/1.1/json-simple-1.1.jar:
+09:15:13,314  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:java.library.path=/usr/local/lib
+09:15:13,315  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:java.io.tmpdir=/tmp
+09:15:13,315  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:java.compiler=<NA>
+09:15:13,315  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:os.name=Linux
+09:15:13,315  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:os.arch=amd64
+09:15:13,316  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:os.version=3.13.0-46-generic
+09:15:13,322  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:user.name=benjamin
+09:15:13,323  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:user.home=/home/benjamin
+09:15:13,323  INFO [Thread-0] (ZooKeeperServer:logEnv:100)   Server environment:user.dir=/home/benjamin/Roq/RoQ/roq-simulation/target
+09:15:13,340  INFO [Thread-0] (ZooKeeperServer:setTickTime:755)   tickTime set to 3000
+09:15:13,340  INFO [Thread-0] (ZooKeeperServer:setMinSessionTimeout:764)   minSessionTimeout set to -1
+09:15:13,340  INFO [Thread-0] (ZooKeeperServer:setMaxSessionTimeout:773)   maxSessionTimeout set to -1
+09:15:13,359  INFO [Thread-0] (NIOServerCnxnFactory:configure:94)   binding to port 0.0.0.0/0.0.0.0:55431
+09:15:14,403  INFO [main] (RoQAllLocalLauncher:createGCM:59)   Creating GCM
+09:15:14,481  INFO [main] (GlobalConfigurationManager:init:109)   Started global config Runnable
+09:15:14,482  INFO [main] (GlobalConfigurationManager:init:116)   Configuration from props: GCM 3000 formatDB true
+09:15:14,490  INFO [main] (RoQZooKeeperClient:<init>:20)   
+09:15:14,591  INFO [main] (RoQZooKeeperClient:start:40)   
+09:15:14,592  INFO [main] (CuratorFrameworkImpl:start:238)   Starting
+09:15:14,599  INFO [main] (ZooKeeper:logEnv:100)   Client environment:zookeeper.version=3.4.6-1569965, built on 02/20/2014 09:09 GMT
+09:15:14,599  INFO [main] (ZooKeeper:logEnv:100)   Client environment:host.name=benjamin-P500CA
+09:15:14,599  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.version=1.7.0_75
+09:15:14,599  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.vendor=Oracle Corporation
+09:15:14,600  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.home=/usr/lib/jvm/java-7-openjdk-amd64/jre
+09:15:14,600  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.class.path=/home/benjamin/Roq/RoQ/roq-simulation/target/test-classes:/home/benjamin/Roq/RoQ/roq-simulation/target/classes:/home/benjamin/.m2/repository/junit/junit/4.10/junit-4.10.jar:/home/benjamin/.m2/repository/org/hamcrest/hamcrest-core/1.1/hamcrest-core-1.1.jar:/home/benjamin/.m2/repository/org/roqmessaging/core/roq-core/1.0-SNAPSHOT/roq-core-1.0-SNAPSHOT.jar:/home/benjamin/.m2/repository/log4j/log4j/1.2.16/log4j-1.2.16.jar:/home/benjamin/.m2/repository/org/zeromq/jzmq/2.1.2/jzmq-2.1.2.jar:/home/benjamin/.m2/repository/org/mongodb/bson/2.7.3/bson-2.7.3.jar:/home/benjamin/.m2/repository/org/mongodb/mongo-java-driver/2.7.3/mongo-java-driver-2.7.3.jar:/home/benjamin/.m2/repository/com/google/guava/guava/14.0.1/guava-14.0.1.jar:/home/benjamin/.m2/repository/org/roqmessaging/roq-clientlib/1.0-SNAPSHOT/roq-clientlib-1.0-SNAPSHOT.jar:/home/benjamin/.m2/repository/commons-configuration/commons-configuration/1.8/commons-configuration-1.8.jar:/home/benjamin/.m2/repository/commons-lang/commons-lang/2.6/commons-lang-2.6.jar:/home/benjamin/.m2/repository/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar:/home/benjamin/.m2/repository/org/roqmessaging/roq-management/1.0-SNAPSHOT/roq-management-1.0-SNAPSHOT.jar:/home/benjamin/.m2/repository/org/xerial/sqlite-jdbc/3.6.16/sqlite-jdbc-3.6.16.jar:/home/benjamin/.m2/repository/org/xerial/thirdparty/nestedvm/1.0/nestedvm-1.0.jar:/home/benjamin/.m2/repository/org/infinispan/infinispan-spring/5.1.5.FINAL/infinispan-spring-5.1.5.FINAL.jar:/home/benjamin/.m2/repository/org/springframework/spring-context/3.1.0.RELEASE/spring-context-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/springframework/spring-aop/3.1.0.RELEASE/spring-aop-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/aopalliance/aopalliance/1.0/aopalliance-1.0.jar:/home/benjamin/.m2/repository/org/springframework/spring-asm/3.1.0.RELEASE/spring-asm-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/springframework/spring-beans/3.1.0.RELEASE/spring-beans-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/springframework/spring-core/3.1.0.RELEASE/spring-core-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/springframework/spring-expression/3.1.0.RELEASE/spring-expression-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/infinispan/infinispan-core/5.1.5.FINAL/infinispan-core-5.1.5.FINAL.jar:/home/benjamin/.m2/repository/org/jgroups/jgroups/3.0.10.Final/jgroups-3.0.10.Final.jar:/home/benjamin/.m2/repository/org/jboss/spec/javax/transaction/jboss-transaction-api_1.1_spec/1.0.0.Final/jboss-transaction-api_1.1_spec-1.0.0.Final.jar:/home/benjamin/.m2/repository/org/jboss/marshalling/jboss-marshalling-river/1.3.11.GA/jboss-marshalling-river-1.3.11.GA.jar:/home/benjamin/.m2/repository/org/jboss/marshalling/jboss-marshalling/1.3.11.GA/jboss-marshalling-1.3.11.GA.jar:/home/benjamin/.m2/repository/org/jboss/logging/jboss-logging/3.1.0.GA/jboss-logging-3.1.0.GA.jar:/home/benjamin/.m2/repository/org/codehaus/woodstox/woodstox-core-asl/4.1.1/woodstox-core-asl-4.1.1.jar:/home/benjamin/.m2/repository/org/codehaus/woodstox/stax2-api/3.1.1/stax2-api-3.1.1.jar:/home/benjamin/.m2/repository/org/rhq/helpers/rhq-pluginAnnotations/3.0.4/rhq-pluginAnnotations-3.0.4.jar:/home/benjamin/.m2/repository/commons-pool/commons-pool/1.6/commons-pool-1.6.jar:/home/benjamin/.m2/repository/org/apache/curator/curator-recipes/2.5.0/curator-recipes-2.5.0.jar:/home/benjamin/.m2/repository/org/apache/curator/curator-framework/2.5.0/curator-framework-2.5.0.jar:/home/benjamin/.m2/repository/org/apache/curator/curator-client/2.5.0/curator-client-2.5.0.jar:/home/benjamin/.m2/repository/org/slf4j/slf4j-api/1.6.1/slf4j-api-1.6.1.jar:/home/benjamin/.m2/repository/org/apache/zookeeper/zookeeper/3.4.6/zookeeper-3.4.6.jar:/home/benjamin/.m2/repository/org/slf4j/slf4j-log4j12/1.6.1/slf4j-log4j12-1.6.1.jar:/home/benjamin/.m2/repository/jline/jline/0.9.94/jline-0.9.94.jar:/home/benjamin/.m2/repository/io/netty/netty/3.7.0.Final/netty-3.7.0.Final.jar:/home/benjamin/.m2/repository/org/apache/curator/curator-test/2.5.0/curator-test-2.5.0.jar:/home/benjamin/.m2/repository/org/javassist/javassist/3.18.1-GA/javassist-3.18.1-GA.jar:/home/benjamin/.m2/repository/org/apache/commons/commons-math/2.2/commons-math-2.2.jar:/home/benjamin/.m2/repository/com/googlecode/json-simple/json-simple/1.1/json-simple-1.1.jar:
+09:15:14,600  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.library.path=/usr/local/lib
+09:15:14,601  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.io.tmpdir=/tmp
+09:15:14,601  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.compiler=<NA>
+09:15:14,601  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.name=Linux
+09:15:14,601  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.arch=amd64
+09:15:14,602  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.version=3.13.0-46-generic
+09:15:14,602  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.name=benjamin
+09:15:14,603  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.home=/home/benjamin
+09:15:14,603  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.dir=/home/benjamin/Roq/RoQ/roq-simulation/target
+09:15:14,605  INFO [main] (ZooKeeper:<init>:438)   Initiating client connection, connectString=127.0.0.1:55431 sessionTimeout=60000 watcher=org.apache.curator.ConnectionState@5c797bc6
+09:15:14,626  INFO [main-SendThread(127.0.0.1:55431)] (ClientCnxn:logStartConnect:975)   Opening socket connection to server 127.0.0.1/127.0.0.1:55431. Will not attempt to authenticate using SASL (unknown error)
+09:15:14,630  INFO [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:55431] (NIOServerCnxnFactory:run:197)   Accepted socket connection from /127.0.0.1:36963
+09:15:14,632  INFO [main-SendThread(127.0.0.1:55431)] (ClientCnxn:primeConnection:852)   Socket connection established to 127.0.0.1/127.0.0.1:55431, initiating session
+09:15:14,638  INFO [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:55431] (ZooKeeperServer:processConnectRequest:868)   Client attempting to establish new session at /127.0.0.1:36963
+09:15:14,643  INFO [SyncThread:0] (FileTxnLog:append:199)   Creating new log file: log.1
+09:15:14,769  INFO [SyncThread:0] (ZooKeeperServer:finishSessionInit:617)   Established session 0x14bc4f433e70000 with negotiated timeout 60000 for client /127.0.0.1:36963
+09:15:14,769  INFO [main-SendThread(127.0.0.1:55431)] (ClientCnxn:onConnected:1235)   Session establishment complete on server 127.0.0.1/127.0.0.1:55431, sessionid = 0x14bc4f433e70000, negotiated timeout = 60000
+09:15:14,774  INFO [main-EventThread] (ConnectionStateManager:postState:194)   State change: CONNECTED
+09:15:15,832  INFO [main] (RoQZooKeeperClient:clear:61)   
+09:15:15,834  INFO [ProcessThread(sid:0 cport:-1):] (PrepRequestProcessor:pRequest:645)   Got user-level KeeperException when processing sessionid:0x14bc4f433e70000 type:create cxid:0x3 zxid:0x3 txntype:-1 reqpath:n/a Error Path:/RoQ/gcm Error:KeeperErrorCode = NoNode for /RoQ/gcm
+09:15:15,893  INFO [main] (GlobalConfigurationManager:init:133)   Writing cloud configuration to zookeeper
+09:15:15,901  INFO [main] (RoQZooKeeperClient:setCloudConfig:218)   
+09:15:16,037  INFO [Thread-2] (ShutDownMonitor:run:62)   Shutdown monitor started for Global config manager
+09:15:16,045  INFO [main] (RoQAllLocalLauncher:setUp:85)   GCM created
+09:15:16,045  INFO [Thread-3] (ShutDownMonitor:run:62)   Shutdown monitor started for org.roqmessaging.management.server.MngtController Server
+09:15:16,050  INFO [main] (RoQAllLocalLauncher:setUp:91)   Start host config....
+09:15:16,066  INFO [main] (HostConfigManager:<init>:98)   Host configuration manager [GCM :localhost] [Exhange FE :6000] [Monitor base port: 5500]
+ [Create Queue in the same HCM VM: true] [Create Exchange in same HCM VM: false] [ Exchange Heap: 512]
+09:15:16,076  INFO [main] (RoQAllLocalLauncher:setUp:95)   Start factory config...
+09:15:16,084  INFO [Thread-8] (ShutDownMonitor:run:62)   Shutdown monitor started for Host config manager 10.29.236.27
+09:15:16,092  INFO [Thread-9] (HostConfigManager:registerHost:341)   Registration process started
+09:15:16,113  INFO [Thread-5] (RoQZooKeeperClient:addHCM:82)   
+09:15:16,115  INFO [ProcessThread(sid:0 cport:-1):] (PrepRequestProcessor:pRequest:645)   Got user-level KeeperException when processing sessionid:0x14bc4f433e70000 type:create cxid:0xd zxid:0x8 txntype:-1 reqpath:n/a Error Path:/RoQ/hcm-list Error:KeeperErrorCode = NoNode for /RoQ/hcm-list
+09:15:16,203  INFO [Thread-9] (HostConfigManager:registerHost:351)   Registration process sucessfull
+09:15:16,561  INFO [Management config publisher] (RoQZooKeeperClient:getQueueList:167)   
+09:15:16,565  INFO [Management config publisher] (RoQZooKeeperClient:getHCMList:93)   
+09:15:17,077  INFO [main] (TestScalingStatMonitor:test:48)   Main test Scaling process
+09:15:19,561  INFO [Management config publisher] (RoQZooKeeperClient:getQueueList:167)   
+09:15:19,563  INFO [Management config publisher] (RoQZooKeeperClient:getHCMList:93)   
+09:15:19,572  INFO [Timer-0] (RoQZooKeeperClient:getQueueList:167)   
+09:15:19,574  INFO [Timer-0] (RoQZooKeeperClient:getHCMList:93)   
+09:15:20,088  INFO [Thread-5] (RoQZooKeeperClient:getHCMList:93)   
+09:15:20,093  INFO [Thread-5] (RoQZooKeeperClient:getQueueList:167)   
+09:15:20,109  INFO [main] (GlobalConfigurationStateClient:refreshConfiguration:83)   Getting configuration with 1 Host managers and 0 queues
+09:15:20,110  INFO [Thread-9] (HostConfigManager:startNewMonitorProcess:496)   Creating the Monitor of the queue1 on the same VM as the local HCM
+09:15:20,119 DEBUG [Thread-9] (Monitor:<init>:89)   Binding procuder to tcp://*:5502
+09:15:20,119 DEBUG [Thread-9] (Monitor:<init>:93)   Binding broker Sub  to tcp://*:5500
+09:15:20,123 DEBUG [Thread-9] (Monitor:<init>:98)   Init request socket to tcp://*:5501
+09:15:20,123 DEBUG [Thread-9] (Monitor:<init>:105)   Heart beat request socket to tcp://*:5504
+09:15:20,140 DEBUG [Thread-9] (Monitor:<init>:120)   Started shutdown monitor on 5505
+09:15:20,140  INFO [Thread-10] (StatisticMonitor:run:80)   Starting the Stat Monitor on 10.29.236.27:5800
+09:15:20,141  INFO [Thread-11] (ShutDownMonitor:run:62)   Shutdown monitor started for queue1:0
+09:15:20,153  INFO [Thread-9] (HostConfigManager:startNewExchangeProcess:433)   Starting: [java, -Djava.library.path=/usr/local/lib, -cp, /home/benjamin/Roq/RoQ/roq-simulation/target/test-classes:/home/benjamin/Roq/RoQ/roq-simulation/target/classes:/home/benjamin/.m2/repository/junit/junit/4.10/junit-4.10.jar:/home/benjamin/.m2/repository/org/hamcrest/hamcrest-core/1.1/hamcrest-core-1.1.jar:/home/benjamin/.m2/repository/org/roqmessaging/core/roq-core/1.0-SNAPSHOT/roq-core-1.0-SNAPSHOT.jar:/home/benjamin/.m2/repository/log4j/log4j/1.2.16/log4j-1.2.16.jar:/home/benjamin/.m2/repository/org/zeromq/jzmq/2.1.2/jzmq-2.1.2.jar:/home/benjamin/.m2/repository/org/mongodb/bson/2.7.3/bson-2.7.3.jar:/home/benjamin/.m2/repository/org/mongodb/mongo-java-driver/2.7.3/mongo-java-driver-2.7.3.jar:/home/benjamin/.m2/repository/com/google/guava/guava/14.0.1/guava-14.0.1.jar:/home/benjamin/.m2/repository/org/roqmessaging/roq-clientlib/1.0-SNAPSHOT/roq-clientlib-1.0-SNAPSHOT.jar:/home/benjamin/.m2/repository/commons-configuration/commons-configuration/1.8/commons-configuration-1.8.jar:/home/benjamin/.m2/repository/commons-lang/commons-lang/2.6/commons-lang-2.6.jar:/home/benjamin/.m2/repository/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar:/home/benjamin/.m2/repository/org/roqmessaging/roq-management/1.0-SNAPSHOT/roq-management-1.0-SNAPSHOT.jar:/home/benjamin/.m2/repository/org/xerial/sqlite-jdbc/3.6.16/sqlite-jdbc-3.6.16.jar:/home/benjamin/.m2/repository/org/xerial/thirdparty/nestedvm/1.0/nestedvm-1.0.jar:/home/benjamin/.m2/repository/org/infinispan/infinispan-spring/5.1.5.FINAL/infinispan-spring-5.1.5.FINAL.jar:/home/benjamin/.m2/repository/org/springframework/spring-context/3.1.0.RELEASE/spring-context-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/springframework/spring-aop/3.1.0.RELEASE/spring-aop-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/aopalliance/aopalliance/1.0/aopalliance-1.0.jar:/home/benjamin/.m2/repository/org/springframework/spring-asm/3.1.0.RELEASE/spring-asm-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/springframework/spring-beans/3.1.0.RELEASE/spring-beans-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/springframework/spring-core/3.1.0.RELEASE/spring-core-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/springframework/spring-expression/3.1.0.RELEASE/spring-expression-3.1.0.RELEASE.jar:/home/benjamin/.m2/repository/org/infinispan/infinispan-core/5.1.5.FINAL/infinispan-core-5.1.5.FINAL.jar:/home/benjamin/.m2/repository/org/jgroups/jgroups/3.0.10.Final/jgroups-3.0.10.Final.jar:/home/benjamin/.m2/repository/org/jboss/spec/javax/transaction/jboss-transaction-api_1.1_spec/1.0.0.Final/jboss-transaction-api_1.1_spec-1.0.0.Final.jar:/home/benjamin/.m2/repository/org/jboss/marshalling/jboss-marshalling-river/1.3.11.GA/jboss-marshalling-river-1.3.11.GA.jar:/home/benjamin/.m2/repository/org/jboss/marshalling/jboss-marshalling/1.3.11.GA/jboss-marshalling-1.3.11.GA.jar:/home/benjamin/.m2/repository/org/jboss/logging/jboss-logging/3.1.0.GA/jboss-logging-3.1.0.GA.jar:/home/benjamin/.m2/repository/org/codehaus/woodstox/woodstox-core-asl/4.1.1/woodstox-core-asl-4.1.1.jar:/home/benjamin/.m2/repository/org/codehaus/woodstox/stax2-api/3.1.1/stax2-api-3.1.1.jar:/home/benjamin/.m2/repository/org/rhq/helpers/rhq-pluginAnnotations/3.0.4/rhq-pluginAnnotations-3.0.4.jar:/home/benjamin/.m2/repository/commons-pool/commons-pool/1.6/commons-pool-1.6.jar:/home/benjamin/.m2/repository/org/apache/curator/curator-recipes/2.5.0/curator-recipes-2.5.0.jar:/home/benjamin/.m2/repository/org/apache/curator/curator-framework/2.5.0/curator-framework-2.5.0.jar:/home/benjamin/.m2/repository/org/apache/curator/curator-client/2.5.0/curator-client-2.5.0.jar:/home/benjamin/.m2/repository/org/slf4j/slf4j-api/1.6.1/slf4j-api-1.6.1.jar:/home/benjamin/.m2/repository/org/apache/zookeeper/zookeeper/3.4.6/zookeeper-3.4.6.jar:/home/benjamin/.m2/repository/org/slf4j/slf4j-log4j12/1.6.1/slf4j-log4j12-1.6.1.jar:/home/benjamin/.m2/repository/jline/jline/0.9.94/jline-0.9.94.jar:/home/benjamin/.m2/repository/io/netty/netty/3.7.0.Final/netty-3.7.0.Final.jar:/home/benjamin/.m2/repository/org/apache/curator/curator-test/2.5.0/curator-test-2.5.0.jar:/home/benjamin/.m2/repository/org/javassist/javassist/3.18.1-GA/javassist-3.18.1-GA.jar:/home/benjamin/.m2/repository/org/apache/commons/commons-math/2.2/commons-math-2.2.jar:/home/benjamin/.m2/repository/com/googlecode/json-simple/json-simple/1.1/json-simple-1.1.jar:, -Xmx512m, -XX:+UseConcMarkSweepGC, org.roqmessaging.core.launcher.ExchangeLauncher, 6000, 6001, tcp://10.29.236.27:5500, tcp://10.29.236.27:5800]
+09:15:20,166  INFO [Thread-12] (Monitor:run:346)   Monitor started
+09:15:20,168  INFO [Thread-9] (HostConfigManager:startNewScalingProcess:255)   Starting the scaling process  for queue queue1, using a listener port= 5802, GCM =localhost
+09:15:20,200  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:196)   
+09:15:20,216  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:199)   Monitor address: null
+09:15:20,217  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:207)   
+09:15:20,218  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:210)   StatMonitor address: null
+09:15:20,219  WARN [Thread-5] (GlobalConfigurationManager:processBSONRequest:210)    No logical queue as:queue1
+09:15:20,236  WARN [Thread-9] (KPISubscriber:subscribe:99)   The subscribe request failed because of the queue configuration: The Queue queue1  is not registred.
+09:15:20,243  INFO [Thread-9] (HostConfigManager:run:160)   Successfully created new Q for queue1@tcp://10.29.236.27:5500,tcp://10.29.236.27:5800
+09:15:20,247  INFO [main] (LogicalQFactory:createQueue:87)   Created queue queue1 @ tcp://10.29.236.27:5500
+09:15:20,281  INFO [Thread-5] (RoQZooKeeperClient:createQueue:116)   
+09:15:20,282  INFO [ProcessThread(sid:0 cport:-1):] (PrepRequestProcessor:pRequest:645)   Got user-level KeeperException when processing sessionid:0x14bc4f433e70000 type:create cxid:0x1c zxid:0xb txntype:-1 reqpath:n/a Error Path:/RoQ/queues Error:KeeperErrorCode = NoNode for /RoQ/queues
+09:15:20,364  INFO [Thread-5] (RoQZooKeeperClient:setRunning:146)   
+09:15:20,375  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:196)   
+09:15:20,376  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:199)   Monitor address: tcp://10.29.236.27:5500
+09:15:20,377  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:207)   
+09:15:20,378  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:210)   StatMonitor address: tcp://10.29.236.27:5800
+09:15:20,380  INFO [Thread-16] (ScalingProcess:getAutoScalingConfig:179)   Request get Auto scaling info from auto scaling process
+09:15:20,380  INFO [Thread-16] (ScalingProcess:getAutoScalingConfig:180)   { "CMD" : 2007 , "QName" : "queue1"}
+09:15:20,399  INFO [Thread-4] (RoQZooKeeperClient:getScalingConfig:265)   
+09:15:20,401  INFO [Thread-4] (RoQZooKeeperClient:getScalingConfig:265)   
+09:15:20,405  INFO [Thread-4] (RoQZooKeeperClient:getScalingConfig:265)   
+09:15:20,407  INFO [Thread-16] (ScalingProcess:initialization:114)   Autoscaling process for queue queue1 is innactive - no auto scaling rules
+09:15:20,407  INFO [Thread-16] (ScalingProcess:getCloudConfigProperties:204)   Request get cloud properties from auto scaling process
+09:15:20,407  INFO [Thread-16] (ScalingProcess:getCloudConfigProperties:205)   { "CMD" : 2009}
+09:15:20,412  INFO [Thread-4] (RoQZooKeeperClient:getCloudConfig:224)   
+09:15:20,421  INFO [Thread-16] (ScalingProcess:getCloudConfigProperties:223)   No cloud configuration has been provided
+09:15:20,422  INFO [Thread-16] (ScalingProcess:registerListener:150)   Request Register for Auto scaling UPDATES
+09:15:20,422  INFO [Thread-16] (ScalingProcess:registerListener:151)   { "CMD" : 2008 , "QName" : "queue1" , "Address" : "tcp://10.29.236.27:5802"}
+09:15:20,431  INFO [Thread-17] (ShutDownMonitor:run:62)   Shutdown monitor started for KPI subscriber
+Launching Exchange process with arg 6000, 6001, tcp://10.29.236.27:5500, tcp://10.29.236.27:5800, 
+Starting Exchange with monitor tcp://10.29.236.27:5500, stat= tcp://10.29.236.27:5800
+Front  port  6000, Back port= 6001
+09:15:20,875  INFO [main] (Exchange:<init>:112)   BackendSub: SndHWM=-1 RcvHWM=-1
+09:15:20,888  INFO [main] (Exchange:<init>:113)   FrontendSub: SndHWM=-1 RcvHWM=-1
+09:15:20,922  INFO [Thread-0] (ShutDownMonitor:run:62)   Shutdown monitor started for Exchange 6000->6001
+09:15:20,935  INFO [Thread-1] (Exchange:run:168)   Exchange Started
+09:15:21,060  INFO [Thread-12] (Monitor:logHost:223)   Added new host: 10.29.236.27: 6000->6001
+09:15:21,061 DEBUG [Thread-12] (Monitor:updateExchgMetadata:255)   update Exchg Metadata
+09:15:21,064  INFO [Thread-12] (Monitor:updateExchgMetadata:266)   Host 10.29.236.27 : 6000->6001 :0 bytes/min, 0 users
+09:15:21,059  INFO [Timer-0] (ExchangeStatTimer:run:76)   10.29.236.27 : minute 0 : 0 bytes/min, 0 producers connected - most productive = x,x
+09:15:21,072 DEBUG [Thread-12] (Monitor:relocateProd:289)   Relocate exchange procedure
+09:15:21,072 DEBUG [Thread-12] (Monitor:relocateProd:292)   Do we need to relocate ?
+09:15:21,089  INFO [Timer-0] (HostOSMonitoring:getCPUUsage:50)   CPU usage this last minute:  2.64
+09:15:21,092  INFO [Timer-0] (HostOSMonitoring:getMemoryUsage:37)   Current memory 5.47265625 Mo  on 57.8125 Mo
+09:15:22,561  INFO [Management config publisher] (RoQZooKeeperClient:getQueueList:167)   
+09:15:22,567  INFO [Management config publisher] (RoQZooKeeperClient:getHCM:185)   
+09:15:22,568  INFO [Management config publisher] (RoQZooKeeperClient:getHCM:188)   HCM address: 10.29.236.27
+09:15:22,568  INFO [Management config publisher] (RoQZooKeeperClient:getHCMList:93)   
+09:15:23,073  INFO [Timer-0] (RoQZooKeeperClient:getQueueList:167)   
+09:15:23,075  INFO [Timer-0] (RoQZooKeeperClient:getHCM:185)   
+09:15:23,076  INFO [Timer-0] (RoQZooKeeperClient:getHCM:188)   HCM address: 10.29.236.27
+09:15:23,076  INFO [Timer-0] (RoQZooKeeperClient:isRunning:162)   
+09:15:23,079  INFO [Timer-0] (RoQZooKeeperClient:getHCMList:93)   
+09:15:25,404  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:196)   
+09:15:25,408  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:199)   Monitor address: tcp://10.29.236.27:5500
+09:15:25,408  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:207)   
+09:15:25,413  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:210)   StatMonitor address: tcp://10.29.236.27:5800
+09:15:25,413  INFO [main] (RoQConnectionFactory:translateToMonitorHost:92)   Creating a connection factory for queue1 @ tcp://10.29.236.27:5500,tcp://10.29.236.27:5800
+09:15:25,414  INFO [main] (RoQConnectionFactory:createRoQSubscriberConnection:74)   Creating a subscriber connection factory for queue1 @ tcp://10.29.236.27:5500,tcp://10.29.236.27:5800
+09:15:25,424  INFO [Thread-18] (SubscriberConnectionManager:init:140)   Init sequence
+09:15:25,428 DEBUG [Thread-12] (Monitor:run:427)   Received init request from either producer or listner
+09:15:25,428 DEBUG [Thread-12] (Monitor:run:433)   Received init request from listener
+09:15:25,429  INFO [Thread-18] (SubscriberConnectionManager:init:147)   Connnecting with RcvHWM: -1
+09:15:25,429  INFO [Thread-18] (SubscriberConnectionManager:connectToBroker:160)   Connecting new exchange: 10.29.236.27:6001
+09:15:25,429  INFO [Thread-18] (SubscriberConnectionManager:connectToBroker:164)   connected to 10.29.236.27:6001
+09:15:25,444  INFO [Thread-18] (SubscriberConnectionManager:run:226)   Worker connected
+09:15:25,445  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:196)   
+09:15:25,447  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:199)   Monitor address: tcp://10.29.236.27:5500
+09:15:25,472  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:207)   
+09:15:25,473  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:210)   StatMonitor address: tcp://10.29.236.27:5800
+09:15:25,476  INFO [main] (RoQConnectionFactory:translateToMonitorHost:92)   Creating a connection factory for queue1 @ tcp://10.29.236.27:5500,tcp://10.29.236.27:5800
+09:15:25,476  INFO [main] (RoQConnectionFactory:createRoQConnection:61)   Creating a connection factory for queue1 @ tcp://10.29.236.27:5500,tcp://10.29.236.27:5800
+09:15:25,488  INFO [main] (PublisherConnectionManager:<init>:71)   Publisher client thread 83325221-4bb1-42e4-996c-e2818dfd4c1c Connected to monitor :tcp://tcp://10.29.236.27:5500:5501
+09:15:25,488  INFO [main] (PublisherConnectionManager:<init>:80)    Publisher 83325221-4bb1-42e4-996c-e2818dfd4c1c is running
+09:15:25,456  INFO [Timer-2] (SubscriberConnectionManager:run:120)   Total latency: 0 Received: 0 Latenced: 0 Mean: 0 milliseconds
+09:15:25,516  INFO [Thread-20] (PublisherConnectionManager:init:99)   Asking for a new exchange connection to monitor  code 2...
+09:15:25,520 DEBUG [Thread-12] (Monitor:run:427)   Received init request from either producer or listner
+09:15:25,548 DEBUG [Thread-12] (Monitor:getFreeHostForPublisher:159)   Host 0 has a throughput of 0 byte/min
+09:15:25,548  INFO [Thread-12] (Monitor:getFreeHostForPublisher:172)   Assigned Producer to exchange 0 (cold start) @ 10.29.236.27:6000
+09:15:25,552 DEBUG [Thread-12] (Monitor:run:438)   Received init request from producer. Assigned on 10.29.236.27:6000
+09:15:25,552  INFO [Thread-20] (PublisherConnectionManager:init:104)   Recieving 10.29.236.27:6000 to connect ...
+09:15:25,553  INFO [Thread-20] (PublisherConnectionManager:getExchangeReqAddress:143)   The Request exchange address is: tcp://10.29.236.27:6003
+09:15:25,553  INFO [Thread-20] (PublisherConnectionManager:init:110)   Connected to Exchange 10.29.236.27:6000
+09:15:25,553  INFO [Thread-20] (PublisherConnectionManager:run:166)   Producer online
+09:15:25,561  INFO [Management config publisher] (RoQZooKeeperClient:getQueueList:167)   
+09:15:25,562  INFO [Management config publisher] (RoQZooKeeperClient:getHCM:185)   
+09:15:25,563  INFO [Management config publisher] (RoQZooKeeperClient:getHCM:188)   HCM address: 10.29.236.27
+09:15:25,563  INFO [Management config publisher] (RoQZooKeeperClient:getHCMList:93)   
+09:15:26,513  INFO [main] (RoQPublisherConnection:blockTillReady:94)   Waiting for connection ready...0 sec
+09:15:26,513  INFO [main] (TestScalingStatMonitor:test:88)   Sending MESSAGES ...
+09:15:26,539  INFO [main] (TestScalingStatMonitor:test:93)   ON  WAIT ...
+09:15:26,573  INFO [Timer-0] (RoQZooKeeperClient:getQueueList:167)   
+09:15:26,574  INFO [Timer-0] (RoQZooKeeperClient:getHCM:185)   
+09:15:26,575  INFO [Timer-0] (RoQZooKeeperClient:getHCM:188)   HCM address: 10.29.236.27
+09:15:26,576  INFO [Timer-0] (RoQZooKeeperClient:isRunning:162)   
+09:15:26,577  INFO [Timer-0] (RoQZooKeeperClient:getHCMList:93)   
+09:15:28,562  INFO [Management config publisher] (RoQZooKeeperClient:getQueueList:167)   
+09:15:28,563  INFO [Management config publisher] (RoQZooKeeperClient:getHCM:185)   
+09:15:28,564  INFO [Management config publisher] (RoQZooKeeperClient:getHCM:188)   HCM address: 10.29.236.27
+09:15:28,564  INFO [Management config publisher] (RoQZooKeeperClient:getHCMList:93)   
+09:15:29,539  INFO [main] (TestScalingStatMonitor:test:97)   Sending MESSAGES ...
+09:15:30,073  INFO [Timer-0] (RoQZooKeeperClient:getQueueList:167)   
+09:15:30,075  INFO [Timer-0] (RoQZooKeeperClient:getHCM:185)   
+09:15:30,076  INFO [Timer-0] (RoQZooKeeperClient:getHCM:188)   HCM address: 10.29.236.27
+09:15:30,076  INFO [Timer-0] (RoQZooKeeperClient:isRunning:162)   
+09:15:30,077  INFO [Timer-0] (RoQZooKeeperClient:getHCMList:93)   
+09:15:30,178 DEBUG [Thread-12] (Monitor:run:355)   Alive hosts: 10.29.236.27:6001
+09:15:31,562  INFO [Management config publisher] (RoQZooKeeperClient:getQueueList:167)   
+09:15:31,564  INFO [Management config publisher] (RoQZooKeeperClient:getHCM:185)   
+09:15:31,565  INFO [Management config publisher] (RoQZooKeeperClient:getHCM:188)   HCM address: 10.29.236.27
+09:15:31,565  INFO [Management config publisher] (RoQZooKeeperClient:getHCMList:93)   
+09:15:32,609 ERROR [Thread-4] (MngtController:run:483)   Error when receiving message
+java.lang.NullPointerException
+	at org.roqmessaging.management.server.MngtController.run(MngtController.java:416)
+	at java.lang.Thread.run(Thread.java:745)
+09:15:33,573  INFO [Timer-0] (RoQZooKeeperClient:getQueueList:167)   
+09:15:33,575  INFO [Timer-0] (RoQZooKeeperClient:getHCM:185)   
+09:15:33,576  INFO [Timer-0] (RoQZooKeeperClient:getHCM:188)   HCM address: 10.29.236.27

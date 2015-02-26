@@ -1,0 +1,9 @@
+- hosts: test
+  roles:
+    - {role: gimme-roq}
+
+- name: demonstration
+  hosts: demo
+  gather_facts: no
+  roles:
+    - {role: demonstration}

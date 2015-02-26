@@ -1,0 +1,18 @@
+- name: Creates .roq directory
+  file: path=~/.roq state=directory mode=777
+  delegate_to: localhost
+  tags:
+    - update-gcm
+    - update-hcm
+
+- name: Overwrite GCM default config file
+  template: src=GCM.properties.j2 dest='~/.roq/GCM.properties'
+  delegate_to: localhost
+  tags:
+    - update-gcm
+
+- name: Overwrite HCM default config file
+  template: src=HCM.properties.j2 dest='~/.roq/HCM.properties'
+  delegate_to: localhost
+  tags:
+    - update-hcm

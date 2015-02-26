@@ -1,0 +1,13 @@
+roq_playbook_version: "0.1b"
+jzmq_path: "/lib/jzmq"
+roq_path:  "/lib/ROQ"
+roq_git_branch: "develop"
+zk_version: 3.4.6
+zk_client_port: 2181
+zk_init_limit: 10
+zk_sync_limit: 5
+zk_tick_time: 2000
+zk_myid: 1
+zk_data_dir: /var/lib/zookeeper
+zk_log_dir: /var/log/zookeeper
+servers: ""

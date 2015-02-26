@@ -15,6 +15,7 @@
 	<modules>
 		<module>roq-parent</module>
 		<module>roq-core</module>
+		<module>roq-demonstration</module>
 		<module>roq-simulation</module>
 		<module>roq-management</module>
 		<module>roq-clientlib</module>

@@ -256,6 +256,34 @@ public class MngtController implements Runnable, IStoppable {
 							}
 							logger.debug("Create queue name = " + qName + " on " + host);
 							break;
+						case RoQConstant.BSON_CONFIG_CREATE_QUEUE_AUTOMATICALLY:
+							logger.debug("Create Q automatically request ...");
+							// Starting a queue
+							// Just create a queue on a host
+							if (!checkField(request, "QName")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>");
+								break;
+							}
+							// 1. Get the name
+							qName = (String) request.get("QName");
+							// Select a random host
+							// TODO Select the less loaded host
+							ArrayList<String> hostsList = getHosts();
+							hostsList = getHosts();
+							host = hostsList.get((int) Math.random() % hostsList.size());
+							if (hostsList.isEmpty()) {
+								sendReply_fail("ERROR when selecting a host, check logs of the logical queue factory");
+							} else {
+								// Just create queue the timer will update the
+								// management server configuration
+								if (!factory.createQueue(qName, host)) {
+									sendReply_fail("ERROR when starting  queue, check logs of the logical queue factory");
+								} else {
+									sendReply_ok("SUCCESS");
+								}
+								logger.debug("Create queue name = " + qName + " on " + host);
+							}
+							break;
 
 						case RoQConstant.BSON_CONFIG_STOP_QUEUE:
 							logger.debug("Stop queue Request");
