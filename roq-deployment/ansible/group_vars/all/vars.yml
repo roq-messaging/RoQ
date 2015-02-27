@@ -1,6 +1,7 @@
 roq_playbook_version: "0.1b"
 jzmq_path: "/lib/jzmq"
 roq_path:  "/lib/ROQ"
+docker_version: "1.12"
 roq_local_path: "path/to/your/ROQ" # For Development purpose
 roq_git_branch: "develop"
 zk_version: 3.4.6
