@@ -7,3 +7,8 @@
   gather_facts: no
   roles:
     - {role: demonstration}
+
+- name: localSystem
+  hosts: localSystem
+  roles:
+    - {role: demonstration}

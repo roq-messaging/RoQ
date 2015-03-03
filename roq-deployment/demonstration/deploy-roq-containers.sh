@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
 # Create inventory for Ansible
-echo [demo] > ../ansible/testInventory
+echo [localSystem] > ../ansible/testInventory
 echo localhost ansible_connection=local >> ../ansible/testInventory
+echo [demo] >> ../ansible/testInventory
 
 # Build the roq image
 sudo docker build -t ubuntu:roqdemo ../docker/roq 

@@ -1,29 +1,16 @@
-# - name: check or build ROQ image
-#   sudo: yes
-#   docker_image: path="../../docker/roq" 
-#     name="ubuntu:roqdemo" 
-#     state=present 
-#   delegate_to: localhost
-#   tags:
-#     - build-demo-images
-
-# - name: check or build ROQ image
-#   sudo: yes
-#   docker_image: 
-#     path="../../docker/zookeeper"
-#     name="debian:zookeeper" 
-#     state=present
-#   delegate_to: localhost
-#   tags:
-#     - build-demo-images
-#     - build-zookeeper-image
-
 - name: Creates .roq directory
   file: path=~/.roq state=directory mode=777
   delegate_to: localhost
   tags:
     - update-gcm
     - update-hcm
+
+- name: Selinux fedora issue fix
+  shell: 'su -c "setenforce 0"; chcon -Rt svirt_sandbox_file_t ~/.roq'
+  delegate_to: localhost
+  when: ansible_distribution == 'Fedora'
+  tags:
+    - debug-fedora
 
 - name: Overwrite GCM default config file
   template: src=GCM.properties.j2 dest='~/.roq/GCM.properties'
