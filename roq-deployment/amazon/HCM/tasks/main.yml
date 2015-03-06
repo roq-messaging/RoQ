@@ -1,0 +1,30 @@
+- name: Creates .roq directory
+  file: path=~/.roq state=directory mode=777
+
+- name: Overwrite HCM default config file
+  template: src=HCM.properties.j2 dest='~/.roq/HCM.properties'
+
+- name: Pull ROQ from GIT repository
+  git: repo={{roq_repo}}
+       dest="{{roq_path}}"
+       version="{{roq_git_branch}}"
+       ssh_opts="-o StrictHostKeyChecking=no"
+
+- name: install ROQ
+  shell: "cd {{roq_path}}; mvn install -Dmaven.test.skip=true"
+  environment:
+    JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF8
+    JAVA_HOME: /usr/lib/jvm/java-7-openjdk-i386
+  when: ansible_architecture == "i386"
+
+- name: install ROQ
+  shell: "cd {{roq_path}}; mvn install -Dmaven.test.skip=true"
+  environment:
+    JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF8
+    JAVA_HOME: /usr/lib/jvm/java-7-openjdk-amd64
+  when: ansible_architecture == "x86_64"
+
+- name: Start HCM component
+  shell: java -Djava.library.path=/usr/local/lib -cp /lib/RoQ/roq-management/target/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar org.roqmessaging.management.launcher.HostConfigManagerLauncher ~/.roq/HCM.properties
+  async: 1000000000000000000000
+  poll: 0

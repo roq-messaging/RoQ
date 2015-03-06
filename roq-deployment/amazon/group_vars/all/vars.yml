@@ -1,0 +1,10 @@
+ROQ_AMI: ami-04b98b19
+AWS_REGION: eu-central-1
+roq_git_branch: QueueClient
+roq_path: /lib/ROQ
+roq_repo: git://github.com/vanmellebenjamin/RoQ
+GCM_COUNT: 1
+HCM_COUNT: 1
+ZK_COUNT: 1
+KEY_PATH: bvanmelle-roq
+SECURITY_GROUP: ROQ-group

@@ -5,7 +5,7 @@ PUBIP=$(sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' ROQPUB);
 GCMIP=$(sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' ROQGCM);
 
 # Ensure that ssh key has been removed
-ssh-keygen -f "~/.ssh/known_hosts" -R $PUBIP
+ssh-keygen -R $PUBIP
 
 # Open an ssh connection to the publisher container 
 # and run the publisher's daemon inside

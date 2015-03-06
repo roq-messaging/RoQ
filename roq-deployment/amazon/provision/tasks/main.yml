@@ -1,0 +1,92 @@
+-  name: Provision a set of GCM instances
+   ec2:
+      key_name: '{{ KEY_PATH }}'
+      assign_public_ip: yes
+      instance_type: t2.micro
+      group: "{{ SECURITY_GROUP }}"
+      image: "{{ ROQ_AMI }}"
+      wait: yes
+      exact_count: "{{ GCM_COUNT }}"
+      region: "{{ AWS_REGION }}"
+      vpc_subnet_id: subnet-842be7ed
+      count_tag:
+         Name: GCM
+      instance_tags:
+         Name: GCM
+   register: roqGCM
+
+-  name: Provision a set of HCM instances
+   ec2:
+      key_name: '{{ KEY_PATH }}'
+      assign_public_ip: yes
+      instance_type: t2.micro
+      group: "{{ SECURITY_GROUP }}"
+      image: "{{ ROQ_AMI }}"
+      wait: yes
+      exact_count: "{{ HCM_COUNT }}"
+      region: "{{ AWS_REGION }}"
+      vpc_subnet_id: subnet-842be7ed
+      count_tag:
+         Name: HCM
+      instance_tags:
+         Name: HCM
+   register: roqHCM
+
+-  name: Provision a set of ZooKeeper instances
+   ec2:
+      key_name: '{{ KEY_PATH }}'
+      assign_public_ip: yes
+      instance_type: t2.micro
+      group: "{{ SECURITY_GROUP }}"
+      image: "{{ ROQ_AMI }}"
+      wait: yes
+      exact_count: "{{ ZK_COUNT }}"
+      region: "{{ AWS_REGION }}"
+      vpc_subnet_id: subnet-842be7ed
+      count_tag:
+         Name: ZK
+      instance_tags:
+         Name: ZK
+   register: roqZK
+
+-  name: Wait for ZK SSH to come up
+   wait_for: host={{ item.public_ip }}
+             port=22
+             delay=60
+             timeout=320
+             state=started
+   with_items: roqZK.instances
+
+-  name: Wait for GCM SSH to come up
+   wait_for: host={{ item.public_ip }}
+             port=22
+             delay=60
+             timeout=320
+             state=started
+   with_items: roqGCM.instances
+
+-  name: Wait for HCM SSH to come up
+   wait_for: host={{ item.public_ip }}
+             port=22
+             delay=60
+             timeout=320
+             state=started
+   with_items: roqHCM.instances
+
+-  name: Add all GCM instances public IPs to GCM group
+   add_host: groupname=GCM
+             hostname={{ item.0 }}.roq.gcm
+             ansible_ssh_host={{ item.1.public_dns_name }}
+   with_indexed_items:  hostvars['localhost']['roqGCM']['tagged_instances']
+
+-  name: Add all ZK instances public IPs to ZK group
+   add_host: groupname=ZK
+             hostname={{ item.0 }}.roq.zk
+             ansible_ssh_host={{ item.1.public_dns_name }}
+   with_indexed_items:  hostvars['localhost']['roqZK']['tagged_instances']
+
+- name: Add all HCM instances public IPs to HCM group
+  add_host: groupname=HCM
+            hostname={{ item.0 }}.roq.hcm
+            ansible_ssh_host={{ item.1.public_dns_name }}
+  with_indexed_items:  hostvars['localhost']['roqHCM']['tagged_instances']

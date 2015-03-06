@@ -19,7 +19,6 @@ import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQQueueManager;
-import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Context;
 import org.zeromq.ZMQ.Socket;
@@ -32,7 +31,7 @@ import org.zeromq.ZMQ.Socket;
  * 
  * @author bvanmelle
  */
-public class QueueManagerClient implements IRoQQueueManager {
+public class QueueClientManager implements IRoQQueueManager {
 	//The global config server address 
 	private String configServer = null;
 	// ZMQ config
@@ -40,13 +39,13 @@ public class QueueManagerClient implements IRoQQueueManager {
 	//The socket to the global config
 	private Socket mngmtControllerReq;
 	
-	private Logger logger = Logger.getLogger(QueueManagerClient.class);
+	private Logger logger = Logger.getLogger(QueueClientManager.class);
 	
 	/**
 	 * Build  a queue Manager and takes the location of the global configuration manager as input
 	 * @param configManager the config manager IP address
 	 */
-	public QueueManagerClient(String configManager) {
+	public QueueClientManager(String configManager) {
 		this.configServer= configManager;
 	}
 

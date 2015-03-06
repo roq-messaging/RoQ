@@ -1,0 +1,19 @@
+#SECTION 1 FREQUENCY
+period=60000
+
+#SECTION 2 Server configuration
+#Define whether we need to format the DB on startup
+formatDB=false
+
+#SECTION 3 Cloud configuration
+cloud.use = false
+cloud.user= roq
+cloud.password = roq
+cloud.gateway = 192.168.0.1
+cloud.endpoint = http://inferno.local:2633/RPC2
+
+#SECTION 4 Ports used by the GCM
+ports.base = 5000
+
+#SECTION 5 ZooKeeper info
+zk.servers = {{ hostvars['0.roq.zk']['ansible_ssh_host'] }}:2181

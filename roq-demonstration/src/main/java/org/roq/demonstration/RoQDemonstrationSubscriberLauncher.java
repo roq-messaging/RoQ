@@ -18,7 +18,7 @@ import org.roqmessaging.client.IRoQQueueManager;
 import org.roqmessaging.client.IRoQSubscriber;
 import org.roqmessaging.client.IRoQSubscriberConnection;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
-import org.roqmessaging.core.QueueManagerClient;
+import org.roqmessaging.core.QueueClientManager;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 
 /**
@@ -45,7 +45,7 @@ public class RoQDemonstrationSubscriberLauncher {
 		String qName = args[1];
 		try {
 			// Create the queue
-			IRoQQueueManager queueManager = new QueueManagerClient(args[0]);
+			IRoQQueueManager queueManager = new QueueClientManager(args[0]);
 			queueManager.createQueue(qName);
 			
 			Thread.sleep(5000);
