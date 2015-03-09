@@ -15,10 +15,18 @@
   user: ubuntu
   sudo: yes
   roles:
+    - { role: getROQ }
     - { role: GCM }
 
 - hosts: HCM
   user: ubuntu
   sudo: yes
   roles:
+    - { role: getROQ }
     - { role: HCM }
+
+- hosts: CLIENT
+  user: ubuntu
+  sudo: yes
+  roles:
+    - { role: getROQ }

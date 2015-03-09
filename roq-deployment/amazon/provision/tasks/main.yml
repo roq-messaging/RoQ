@@ -1,13 +1,13 @@
 -  name: Provision a set of GCM instances
    ec2:
-      key_name: '{{ KEY_PATH }}'
+      key_name: '{{ key_path }}'
       assign_public_ip: yes
       instance_type: t2.micro
-      group: "{{ SECURITY_GROUP }}"
-      image: "{{ ROQ_AMI }}"
+      group: "{{ security_group }}"
+      image: "{{ roq_ami }}"
       wait: yes
-      exact_count: "{{ GCM_COUNT }}"
-      region: "{{ AWS_REGION }}"
+      exact_count: "{{ gcm_count }}"
+      region: "{{ aws_region }}"
       vpc_subnet_id: subnet-842be7ed
       count_tag:
          Name: GCM
@@ -17,14 +17,14 @@
 
 -  name: Provision a set of HCM instances
    ec2:
-      key_name: '{{ KEY_PATH }}'
+      key_name: '{{ key_path }}'
       assign_public_ip: yes
       instance_type: t2.micro
-      group: "{{ SECURITY_GROUP }}"
-      image: "{{ ROQ_AMI }}"
+      group: "{{ security_group }}"
+      image: "{{ roq_ami }}"
       wait: yes
-      exact_count: "{{ HCM_COUNT }}"
-      region: "{{ AWS_REGION }}"
+      exact_count: "{{ hcm_count }}"
+      region: "{{ aws_region }}"
       vpc_subnet_id: subnet-842be7ed
       count_tag:
          Name: HCM
@@ -34,20 +34,42 @@
 
 -  name: Provision a set of ZooKeeper instances
    ec2:
-      key_name: '{{ KEY_PATH }}'
+      key_name: '{{ key_path }}'
       assign_public_ip: yes
       instance_type: t2.micro
-      group: "{{ SECURITY_GROUP }}"
-      image: "{{ ROQ_AMI }}"
+      group: "{{ security_group }}"
+      image: "{{ roq_ami }}"
       wait: yes
-      exact_count: "{{ ZK_COUNT }}"
-      region: "{{ AWS_REGION }}"
+      exact_count: "{{ zk_count }}"
+      region: "{{ aws_region }}"
       vpc_subnet_id: subnet-842be7ed
       count_tag:
          Name: ZK
       instance_tags:
          Name: ZK
    register: roqZK
+
+-  name: Provision two client instances
+   ec2:
+      key_name: '{{ key_path }}'
+      assign_public_ip: yes
+      instance_type: t2.micro
+      group: "{{ security_group }}"
+      image: "{{ roq_ami }}"
+      wait: yes
+      exact_count: 2
+      region: "{{ aws_region }}"
+      vpc_subnet_id: subnet-842be7ed
+      count_tag:
+         Name: CLIENT
+      instance_tags:
+         Name: CLIENT
+   register: roqCLIENT
+   tags: 
+    - demo
+
+-  name: debug
+   debug: msg="GCM private IP {{ hostvars["localhost"]["roqGCM"]["tagged_instances"][0]["private_ip"] }}"
 
 -  name: Wait for ZK SSH to come up
    wait_for: host={{ item.public_ip }}
@@ -73,6 +95,16 @@
              state=started
    with_items: roqHCM.instances
 
+-  name: Wait for CLIENT SSH to come up
+   wait_for: host={{ item.public_ip }}
+             port=22
+             delay=60
+             timeout=320
+             state=started
+   with_items: roqCLIENT.instances
+   tags:
+    - demo
+
 -  name: Add all GCM instances public IPs to GCM group
    add_host: groupname=GCM
              hostname={{ item.0 }}.roq.gcm
@@ -90,3 +122,11 @@
             hostname={{ item.0 }}.roq.hcm
             ansible_ssh_host={{ item.1.public_dns_name }}
   with_indexed_items:  hostvars['localhost']['roqHCM']['tagged_instances']
+
+- name: Add all CLIENTS instances public IPs to CLIENT group
+  add_host: groupname=CLIENT
+            hostname={{ item.0 }}.roq.client
+            ansible_ssh_host={{ item.1.public_dns_name }}
+  with_indexed_items:  hostvars['localhost']['roqCLIENT']['tagged_instances']
+  tags:
+    - demo

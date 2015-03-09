@@ -1,4 +1,0 @@
-- hosts: tag_Name_GCM
-  tasks:
-  - name: get EC2 facts
-    action: ec2_facts

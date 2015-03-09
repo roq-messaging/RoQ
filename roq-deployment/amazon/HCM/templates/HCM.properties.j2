@@ -1,7 +1,7 @@
 #Host configuration management properties
 
 #SECTION 1 The global configuration manager server
-gcm.address={{hostvars['0.roq.gcm']['ansible_ssh_host']}}
+gcm.address={{hostvars["localhost"]["roqGCM"]["tagged_instances"][0]["private_ip"]}}
 gcm.ports.base=5000
 
 #SECTION 2 IP address registration

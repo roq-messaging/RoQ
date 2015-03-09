@@ -16,4 +16,4 @@ cloud.endpoint = http://inferno.local:2633/RPC2
 ports.base = 5000
 
 #SECTION 5 ZooKeeper info
-zk.servers = {{ hostvars['0.roq.zk']['ansible_ssh_host'] }}:2181
+zk.servers = {{ hostvars["localhost"]["roqZK"]["tagged_instances"][0]["private_ip"] }}:2181
