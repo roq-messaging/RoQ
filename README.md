@@ -28,7 +28,7 @@ This procedure allows you to run ROQ on your local machine. All the ROQ componen
 
 ### Launch the demonstration
 
-Pull this git repository on your machine. And runs the following bash script:
+Clone this git repository on your machine. And runs the following bash script:
 ```
 RoQ/roq-deployment/demo-start-subscriber.sh
 ```
@@ -65,7 +65,7 @@ The script is working for the following OS: Ubuntu (x86, x64), CentOS (x64), Fed
 - git
 - ansible (tested with version 1.8.4)
 
-Pull this git repository on your machine.
+Clone this git repository on your machine.
 
 ### Install RoQ
 Launch the following script (be sure that the prerequisite package have been installed):
@@ -132,5 +132,5 @@ Your cluster is ready !
 
 Don't forget to terminate through EC2 console to don't lost your credits.
 
-Hope that you enjoyed this straightforward tutorial that allows you tu use ROQ !
+Hope that you enjoyed this straightforward tutorial that allows you to use ROQ !
 Trouble ? Contact me at vanmelle.benjamin@gmail.com
