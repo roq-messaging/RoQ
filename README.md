@@ -124,6 +124,8 @@ roq-deployment/amazon/group_vars/all/vars.yml
 And set the number of instances for each ROQ components.
 Don't forget to set the key_path var to the value or your ssh pem key from amazon (the value must match with the key name that you get when launching "ssh-add -L").
 
+### Deployment step
+
 You are ready to launch your first ROQ cluster on amazon !
 Run the following script: 
 ```
