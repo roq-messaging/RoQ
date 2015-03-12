@@ -26,9 +26,9 @@ This procedure allows you to run ROQ on your local machine. All the ROQ componen
 /!\ Don't forget to run the docker service once the package installed. 
 /!\ If you have an issue when trying to running the docker service on fedora, looks at the following post: http://stackoverflow.com/questions/24288616/permission-denied-on-accessing-host-directory-in-docker
 
-### Launch the demonstration
+### Start the demonstration
 
-Clone this git repository on your machine. And runs the following bash script:
+Clone this git repository on your machine. And run the following bash script:
 ```
 RoQ/roq-deployment/demo-start-subscriber.sh
 ```
@@ -43,7 +43,7 @@ Now you can get the GCM local ip address thanks to the following command:
 sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' ROQGCM
 ```
 
-Take note of this address and use it with your own application to communicate with ROQ, see the tutorial to know how to use the ROQ API. You can stop the publisher and subscriber container with these docker commands (that is not required to use ROQ with your application):
+Take note of this address and use it with your own application to communicate with ROQ, see the tutorial to know how to use the ROQ API. You can stop the publisher and subscriber containers with these docker commands (They are not required to use ROQ with your application):
 ```
 sudo docker stop ROQPUB
 sudo docker rm ROQPUB
@@ -51,7 +51,7 @@ sudo docker stop ROQSUB
 sudo docker rm ROQSUB
 ```
 
-Finish ? Launch this script to stop all the roq containers: 
+Finish ? Run this script to stop all the roq containers: 
 ```
 RoQ/roq-deployment/demo-stop.sh
 ```
@@ -73,12 +73,12 @@ The script is working for the following OS: Ubuntu (x86, x64), CentOS (x64), Fed
 Clone this git repository on your machine.
 
 ### Install RoQ
-Launch the following script (be sure that the prerequisite package have been installed):
+Run the following script (be sure that the prerequisite package have been installed):
 ```
 RoQ/roq-deployment/development/install-roq.sh
 ```
 
-### Launch RoQ
+### Start RoQ
 Once that the script has finished to install ROQ dependencies, run the following script:
 ```
 RoQ/roq-deployment/development/restart-components.sh
@@ -86,7 +86,7 @@ RoQ/roq-deployment/development/restart-components.sh
 
 This script is idempotent and can start and restart ROQ main processes (GCM and HCM). The Roq code in the repository will be reompiled before, to take into account your modifications.
 
-If you want to be sure that all the ROQ processes have been killed, launch this script:
+If you want to be sure that all the ROQ processes have been killed, run this script:
 ```
 RoQ/roq-deployment/development/stop-roq.sh
 ```
@@ -122,17 +122,17 @@ Finally, go into the following file:
 roq-deployment/amazon/group_vars/all/vars.yml
 ```
 And set the number of instances for each ROQ components.
-Don't forget to set the key_path var to the value of your amazon ssh pem key (the value must match with the key name that you get when launching "ssh-add -L").
+Don't forget to set the key_path var to the value of your amazon ssh pem key (the value must match with the key name that you get when running "ssh-add -L").
 
 ### Deployment step
 
-You are ready to launch your first ROQ cluster on amazon !
+You are ready to run your first ROQ cluster on amazon !
 Run the following script: 
 ```
 ansible-playbook "PATH TO ROQ"/roq-deployment/ --skip-tags "demonstration"
 ```
 
-Note: If you launch several times this script, the instances number stay fixed to the values that you set in the config file.
+Note: If you run several times this script, the instances number stay fixed to the values that you set in the config file.
 
 Your cluster is ready !
 
