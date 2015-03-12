@@ -7,15 +7,15 @@ Release-0.3.1 "Marina"
 Installation
 ------------
 
-We cover different use cases in order to provide you the most suitable way to get your first experience of ROQ.
-You just want to get a try of ROQ ? Go to the 'demonstration' section, you will run ROQ on local docker containers that allow you to get your first experience without disturbing your working environment.
-Are you sure that ROQ is a suitable messaging service for your system ? Let's go to the 'local deployment' section in order to develop your service which relies to ROQ or to contribute to ROQ.
+We cover different use cases in order to provide you the most suitable way to get your first experience with ROQ.
+You want to just get a try of ROQ ? Go to the 'demonstration' section, you will run ROQ on local docker containers which allow you to get your first experience with ROQ without disturbing your working environment.
+Do you want to contribute to ROQ ? Let's go to the 'local deployment' section in order to deploy ROQ on you machine in order to debug etc.
 Get reday for the production ? Go to the 'production' section, we provide you an automatic deployment script which allows to deploy ROQ on Amazon (we plan to support other environments, stay tunned).
 
 Demonstration
 -------------
 
-This procedure allows you to run ROQ on your local machine. All the ROQ components and their dependencies will be installed in isolated docker container. In this way, that your system environment will be not impacted by the procedure.
+This procedure allows you to run ROQ on your local machine. All the ROQ components and their dependencies will be installed on isolated docker containers. Therefore, your local system environment will be not impacted by the procedure.
 
 ### Prerequisite (get these packages via yum or apt-get):
 - docker-io (tested with version 1.12)
@@ -32,31 +32,38 @@ Clone this git repository on your machine. And runs the following bash script:
 ```
 RoQ/roq-deployment/demo-start-subscriber.sh
 ```
-Once that the terminal shows subscriber connected and so on.
-Open a second terminal and runs this script: 
+Once that the terminal shows that the subscriber is connected, open a second terminal and runs this script: 
 ```
 RoQ/roq-deployment/demo-start-publisher.sh
 ```
-Once the publisher connected, write your message in the second terminal, the message will appear on the first one. ROQ is working !
+Once the publisher connected, write your messages in the second terminal, the messages will appear on the first one. ROQ is working !
 
 Now you can get the GCM local ip address thanks to the following command:
 ```
 sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' ROQGCM
 ```
 
-Note this address and use it with your own application to communicate with ROQ, see the tutorial to know how to use the ROQ API.
+Take note of this address and use it with your own application to communicate with ROQ, see the tutorial to know how to use the ROQ API. You can stop the publisher and subscriber container with these docker commands (that is not required to use ROQ with your application):
+```
+RoQ/roq-deployment/demo-stop.sh
+```
+sudo docker stop ROQPUB
+sudo docker rm ROQPUB
+sudo docker stop ROQSUB
+sudo docker rm ROQSUB
+```
 
-Finish ? Launch this script to stop the roq containers: 
+Finish ? Launch this script to stop all the roq containers: 
 ```
 RoQ/roq-deployment/demo-stop.sh
 ```
 
-Hope that you enjoyed ROQ !
+Hope that you enjoy ROQ !
 
 Local installation and local deployment
 ---------------------------------------
 
-You are sure that Roq is a suitable solution for your system ? This section allows you to install the ROQ components and their dependencies on you local machine in order to develop your own system with ROQ or to contribute to ROQ.
+You are sure that Roq is a suitable solution for your system ? This section allows you to install the ROQ components and their dependencies on you local machine in order to contribute to ROQ or to customize it.
 The script is working for the following OS: Ubuntu (x86, x64), CentOS (x64), Fedora (x64).
 
 ### Prerequisite (get these packages via yum or apt-get):
@@ -79,7 +86,7 @@ Once that the script has finished to install ROQ dependencies, run the following
 RoQ/roq-deployment/development/restart-components.sh
 ```
 
-This script is idempotent and can start and restart roq components, GCM and HCM. The Roq code in the repository will be reompiled before to take into account your modifications.
+This script is idempotent and can start and restart ROQ main processes (GCM and HCM). The Roq code in the repository will be reompiled before, to take into account your modifications.
 
 If you want to be sure that all the ROQ processes have been killed, launch this script:
 ```
@@ -95,12 +102,13 @@ The script will install:
 Production
 ----------
 
-Ready for the deployment of your application ? We give provide an amazon script able to deploy a complete ROQ cluster automatically on amazon !
+Ready for the deployment of your application in the cloud ? We provide an amazon script able to deploy a complete ROQ cluster automatically !
 
 ### Prerequisite (get these packages via yum or apt-get):
 - ansible (tested with version 1.8.4)
 
 ### Configuration step
+
 First, you must set environment variables to allow ansible to communicate with your Amazon account:
 Run the following commands in the shell:
 ```
@@ -109,14 +117,12 @@ export AWS_SECRET_ACCESS_KEY='your AMAZON SECRET KEY'
 export ANSIBLE_HOSTS='YOUR PATH TO ROQ/roq-deployment/amazon/plugin/ec2.py'
 export export EC2_INI_PATH='YOUR PATH TO ROQ/roq-deployment/amazon/plugin/ec2.ini'
 ```
+Second, Add you amazon ssh keys with ssh-add (the keys set must be created in amazon EC2).
 
-Second go into the following file:
+Finally, go into the following file:
 ```
 roq-deployment/amazon/group_vars/all/vars.yml
 ```
-
-Add you amazon ssh keys with ssh-add (the keys set must be created in amazon EC2).
-
 And set the number of instances for each ROQ components.
 Don't forget to set the key_path var to the value or your ssh pem key from amazon (the value must match with the key name that you get when launching "ssh-add -L").
 
@@ -130,7 +136,7 @@ Note: If you launch several times this script, the instances number stay fixed t
 
 Your cluster is ready !
 
-Don't forget to terminate through EC2 console to don't lost your credits.
+Don't forget to terminate amazon instances through EC2 console to don't lost your credits.
 
 Hope that you enjoyed this straightforward tutorial that allows you to use ROQ !
 Trouble ? Contact me at vanmelle.benjamin@gmail.com
