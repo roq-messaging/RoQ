@@ -45,8 +45,6 @@ sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' ROQGCM
 
 Take note of this address and use it with your own application to communicate with ROQ, see the tutorial to know how to use the ROQ API. You can stop the publisher and subscriber container with these docker commands (that is not required to use ROQ with your application):
 ```
-RoQ/roq-deployment/demo-stop.sh
-```
 sudo docker stop ROQPUB
 sudo docker rm ROQPUB
 sudo docker stop ROQSUB
