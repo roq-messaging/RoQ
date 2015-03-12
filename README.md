@@ -122,7 +122,7 @@ Finally, go into the following file:
 roq-deployment/amazon/group_vars/all/vars.yml
 ```
 And set the number of instances for each ROQ components.
-Don't forget to set the key_path var to the value or your ssh pem key from amazon (the value must match with the key name that you get when launching "ssh-add -L").
+Don't forget to set the key_path var to the value of your amazon ssh pem key (the value must match with the key name that you get when launching "ssh-add -L").
 
 ### Deployment step
 
