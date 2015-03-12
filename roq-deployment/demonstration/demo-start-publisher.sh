@@ -11,5 +11,5 @@ ssh-keygen -R $PUBIP
 # and run the publisher's daemon inside
 sshpass -pscreencast ssh -o StrictHostKeyChecking=no root@$PUBIP \
 		java -Djava.library.path=/usr/local/lib -cp \
-		/lib/RoQ/roq-demonstration/target/roq-demonstration-1.0-SNAPSHOT-jar-with-dependencies.jar \
+		/lib/RoQ/roq-demonstration/target/roq-demonstration-1.0-SNAPSHOT-jar-with-dependencies.jar 	\
 		org.roq.demonstration.RoQDemonstrationPublisherLauncher $GCMIP testQ
