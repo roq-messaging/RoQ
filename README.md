@@ -8,7 +8,7 @@ Installation
 ------------
 
 We cover different use cases in order to provide you the most suitable way to get your first experience of ROQ.
-You just want to get a try of ROQ ? Go to the 'demonstration' section, you will run ROQ on local docker containers that allow you to get your first experience without distrurbing your working environment.
+You just want to get a try of ROQ ? Go to the 'demonstration' section, you will run ROQ on local docker containers that allow you to get your first experience without disturbing your working environment.
 Are you sure that ROQ is a suitable messaging service for your system ? Let's go to the 'local deployment' section in order to develop your service which relies to ROQ or to contribute to ROQ.
 Get reday for the production ? Go to the 'production' section, we provide you an automatic deployment script which allows to deploy ROQ on Amazon (we plan to support other environments, stay tunned).
 
@@ -32,14 +32,14 @@ Pull this git repository on your machine. And runs the following bash script:
 RoQ/roq-deployment/demo-start-subscriber.sh
 Once that the terminal shows subscriber connected and so on.
 Open a second terminal and runs this script: RoQ/roq-deployment/demo-start-publisher.sh
-Once the publisher connected, write your message in the second terminal, the message will appaer on the first one. ROQ is working !
+Once the publisher connected, write your message in the second terminal, the message will appear on the first one. ROQ is working !
 
 Now you can get the GCM local ip address thanks to the following command:
 sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' ROQGCM
 
 Note this address and use it with your own application to communicate with ROQ, see the tutorial to know how to use the ROQ API.
 
-Finish ? Lauch this script to stop the roq containers: 
+Finish ? Launch this script to stop the roq containers: 
 RoQ/roq-deployment/demo-stop.sh
 
 Hope that you enjoyed ROQ !
@@ -62,7 +62,7 @@ Pull this git repository on your machine.
 Launch the following script (be sure that the prerequisite package have been installed):
 RoQ/roq-deployment/development/install-roq.sh
 
-### Laucnh RoQ
+### Launch RoQ
 Once that the script has finished to install ROQ dependencies, run the following script:
 RoQ/roq-deployment/development/restart-components.sh
 
@@ -85,7 +85,7 @@ Ready for the deployment of your application ? We give provide an amazon script 
 ### Prerequisite (get these packages via yum or apt-get):
 - ansible (tested with version 1.8.4)
 
-# Configuration step
+### Configuration step
 First, you must set environment variables to allow ansible to communicate with your Amazon account:
 Run the following commands in the shell:
 export AWS_ACCESS_KEY_ID='YOU AMAZON ACCESS KEY'
@@ -101,11 +101,11 @@ Add you amazon ssh keys with ssh-add (the keys set must be created in amazon EC2
 And set the number of instances for each ROQ components.
 Don't forget to set the key_path var to the value or your ssh pem key from amazon (the value must match with the key name that you get when launching "ssh-add -L").
 
-You are ready to lauch your first ROQ cluster on amazon !
+You are ready to launch your first ROQ cluster on amazon !
 Run the following script: 
 ansible-playbook "PATH TO ROQ"/roq-deployment/ --skip-tags "demonstration"
 
-Note: If you lauch several times this script, the instances number stay fixed to the values that you setted in the config file.
+Note: If you launch several times this script, the instances number stay fixed to the values that you set in the config file.
 
 Your cluster is ready !
 
