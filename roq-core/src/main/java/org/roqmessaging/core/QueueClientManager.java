@@ -110,6 +110,22 @@ public class QueueClientManager implements IRoQQueueManager {
 	 */
 	public void startQueue(String queueName) 
 			throws IllegalStateException {
+		// Open socket and init BSON request
+		initSocketConnection();
+		BasicBSONObject request = new BasicBSONObject();
+		request.put("QName", queueName);
+		request.put("CMD", RoQConstant.BSON_CONFIG_START_QUEUE);
+		// Send request
+		mngmtControllerReq.send(BSON.encode(request), 0);
+		// Get Response
+		byte[] responseBytes = mngmtControllerReq.recv(0);
+		int response = Integer.parseInt(new String(responseBytes));
+		closeSocketConnection();
+		if(response == RoQConstant.FAIL){
+			throw  new IllegalStateException("The queue start process failed @ Management Controller");
+		} else {
+			logger.info("Queue has been started @ Management Controller");
+		}
 	}
 
 	@Override

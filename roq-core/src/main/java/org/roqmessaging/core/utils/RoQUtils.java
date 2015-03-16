@@ -14,9 +14,7 @@
  */
 package org.roqmessaging.core.utils;
 
-import java.io.IOException;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -25,9 +23,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.TimeZone;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.Scanner;
 
 /**
  * Class RoQUtils
@@ -39,12 +34,7 @@ import java.util.Scanner;
 public class RoQUtils {
 
 	private static RoQUtils instance = null;
-	
-	private String private_ip_address = null;
-	private String public_ip_address = null;
 
-	private boolean isAmazonHost = false;
-	
 	/**
 	 * @return The singleton instance.
 	 */
@@ -53,50 +43,6 @@ public class RoQUtils {
 			instance = new RoQUtils();
 		}
 		return instance;
-	}
-	
-	private RoQUtils() {
-		super();
-		// If its an EC2 instance, get public and private address
-		// for this host only ONCE to avoid overhead.
-		if ( System.getenv("ROQ_ENV").equalsIgnoreCase("amazon")) {
-			URL url;
-			try {
-				// Send a request to the Amazon dedicated server
-				// to get public IP address
-				url = new URL("http://169.254.169.254/latest/meta-data/public-ipv4");
-			    URLConnection conn = url.openConnection();
-			    Scanner s = new Scanner(conn.getInputStream());
-			    String result = null;
-			    // Fetch the result
-			    if (s.hasNext()) {
-			    	result = s.next();
-			    	System.out.println(result);
-			    }
-			    public_ip_address =  checkIPV6(result);
-			    
-			    // Send a request to the Amazon dedicated server
-				// to get private IP address
-			    url = new URL("http://169.254.169.254/latest/meta-data/local-ipv4");
-			    conn = url.openConnection();
-			    s = new Scanner(conn.getInputStream());
-			    result = null;
-			    // Fetch the result
-			    if (s.hasNext()) {
-			    	result = s.next();
-			    	System.out.println(result);
-			    }
-			    private_ip_address =  checkIPV6(result);
-			    
-			    isAmazonHost = true;
-			} catch (MalformedURLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
 	}
 
 	/**
@@ -111,13 +57,11 @@ public class RoQUtils {
 	 * out the most accurate (primary) IP address. It prefers addresses that
 	 * have a meaningful dns name set for example.
 	 * 
-	 * @return Returns the current local (private) IP address or an empty string in error
+	 * @return Returns the current local IP address or an empty string in error
 	 *         case.
 	 * @since 0.1.0
 	 */
 	public String getLocalIP() {
-		if (isAmazonHost)
-			return private_ip_address;
 		try {
 		String ipOnly = InetAddress.getLocalHost().getHostAddress().toString();
 			Enumeration<NetworkInterface> nifs = NetworkInterface.getNetworkInterfaces();
@@ -160,32 +104,13 @@ public class RoQUtils {
 	}
 	
 	/**
-	 * Allow to get the public IP address for this host.
-	 * If the Host is on Amazon, this address is accessible
-	 * from everywhere. Don't use this address for intracluster
-	 * message, that will introduce network overhead.
-	 * @return Public IP address on amazon, local IP else
-	 */
-	public String getPublicIP() {
-		if (isAmazonHost) {
-			return public_ip_address;
-		} else {
-			return getLocalIP();
-		}
-	}
-	
-	/**
-	 * Allow to get the IP address for a specific interface or local (private) ip address
-	 * on Amazon
+	 * Allow to get the IP address for a specific interface
 	 * Added for issue #65
 	 * @param netwInterface the name of the network interface
-	 * @return the IP address of this interface, or private Ip address on Amazon
+	 * @return the IP address of this interface
 	 * @throws IllegalStateException when the network interface does not exist
 	 */
 	public String getLocalIP(String netwInterface) throws IllegalStateException {
-		// TODO, handle the Amazon case
-		if (isAmazonHost)
-			return private_ip_address;
 		try {
 			Enumeration<NetworkInterface> nifs = NetworkInterface.getNetworkInterfaces();
 			if (nifs == null)
