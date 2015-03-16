@@ -55,7 +55,7 @@ public class TestStartStopQ extends RoQTestCase {
 		logger.debug("Debug Queue");
 		client.testRemove(qName);
 		
-		//Phase 2 Test the stop
+		//Phase 2 Test the start/stop
 		qName = "testQ2";
 		//1.  Create a queue
 		logger.debug("Create queue");
@@ -64,11 +64,28 @@ public class TestStartStopQ extends RoQTestCase {
 		//2. Stop the queue
 		client.testStop(qName);
 		
-		//3. Stop the queue
+		//3. Restart the queue
 		client.testStart(qName);
 		
 		//4. Remove the queue
 		client.testRemove(qName);
+		
+		//Phase 3 Test the automatic queues
+		qName = "testQ3";
+		//1.  Create a queue
+		logger.debug("Create queue");
+		client.testCreateAuto(qName);
+		
+		//2. Stop the queue
+		client.testStop(qName);
+		
+		//3. Restart the queue
+		client.testStart(qName);
+		
+		//4. Remove the queue
+		client.testRemove(qName);
+		
+		
 		
 		//5. Test the get cloud property API
 		client.testCloudPropertiesAPI();

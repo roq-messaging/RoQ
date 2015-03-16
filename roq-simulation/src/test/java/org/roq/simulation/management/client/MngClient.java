@@ -89,6 +89,30 @@ public class MngClient {
 			logger.error("Error when testing client ", e);
 		}
 	}
+	
+	/**
+	 * Test the creation of a queue AUTOMATICALLY by the BSON interface.
+	 * Automatically means that the MngmtController sellects the 
+	 * HCM by itself
+	 * @param qName
+	 *            the queue under test
+	 */
+	public void testCreateAuto(String qName) {
+		try {
+			IRoQSerializer serializer = new RoQBSONSerializer();
+			// 1. Launch a create Queue request
+			HashMap<String, String> fields = new HashMap<String, String>();
+			fields.put("QName", qName);
+			byte[] encoded = serializer.serialiazeConfigRequest(RoQConstant.BSON_CONFIG_CREATE_QUEUE_AUTOMATICALLY, fields);
+			requestSocket.send(encoded, 0);
+			byte[] bres = requestSocket.recv(0);
+			BSONObject answer = BSON.decode(bres);
+			Assert.assertEquals(RoQConstant.OK, answer.get("RESULT"));
+			Thread.sleep(4000);
+		} catch (Exception e) {
+			logger.error("Error when testing client ", e);
+		}
+	}
 
 	/**
 	 * Test the removal of a queue by the BSON interface.
