@@ -14,7 +14,6 @@
  */
 package org.roqmessaging.management.server;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -98,7 +97,6 @@ public class MngtController implements Runnable, IStoppable {
 	 * @param zk the ZooKeeper client
 	 */
 	public MngtController(String globalConfigAddress, int period, GCMPropertyDAO props, RoQZooKeeperClient zk) {
-		try {
 			this.period = period;
 			this.properties= props;
 			this.scalingConfigListener = new HashMap<String, ZMQ.Socket>();
@@ -110,11 +108,6 @@ public class MngtController implements Runnable, IStoppable {
 			
 			// Initialize the connections
 			init(globalConfigAddress, interfacePort, shutDownPort);
-		} catch (SQLException e) {
-			logger.error("Error while initiating the SQL connection", e);
-		} catch (ClassNotFoundException e) {
-			logger.error("Error while initiating the SQL connection", e);
-		}
 	}
 
 	/**
@@ -128,13 +121,8 @@ public class MngtController implements Runnable, IStoppable {
 	 *            the port used for the admin interface
 	 * @param shutDownPort
 	 *            the port on which the shut down thread listens
-	 * @throws SQLException
-	 * @throws ClassNotFoundException
-	 *             whenthe JDBC driver has not been found
 	 */
-	private void init(String globalConfigAddress, int interfacePort, int shutDownPort) 
-			throws SQLException, ClassNotFoundException {
-		Class.forName("org.sqlite.JDBC");
+	private void init(String globalConfigAddress, int interfacePort, int shutDownPort) {
 		context = ZMQ.context(1);
 		mngtRepSocket = context.socket(ZMQ.REP);
 		mngtRepSocket.bind("tcp://*:"+interfacePort);
@@ -212,6 +200,8 @@ public class MngtController implements Runnable, IStoppable {
 							logger.debug("Remove " + qName);
 							if (!this.factory.removeQueue(qName)) {
 								sendReply_fail("ERROR when stopping Running queue, check logs of the logical queue factory");
+							} else {
+								sendReply_ok("SUCCESS");
 							}
 							break;
 						case RoQConstant.BSON_CONFIG_START_QUEUE:

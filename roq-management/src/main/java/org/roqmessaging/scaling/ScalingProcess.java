@@ -65,6 +65,7 @@ public class ScalingProcess extends KPISubscriber {
 	// The shut down monitor
 	private ShutDownMonitor shutDownMonitor = null;
 	// The cloud properties
+	@SuppressWarnings("unused")
 	private CloudConfig cloudProps = null;
 	// The port to listen
 	private int listnerPort = 0;
