@@ -44,6 +44,7 @@ public class FileConfigurationReader {
 			// 3. Set the properties
 			configDao.setPeriod(config.getInt("period"));
 			configDao.setFormatDB(config.getBoolean("formatDB"));
+			configDao.hasCloudConfiguration(config.getBoolean("hasCloudConfiguration"));
 			// initialize the ports used by the GCM
 			configDao.ports.setBasePort(config.getInt("ports.base"));
 			// intialize the zookeeper configuration

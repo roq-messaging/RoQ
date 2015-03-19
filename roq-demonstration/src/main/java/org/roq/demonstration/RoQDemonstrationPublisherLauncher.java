@@ -20,12 +20,11 @@ import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
-
 /**
  * Class RoQDemonstrationPublisherLauncher
  * <p>
  * Description: lauch an interactive publisher <br>
- * java -Djava.library.path=/usr/local/lib -cp roq-demonstration-1.0-SNAPSHOT-jar-with-dependencies.jar org.roq.demonstration.RoQDemonstrationPublisherLauncher <GCM IP address, Qname>
+ * java -Djava.library.path=/usr/local/lib -cp roq-demonstration-1.0-SNAPSHOT-jar-with-dependencies.jar org.roq.demonstration.RoQDemonstrationPublisherLauncher <Zk IP addresses, Qname>
  * 
  * @author BVanMelle
  */

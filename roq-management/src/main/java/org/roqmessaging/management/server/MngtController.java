@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.management.server;
 
+import java.io.EOFException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -199,7 +200,7 @@ public class MngtController implements Runnable, IStoppable {
 							qName = (String) request.get("QName");
 							logger.debug("Remove " + qName);
 							if (!this.factory.removeQueue(qName)) {
-								sendReply_fail("ERROR when stopping Running queue, check logs of the logical queue factory");
+								sendReply_fail("ERROR when removing the queue, check logs of the logical queue factory");
 							} else {
 								sendReply_ok("SUCCESS");
 							}
@@ -481,7 +482,41 @@ public class MngtController implements Runnable, IStoppable {
 					logger.error("Error when receiving message", e);
 				}
 			}
-
+			// If connection with zookeeper has been lost
+			if (!GlobalConfigurationManager.hasLead) {
+				// We wait that process become master
+				try {
+					logger.info("connection with ZK has been lost, " +
+							"waiting for leadership");
+					// Stop to send update
+					this.controllerTimer.cancel();
+					this.publicationTimer.cancel();
+					this.publicationTimer.purge();
+					boolean bufferIsEmpty = false;
+					while (!bufferIsEmpty) {
+						poller.poll(0);
+						if (poller.pollin(0)) {
+							mngtRepSocket.recv(0);
+							mngtRepSocket.send(
+									serializer.serialiazeConfigAnswer(
+										RoQConstant.EVENT_LEAD_LOST, ""),
+									0);
+						} else {
+							bufferIsEmpty = true;
+						}
+					}
+					// Wait for leadership
+					zk.waitUntilLeader();
+					// Restart timer
+					startMngtControllerTimer();
+					logger.info("connection with ZK has been re-etablished" +
+							" MngmtController restarted");
+				} catch (EOFException | InterruptedException e) {
+					logger.info("The leader election has failed, stopping the " +
+							"GlobalConfigTimer");
+					this.active = false;
+				}
+			}
 		}// END OF THE LOOP
 		cleanStop();
 		logger.info("Management controller stopped.");

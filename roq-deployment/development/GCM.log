@@ -1,0 +1,9 @@
+Starting the  global configuration manager
+10:34:42,660 ERROR [main] (FileConfigurationReader:loadGCMConfiguration:53)   Error while reading configuration file - skipped but set the default configuration
+java.util.NoSuchElementException: 'hasCloudConfiguration' doesn't map to an existing object
+	at org.apache.commons.configuration.AbstractConfiguration.getBoolean(AbstractConfiguration.java:644)
+	at org.roqmessaging.management.config.internal.FileConfigurationReader.loadGCMConfiguration(FileConfigurationReader.java:47)
+	at org.roqmessaging.management.GlobalConfigurationManager.<init>(GlobalConfigurationManager.java:96)
+	at org.roqmessaging.management.launcher.GlobalConfigurationLauncher.main(GlobalConfigurationLauncher.java:43)
+10:34:42,669  INFO [main] (GlobalConfigurationManager:init:111)   Started global config Runnable
+10:34:42,670  INFO [main] (GlobalConfigurationManager:init:118)   Configuration from props: GCM 60000 formatDB false

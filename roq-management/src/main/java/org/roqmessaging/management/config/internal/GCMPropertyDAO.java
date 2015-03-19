@@ -29,11 +29,13 @@ public class GCMPropertyDAO {
 	
 	//Define whether we format the DB
 	private boolean formatDB = false;
+	// Indicates if the master must register the cloud configuration
+	private boolean hasCloudConfiguration = false;
 	// Class which contains the ports used for the various components of the GCM.
 	public GCMPorts ports = new GCMPorts();
 	// ZooKeeper configuration
 	public RoQZooKeeperConfig zkConfig = new RoQZooKeeperConfig();
-
+	
 	/**
 	 * @return the period
 	 */
@@ -47,7 +49,21 @@ public class GCMPropertyDAO {
 	public void setPeriod(int period) {
 		this.period = period;
 	}
-
+	
+	/**
+	 * @return hasCloudConfiguration
+	 */
+	public boolean hasCloudConfiguration() {
+		return hasCloudConfiguration;
+	}
+	
+	/**
+	 * @param hasCloudConfiguration
+	 */
+	public void hasCloudConfiguration(boolean hasCloudConfiguration) {
+		this.hasCloudConfiguration = hasCloudConfiguration;
+	}
+	
 	/**
 	 * @return the formatDB
 	 */

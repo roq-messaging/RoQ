@@ -110,6 +110,13 @@ public interface RoQConstant {
 	public static int EVENT_PROD_DECONNECT = 7;
 	
 	/**
+	 * From Global config Manager and Management controller
+	 * This event is sent when the node has lost the lead
+	 * Sends "8"
+	 */
+	public static int EVENT_LEAD_LOST = 8;
+	
+	/**
 	 * Event sent from subscriber to monitor.
 	 * “31,totalreceived”
 	 */
