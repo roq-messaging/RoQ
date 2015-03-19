@@ -102,7 +102,6 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	 * @return the monitor host address to contact +"," + the stat monitor address
 	 */
 	public String translateToMonitorHost (String qName){
-		initSocketConnection();
 		logger.debug("Asking the the global configuration Manager to translate the qName in a monitor host ...");
 		//1.  Get the location of the monitor according to the logical name
 		//We get the location of the corresponding host manager
@@ -110,7 +109,6 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 		byte[] response = sendRequest(request);
 		String monitorHost = new String(response);
 		logger.info("Creating a connection factory for "+qName+ " @ "+ monitorHost);
-		closeSocketConnection();
 		return monitorHost;
 	}
 	
@@ -134,8 +132,7 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 		context = ZMQ.context(1);
 		globalConfigReq = context.socket(ZMQ.REQ);
 		globalConfigReq.connect("tcp://"+this.configServer+":5000");
-		//globalConfigReq.setReceiveTimeOut(timeout);
-		
+		globalConfigReq.setReceiveTimeOut(timeout);
 	}
 
 	/**
