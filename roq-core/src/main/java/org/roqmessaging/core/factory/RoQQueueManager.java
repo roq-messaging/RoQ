@@ -26,7 +26,7 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	// the rcv timeout of ZMQ
 	private int timeout = 500;
 	private RoQZooKeeper zk;
-	private Logger logger = Logger.getLogger(RoQConnectionFactory.class);
+	private Logger logger = Logger.getLogger(RoQQueueManager.class);
 	
 	/**
 	 * Build  a connection Factory and takes the location of the global configuration manager as input
@@ -56,7 +56,6 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	public boolean createQueue(String queueName)
 			throws IllegalStateException {
 		// Open socket and init BSON request
-		initSocketConnection();
 		BSONObject request = new BasicBSONObject();
 		request.put("QName", queueName);
 		request.put("CMD", RoQConstant.BSON_CONFIG_CREATE_QUEUE_AUTOMATICALLY);
@@ -65,7 +64,6 @@ public class RoQQueueManager implements IRoQQueueManagement {
 		// Get Response
 		BSONObject result = BSON.decode(responseBytes);
 		// Close socket
-		closeSocketConnection();
 		if ((Integer)result.get("RESULT") ==  RoQConstant.FAIL) {
 			logger.error("The queue creation for  " + queueName
 					+ " failed. Reason: " + ((String) result.get("COMMENT")));
@@ -88,14 +86,12 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	public boolean removeQueue(String queueName) 
 			throws IllegalStateException {
 		// Open socket and init BSON request
-		initSocketConnection();
 		BasicBSONObject request = new BasicBSONObject();
 		request.put("QName", queueName);
 		request.put("CMD", RoQConstant.BSON_CONFIG_REMOVE_QUEUE);
 		// Get Response
 		byte[] responseBytes = sendRequest(BSON.encode(request));
 		int response = Integer.parseInt(new String(responseBytes));
-		closeSocketConnection();
 		if(response == RoQConstant.FAIL){
 			throw  new IllegalStateException("The queue removal process failed @ Management Controller");
 		} else if (response == RoQConstant.EXCHANGE_LOST){
@@ -117,14 +113,12 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	public boolean startQueue(String queueName, String host) 
 			throws IllegalStateException {
 		// Open socket and init BSON request
-		initSocketConnection();
 		BasicBSONObject request = new BasicBSONObject();
 		request.put("QName", queueName);
 		request.put("CMD", RoQConstant.BSON_CONFIG_START_QUEUE);
 		// Get Response
 		byte[] responseBytes = sendRequest(BSON.encode(request));
 		int response = Integer.parseInt(new String(responseBytes));
-		closeSocketConnection();
 		if(response == RoQConstant.FAIL){
 			throw  new IllegalStateException("The queue start process failed @ Management Controller");
 		} else if (response == RoQConstant.EXCHANGE_LOST){
@@ -145,14 +139,12 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	public boolean stopQueue(String queueName) 
 			throws IllegalStateException {
 		// Open socket and init BSON request
-		initSocketConnection();
 		BasicBSONObject request = new BasicBSONObject();
 		request.put("QName", queueName);
 		request.put("CMD", RoQConstant.BSON_CONFIG_STOP_QUEUE);
 		// Get Response
 		byte[] responseBytes = sendRequest(BSON.encode(request));
 		int response = Integer.parseInt(new String(responseBytes));
-		closeSocketConnection();
 		if(response == RoQConstant.FAIL){
 			throw  new IllegalStateException("The queue stop process failed @ Management Controller");
 		} else if (response == RoQConstant.EXCHANGE_LOST){
@@ -180,14 +172,12 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	 */
 	private void initSocketConnection() {
 		// Get the active master address
-		if (zk != null)
-			this.configServer = zk.getGCMLeaderAddress();
+		this.configServer = zk.getGCMLeaderAddress();
 		logger.info("Active GCM address: " + this.configServer);
 		context = ZMQ.context(1);
 		globalConfigReq = context.socket(ZMQ.REQ);
 		globalConfigReq.connect("tcp://"+this.configServer+":5003");
-		//globalConfigReq.setReceiveTimeOut(timeout);
-		
+		globalConfigReq.setReceiveTimeOut(timeout);
 	}
 
 	/**
@@ -198,7 +188,7 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	 * @param request
 	 * @return response
 	 */
-	private byte[]  sendRequest (byte[] request) {
+	private byte[] sendRequest (byte[] request) {
 		// The configuration should load the information about the monitor corresponding to this queue
 		byte[] response = null;
 		String responseString = "";

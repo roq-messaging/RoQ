@@ -40,6 +40,11 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		}
 	}
 	
+	public void initZkClusterNodes() {
+		String path = RoQZKHelpers.makePath(cfg.znode_queues);
+		RoQZKHelpers.createZNodeAndParents(client, path);
+	}
+	
 	/**
 	 * This method is used to block the process
 	 * until it becomes the leader.

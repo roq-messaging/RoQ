@@ -144,6 +144,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		this.shutDownMonitor = new ShutDownMonitor(shutDownPort, this);
 		new Thread(this.shutDownMonitor).start();
 		
+		// Ensure that basic node are created
+		zk.initZkClusterNodes();
+		
 		try {
 			// This master wait until Curator indicates
 			// that it is the leader
