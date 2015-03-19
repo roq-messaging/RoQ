@@ -36,11 +36,11 @@ echo starting GCM
 java -Djava.library.path=/usr/local/lib \
 		-cp ../../roq-management/target/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar \
 		org.roqmessaging.management.launcher.GlobalConfigurationLauncher \
-		~/.roq/GCM.properties &
+		~/.roq/GCM.properties > GCM.log &
 
 echo starting HCM
 # Start HCM
 java -Djava.library.path=/usr/local/lib \
 		-cp ../../roq-management/target/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar \
 		org.roqmessaging.management.launcher.HostConfigManagerLauncher \
-		~/.roq/HCM.properties &
+		~/.roq/HCM.properties > HCM.log &

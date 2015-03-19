@@ -14,12 +14,12 @@
  */
 package org.roq.demonstration;
 
-import org.roqmessaging.client.IRoQQueueManager;
+import org.roqmessaging.client.IRoQQueueManagement;
 import org.roqmessaging.client.IRoQSubscriber;
 import org.roqmessaging.client.IRoQSubscriberConnection;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
-import org.roqmessaging.core.QueueClientManager;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
+import org.roqmessaging.core.factory.RoQQueueManager;
 
 /**
  * Class RoQDemonstrationSubscriberLauncher
@@ -45,9 +45,8 @@ public class RoQDemonstrationSubscriberLauncher {
 		String qName = args[1];
 		try {
 			// Create the queue
-			IRoQQueueManager queueManager = new QueueClientManager(args[0]);
-			queueManager.createQueue(qName);
-			
+			IRoQQueueManagement qFactory = new RoQQueueManager(args[0]);
+			qFactory.createQueue(qName);
 			Thread.sleep(5000);
 			//Create the subscriber
 			IRoQConnectionFactory conFactory = new RoQConnectionFactory(args[0]);

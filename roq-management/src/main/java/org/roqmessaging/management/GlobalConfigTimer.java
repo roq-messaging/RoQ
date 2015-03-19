@@ -74,7 +74,6 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 		} finally {
 		}
 	}
-	
 
 	/**
 	 * @see org.roqmessaging.core.interfaces.IStoppable#shutDown()
@@ -97,6 +96,21 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 	 */
 	public String getName() {
 		return this.getClass().getName();
+	}
+	
+	/**
+	 * @see java.util.TimerTask#cancel()
+	 */
+	@Override
+	public boolean cancel() {
+		logger.info("Stopping the Global configuration publisher");
+		try {
+			this.mngtPubSocket.setLinger(0);
+			this.mngtPubSocket.close();
+		} catch (Exception e) {
+			logger.error("Error when closing socket", e);
+		}
+		return super.cancel();
 	}
 
 }

@@ -21,9 +21,12 @@ import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.RoQPublisherConnection;
 import org.roqmessaging.core.RoQSubscriberConnection;
+import org.roqmessaging.zookeeper.RoQZKSimpleConfig;
+import org.roqmessaging.zookeeper.RoQZooKeeper;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Context;
 import org.zeromq.ZMQ.Socket;
+
 
 /**
  * Class RoQConnectionFactory
@@ -39,15 +42,32 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	//The socket to the global config
 	private Socket globalConfigReq;
 	
+	// TODO: Following params in a config file
+	// Number of times that the client retry the request
+	private int maxRetry = 5;
+	// the rcv timeout of ZMQ
+	private int timeout = 500;
+	private RoQZooKeeper zk;
 	private Logger logger = Logger.getLogger(RoQConnectionFactory.class);
 	
 	/**
 	 * Build  a connection Factory and takes the location of the global configuration manager as input
-	 * @param configManager the config manager IP address, the default port 5000 will be applied
+	 * @param configManager the zookeeper IP addresses, the default port 5000 will be applied
+	 * @param maxRetry the number of times that the client try to process the request
+	 * @param the timeout between each retry
 	 */
-	public RoQConnectionFactory(String configManager) {
-		this.configServer= configManager;
-		
+	public RoQConnectionFactory(String zkAddresses) {
+		zk = new RoQZooKeeper(zkAddresses);
+	}
+
+	/**
+	 * Build  a connection Factory and takes the location of the global configuration manager as input
+	 * @param cfg Zookeeper config
+	 * @param maxRetry the number of times that the client try to process the request
+	 * @param the timeout between each retry
+	 */
+	public RoQConnectionFactory(RoQZKSimpleConfig cfg) {
+		zk = new RoQZooKeeper(cfg);
 	}
 
 	/**
@@ -57,7 +77,7 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 		String monitorHost = translateToMonitorHost(qName);
 		if(monitorHost.isEmpty()){
 			//TODO do we create a new queue ?
-			throw  new IllegalStateException("The queue Name is not registred @ the global configuration");
+			throw  new IllegalStateException("The queue creation has failed @ the global configuration");
 		}
 		logger.info("Creating a connection factory for "+qName+ " @ "+ monitorHost);
 		return new RoQPublisherConnection(monitorHost.split(",")[0]);
@@ -86,15 +106,14 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 		logger.debug("Asking the the global configuration Manager to translate the qName in a monitor host ...");
 		//1.  Get the location of the monitor according to the logical name
 		//We get the location of the corresponding host manager
-		globalConfigReq.send((Integer.toString(RoQConstant.CONFIG_GET_HOST_BY_QNAME)+","+qName).getBytes(), 0);
-		// The configuration should load the information about the monitor corresponding to this queue
-		byte[] monitor = globalConfigReq.recv(0);
-		String monitorHost = new String(monitor);
+		byte[] request = (Integer.toString(RoQConstant.CONFIG_GET_HOST_BY_QNAME)+","+qName).getBytes();
+		byte[] response = sendRequest(request);
+		String monitorHost = new String(response);
 		logger.info("Creating a connection factory for "+qName+ " @ "+ monitorHost);
 		closeSocketConnection();
 		return monitorHost;
 	}
-
+	
 	/**
 	 * Removes the socket connection to the global config manager
 	 */
@@ -102,17 +121,48 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 		this.logger.debug("Closing factory socket");
 		this.globalConfigReq.setLinger(0);
 		this.globalConfigReq.close();
-		
 	}
 
 	/**
 	 * Initialise the socket connection.
 	 */
 	private void initSocketConnection() {
+		// Get the active master address
+		if (zk != null)
+			this.configServer = zk.getGCMLeaderAddress();
+		logger.info("Active GCM address: " + this.configServer);
 		context = ZMQ.context(1);
 		globalConfigReq = context.socket(ZMQ.REQ);
 		globalConfigReq.connect("tcp://"+this.configServer+":5000");
+		//globalConfigReq.setReceiveTimeOut(timeout);
 		
+	}
+
+	/**
+	 * This method sends a request to the GCM.
+	 * First it get the active GCM, then it sent the request
+	 * If the request fails because leader has changed or the connection
+	 * cannot be established (timeout), the request is resent up to maxRetry times.
+	 * @param request
+	 * @return response
+	 */
+	private byte[]  sendRequest (byte[] request) {
+		// The configuration should load the information about the monitor corresponding to this queue
+		byte[] response = null;
+		String responseString = "";
+		int retry = 0;
+		// If the request has failed, we retry until to reach the maxRetry
+		do {
+			initSocketConnection();
+			globalConfigReq.send(request, 0);
+			response = globalConfigReq.recv(0);
+			if (response != null)
+				responseString = new String(response);
+			closeSocketConnection();
+			retry++;
+		} while ((response == null || responseString.equals(Integer.toString(RoQConstant.EVENT_LEAD_LOST))) 
+				&& retry < maxRetry);
+		return response;
 	}
 
 }
