@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.testload;
 
+import java.net.ConnectException;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -46,7 +47,7 @@ public class TestLoadSender extends RoQTestCase {
 		// The queue under test
 		String qName = "performance_test";
 		// 1. Create the queue
-		this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP());
+		this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
 		// 2. Create the sender: rate, payload, GCM, q name 
 		TimerTask sender = new SenderLoader(10, 1, RoQUtils.getInstance().getLocalIP(), qName);
 		//3. Attach 1 subscriber
@@ -75,23 +76,28 @@ public class TestLoadSender extends RoQTestCase {
 	protected void attachSUbscriber(String qName) {
 		IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getConfigurationServer());
 		// add a subscriber
-		subscriberConnection = factory.createRoQSubscriberConnection(qName, "test");
-		// Open the connection to the logical queue
-		subscriberConnection.open();
-		// Register a message listener
-		IRoQSubscriber subs = new IRoQSubscriber() {
-			private int count = 0;
-			public void onEvent(byte[] msg) {
-				count++;
-				if(count>limit){
-					logger.debug("Got "+ limit+"  message of "+msg.length +" byte" );
-					count =0;
-				}
-				
-			}
-		};
-		subscriberConnection.setMessageSubscriber(subs);
+		try {
+			subscriberConnection = factory.createRoQSubscriberConnection(qName, "test");
 		
+			// Open the connection to the logical queue
+			subscriberConnection.open();
+			// Register a message listener
+			IRoQSubscriber subs = new IRoQSubscriber() {
+				private int count = 0;
+				public void onEvent(byte[] msg) {
+					count++;
+					if(count>limit){
+						logger.debug("Got "+ limit+"  message of "+msg.length +" byte" );
+						count =0;
+					}
+					
+				}
+			};
+			subscriberConnection.setMessageSubscriber(subs);
+		} catch (ConnectException | IllegalStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 }

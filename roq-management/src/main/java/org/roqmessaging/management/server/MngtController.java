@@ -129,7 +129,7 @@ public class MngtController implements Runnable, IStoppable {
 		mngtRepSocket.bind("tcp://*:"+interfacePort);
 		// init variable
 		this.serializationUtils = new RoQSerializationUtils();
-		this.factory = new LogicalQFactory(globalConfigAddress);
+		this.factory = new LogicalQFactory(globalConfigAddress, properties.gethcmTIMEOUT());
 		this.serializer = new RoQBSONSerializer();
 		// Shutdown thread configuration
 		this.shutDownMonitor = new ShutDownMonitor(shutDownPort, this);
@@ -185,6 +185,8 @@ public class MngtController implements Runnable, IStoppable {
 						// Variables
 						String qName = "?";
 						String host = "?";
+						boolean recoveryMod = false;
+						String hostToRecover = "";
 						AutoScalingConfig config = null;
 						Metadata.Queue queue = null;
 
@@ -238,11 +240,32 @@ public class MngtController implements Runnable, IStoppable {
 							// 1. Get the name
 							qName = (String) request.get("QName");
 							host = (String) request.get("Host");
+							hostToRecover = zk.qTransactionExists(qName);
+							if (hostToRecover != null) {
+								// The transaction already exists, recovery mod
+								recoveryMod = true;
+								host = hostToRecover;
+								logger.info("Recover process for queue " + qName + " started " +
+										"on HCM: " + hostToRecover);
+							}
+							else {
+								// We create a transaction 
+								zk.createQTransaction(qName, host);
+							}
 							// Just create queue the timer will update the
 							// management server configuration
-							if (!factory.createQueue(qName, host)) {
-								sendReply_fail("ERROR when starting  queue, check logs of the logical queue factory");
+							int returnCode = factory.createQueue(qName, host, recoveryMod);
+							if (returnCode == -1) {
+								// We remove the transaction if the queue already exists
+								zk.removeQTransaction(qName);
+								sendReply_fail("The queue already exists");
+							} else if (returnCode == -2) {
+								sendReply_fail("The HCM looks to be unavailble");
+							} else if (returnCode == -3) {
+								sendReply_fail("The Queue creation process has failed on GCM or HCM");
 							} else {
+								// Transaction completed
+								zk.removeQTransaction(qName);
 								sendReply_ok("SUCCESS");
 							}
 							logger.debug("Create queue name = " + qName + " on " + host);
@@ -257,19 +280,64 @@ public class MngtController implements Runnable, IStoppable {
 							}
 							// 1. Get the name
 							qName = (String) request.get("QName");
-							// Select a random host
-							// TODO Select the less loaded host
+							hostToRecover = zk.qTransactionExists(qName);
+							boolean hostFound = false;
 							ArrayList<String> hostsList = getHosts();
-							hostsList = getHosts();
-							host = hostsList.get((int) Math.random() % hostsList.size());
-							if (hostsList.isEmpty()) {
-								sendReply_fail("ERROR when selecting a host, check logs of the logical queue factory");
-							} else {
+							if (hostToRecover != null) {
+								// The transaction already exists, recovery mod
+								recoveryMod = true;
+								host = hostToRecover;
+								// TODO: ArrayList is not a good data structure for this kind of Operation
+								// But this operation is not performed very often
+								if (!hostsList.contains(hostToRecover)) {
+									// the host for this transaction no longer exists.
+									zk.removeQTransaction(qName);
+									// We create a transaction
+									if (hostsList.isEmpty()) {
+										sendReply_fail("ERROR when selecting a host, check logs of the logical queue factory");
+									} else {
+										// Select a random host
+										logger.info("Original host lost: " + hostToRecover);
+										// TODO Select the less loaded host
+										host = hostsList.get((int) Math.random() % hostsList.size());
+										// Create a transaction with the new host
+										zk.createQTransaction(qName, host);
+										hostFound = true;
+									}
+								} else {
+									hostFound = true;
+								}
+								logger.info("Recover process for queue " + qName + " started " +
+										"on HCM: " + host);
+							}
+							else {
+								if (hostsList.isEmpty()) {
+									sendReply_fail("ERROR when selecting a host, check logs of the logical queue factory");
+								} else {
+									// Select a random host
+									// TODO Select the less loaded host
+									// We create a transaction
+									host = hostsList.get((int) Math.random() % hostsList.size());
+									zk.createQTransaction(qName, host);
+									hostFound = true;
+								}
+							}
+							
+							if (hostFound) {
 								// Just create queue the timer will update the
 								// management server configuration
-								if (!factory.createQueue(qName, host)) {
-									sendReply_fail("ERROR when starting  queue, check logs of the logical queue factory");
+								int code = factory.createQueue(qName, host, recoveryMod);
+								if (code == -1) {
+									// We remove the transaction if the queue already exists
+									zk.removeQTransaction(qName);
+									sendReply_fail("The queue already exists");
+								} else if (code == -2) {
+									sendReply_fail("The HCM looks to be unavailble");
+								} else if (code == -3) {
+									sendReply_fail("The Queue creation process has failed on GCM or HCM");
 								} else {
+									// Transaction completed
+									zk.removeQTransaction(qName);
 									sendReply_ok("SUCCESS");
 								}
 								logger.debug("Create queue name = " + qName + " on " + host);

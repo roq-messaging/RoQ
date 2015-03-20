@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.core.factory;
 
+import java.net.ConnectException;
+
 import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQSubscriberConnection;
@@ -46,7 +48,7 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	// Number of times that the client retry the request
 	private int maxRetry = 5;
 	// the rcv timeout of ZMQ
-	private int timeout = 500;
+	private int timeout = 5000;
 	private RoQZooKeeper zk;
 	private Logger logger = Logger.getLogger(RoQConnectionFactory.class);
 	
@@ -71,9 +73,11 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	}
 
 	/**
+	 * @throws ConnectException 
 	 * @see org.roqmessaging.clientlib.factory.IRoQConnectionFactory#createRoQConnection()
 	 */
-	public IRoQConnection createRoQConnection(String qName) throws IllegalStateException {
+	public IRoQConnection createRoQConnection(String qName) 
+			throws IllegalStateException, ConnectException {
 		String monitorHost = translateToMonitorHost(qName);
 		if(monitorHost.isEmpty()){
 			//TODO do we create a new queue ?
@@ -84,9 +88,11 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	}
 	
 	/**
+	 * @throws ConnectException 
 	 * @see org.roqmessaging.clientlib.factory.IRoQConnectionFactory#createRoQSubscriberConnection(java.lang.String)
 	 */
-	public IRoQSubscriberConnection createRoQSubscriberConnection(String qName, String key) throws IllegalStateException {
+	public IRoQSubscriberConnection createRoQSubscriberConnection(String qName, String key) 
+			throws IllegalStateException, ConnectException {
 		String monitorConfig = translateToMonitorHost(qName);
 		if(monitorConfig.isEmpty()){
 			//TODO do we create a new queue ?
@@ -100,8 +106,10 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	/**
 	 * @param qName the logical queue name
 	 * @return the monitor host address to contact +"," + the stat monitor address
+	 * @throws ConnectException 
 	 */
-	public String translateToMonitorHost (String qName){
+	public String translateToMonitorHost (String qName) 
+			throws ConnectException {
 		logger.debug("Asking the the global configuration Manager to translate the qName in a monitor host ...");
 		//1.  Get the location of the monitor according to the logical name
 		//We get the location of the corresponding host manager
@@ -124,10 +132,12 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	/**
 	 * Initialise the socket connection.
 	 */
-	private void initSocketConnection() {
+	private void initSocketConnection() 
+			throws IllegalStateException {
 		// Get the active master address
-		if (zk != null)
-			this.configServer = zk.getGCMLeaderAddress();
+		this.configServer = zk.getGCMLeaderAddress();
+		if (configServer == null) 
+			throw new IllegalStateException("No GCM found");
 		logger.info("Active GCM address: " + this.configServer);
 		context = ZMQ.context(1);
 		globalConfigReq = context.socket(ZMQ.REQ);
@@ -142,23 +152,37 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	 * cannot be established (timeout), the request is resent up to maxRetry times.
 	 * @param request
 	 * @return response
+	 * @throws ConnectException 
 	 */
-	private byte[]  sendRequest (byte[] request) {
+	private byte[]  sendRequest (byte[] request) throws ConnectException {
 		// The configuration should load the information about the monitor corresponding to this queue
 		byte[] response = null;
 		String responseString = "";
 		int retry = 0;
 		// If the request has failed, we retry until to reach the maxRetry
 		do {
-			initSocketConnection();
-			globalConfigReq.send(request, 0);
-			response = globalConfigReq.recv(0);
-			if (response != null)
-				responseString = new String(response);
-			closeSocketConnection();
-			retry++;
+			try {
+				initSocketConnection();
+				globalConfigReq.send(request, 0);
+				response = globalConfigReq.recv(0);
+				if (response != null)
+					responseString = new String(response);
+				closeSocketConnection();
+				retry++;
+			} catch (IllegalStateException e) {
+				try {
+					logger.info("GCM not found");
+					Thread.sleep(500);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+			} finally {
+				retry++;
+			}
 		} while ((response == null || responseString.equals(Integer.toString(RoQConstant.EVENT_LEAD_LOST))) 
 				&& retry < maxRetry);
+		if (response == null || responseString.equals(Integer.toString(RoQConstant.EVENT_LEAD_LOST)))
+			throw new ConnectException("Failed to process the request @ GCM");
 		return response;
 	}
 

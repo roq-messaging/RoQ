@@ -35,13 +35,19 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		try {
 			leaderLatch.start();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
+	/**
+	 * Create the parent znodes for the different ZK znodes.
+	 */
 	public void initZkClusterNodes() {
 		String path = RoQZKHelpers.makePath(cfg.znode_queues);
+		RoQZKHelpers.createZNodeAndParents(client, path);
+		path = RoQZKHelpers.makePath(cfg.znode_queueTransactions);
+		RoQZKHelpers.createZNodeAndParents(client, path);
+		path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions);
 		RoQZKHelpers.createZNodeAndParents(client, path);
 	}
 	
@@ -127,6 +133,66 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	public boolean queueExists(Metadata.Queue queue) {
 		log.info("");
 		return RoQZKHelpers.zNodeExists(client, getZKPath(queue));
+	}
+	
+	/**
+	 * This method create a transaction for the queue creation in ZK
+	 * @param queueName
+	 */
+	public void createQTransaction (String queueName, String host) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_queueTransactions, queueName);
+		RoQZKHelpers.createZNode(client, path, host);
+	}
+	
+	/**
+	 * This method fetch if a transaction exists for the queue
+	 * @param queueName
+	 */
+	public String qTransactionExists (String queueName) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_queueTransactions, queueName);
+		return RoQZKHelpers.getDataString(client, path);
+	}
+	
+	/**
+	 * This method remove the transaction node when the transaction has been completed
+	 * @param queueName
+	 */
+	public void removeQTransaction (String queueName) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_queueTransactions, queueName);
+		RoQZKHelpers.deleteZNode(client, path);
+	}
+	
+	/**
+	 * This method create the transaction node for an exchange creation process
+	 * @param transID
+	 */
+	public void createExchangeTransaction (String transID) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions, transID);
+		RoQZKHelpers.createZNode(client, path);
+	}
+	
+	/**
+	  * This method fetch if a transaction exists for the exchange creation
+	 * @param transID
+	 */
+	public boolean exchangeTransactionExists (String transID) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions, transID);
+		return RoQZKHelpers.zNodeExists(client, path);
+	}
+	
+	/**
+	 * This method remove the transaction node when the transaction has been completed
+	 * @param transID
+	 */
+	public void removeExchangeTransaction (String transID) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions, transID);
+		RoQZKHelpers.deleteZNode(client, path);
 	}
 	
 	public void createQueue(Metadata.Queue queue, Metadata.HCM hcm, Metadata.Monitor monitor, Metadata.StatMonitor statMonitor) {

@@ -98,7 +98,8 @@ public class HostConfigManager implements Runnable, IStoppable {
 			logger.info(this.properties.toString());
 			// ZMQ Init
 			this.context = ZMQ.context(1);
-			this.clientReqSocket = context.socket(ZMQ.REP);
+			this.clientReqSocket = context.socket(ZMQ.PAIR);
+			this.clientReqSocket.setLinger(0);
 			this.clientReqSocket.bind("tcp://*:5100");
 			this.globalConfigSocket = context.socket(ZMQ.REQ);
 			this.globalConfigSocket.connect("tcp://" + this.properties.getGcmAddress() + ":5000");
@@ -143,23 +144,27 @@ public class HostConfigManager implements Runnable, IStoppable {
 					if (info.length == 2) {
 						String qName = info[1];
 						logger.debug("The request format is valid with 2 parts, Q to create:  " + qName);
-				
-						// 1. Start the monitor
-						String monitorAddress = startNewMonitorProcess(qName);
-
+						String monitorAddress = qMonitorMap.get(qName);
+						if (monitorAddress == null) {
+							// 1. Start the monitor
+							monitorAddress = startNewMonitorProcess(qName);
+						}
 						// 2. Start the exchange
 						// 2.1. Getting the monitor stat address
 						// 2.2. Start the exchange
-						boolean xChangeOK = startNewExchangeProcess(qName, this.qMonitorMap.get(qName),
-								this.qMonitorStatMap.get(qName));
+						boolean xChangeOK =  qExchangeMap.get(qName) != null;
+						if (!xChangeOK)
+							xChangeOK = startNewExchangeProcess(qName, this.qMonitorMap.get(qName),
+									this.qMonitorStatMap.get(qName));
 						//2.3. Start the scaling process
-						boolean scalingOK = startNewScalingProcess(qName);
-						
+						boolean scalingOK = qScalingProcessAddr.get(qName) != null;
+						if (!scalingOK)
+							scalingOK = startNewScalingProcess(qName);
 						// if OK send OK
 						if (monitorAddress != null & xChangeOK && scalingOK) {
 							logger.info("Successfully created new Q for " + qName + "@" + monitorAddress);
 							this.clientReqSocket.send(
-									(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK) + "," + monitorAddress)
+									(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK) + "," + monitorAddress + "," + qMonitorStatMap.get(qName))
 											.getBytes(), 0);
 						} else {
 							logger.error("The create queue request has failed at the monitor host,check log (when starting launching scripts");

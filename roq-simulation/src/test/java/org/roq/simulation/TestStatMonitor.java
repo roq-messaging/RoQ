@@ -14,6 +14,8 @@
  */
 package org.roq.simulation;
 
+import java.net.ConnectException;
+
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
@@ -69,7 +71,7 @@ public class TestStatMonitor {
 			Thread.sleep(3000);
 			// 1. Create a Queue
 			IRoQLogicalQueueFactory logicalQFactory = new LogicalQFactory(launcher.getConfigurationServer());
-			logicalQFactory.createQueue("queue1", RoQUtils.getInstance().getLocalIP());
+			logicalQFactory.createQueue("queue1", RoQUtils.getInstance().getLocalIP(), false);
 			
 			// Let the Process start and binding port
 			Thread.sleep(3000);
@@ -135,7 +137,7 @@ public class TestStatMonitor {
 			
 			kpiSubscriber.shutDown();
 
-		} catch (InterruptedException e) {
+		} catch (InterruptedException | ConnectException | IllegalStateException e) {
 			e.printStackTrace();
 		}
 

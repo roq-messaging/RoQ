@@ -27,10 +27,11 @@ public interface IRoQLogicalQueueFactory {
 	 * Creates a logical queue.
 	 * @param queueName the queue name
 	 * @param targetAddress the address to create the queue
+	 * @param recoveryMod the q must be recovered
 	 * @throws IllegalStateException if a queue already exist with this name, the name must be unique for 
 	 * the complete cluster.
 	 */
-	public boolean createQueue(String queueName, String targetAddress) throws IllegalStateException;
+	public int createQueue(String queueName, String targetAddress, boolean recoveryMod) throws IllegalStateException;
 	
 	/**
 	 * Removes a logical queue.

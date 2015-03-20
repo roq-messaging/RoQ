@@ -34,7 +34,7 @@ public class TestLoadControllerCase extends RoQTestCase {
 		//The Qname
 		String qName = "performance-test";
 		//Init 1. create the test queue 
-		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP());
+		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
 		//Init 2. let the queue start 
 		Thread.sleep(2000);
 		//Init 3. create an exchange

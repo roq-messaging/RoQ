@@ -14,6 +14,8 @@
  */
 package org.roq.simulation;
 
+import java.net.ConnectException;
+
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
@@ -61,7 +63,7 @@ public class TestClientAPI {
 	public void test() {
 		try {
 			// 1. Create Q
-			 this.factory.createQueue("queue1", RoQUtils.getInstance().getLocalIP().toString());
+			 this.factory.createQueue("queue1", RoQUtils.getInstance().getLocalIP().toString(), false);
 			// 2. Create subscriber
 			IRoQConnectionFactory connectionFactory = new RoQConnectionFactory(RoQUtils.getInstance().getLocalIP()
 					.toString());
@@ -86,7 +88,7 @@ public class TestClientAPI {
 			this.factory.removeQueue("queue1");
 			// 5. Wait
 			Thread.sleep(2000);
-		} catch (InterruptedException e) {
+		} catch (InterruptedException | ConnectException | IllegalStateException e) {
 			logger.error(e);
 		}
 	}
