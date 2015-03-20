@@ -38,7 +38,7 @@ public class SimpleScalingPolicy implements IScalingPolicy {
 	 * @param gCMAddress the address of the global configuration server.
 	 */
 	public SimpleScalingPolicy(String gCMAddress) {
-		this.qFactory = new LogicalQFactory(gCMAddress);
+		this.qFactory = new LogicalQFactory(gCMAddress, 5000);
 	}
 
 	/**

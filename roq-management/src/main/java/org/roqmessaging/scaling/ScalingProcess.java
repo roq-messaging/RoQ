@@ -104,7 +104,7 @@ public class ScalingProcess extends KPISubscriber {
 		while (!super.subscribe()) {
 			try {
 				logger.info("The queue does not exist or is not yet configured.");
-				Thread.sleep(1000);
+				Thread.sleep(5000);
 			} catch (InterruptedException e) {
 				logger.error(e);
 			}

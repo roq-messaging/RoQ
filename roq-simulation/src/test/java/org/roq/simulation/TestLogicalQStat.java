@@ -35,7 +35,7 @@ public class TestLogicalQStat extends RoQTestCase {
 		try {
 			Logger.getLogger(this.getClass().getName()).info("Starting main test in Test logical queue");
 			//1. Create a queue
-			this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP());
+			this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
 			//2. Attach subscriber
 			attachSUbscriber(qName);
 			//3. Create subscriber

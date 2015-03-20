@@ -43,6 +43,7 @@ public class FileConfigurationReader {
 			config.load(file);
 			// 3. Set the properties
 			configDao.setPeriod(config.getInt("period"));
+			configDao.sethcmTIMEOUT(config.getInt("hcmTIMEOUT"));
 			configDao.setFormatDB(config.getBoolean("formatDB"));
 			configDao.hasCloudConfiguration(config.getBoolean("hasCloudConfiguration"));
 			// initialize the ports used by the GCM

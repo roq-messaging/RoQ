@@ -26,7 +26,8 @@ public class GCMPropertyDAO {
 	
 	//The frequency period for the update to the configuration server
 	private int period = 60000;
-	
+	// Time for the GCM to respond
+	private int hcmTIMEOUT = 5000;
 	//Define whether we format the DB
 	private boolean formatDB = false;
 	// Indicates if the master must register the cloud configuration
@@ -48,6 +49,20 @@ public class GCMPropertyDAO {
 	 */
 	public void setPeriod(int period) {
 		this.period = period;
+	}
+	
+	/**
+	 * @return the period
+	 */
+	public int gethcmTIMEOUT() {
+		return hcmTIMEOUT;
+	}
+
+	/**
+	 * @param period the period to set
+	 */
+	public void sethcmTIMEOUT(int hcmTIMEOUT) {
+		this.hcmTIMEOUT = hcmTIMEOUT;
 	}
 	
 	/**

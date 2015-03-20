@@ -37,7 +37,7 @@ public class QueueManagementLauncher {
 			System.out.println("The right usage is :  <GCM address, add|| del || help, queue name]");
 			System.exit(0);
 		}
-		LogicalQFactory factory = new LogicalQFactory(args[0]);
+		LogicalQFactory factory = new LogicalQFactory(args[0], 5000);
 		//1. Parameter check
 		System.out.println("Connecting to GCM@"+ args[0] +" to "+ args[1]+" Queue " + args[2] );
 		if( (!args[1].equalsIgnoreCase("add") && !args[1].equalsIgnoreCase("del") && !args[1].equalsIgnoreCase("help"))){
@@ -52,7 +52,7 @@ public class QueueManagementLauncher {
 		if(args[1].equalsIgnoreCase("add")){
 			System.out.println("Do you confirm to create the queue "+ args[2] +" (GCM @"+ args[0]+ ") [Y,N] ?");
 			if(checkYes(scan))
-				factory.createQueue(args[2], RoQUtils.getInstance().getLocalIP());
+				factory.createQueue(args[2], RoQUtils.getInstance().getLocalIP(), false);
 		}else{
 			if(args[1].equalsIgnoreCase("del")){
 				System.out.println("Do you confirm to remove the queue "+ args[2] +" (GCM @"+ args[0]+ ")[Y,N] ?");

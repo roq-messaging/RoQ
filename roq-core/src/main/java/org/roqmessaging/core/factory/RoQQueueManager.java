@@ -1,5 +1,7 @@
 package org.roqmessaging.core.factory;
 
+import java.net.ConnectException;
+
 import org.apache.log4j.Logger;
 import org.bson.BSON;
 import org.bson.BSONObject;
@@ -24,7 +26,7 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	// Number of times that the client retry the request
 	private int maxRetry = 5;
 	// the rcv timeout of ZMQ
-	private int timeout = 500;
+	private int timeout = 5000;
 	private RoQZooKeeper zk;
 	private Logger logger = Logger.getLogger(RoQQueueManager.class);
 	
@@ -54,7 +56,7 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	 * @param the name of the queue to create
 	 */
 	public boolean createQueue(String queueName)
-			throws IllegalStateException {
+			throws IllegalStateException, ConnectException {
 		// Open socket and init BSON request
 		BSONObject request = new BasicBSONObject();
 		request.put("QName", queueName);
@@ -84,7 +86,7 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	 * @param the name of the queue to remove
 	 */
 	public boolean removeQueue(String queueName) 
-			throws IllegalStateException {
+			throws IllegalStateException, ConnectException {
 		// Open socket and init BSON request
 		BasicBSONObject request = new BasicBSONObject();
 		request.put("QName", queueName);
@@ -111,7 +113,7 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	 * find the host via the Qname
 	 */
 	public boolean startQueue(String queueName, String host) 
-			throws IllegalStateException {
+			throws IllegalStateException, ConnectException {
 		// Open socket and init BSON request
 		BasicBSONObject request = new BasicBSONObject();
 		request.put("QName", queueName);
@@ -137,7 +139,7 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	 * @param the name of the queue to stop
 	 */
 	public boolean stopQueue(String queueName) 
-			throws IllegalStateException {
+			throws IllegalStateException, ConnectException {
 		// Open socket and init BSON request
 		BasicBSONObject request = new BasicBSONObject();
 		request.put("QName", queueName);
@@ -170,9 +172,12 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	/**
 	 * Initialise the socket connection.
 	 */
-	private void initSocketConnection() {
+	private void initSocketConnection() 
+				throws IllegalStateException {
 		// Get the active master address
 		this.configServer = zk.getGCMLeaderAddress();
+		if (configServer == null) 
+			throw new IllegalStateException("No GCM found");
 		logger.info("Active GCM address: " + this.configServer);
 		context = ZMQ.context(1);
 		globalConfigReq = context.socket(ZMQ.REQ);
@@ -188,22 +193,34 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	 * @param request
 	 * @return response
 	 */
-	private byte[] sendRequest (byte[] request) {
+	private byte[] sendRequest (byte[] request) throws ConnectException {
 		// The configuration should load the information about the monitor corresponding to this queue
 		byte[] response = null;
 		String responseString = "";
 		int retry = 0;
 		// If the request has failed, we retry until to reach the maxRetry
 		do {
-			initSocketConnection();
-			globalConfigReq.send(request, 0);
-			response = globalConfigReq.recv(0);
-			if (response != null)
-				responseString = new String(response);
-			closeSocketConnection();
-			retry++;
+			try {
+				initSocketConnection();
+				globalConfigReq.send(request, 0);
+				response = globalConfigReq.recv(0);
+				if (response != null)
+					responseString = new String(response);
+				closeSocketConnection();
+			} catch (IllegalStateException e) {
+				try {
+					logger.info("GCM not found");
+					Thread.sleep(500);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+			} finally {
+				retry++;
+			}
 		} while ((response == null || responseString.equals(Integer.toString(RoQConstant.EVENT_LEAD_LOST))) 
 				&& retry < maxRetry);
+		if (response == null || responseString.equals(Integer.toString(RoQConstant.EVENT_LEAD_LOST)))
+			throw new ConnectException("Failed to process the request @ GCM");
 		return response;
 	}
 

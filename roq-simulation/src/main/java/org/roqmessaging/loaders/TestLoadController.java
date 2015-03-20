@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.loaders;
 
+import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -171,25 +172,32 @@ public class TestLoadController implements IStoppable {
 	 */
 	private void createAndAttachSubscriber(int maxSub) {
 		for (int i = 0; i < maxSub; i++) {
-			IRoQSubscriberConnection subscriberConnection = conFactory.createRoQSubscriberConnection(qName, "test");
-			// Open the connection to the logical queue
-			subscriberConnection.open();
-			// Register a message listener
-			IRoQSubscriber subs = new IRoQSubscriber() {
-				private int count = 0;
-				private int sizeMD = (Long.toString(System.currentTimeMillis()) + " ").getBytes().length + "test".getBytes().length;
-				public void onEvent(byte[] msg) {
-					count++;
-					if(count>logMsg){
-						logger.info("Got "+logMsg+" message of "+(msg.length+sizeMD)  +" byte" );
-						count =0;
+			IRoQSubscriberConnection subscriberConnection;
+			try {
+				subscriberConnection = conFactory.createRoQSubscriberConnection(qName, "test");
+			
+				// Open the connection to the logical queue
+				subscriberConnection.open();
+				// Register a message listener
+				IRoQSubscriber subs = new IRoQSubscriber() {
+					private int count = 0;
+					private int sizeMD = (Long.toString(System.currentTimeMillis()) + " ").getBytes().length + "test".getBytes().length;
+					public void onEvent(byte[] msg) {
+						count++;
+						if(count>logMsg){
+							logger.info("Got "+logMsg+" message of "+(msg.length+sizeMD)  +" byte" );
+							count =0;
+						}
 					}
-				}
-			};
-			//Se the subscriber logic for this connection
-			subscriberConnection.setMessageSubscriber(subs);
-			//Maintains an handle to all subscriber connection
-			this.subscriberConnections.add(subscriberConnection);
+				};
+				//Se the subscriber logic for this connection
+				subscriberConnection.setMessageSubscriber(subs);
+				//Maintains an handle to all subscriber connection
+				this.subscriberConnections.add(subscriberConnection);
+			} catch (ConnectException | IllegalStateException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 

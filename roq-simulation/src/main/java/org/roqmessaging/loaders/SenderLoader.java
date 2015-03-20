@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.loaders;
 
+import java.net.ConnectException;
 import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
@@ -76,11 +77,17 @@ public class SenderLoader extends TimerTask implements IStoppable {
 	private void initRoQpublisher() {
 		//1. Creating the connection
 		IRoQConnectionFactory factory = new RoQConnectionFactory(configServerAddress);
-		connection = factory.createRoQConnection(this.queueOnTest);
-		connection.open();
-		//2. Creating the publisher and sending message
-		publisher = connection.createPublisher();
-		publisher.addTimeStamp(true);
+		try {
+			connection = factory.createRoQConnection(this.queueOnTest);
+		
+			connection.open();
+			//2. Creating the publisher and sending message
+			publisher = connection.createPublisher();
+			publisher.addTimeStamp(true);
+		} catch (ConnectException | IllegalStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	/**

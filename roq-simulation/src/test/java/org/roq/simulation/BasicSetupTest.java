@@ -16,6 +16,8 @@ package org.roq.simulation;
 
 import static org.junit.Assert.assertNotNull;
 
+import java.net.ConnectException;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.After;
@@ -167,12 +169,15 @@ public class BasicSetupTest {
 	private void startPublisherClient() {
 		//1. Creating the connection
 		this.factory = new RoQConnectionFactory("localhost");
-		this.connection = this.factory.createRoQConnection("queue1");
-		this.connection.open();
-		this.publisher = this.connection.createPublisher();
 		try {
+			this.connection = this.factory.createRoQConnection("queue1");
+		
+			this.connection.open();
+			this.publisher = this.connection.createPublisher();
 			Thread.sleep(1000);
-		} catch (InterruptedException e) {
+
+		} catch (ConnectException | IllegalStateException | InterruptedException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -181,20 +186,26 @@ public class BasicSetupTest {
 	 * Initiate a thread subscriber
 	 */
 	private void startSubscriberClient() {
-		this.subConnection = this.factory.createRoQSubscriberConnection("queue1", "sabri");
-		this.subConnection.open();
 		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		this.subConnection.setMessageSubscriber(new IRoQSubscriber() {
-			public void onEvent(byte[] msg) {
-				String content= new String(msg,0,msg.length) ;
-				assert content.equals("hello");
-				logger.info("In message listener recieveing :"+ content);
+			this.subConnection = this.factory.createRoQSubscriberConnection("queue1", "sabri");
+		
+			this.subConnection.open();
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
-		});
+			this.subConnection.setMessageSubscriber(new IRoQSubscriber() {
+				public void onEvent(byte[] msg) {
+					String content= new String(msg,0,msg.length) ;
+					assert content.equals("hello");
+					logger.info("In message listener recieveing :"+ content);
+				}
+			});
+		} catch (ConnectException | IllegalStateException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 	}
 	
 	/**

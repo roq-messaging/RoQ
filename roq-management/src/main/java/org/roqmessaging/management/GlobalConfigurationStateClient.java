@@ -36,7 +36,7 @@ public class GlobalConfigurationStateClient extends GlobalConfigurationState {
 	private String clientID = null;
 	//The global configuration server IP address
 	protected String configServer = null;
-
+	protected int hcmTIMEOUT = 3000;
 	private Logger logger = Logger.getLogger(GlobalConfigurationStateClient.class);
 	
 	/**
@@ -47,7 +47,22 @@ public class GlobalConfigurationStateClient extends GlobalConfigurationState {
 		super();
 		this.configServer = configurationServer;
 		context = ZMQ.context(1);
+		this.hcmTIMEOUT = 2000;
 		globalConfigReq = context.socket(ZMQ.REQ);
+		globalConfigReq.connect("tcp://" + configurationServer + ":5000");
+		this.clientID =String.valueOf(System.currentTimeMillis()) + "globalconfigclientState";
+	}
+	
+	/**
+	 * Initialize the ZMQ configuration. 
+	 * @param configurationServer
+	 */
+	public GlobalConfigurationStateClient(String configurationServer, int hcmTIMEOUT) {
+		super();
+		this.configServer = configurationServer;
+		context = ZMQ.context(1);
+		globalConfigReq = context.socket(ZMQ.REQ);
+		this.hcmTIMEOUT = hcmTIMEOUT;
 		globalConfigReq.connect("tcp://" + configurationServer + ":5000");
 		this.clientID =String.valueOf(System.currentTimeMillis()) + "globalconfigclientState";
 	}
@@ -124,10 +139,11 @@ public class GlobalConfigurationStateClient extends GlobalConfigurationState {
 		}
 		for (String hostToadd : toAdd) {
 			try {
-				ZMQ.Socket socket = context.socket(ZMQ.REQ);
+				ZMQ.Socket socket = context.socket(ZMQ.PAIR);
 				String address = "tcp://" + hostToadd + ":5100";
 				logger.debug("Connect to " + address);
-				socket.setSendTimeOut(3500);
+				socket.setReceiveTimeOut(hcmTIMEOUT);
+				socket.setSendTimeOut(hcmTIMEOUT);
 				socket.connect(address);
 				this.hostManagerMap.put(hostToadd, socket);
 				this.getHostManagerAddresses().add(hostToadd);

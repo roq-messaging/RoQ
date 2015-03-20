@@ -49,6 +49,17 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	/**
 	 * Initialise the socket to the config server.
 	 */
+	public LogicalQFactory(String configServer, int hcmTIMEOUT) {
+		this.configServer = configServer;
+		context = ZMQ.context(1);
+		globalConfigReq = context.socket(ZMQ.REQ);
+		globalConfigReq.connect("tcp://" + this.configServer + ":5000");
+		this.configurationState = new GlobalConfigurationStateClient(this.configServer, hcmTIMEOUT);
+	}
+	
+	/**
+	 * Initialise the socket to the config server.
+	 */
 	public LogicalQFactory(String configServer) {
 		this.configServer = configServer;
 		context = ZMQ.context(1);
@@ -67,22 +78,27 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#createQueue(java.lang.String,
 	 *      java.lang.String)
 	 */
-	public boolean createQueue(String queueName, String targetAddress) throws IllegalStateException {
+	public int createQueue(String queueName, String targetAddress, boolean recoveryMod) throws IllegalStateException {
 		try {
 			this.lockCreateQ.lock();
 			if (!this.initialized)
 				this.refreshTopology();
-			if(!checkForCreateNewQ(queueName, targetAddress))return false ;
-			// The name does not exist yet
+			if(queueAlreadyExists(queueName) && !recoveryMod) return -1 ;
+			if(!hostExists(targetAddress)) return -2;			
 			//2. Sends the create event to the hostConfig manager thread
+			this.configurationState.refreshConfiguration();
 			ZMQ.Socket hostSocket = this.configurationState.getHostManagerMap().get(targetAddress);
 			hostSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName).getBytes(), 0);
-			String[] resultHost = new String(hostSocket.recv(0)).split(",");
-			
+			byte[] response = hostSocket.recv(0);
+			if (response == null) {
+				logger.info("HCM: " + targetAddress + " has timeout");
+				return -2; //HCM has timeout
+			}
+			String[] resultHost = new String(response).split(",");
 			if (Integer.parseInt(resultHost[0]) != RoQConstant.CONFIG_CREATE_QUEUE_OK) {
 				logger.error("The queue creation for  " + queueName
 						+ " failed on the local host server");
-				return false;
+				return -3;
 			} else {
 				logger.info("Created queue " + queueName + " @ " + resultHost[1]);
 				// 3.B. Create the entry in the global config
@@ -93,14 +109,14 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 				if (Integer.parseInt(result) != RoQConstant.CONFIG_CREATE_QUEUE_OK) {
 					logger.error("The queue creation for  " + queueName
 							+ " failed on the global configuration server");
-					return false;
+					return -4;
 				}else{
 					try {
 						Thread.sleep(2000);
 					} catch (InterruptedException e) {
 						logger.warn(e);
 					}
-					return true;
+					return 0;
 				}
 			}
 		} finally {
@@ -110,17 +126,24 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 
 	/**
 	 * @param queueName the logical queue
-	 * @param targetAddress the target address
 	 * @return true if the check is OK
 	 */
-	private boolean checkForCreateNewQ(String queueName, String targetAddress) {
+	private boolean queueAlreadyExists(String queueName) {
 		// 1. Check if the name already exist in the topology
 		if (this.configurationState.getQueueMonitorMap().containsKey(queueName)) {
 			// the queue already exist
 			logger.error(new IllegalStateException("The queue name " + queueName + " already exists"));
+			return true;
+		} else {
 			return false;
 		}
+	}
 		
+	/**
+	 * @param targetAddress the target address
+	 * @return true if the check is OK
+	 */
+	private boolean hostExists(String targetAddress) {		
 		if (!this.configurationState.getHostManagerMap().containsKey(targetAddress)) {
 			// the target address is not registered as node of the cluster
 			// (no Host manager running)
@@ -225,7 +248,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 			this.lockCreateQ.lock();
 			if (!this.initialized)
 				this.refreshTopology();
-			if(!checkForCreateNewQ(queueName, targetAddress))return false ;
+			if(!queueAlreadyExists(queueName) || !hostExists(targetAddress)) return false ;
 			// The name does not exist yet
 			//2. Sends the create event to the hostConfig manager thread
 			ZMQ.Socket hostSocket = this.configurationState.getHostManagerMap().get(targetAddress);

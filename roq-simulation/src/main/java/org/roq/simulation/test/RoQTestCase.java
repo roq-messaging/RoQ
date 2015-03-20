@@ -14,6 +14,8 @@
  */
 package org.roq.simulation.test;
 
+import java.net.ConnectException;
+
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
@@ -86,7 +88,7 @@ public class RoQTestCase {
 	 */
 	public void initQueue(String qName) throws Exception {
 		//1. Create a queue
-		this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP());
+		this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
 		//Let the queue starting
 		//Thread.sleep(2000);
 		//2. Subscribing and publishing a message
@@ -118,13 +120,20 @@ public class RoQTestCase {
 	 */
 	protected IRoQPublisher attachPublisher(String qName) {
 		IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getConfigurationServer());
-		connection = factory.createRoQConnection(qName);
-		connection.open();
-		// Creating the publisher and sending message
-		IRoQPublisher publisher = connection.createPublisher();
-		// Wait for the connection is established before sending the first
-		// message
-		connection.blockTillReady(10000);
+		IRoQPublisher publisher = null;
+		try {
+			connection = factory.createRoQConnection(qName);
+		
+			connection.open();
+			// Creating the publisher and sending message
+			publisher = connection.createPublisher();
+			// Wait for the connection is established before sending the first
+			// message
+			connection.blockTillReady(10000);
+		} catch (ConnectException | IllegalStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return publisher;
 		
 	}
@@ -137,17 +146,22 @@ public class RoQTestCase {
 	protected void attachSUbscriber(String qName) {
 		IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getConfigurationServer());
 		// add a subscriber
-		subscriberConnection = factory.createRoQSubscriberConnection(qName, "key");
-		// Open the connection to the logical queue
-		subscriberConnection.open();
-		// Register a message listener
-		IRoQSubscriber subs = new IRoQSubscriber() {
-			public void onEvent(byte[] msg) {
-				//String content = new String(msg, 0, msg.length);
-			}
-		};
-		subscriberConnection.setMessageSubscriber(subs);
+		try {
+			subscriberConnection = factory.createRoQSubscriberConnection(qName, "key");
 		
+			// Open the connection to the logical queue
+			subscriberConnection.open();
+			// Register a message listener
+			IRoQSubscriber subs = new IRoQSubscriber() {
+				public void onEvent(byte[] msg) {
+					//String content = new String(msg, 0, msg.length);
+				}
+			};
+			subscriberConnection.setMessageSubscriber(subs);
+		} catch (ConnectException | IllegalStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 }

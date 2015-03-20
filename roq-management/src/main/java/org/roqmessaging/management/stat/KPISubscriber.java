@@ -79,6 +79,7 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 		// 1. Get the location in BSON
 		// 1.1 Create the request socket
 		ZMQ.Socket globalConfigReq = context.socket(ZMQ.REQ);
+		
 		String gcm = "tcp://" + this.gcm_address + ":" + this.gcm_interfacePort;
 		logger.debug("Sending request to GCM = "+ gcm);
 		globalConfigReq.connect(gcm);
