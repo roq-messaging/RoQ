@@ -43,6 +43,7 @@ public class TestHostExchangeInfo extends RoQTestCase {
 				Logger.getLogger(this.getClass().getName()).info("Starting main TestHostExchangeInfo  ");
 				//1. Create a queue
 				this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
+				Thread.sleep(2000);
 				//2. Attach subscriber
 				attachSUbscriber(qName);
 				//3. Create subscriber

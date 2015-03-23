@@ -154,7 +154,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 						// 2.2. Start the exchange
 						boolean xChangeOK =  qExchangeMap.get(qName) != null;
 						
-						// The 0000000 value is the key of the first Exchange process
+						// The 00000000000000000 value is the id of the first Exchange process
 						if (!xChangeOK)
 							xChangeOK = startNewExchangeProcess(qName, this.qMonitorMap.get(qName),
 									this.qMonitorStatMap.get(qName), "00000000000000000"); 
@@ -406,7 +406,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 *            the name of the queue to create
 	 * @return true if the creation process worked well
 	 */
-	private boolean startNewExchangeProcess(String qName, String monitorAddress, String monitorStatAddress, String transID) {
+	private boolean startNewExchangeProcess(String qName, String monitorAddress, String monitorStatAddress, String transID) {		
 		if (monitorAddress == null || monitorStatAddress == null) {
 			logger.error("The monitor or the monitor stat server is null", new IllegalStateException());
 			return false;
