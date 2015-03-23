@@ -70,7 +70,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	// [qName, monitor stat server address]
 	private HashMap<String, String> qMonitorStatMap = null;
 	// [qName, list of Xchanges]
-	private HashMap<String, List<String>> qExchangeMap = null;
+	private HashMap<String, HashMap<String, String>> qExchangeMap = null;
 	//[qName, Scaling process shutdown port (on the same machine as host)] 
 	//TODO starting the process, register it and deleting it when stoping
 	private HashMap<String, Integer> qScalingProcessAddr = null;
@@ -104,7 +104,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 			this.globalConfigSocket = context.socket(ZMQ.REQ);
 			this.globalConfigSocket.connect("tcp://" + this.properties.getGcmAddress() + ":5000");
 			// Init the map
-			this.qExchangeMap = new HashMap<String, List<String>>();
+			this.qExchangeMap = new HashMap<String, HashMap<String, String>>();
 			this.qMonitorMap = new HashMap<String, String>();
 			this.qMonitorStatMap = new HashMap<String, String>();
 			this.qScalingProcessAddr = new HashMap<String, Integer>();
@@ -153,9 +153,11 @@ public class HostConfigManager implements Runnable, IStoppable {
 						// 2.1. Getting the monitor stat address
 						// 2.2. Start the exchange
 						boolean xChangeOK =  qExchangeMap.get(qName) != null;
+						
+						// The 0000000 value is the key of the first Exchange process
 						if (!xChangeOK)
 							xChangeOK = startNewExchangeProcess(qName, this.qMonitorMap.get(qName),
-									this.qMonitorStatMap.get(qName));
+									this.qMonitorStatMap.get(qName), "00000000000000000"); 
 						//2.3. Start the scaling process
 						boolean scalingOK = qScalingProcessAddr.get(qName) != null;
 						if (!scalingOK)
@@ -199,10 +201,11 @@ public class HostConfigManager implements Runnable, IStoppable {
 
 				case RoQConstant.CONFIG_CREATE_EXCHANGE:
 					logger.debug("Recieveing create XChange request from a client ");
-					if (info.length == 4) {
+					if (info.length == 5) {
 						String qName = info[1];
+						String id = info[2];
 						// Qname, monitorhost, monitorstat host
-						if (startNewExchangeProcess(qName, info[2], info[3])) {
+						if (startNewExchangeProcess(qName, info[3], info[4], id)) {
 							this.clientReqSocket.send((Integer.toString(RoQConstant.OK) ).getBytes(), 0);
 						} else {
 							this.clientReqSocket.send((Integer.toString(RoQConstant.FAIL) ).getBytes(), 0);
@@ -403,16 +406,21 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 *            the name of the queue to create
 	 * @return true if the creation process worked well
 	 */
-	private boolean startNewExchangeProcess(String qName, String monitorAddress, String monitorStatAddress) {
+	private boolean startNewExchangeProcess(String qName, String monitorAddress, String monitorStatAddress, String transID) {
 		if (monitorAddress == null || monitorStatAddress == null) {
 			logger.error("The monitor or the monitor stat server is null", new IllegalStateException());
 			return false;
 		}
+		// Check if the Exchange already exists (idempotent exchange creation process)
+		if (this.qExchangeMap.containsKey(qName)) {
+			if (this.qExchangeMap.get(qName).containsKey(transID))
+				return true;
+		}
+		
 		// 1. Get the number of installed queues on this host
 		int number = 0;
 		for (String q_i : this.qExchangeMap.keySet()) {
-			List<String> xChanges = this.qExchangeMap.get(q_i);
-			number += xChanges.size();
+			number += this.qExchangeMap.get(q_i).size();
 		}
 		// 2. Assigns a front port and a back port
 		logger.debug(" This host contains already " + number + " Exchanges");
@@ -446,11 +454,11 @@ public class HostConfigManager implements Runnable, IStoppable {
 		}
 
 		if (this.qExchangeMap.containsKey(qName)) {
-			this.qExchangeMap.get(qName).add("tcp://" + ip + ":" + frontPort);
+			this.qExchangeMap.get(qName).put(transID, "tcp://" + ip + ":" + frontPort);
 			logger.debug("Storing Xchange info: " + "tcp://" + ip + ":" + frontPort);
 		} else {
-			List<String> xChange = new ArrayList<String>();
-			xChange.add("tcp://" + ip + ":" + frontPort);
+			HashMap<String, String> xChange = new HashMap<String, String>();
+			xChange.put(transID, "tcp://" + ip + ":" + frontPort);
 			this.qExchangeMap.put(qName, xChange);
 			logger.debug("Storing Xchange info: " + "tcp://" + ip + ":" + frontPort);
 		}

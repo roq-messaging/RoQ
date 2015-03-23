@@ -169,20 +169,20 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	 * This method create the transaction node for an exchange creation process
 	 * @param transID
 	 */
-	public void createExchangeTransaction (String transID) {
+	public void createExchangeTransaction (String transID, String targetHost) {
 		log.info("");
 		String path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions, transID);
-		RoQZKHelpers.createZNode(client, path);
+		RoQZKHelpers.createZNode(client, path, targetHost);
 	}
 	
 	/**
 	  * This method fetch if a transaction exists for the exchange creation
 	 * @param transID
 	 */
-	public boolean exchangeTransactionExists (String transID) {
+	public String exchangeTransactionExists (String transID) {
 		log.info("");
 		String path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions, transID);
-		return RoQZKHelpers.zNodeExists(client, path);
+		return RoQZKHelpers.getDataString(client, path);
 	}
 	
 	/**

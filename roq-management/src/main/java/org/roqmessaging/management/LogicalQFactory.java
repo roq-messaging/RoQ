@@ -342,7 +342,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	 * Creates an exchange on the target address
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#createExchange(java.lang.String, java.lang.String)
 	 */
-	public boolean createExchange(String queueName, String targetAddress) {
+	public boolean createExchange(String queueName, String targetAddress, String exchangeId) {
 		this.refreshTopology();
 		//1. Check
 		if(!checkForUpdateQ(queueName, targetAddress))return false;
@@ -356,7 +356,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		
 		//3. Sends a create exchange to the host manager
 		logger.debug("Sending create Xchange request to host manager at " + targetAddress +" "+ hostMngSocket.toString());
-		String arguments =Integer.toString(RoQConstant.CONFIG_CREATE_EXCHANGE) + "," + queueName +","+monitorAddress+","+monitorStatAddress;
+		String arguments =Integer.toString(RoQConstant.CONFIG_CREATE_EXCHANGE) + "," + queueName + ","+exchangeId+","+monitorAddress+","+monitorStatAddress;
 		logger.debug("Sending "+ arguments);
 		hostMngSocket.send((arguments).getBytes(), 0);
 		String codeBackStr = new String(hostMngSocket.recv(0));

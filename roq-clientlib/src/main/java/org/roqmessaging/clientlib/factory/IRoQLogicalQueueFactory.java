@@ -60,7 +60,7 @@ public interface IRoQLogicalQueueFactory {
 	 * @param targetAddress the target address in which we are going to create the exchange. 
 	 * @return true if the creation was OK
 	 */
-	public boolean createExchange(String queueName, String targetAddress);
+	public boolean createExchange(String queueName, String targetAddress, String exchangeID);
 	
 	
 	/**

@@ -205,7 +205,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				logger.debug("Receiving request..." + content);
 				
 				//check if the string contains a "," if not that means that it is a BSON encoded request
-				if(content.contains(",")){
+				if(content.contains(",")) {
 					processStandardRequest(content);
 				}else{
 					processBSONRequest(encoded);
@@ -222,14 +222,20 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 					mngtTimer.cancel();
 					mngtTimer.purge();
 					// Notifies that the leader has changed
-					boolean bufferIsEmpty = false;
-					while (!bufferIsEmpty) {
-						items.poll(0);
-						if (items.pollin(0)) {
-							clientReqSocket.recv(0);
-							this.clientReqSocket.send(Integer.toString(RoQConstant.EVENT_LEAD_LOST).getBytes(), 0);
-						} else {
-							bufferIsEmpty = true;
+					while (!GlobalConfigurationManager.hasLead) {
+						items.poll(100);
+						if (items.pollin(0)){ //Comes from a client
+							byte[] encoded = clientReqSocket.recv(0);
+							String content = new String(encoded);
+							if(content.contains(",")){
+								clientReqSocket.send(
+										this.serialiazer.serialiazeConfigAnswer(
+											RoQConstant.EVENT_LEAD_LOST, ""),
+										0);
+							} else {
+								this.clientReqSocket.send(
+										Integer.toString(RoQConstant.EVENT_LEAD_LOST).getBytes(), 0);
+							}
 						}
 					}
 					// Wait for leadership
