@@ -14,7 +14,6 @@
  */
 package org.roqmessaging.management.server;
 
-import java.io.EOFException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -185,6 +184,7 @@ public class MngtController implements Runnable, IStoppable {
 						// Variables
 						String qName = "?";
 						String host = "?";
+						String transID = "?";
 						boolean recoveryMod = false;
 						String hostToRecover = "";
 						AutoScalingConfig config = null;
@@ -244,7 +244,15 @@ public class MngtController implements Runnable, IStoppable {
 							if (hostToRecover != null) {
 								// The transaction already exists, recovery mod
 								recoveryMod = true;
-								host = hostToRecover;
+								if (getHosts().contains(hostToRecover)) {
+									host = hostToRecover;
+								} else {
+									// The initial host not exists
+									// change the transaction to target the new host
+									zk.removeQTransaction(qName);
+									zk.createQTransaction(qName, host);
+									
+								}
 								logger.info("Recover process for queue " + qName + " started " +
 										"on HCM: " + hostToRecover);
 							}
@@ -292,7 +300,6 @@ public class MngtController implements Runnable, IStoppable {
 								if (!hostsList.contains(hostToRecover)) {
 									// the host for this transaction no longer exists.
 									zk.removeQTransaction(qName);
-									// We create a transaction
 									if (hostsList.isEmpty()) {
 										sendReply_fail("ERROR when selecting a host, check logs of the logical queue factory");
 									} else {
@@ -311,6 +318,7 @@ public class MngtController implements Runnable, IStoppable {
 										"on HCM: " + host);
 							}
 							else {
+								// We are not in recovery mod
 								if (hostsList.isEmpty()) {
 									sendReply_fail("ERROR when selecting a host, check logs of the logical queue factory");
 								} else {
@@ -322,7 +330,7 @@ public class MngtController implements Runnable, IStoppable {
 									hostFound = true;
 								}
 							}
-							
+							// if we found a host on which put the queue
 							if (hostFound) {
 								// Just create queue the timer will update the
 								// management server configuration
@@ -367,15 +375,34 @@ public class MngtController implements Runnable, IStoppable {
 						case RoQConstant.BSON_CONFIG_CREATE_XCHANGE:
 							logger.debug("Create Xchange request");
 							if (!checkField(request, "QName")
-								|| !checkField(request, "Host")) {
-								sendReply_fail("ERROR: Missing field in the request: <QName>, <Host>");
+								|| !checkField(request, "Host") || !checkField(request, "TransactionID")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>, <Host>, <TransactionID>");
 								break;
 							}
 							// 1. Get the host
 							host = (String) request.get("Host");
 							qName = (String) request.get("QName");
+							// The transaction ID is created by the user and must be reused while the 
+							// exchange has not been created. The creation can fail for many reason
+							// This ID is the best way to ensure that Exchange creation is idempotent.
+							// An ID could be IPadress:randomNumber
+							transID = (String) request.get("TransactionID");
+							hostToRecover = zk.qTransactionExists(qName);
+							if (hostToRecover == null) {
+								zk.createExchangeTransaction(transID, host);
+							} else {
+								// Transaction already exists
+								if (getHosts().contains(hostToRecover)) {
+									host = hostToRecover;
+								} else {
+									// The initial host not exists
+									// change the transaction to target the new host
+									zk.removeQTransaction(qName);
+									zk.createQTransaction(qName, host);
+								}
+							}							
 							logger.debug("Create Xchange on queue " + qName + " on " + host);
-							if (!this.factory.createExchange(qName, host)) {
+							if (!this.factory.createExchange(qName, host, transID)) {
 								sendReply_fail("ERROR when creating Xchange check logs of the logical queue factory");
 							} else {
 								sendReply_ok("SUCCESS");
@@ -553,37 +580,29 @@ public class MngtController implements Runnable, IStoppable {
 			// If connection with zookeeper has been lost
 			if (!GlobalConfigurationManager.hasLead) {
 				// We wait that process become master
-				try {
-					logger.info("connection with ZK has been lost, " +
-							"waiting for leadership");
-					// Stop to send update
-					this.controllerTimer.cancel();
-					this.publicationTimer.cancel();
-					this.publicationTimer.purge();
-					boolean bufferIsEmpty = false;
-					while (!bufferIsEmpty) {
-						poller.poll(0);
-						if (poller.pollin(0)) {
-							mngtRepSocket.recv(0);
-							mngtRepSocket.send(
-									serializer.serialiazeConfigAnswer(
-										RoQConstant.EVENT_LEAD_LOST, ""),
-									0);
-						} else {
-							bufferIsEmpty = true;
-						}
+				logger.info("connection with ZK has been lost, " +
+						"waiting for leadership");
+				// Stop to send update
+				this.controllerTimer.cancel();
+				this.publicationTimer.cancel();
+				this.publicationTimer.purge();
+				
+				// While we have not the lead we respond
+				// that the leader has changed
+				while (!GlobalConfigurationManager.hasLead) {
+					poller.poll(100);
+					if (poller.pollin(0)) {
+						mngtRepSocket.recv(0);
+						mngtRepSocket.send(
+								serializer.serialiazeConfigAnswer(
+									RoQConstant.EVENT_LEAD_LOST, ""),
+								0);
 					}
-					// Wait for leadership
-					zk.waitUntilLeader();
-					// Restart timer
-					startMngtControllerTimer();
-					logger.info("connection with ZK has been re-etablished" +
-							" MngmtController restarted");
-				} catch (EOFException | InterruptedException e) {
-					logger.info("The leader election has failed, stopping the " +
-							"GlobalConfigTimer");
-					this.active = false;
 				}
+				// Restart timer
+				startMngtControllerTimer();
+				logger.info("connection with ZK has been re-etablished" +
+						" MngmtController restarted");
 			}
 		}// END OF THE LOOP
 		cleanStop();

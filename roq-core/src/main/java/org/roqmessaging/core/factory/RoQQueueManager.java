@@ -201,19 +201,20 @@ public class RoQQueueManager implements IRoQQueueManagement {
 		// If the request has failed, we retry until to reach the maxRetry
 		do {
 			try {
+				if (retry > 0) {
+					try {
+						logger.info("GCM not found");
+						Thread.sleep(1500); // Wait between two requests
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
+					}
+				}
 				initSocketConnection();
 				globalConfigReq.send(request, 0);
 				response = globalConfigReq.recv(0);
 				if (response != null)
 					responseString = new String(response);
 				closeSocketConnection();
-			} catch (IllegalStateException e) {
-				try {
-					logger.info("GCM not found");
-					Thread.sleep(500);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
 			} finally {
 				retry++;
 			}
