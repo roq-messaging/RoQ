@@ -32,7 +32,7 @@ public class RoQZooKeeper {
 		// Start a Curator client, through which we can access ZooKeeper
 		// Note: retry policy should be made configurable
 		RetryPolicy retryPolicy = new RetryOneTime(1000);
-
+		cfg = config;
 		client = CuratorFrameworkFactory.builder()
 					.connectString(config.servers)
 					.retryPolicy(retryPolicy)
@@ -55,6 +55,7 @@ public class RoQZooKeeper {
 	public String getGCMLeaderAddress() {
 		log.info("");
 		String path = RoQZKHelpers.makePath(cfg.znode_leaderAddress);
-		return RoQZKHelpers.getDataString(client, path);
+		String gcm = RoQZKHelpers.getDataString(client, path);
+		return gcm;
 	}
 }

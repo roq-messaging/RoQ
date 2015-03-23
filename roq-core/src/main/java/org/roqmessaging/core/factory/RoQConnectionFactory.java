@@ -46,7 +46,7 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	
 	// TODO: Following params in a config file
 	// Number of times that the client retry the request
-	private int maxRetry = 5;
+	private int maxRetry = 6;
 	// the rcv timeout of ZMQ
 	private int timeout = 5000;
 	private RoQZooKeeper zk;
@@ -137,7 +137,7 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 		// Get the active master address
 		this.configServer = zk.getGCMLeaderAddress();
 		if (configServer == null) 
-			throw new IllegalStateException("No GCM found");
+			throw new IllegalStateException("GCM node not found");
 		logger.info("Active GCM address: " + this.configServer);
 		context = ZMQ.context(1);
 		globalConfigReq = context.socket(ZMQ.REQ);
@@ -163,20 +163,19 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 		do {
 			try {
 				if (retry > 0) {
-					try {
-						logger.info("GCM not found");
-						Thread.sleep(1500); // Wait between two requests
-					} catch (InterruptedException e1) {
-						e1.printStackTrace();
-					}
+					logger.info("GCM not found");
+					Thread.sleep(1500); // Wait between two requests
 				}
 				initSocketConnection();
 				globalConfigReq.send(request, 0);
 				response = globalConfigReq.recv(0);
-				if (response != null)
+				if (response != null) {
+					logger.info("GCM found");
 					responseString = new String(response);
+				}
 				closeSocketConnection();
-				retry++;
+			} catch (Exception e1) {
+				//e1.printStackTrace();
 			} finally {
 				retry++;
 			}

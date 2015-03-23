@@ -61,6 +61,7 @@ public class RoQAllLocalLauncher {
 		// and overwrite it with the connection string provided by the TestingServer class.
 		GCMPropertyDAO gcmConfig = new FileConfigurationReader().loadGCMConfiguration(configFile);
 		gcmConfig.zkConfig.servers = zkConnectString;
+		logger.info("zk: " + zkConnectString);
 		
 		CloudConfig cloudConfig = new FileConfigurationReader().loadCloudConfiguration(configFile);
 		return new GlobalConfigurationManager(gcmConfig, cloudConfig);
@@ -174,6 +175,13 @@ public class RoQAllLocalLauncher {
 	 */
 	public String getConfigurationServer() {
 		return configurationServer;
+	}
+	
+	/**
+	 * @return the ZK address
+	 */
+	public String getZkServerAddress() {
+		return zkServer.getConnectString();
 	}
 	
 	/**

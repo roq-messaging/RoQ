@@ -90,7 +90,7 @@ public class RoQTestCase {
 		//1. Create a queue
 		this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
 		//Let the queue starting
-		//Thread.sleep(2000);
+		Thread.sleep(2000);
 		//2. Subscribing and publishing a message
 		attachSUbscriber(qName);
 		IRoQPublisher publisher = attachPublisher(qName);
@@ -119,7 +119,7 @@ public class RoQTestCase {
 	 * @param qName the name of the Q to publish
 	 */
 	protected IRoQPublisher attachPublisher(String qName) {
-		IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getConfigurationServer());
+		IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getZkServerAddress());
 		IRoQPublisher publisher = null;
 		try {
 			connection = factory.createRoQConnection(qName);
@@ -144,7 +144,7 @@ public class RoQTestCase {
 	 * @param qName the queue to attach the subs.
 	 */
 	protected void attachSUbscriber(String qName) {
-		IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getConfigurationServer());
+		IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getZkServerAddress());
 		// add a subscriber
 		try {
 			subscriberConnection = factory.createRoQSubscriberConnection(qName, "key");

@@ -49,6 +49,10 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		RoQZKHelpers.createZNodeAndParents(client, path);
 		path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions);
 		RoQZKHelpers.createZNodeAndParents(client, path);
+		path = RoQZKHelpers.makePath(cfg.znode_gcm);
+		RoQZKHelpers.createZNodeAndParents(client, path);
+		path = RoQZKHelpers.makePath(cfg.znode_hcm);
+		RoQZKHelpers.createZNodeAndParents(client, path);
 	}
 	
 	/**
