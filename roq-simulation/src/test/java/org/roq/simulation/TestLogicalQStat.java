@@ -58,7 +58,7 @@ public class TestLogicalQStat extends RoQTestCase {
 			sendMsg(publisher);
 			
 			//6. Add exchange
-			factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
+			factory.createExchange(qName, RoQUtils.getInstance().getLocalIP(), "TEST4");
 			subscriber.setXchangeToCheck(2);
 			Thread.sleep(5000);
 			

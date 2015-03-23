@@ -68,12 +68,12 @@ public class TestHostExchangeInfo extends RoQTestCase {
 				assertEquals(1, askHostExchangeInfo());
 				
 				//6. Add exchange
-				factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
+				factory.createExchange(qName, RoQUtils.getInstance().getLocalIP(), "TEST2");
 				subscriber.setXchangeToCheck(2);
 				Thread.sleep(5000);
 				assertEquals(2, askHostExchangeInfo());
 				
-				factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
+				factory.createExchange(qName, RoQUtils.getInstance().getLocalIP(), "TEST3");
 				subscriber.setXchangeToCheck(3);
 				Thread.sleep(5000);
 				assertEquals(3, askHostExchangeInfo());

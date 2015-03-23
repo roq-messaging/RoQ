@@ -133,7 +133,7 @@ public class TestLogicalQueue {
 			//testQueue("queue2");
 			
 			//3. Create exchange
-			this.factory.createExchange("queue1", host);
+			this.factory.createExchange("queue1", host, "TEST1");
 			Thread.sleep(4000);
 			this.factory.removeQueue("queue1");
 			//this.factory.removeQueue("queue2");

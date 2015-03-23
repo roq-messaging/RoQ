@@ -87,7 +87,7 @@ public class Test117b extends RoQTestCase {
 		logger.info("TEST 117b-------------------------------------Starting The exchange----------------------------");
 		logger.info("TEST 117b: waiting for relocation...");
 		// create an exchange
-		super.factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
+		super.factory.createExchange(qName, RoQUtils.getInstance().getLocalIP(), "TEST6");
 		Thread.sleep(120000);
 		// Start a producer
 		//Close all

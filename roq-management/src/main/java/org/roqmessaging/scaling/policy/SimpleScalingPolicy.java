@@ -33,11 +33,14 @@ public class SimpleScalingPolicy implements IScalingPolicy {
 	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
 	//Queue factory
 	private LogicalQFactory qFactory = null;
+	private int ExchangeID = 1;
+	private String gCMAddress;
 	
 	/**
 	 * @param gCMAddress the address of the global configuration server.
 	 */
 	public SimpleScalingPolicy(String gCMAddress) {
+		this.gCMAddress = gCMAddress;
 		this.qFactory = new LogicalQFactory(gCMAddress, 5000);
 	}
 
@@ -83,7 +86,10 @@ public class SimpleScalingPolicy implements IScalingPolicy {
 			logger.info("No candidate have been found : need to provision a new VM");
 		}else{
 			//Provision a new exchange on host
-			if(!this.qFactory.createExchange(qName, candidate))
+			// Generate a random Transaction number
+			double rand = Math.random();
+			ExchangeID++;
+			if(!this.qFactory.createExchange(qName, candidate, gCMAddress + ":" + rand + "" + ExchangeID))
 				logger.error("The scaling exchange command failed on host "+ candidate);
 		}
 		//3. If one has a few number we can create a new exchanges otherwise we need to spawn a new host with a brand new exchange.

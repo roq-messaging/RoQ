@@ -68,7 +68,7 @@ public class Test117a extends RoQTestCase {
 		Thread.sleep(100000);
 		logger.info("TEST 117-------------------------------------Starting The exchange----------------------------");
 		// create an exchange
-		super.factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
+		super.factory.createExchange(qName, RoQUtils.getInstance().getLocalIP(), "TEST5");
 		Thread.sleep(30000);
 		// Start a producer
 		logger.info("TEST 117-------------------------------------Starting The producer----------------------------");
