@@ -86,7 +86,7 @@ public class TestStatMonitor {
 			new Thread(kpiSubscriber).start();
 
 			// 3. Create a subscriber
-			IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getConfigurationServer());
+			IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getZkServerAddress());
 			// add a subscriber
 			IRoQSubscriberConnection subConnection = factory.createRoQSubscriberConnection("queue1", "key");
 			// Open the connection to the logical queue

@@ -98,7 +98,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 			logger.info(this.properties.toString());
 			// ZMQ Init
 			this.context = ZMQ.context(1);
-			this.clientReqSocket = context.socket(ZMQ.PAIR);
+			this.clientReqSocket = context.socket(ZMQ.REP);
 			this.clientReqSocket.setLinger(0);
 			this.clientReqSocket.bind("tcp://*:5100");
 			this.globalConfigSocket = context.socket(ZMQ.REQ);

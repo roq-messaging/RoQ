@@ -24,7 +24,7 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	
 	// TODO: Following params in a config file
 	// Number of times that the client retry the request
-	private int maxRetry = 6;
+	private int maxRetry = 10;
 	// the rcv timeout of ZMQ
 	private int timeout = 5000;
 	private RoQZooKeeper zk;
@@ -38,6 +38,20 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	 */
 	public RoQQueueManager(String zkAddresses) {
 		zk = new RoQZooKeeper(zkAddresses);
+		zk.start();
+	}
+	
+	/**
+	 * Build  a connection Factory and takes the location of the global configuration manager as input
+	 * @param configManager the zookeeper IP addresses, the default port 5000 will be applied
+	 * @param maxRetry the number of times that the client try to process the request
+	 * @param the timeout between each retry
+	 */
+	public RoQQueueManager(String zkAddresses, int maxRetry, int timeout) {
+		zk = new RoQZooKeeper(zkAddresses);
+		this.maxRetry = maxRetry;
+		this.timeout = timeout;
+		zk.start();
 	}
 
 	/**
@@ -48,6 +62,7 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	 */
 	public RoQQueueManager(RoQZKSimpleConfig cfg) {
 		zk = new RoQZooKeeper(cfg);
+		zk.start();
 	}
 
 	@Override
@@ -108,6 +123,29 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	
 	@Override
 	/**
+	 * Remove a queue from the cluster
+	 * @param the name of the queue to remove
+	 */
+	public boolean queueExists(String queueName) 
+			throws IllegalStateException, ConnectException {
+		// Open socket and init BSON request
+		BasicBSONObject request = new BasicBSONObject();
+		request.put("QName", queueName);
+		request.put("CMD", RoQConstant.BSON_CONFIG_QUEUE_EXISTS);
+		// Get Response
+		byte[] responseBytes = sendRequest(BSON.encode(request));
+		BSONObject result = BSON.decode(responseBytes);
+		if((Integer)result.get("RESULT") ==  RoQConstant.FAIL){
+			return false;
+		} else {
+			return true;
+		}		
+	}
+	
+	
+	
+	@Override
+	/**
 	 * TODO: Actually BSON ask for a host to perform
 	 * this action.. It probably must be able to
 	 * find the host via the Qname
@@ -159,6 +197,9 @@ public class RoQQueueManager implements IRoQQueueManagement {
 		}		
 	}
 	
+	public void close() {
+		zk.close();
+	}
 	
 	/**
 	 * Removes the socket connection to the global config manager
@@ -203,7 +244,7 @@ public class RoQQueueManager implements IRoQQueueManagement {
 			try {
 				if (retry > 0) {
 					logger.info("GCM not found");
-					Thread.sleep(1500); // Wait between two requests
+					Thread.sleep(3000); // Wait between two requests
 				}
 				initSocketConnection();
 				globalConfigReq.send(request, 0);

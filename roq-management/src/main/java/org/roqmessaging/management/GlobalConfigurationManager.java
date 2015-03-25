@@ -155,7 +155,6 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			logger.info("Leadership acquired");
 			// Set leader address in ZK
 			zk.setGCMLeader();		
-			logger.info("zk serv: " + zk.getGCMLeaderAddress());
 			// Set that the process got the lead
 			hasLead = true;
 			// The Management controller - the start is in the run to take the
