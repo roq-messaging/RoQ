@@ -1,109 +1,59 @@
 Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF8
 Starting the local host configuration manager with 1
 Starting the  global configuration manager
-13:07:04,572 ERROR [main] (FileConfigurationReader:loadHCMConfiguration:114)   Error while reading configuration file - skipped but set the default configuration
+15:11:21,486 ERROR [main] (FileConfigurationReader:loadHCMConfiguration:114)   Error while reading configuration file - skipped but set the default configuration
 java.util.NoSuchElementException: 'exchange.vm.heap' doesn't map to an existing object
 	at org.apache.commons.configuration.AbstractConfiguration.getInt(AbstractConfiguration.java:816)
 	at org.roqmessaging.management.config.internal.FileConfigurationReader.loadHCMConfiguration(FileConfigurationReader.java:110)
 	at org.roqmessaging.management.HostConfigManager.<init>(HostConfigManager.java:92)
 	at org.roqmessaging.management.launcher.HostConfigManagerLauncher.main(HostConfigManagerLauncher.java:43)
-13:07:04,577  INFO [main] (HostConfigManager:<init>:98)   Host configuration manager [GCM :172.17.0.164] [Exhange FE :6000] [Monitor base port: 5500]
+15:11:21,490  INFO [main] (HostConfigManager:<init>:98)   Host configuration manager [GCM :172.17.0.183] [Exhange FE :6000] [Monitor base port: 5500]
  [Create Queue in the same HCM VM: true] [Create Exchange in same HCM VM: false] [ Exchange Heap: 256]
-13:07:04,587  INFO [Thread-2] (HostConfigManager:registerHost:349)   Registration process started
-13:07:04,600  INFO [Thread-0] (ShutDownMonitor:run:62)   Shutdown monitor started for Host config manager 172.17.0.165
-13:07:05,454  INFO [Thread-2] (HostConfigManager:registerHost:359)   Registration process sucessfull
-13:07:06,310  INFO [Thread-2] (HostConfigManager:startNewMonitorProcess:509)   Creating the Monitor of the testQ0 on the same VM as the local HCM
-13:07:06,328 DEBUG [Thread-2] (Monitor:<init>:89)   Binding procuder to tcp://*:5502
-13:07:06,329 DEBUG [Thread-2] (Monitor:<init>:93)   Binding broker Sub  to tcp://*:5500
-13:07:06,329 DEBUG [Thread-2] (Monitor:<init>:98)   Init request socket to tcp://*:5501
-13:07:06,330 DEBUG [Thread-2] (Monitor:<init>:105)   Heart beat request socket to tcp://*:5504
-13:07:06,339  INFO [Thread-3] (StatisticMonitor:run:80)   Starting the Stat Monitor on 172.17.0.165:5800
-13:07:06,339 DEBUG [Thread-2] (Monitor:<init>:120)   Started shutdown monitor on 5505
-13:07:06,340  INFO [Thread-4] (ShutDownMonitor:run:62)   Shutdown monitor started for testQ0:0
-13:07:06,354  INFO [Thread-2] (HostConfigManager:startNewExchangeProcess:446)   Starting: [java, -Djava.library.path=/usr/local/lib, -cp, /lib/RoQ2/roq-management/target/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar, -Xmx256m, -XX:+UseConcMarkSweepGC, org.roqmessaging.core.launcher.ExchangeLauncher, 6000, 6001, tcp://172.17.0.165:5500, tcp://172.17.0.165:5800]
-13:07:06,395  INFO [Thread-5] (Monitor:run:346)   Monitor started
+15:11:21,496  INFO [Thread-2] (HostConfigManager:registerHost:349)   Registration process started
+15:11:21,511  INFO [Thread-0] (ShutDownMonitor:run:62)   Shutdown monitor started for Host config manager 172.17.0.184
+15:11:21,833  INFO [Thread-2] (HostConfigManager:registerHost:359)   Registration process sucessfull
+15:11:22,226  INFO [Thread-2] (HostConfigManager:startNewMonitorProcess:509)   Creating the Monitor of the testIdempotentQ1 on the same VM as the local HCM
+15:11:22,515 DEBUG [Thread-2] (Monitor:<init>:89)   Binding procuder to tcp://*:5502
+15:11:22,515 DEBUG [Thread-2] (Monitor:<init>:93)   Binding broker Sub  to tcp://*:5500
+15:11:22,516 DEBUG [Thread-2] (Monitor:<init>:98)   Init request socket to tcp://*:5501
+15:11:22,516 DEBUG [Thread-2] (Monitor:<init>:105)   Heart beat request socket to tcp://*:5504
+15:11:22,527 DEBUG [Thread-2] (Monitor:<init>:120)   Started shutdown monitor on 5505
+15:11:22,530  INFO [Thread-3] (StatisticMonitor:run:80)   Starting the Stat Monitor on 172.17.0.184:5800
+15:11:22,539  INFO [Thread-4] (ShutDownMonitor:run:62)   Shutdown monitor started for testIdempotentQ1:0
+15:11:22,556  INFO [Thread-2] (HostConfigManager:startNewExchangeProcess:446)   Starting: [java, -Djava.library.path=/usr/local/lib, -cp, /lib/RoQ2/roq-management/target/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar, -Xmx256m, -XX:+UseConcMarkSweepGC, org.roqmessaging.core.launcher.ExchangeLauncher, 6000, 6001, tcp://172.17.0.184:5500, tcp://172.17.0.184:5800]
+15:11:22,575  INFO [Thread-5] (Monitor:run:346)   Monitor started
 Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF8
-13:07:06,410  INFO [Thread-2] (HostConfigManager:startNewScalingProcess:263)   Starting the scaling process  for queue testQ0, using a listener port= 5802, GCM =172.17.0.164
-13:07:06,548  WARN [Thread-2] (KPISubscriber:subscribe:100)   The subscribe request failed because of the queue configuration: The Queue testQ0  is not registred.
-13:07:06,561  INFO [Thread-2] (HostConfigManager:run:167)   Successfully created new Q for testQ0@tcp://172.17.0.165:5500,tcp://172.17.0.165:5800
-13:07:06,661  INFO [Thread-10] (ScalingProcess:getAutoScalingConfig:180)   Request get Auto scaling info from auto scaling process
-13:07:06,661  INFO [Thread-10] (ScalingProcess:getAutoScalingConfig:181)   { "CMD" : 2007 , "QName" : "testQ0"}
-Launching Exchange process with arg 6000, 6001, tcp://172.17.0.165:5500, tcp://172.17.0.165:5800, 
-Starting Exchange with monitor tcp://172.17.0.165:5500, stat= tcp://172.17.0.165:5800
+15:11:22,633  INFO [Thread-2] (HostConfigManager:startNewScalingProcess:263)   Starting the scaling process  for queue testIdempotentQ1, using a listener port= 5802, GCM =172.17.0.183
+15:11:22,723  WARN [Thread-2] (KPISubscriber:subscribe:100)   The subscribe request failed because of the queue configuration: The Queue testIdempotentQ1  is not registred.
+15:11:22,727  INFO [Thread-2] (HostConfigManager:run:167)   Successfully created new Q for testIdempotentQ1@tcp://172.17.0.184:5500,tcp://172.17.0.184:5800
+15:11:22,865  INFO [Thread-10] (ScalingProcess:getAutoScalingConfig:180)   Request get Auto scaling info from auto scaling process
+15:11:22,866  INFO [Thread-10] (ScalingProcess:getAutoScalingConfig:181)   { "CMD" : 2007 , "QName" : "testIdempotentQ1"}
+Launching Exchange process with arg 6000, 6001, tcp://172.17.0.184:5500, tcp://172.17.0.184:5800, 
+Starting Exchange with monitor tcp://172.17.0.184:5500, stat= tcp://172.17.0.184:5800
 Front  port  6000, Back port= 6001
-13:07:07,734  INFO [main] (Exchange:<init>:112)   BackendSub: SndHWM=-1 RcvHWM=-1
-13:07:07,752  INFO [main] (Exchange:<init>:113)   FrontendSub: SndHWM=-1 RcvHWM=-1
-13:07:07,760  INFO [Thread-0] (ShutDownMonitor:run:62)   Shutdown monitor started for Exchange 6000->6001
-13:07:07,770  INFO [Thread-1] (Exchange:run:168)   Exchange Started
-13:07:07,873  INFO [Thread-5] (Monitor:logHost:223)   Added new host: 172.17.0.165: 6000->6001
-13:07:07,893 DEBUG [Thread-5] (Monitor:updateExchgMetadata:255)   update Exchg Metadata
-13:07:07,893  INFO [Thread-5] (Monitor:updateExchgMetadata:266)   Host 172.17.0.165 : 6000->6001 :0 bytes/min, 0 users
-13:07:07,893 DEBUG [Thread-5] (Monitor:relocateProd:289)   Relocate exchange procedure
-13:07:07,894 DEBUG [Thread-5] (Monitor:relocateProd:292)   Do we need to relocate ?
-13:07:07,887  INFO [Timer-0] (ExchangeStatTimer:run:76)   172.17.0.165 : minute 0 : 0 bytes/min, 0 producers connected - most productive = x,x
-13:07:07,921  INFO [Timer-0] (HostOSMonitoring:getCPUUsage:50)   CPU usage this last minute:  9.35
-13:07:07,926  INFO [Timer-0] (HostOSMonitoring:getMemoryUsage:37)   Current memory 3.5263671875 Mo  on 57.8125 Mo
-13:07:08,718  INFO [Thread-10] (ScalingProcess:initialization:115)   Autoscaling process for queue testQ0 is innactive - no auto scaling rules
-13:07:08,722  INFO [Thread-10] (ScalingProcess:getCloudConfigProperties:205)   Request get cloud properties from auto scaling process
-13:07:08,723  INFO [Thread-10] (ScalingProcess:getCloudConfigProperties:206)   { "CMD" : 2009}
-13:07:08,768  INFO [Thread-2] (HostConfigManager:startNewMonitorProcess:509)   Creating the Monitor of the testQ1 on the same VM as the local HCM
-13:07:08,774 DEBUG [Thread-2] (Monitor:<init>:89)   Binding procuder to tcp://*:5508
-13:07:08,775 DEBUG [Thread-2] (Monitor:<init>:93)   Binding broker Sub  to tcp://*:5506
-13:07:08,775 DEBUG [Thread-2] (Monitor:<init>:98)   Init request socket to tcp://*:5507
-13:07:08,775 DEBUG [Thread-2] (Monitor:<init>:105)   Heart beat request socket to tcp://*:5510
-13:07:08,777  INFO [Thread-11] (StatisticMonitor:run:80)   Starting the Stat Monitor on 172.17.0.165:5804
-13:07:08,781 DEBUG [Thread-2] (Monitor:<init>:120)   Started shutdown monitor on 5511
-13:07:08,782  INFO [Thread-12] (ShutDownMonitor:run:62)   Shutdown monitor started for testQ1:0
-13:07:08,790  INFO [Thread-2] (HostConfigManager:startNewExchangeProcess:446)   Starting: [java, -Djava.library.path=/usr/local/lib, -cp, /lib/RoQ2/roq-management/target/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar, -Xmx256m, -XX:+UseConcMarkSweepGC, org.roqmessaging.core.launcher.ExchangeLauncher, 6004, 6005, tcp://172.17.0.165:5506, tcp://172.17.0.165:5804]
-13:07:08,820  INFO [Thread-13] (Monitor:run:346)   Monitor started
-Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF8
-13:07:08,867  INFO [Thread-2] (HostConfigManager:startNewScalingProcess:263)   Starting the scaling process  for queue testQ1, using a listener port= 5806, GCM =172.17.0.164
-13:07:08,925  WARN [Thread-2] (KPISubscriber:subscribe:100)   The subscribe request failed because of the queue configuration: The Queue testQ1  is not registred.
-13:07:08,949  INFO [Thread-2] (HostConfigManager:run:167)   Successfully created new Q for testQ1@tcp://172.17.0.165:5506,tcp://172.17.0.165:5804
-13:07:08,991  INFO [Thread-17] (ScalingProcess:getAutoScalingConfig:180)   Request get Auto scaling info from auto scaling process
-13:07:08,991  INFO [Thread-17] (ScalingProcess:getAutoScalingConfig:181)   { "CMD" : 2007 , "QName" : "testQ1"}
-Launching Exchange process with arg 6004, 6005, tcp://172.17.0.165:5506, tcp://172.17.0.165:5804, 
-Starting Exchange with monitor tcp://172.17.0.165:5506, stat= tcp://172.17.0.165:5804
-Front  port  6004, Back port= 6005
-13:07:11,013 ERROR [Thread-10] (ScalingProcess:getCloudConfigProperties:228)   Error when getting cloud properties from the GCM 
+15:11:23,927  INFO [main] (Exchange:<init>:112)   BackendSub: SndHWM=-1 RcvHWM=-1
+15:11:23,935  INFO [main] (Exchange:<init>:113)   FrontendSub: SndHWM=-1 RcvHWM=-1
+15:11:23,944  INFO [Thread-0] (ShutDownMonitor:run:62)   Shutdown monitor started for Exchange 6000->6001
+15:11:23,954  INFO [Thread-1] (Exchange:run:168)   Exchange Started
+15:11:24,050  INFO [Thread-5] (Monitor:logHost:223)   Added new host: 172.17.0.184: 6000->6001
+15:11:24,065  INFO [Timer-0] (ExchangeStatTimer:run:76)   172.17.0.184 : minute 0 : 0 bytes/min, 0 producers connected - most productive = x,x
+15:11:24,078 DEBUG [Thread-5] (Monitor:updateExchgMetadata:255)   update Exchg Metadata
+15:11:24,079  INFO [Thread-5] (Monitor:updateExchgMetadata:266)   Host 172.17.0.184 : 6000->6001 :0 bytes/min, 0 users
+15:11:24,079 DEBUG [Thread-5] (Monitor:relocateProd:289)   Relocate exchange procedure
+15:11:24,079 DEBUG [Thread-5] (Monitor:relocateProd:292)   Do we need to relocate ?
+15:11:24,090  INFO [Timer-0] (HostOSMonitoring:getCPUUsage:50)   CPU usage this last minute:  2.1
+15:11:24,091  INFO [Timer-0] (HostOSMonitoring:getMemoryUsage:37)   Current memory 3.5263671875 Mo  on 57.8125 Mo
+15:11:24,935  INFO [Thread-10] (ScalingProcess:initialization:115)   Autoscaling process for queue testIdempotentQ1 is innactive - no auto scaling rules
+15:11:24,935  INFO [Thread-10] (ScalingProcess:getCloudConfigProperties:205)   Request get cloud properties from auto scaling process
+15:11:24,935  INFO [Thread-10] (ScalingProcess:getCloudConfigProperties:206)   { "CMD" : 2009}
+15:11:24,943 ERROR [Thread-10] (ScalingProcess:getCloudConfigProperties:228)   Error when getting cloud properties from the GCM 
 java.lang.NullPointerException
 	at org.roqmessaging.scaling.ScalingProcess.getCloudConfigProperties(ScalingProcess.java:215)
 	at org.roqmessaging.scaling.ScalingProcess.initialization(ScalingProcess.java:118)
 	at org.roqmessaging.scaling.ScalingProcess.run(ScalingProcess.java:243)
 	at java.lang.Thread.run(Thread.java:745)
-13:07:11,019  INFO [Thread-10] (ScalingProcess:registerListener:151)   Request Register for Auto scaling UPDATES
-13:07:11,020  INFO [Thread-10] (ScalingProcess:registerListener:152)   { "CMD" : 2008 , "QName" : "testQ0" , "Address" : "tcp://172.17.0.165:5802"}
-13:07:11,026  INFO [Thread-17] (ScalingProcess:initialization:115)   Autoscaling process for queue testQ1 is innactive - no auto scaling rules
-13:07:11,027  INFO [Thread-17] (ScalingProcess:getCloudConfigProperties:205)   Request get cloud properties from auto scaling process
-13:07:11,027  INFO [Thread-17] (ScalingProcess:getCloudConfigProperties:206)   { "CMD" : 2009}
-13:07:11,054  INFO [Thread-18] (ShutDownMonitor:run:62)   Shutdown monitor started for KPI subscriber
-13:07:11,243  INFO [main] (Exchange:<init>:112)   BackendSub: SndHWM=-1 RcvHWM=-1
-13:07:11,264  INFO [main] (Exchange:<init>:113)   FrontendSub: SndHWM=-1 RcvHWM=-1
-13:07:11,292  INFO [Thread-0] (ShutDownMonitor:run:62)   Shutdown monitor started for Exchange 6004->6005
-13:07:11,310  INFO [Thread-1] (Exchange:run:168)   Exchange Started
-13:07:11,482  INFO [Thread-13] (Monitor:logHost:223)   Added new host: 172.17.0.165: 6004->6005
-13:07:11,490 DEBUG [Thread-13] (Monitor:updateExchgMetadata:255)   update Exchg Metadata
-13:07:11,496  INFO [Thread-13] (Monitor:updateExchgMetadata:266)   Host 172.17.0.165 : 6004->6005 :0 bytes/min, 0 users
-13:07:11,496 DEBUG [Thread-13] (Monitor:relocateProd:289)   Relocate exchange procedure
-13:07:11,498 DEBUG [Thread-13] (Monitor:relocateProd:292)   Do we need to relocate ?
-13:07:11,472  INFO [Timer-0] (ExchangeStatTimer:run:76)   172.17.0.165 : minute 0 : 0 bytes/min, 0 producers connected - most productive = x,x
-13:07:11,556  INFO [Timer-0] (HostOSMonitoring:getCPUUsage:50)   CPU usage this last minute:  9.8
-13:07:11,574  INFO [Timer-0] (HostOSMonitoring:getMemoryUsage:37)   Current memory 3.5263671875 Mo  on 57.8125 Mo
-13:07:16,406 DEBUG [Thread-5] (Monitor:run:355)   Alive hosts: 172.17.0.165:6001
-13:07:18,841 DEBUG [Thread-13] (Monitor:run:355)   Alive hosts: 172.17.0.165:6005
-13:07:26,414 DEBUG [Thread-5] (Monitor:run:355)   Alive hosts: 172.17.0.165:6001
-13:07:28,842 DEBUG [Thread-13] (Monitor:run:355)   Alive hosts: 172.17.0.165:6005
-13:07:36,415 DEBUG [Thread-5] (Monitor:run:355)   Alive hosts: 172.17.0.165:6001
-13:07:38,860 DEBUG [Thread-13] (Monitor:run:355)   Alive hosts: 172.17.0.165:6005
-13:07:41,090 ERROR [Thread-17] (ScalingProcess:getCloudConfigProperties:228)   Error when getting cloud properties from the GCM 
-java.lang.NullPointerException
-	at org.roqmessaging.scaling.ScalingProcess.getCloudConfigProperties(ScalingProcess.java:215)
-	at org.roqmessaging.scaling.ScalingProcess.initialization(ScalingProcess.java:118)
-	at org.roqmessaging.scaling.ScalingProcess.run(ScalingProcess.java:243)
-	at java.lang.Thread.run(Thread.java:745)
-13:07:41,092  INFO [Thread-17] (ScalingProcess:registerListener:151)   Request Register for Auto scaling UPDATES
-13:07:41,092  INFO [Thread-17] (ScalingProcess:registerListener:152)   { "CMD" : 2008 , "QName" : "testQ1" , "Address" : "tcp://172.17.0.165:5806"}
-13:07:41,135  INFO [Thread-19] (ShutDownMonitor:run:62)   Shutdown monitor started for KPI subscriber
+15:11:24,945  INFO [Thread-10] (ScalingProcess:registerListener:151)   Request Register for Auto scaling UPDATES
+15:11:24,945  INFO [Thread-10] (ScalingProcess:registerListener:152)   { "CMD" : 2008 , "QName" : "testIdempotentQ1" , "Address" : "tcp://172.17.0.184:5802"}
 
 
 

@@ -6,7 +6,6 @@ public interface IRoQQueueManagement {
 	/**
 	 * Creates a logical queue automatically.
 	 * @param queueName the queue name
-	 * @param targetAddress the address to create the queue
 	 * @throws IllegalStateException if a queue already exist with this name, the name must be unique for 
 	 * the complete cluster.
 	 */

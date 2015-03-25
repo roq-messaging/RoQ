@@ -83,21 +83,21 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 			this.lockCreateQ.lock();
 			if (!this.initialized)
 				this.refreshTopology();
-			if(queueAlreadyExists(queueName) && !recoveryMod) return -1 ;
-			if(!hostExists(targetAddress)) return -2;			
+			if(queueAlreadyExists(queueName) && !recoveryMod) return -1 ; // The queue exists and was well created
+			if(!hostExists(targetAddress)) return -2; // HCM not exists	
 			//2. Sends the create event to the hostConfig manager thread
 			ZMQ.Socket hostSocket = this.configurationState.getHostManagerMap().get(targetAddress);
 			hostSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName).getBytes(), 0);
 			byte[] response = hostSocket.recv(0);
 			if (response == null) {
 				logger.info("HCM: " + targetAddress + " has timeout");
-				return -2; //HCM has timeout
+				return -2; // HCM has timeout
 			}
 			String[] resultHost = new String(response).split(",");
 			if (Integer.parseInt(resultHost[0]) != RoQConstant.CONFIG_CREATE_QUEUE_OK) {
 				logger.error("The queue creation for  " + queueName
 						+ " failed on the local host server");
-				return -3;
+				return -3; // Failure at the HCM
 			} else {
 				logger.info("Created queue " + queueName + " @ " + resultHost[1]);
 				// 3.B. Create the entry in the global config
@@ -108,7 +108,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 				if (Integer.parseInt(result) != RoQConstant.CONFIG_CREATE_QUEUE_OK) {
 					logger.error("The queue creation for  " + queueName
 							+ " failed on the global configuration server");
-					return -4;
+					return -4; //Failed to register the queue at GCM
 				}else{
 					try {
 						Thread.sleep(2000);
