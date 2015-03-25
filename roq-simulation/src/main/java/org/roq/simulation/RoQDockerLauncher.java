@@ -13,6 +13,7 @@ import jersey.repackaged.com.google.common.collect.ImmutableList;
 
 import org.apache.log4j.Logger;
 
+import com.kenai.jffi.Array;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
@@ -405,5 +406,17 @@ public class RoQDockerLauncher {
 	public ArrayList<String> getZKList() {
 		return ZKList;
 		
+	}
+
+	public ArrayList<String> getHCMAddressList() 
+			throws DockerException, InterruptedException {
+		ArrayList<String> list = new ArrayList<String>();
+		ContainerInfo info;
+		for (String id : HCMList) {
+			info = client.inspectContainer(id);
+			list.add(info.networkSettings().ipAddress());
+			logger.info(info);
+		}
+		return list;
 	}
 }
