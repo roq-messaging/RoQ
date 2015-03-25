@@ -191,6 +191,45 @@ public class RoQDockerLauncher {
 	    writer.close();
 	}
 	
+	public void pauseZookeeper(int duration) throws DockerException, InterruptedException {
+		for (String id: ZKList)
+			client.pauseContainer(id);
+		for (String id: ZKList) {
+			ContainerRestarter restarter = new ContainerRestarter(id, this, duration);
+			new Thread(restarter).start();
+		}
+	}
+	
+	/**
+	 * Zookeeper Restarter
+	 * @author benjamin
+	 *
+	 */
+	class ContainerRestarter implements Runnable {
+		private RoQDockerLauncher launcher;
+		private String id;
+		private int timeToSleep;
+		
+		public ContainerRestarter(String id, RoQDockerLauncher launcher, int timeToSleep) {
+			this.launcher = launcher;
+			this.id = id;
+			this.timeToSleep = timeToSleep;
+		}
+		
+		@Override
+		public void run() {
+			try {
+				Thread.sleep(timeToSleep);
+				launcher.client.unpauseContainer(id);
+			} catch (DockerException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		
+		}
+	}
+	
 	/**
 	 * Stop a GCM container
 	 * @throws Exception

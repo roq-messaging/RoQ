@@ -1,181 +1,135 @@
 Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF8
 Starting the  global configuration manager
-12:28:50,550  INFO [main] (GlobalConfigurationManager:init:111)   Started global config Runnable
-12:28:50,554  INFO [main] (GlobalConfigurationManager:init:118)   Configuration from props: GCM 60000 formatDB false
-12:28:50,694  INFO [main] (RoQZooKeeperClient:<init>:22)   
-12:28:50,695  INFO [main] (RoQZooKeeperClient:start:43)   
-12:28:50,699  INFO [main] (CuratorFrameworkImpl:start:238)   Starting
-12:28:50,714  INFO [main] (ZooKeeper:logEnv:100)   Client environment:zookeeper.version=3.4.6-1569965, built on 02/20/2014 09:09 GMT
-12:28:50,715  INFO [main] (ZooKeeper:logEnv:100)   Client environment:host.name=0817f98acc70
-12:28:50,715  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.version=1.7.0_75
-12:28:50,718  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.vendor=Oracle Corporation
-12:28:50,718  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.home=/usr/lib/jvm/java-7-openjdk-amd64/jre
-12:28:50,719  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.class.path=/lib/RoQ2/roq-management/target/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar
-12:28:50,719  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.library.path=/usr/local/lib
-12:28:50,719  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.io.tmpdir=/tmp
-12:28:50,719  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.compiler=<NA>
-12:28:50,720  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.name=Linux
-12:28:50,720  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.arch=amd64
-12:28:50,725  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.version=3.13.0-46-generic
-12:28:50,725  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.name=root
-12:28:50,729  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.home=/root
-12:28:50,730  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.dir=/
-12:28:50,731  INFO [main] (ZooKeeper:<init>:438)   Initiating client connection, connectString=172.17.0.144 sessionTimeout=60000 watcher=org.apache.curator.ConnectionState@2fb1a4cc
-12:28:50,766  INFO [main-SendThread(172.17.0.144:2181)] (ClientCnxn:logStartConnect:975)   Opening socket connection to server 172.17.0.144/172.17.0.144:2181. Will not attempt to authenticate using SASL (unknown error)
-12:28:50,853  INFO [main-SendThread(172.17.0.144:2181)] (ClientCnxn:primeConnection:852)   Socket connection established to 172.17.0.144/172.17.0.144:2181, initiating session
-12:28:50,869  INFO [main-SendThread(172.17.0.144:2181)] (ClientCnxn:run:1098)   Unable to read additional data from server sessionid 0x0, likely server has closed socket, closing socket connection and attempting reconnect
-12:28:52,239  INFO [main-SendThread(172.17.0.144:2181)] (ClientCnxn:logStartConnect:975)   Opening socket connection to server 172.17.0.144/172.17.0.144:2181. Will not attempt to authenticate using SASL (unknown error)
-12:28:52,240  INFO [main-SendThread(172.17.0.144:2181)] (ClientCnxn:primeConnection:852)   Socket connection established to 172.17.0.144/172.17.0.144:2181, initiating session
-12:28:53,090  INFO [main-SendThread(172.17.0.144:2181)] (ClientCnxn:onConnected:1235)   Session establishment complete on server 172.17.0.144/172.17.0.144:2181, sessionid = 0x14c50e81b420000, negotiated timeout = 40000
-12:28:53,093  INFO [main-EventThread] (ConnectionStateManager:postState:194)   State change: CONNECTED
-12:28:55,103  INFO [Thread-1] (ShutDownMonitor:run:62)   Shutdown monitor started for Global config manager
-12:28:55,321  INFO [main] (GlobalConfigurationManager:init:153)   Waiting for leadership
-12:28:55,456  INFO [main] (GlobalConfigurationManager:init:155)   Leadership acquired
-12:28:55,458  INFO [main] (RoQZooKeeperClient:setGCMLeader:114)   Set GCM address: 172.17.0.145 in ZK path: gcmLeader
-12:28:55,562  INFO [Thread-2] (ShutDownMonitor:run:62)   Shutdown monitor started for org.roqmessaging.management.server.MngtController Server
-12:28:56,069  INFO [Management config publisher] (RoQZooKeeperClient:getQueueList:249)   
-12:28:56,762  INFO [Management config publisher] (RoQZooKeeperClient:getHCMList:120)   
-12:28:58,539  INFO [Thread-5] (RoQZooKeeperClient:addHCM:99)   
-12:28:59,956  INFO [Thread-3] (RoQZooKeeperClient:qTransactionExists:157)   
-12:28:59,970  INFO [Thread-3] (RoQZooKeeperClient:getHCMList:120)   
-12:28:59,972  INFO [Thread-3] (RoQZooKeeperClient:createQTransaction:147)   
-12:28:59,994  INFO [Thread-5] (RoQZooKeeperClient:getHCMList:120)   
-12:28:59,995  INFO [Thread-5] (RoQZooKeeperClient:getQueueList:249)   
-12:29:00,016  INFO [Thread-3] (GlobalConfigurationStateClient:refreshConfiguration:98)   Getting configuration with 1 Host managers and 0 queues
-12:29:00,017  INFO [Thread-5] (RoQZooKeeperClient:getHCMList:120)   
-12:29:00,019  INFO [Thread-5] (RoQZooKeeperClient:getQueueList:249)   
-12:29:00,023  INFO [Thread-3] (GlobalConfigurationStateClient:refreshConfiguration:98)   Getting configuration with 1 Host managers and 0 queues
-12:29:00,596  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
-12:29:00,598  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: null
-12:29:00,598  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
-12:29:00,599  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: null
-12:29:00,599  WARN [Thread-5] (GlobalConfigurationManager:processBSONRequest:279)    No logical queue as:testQ0
-12:29:00,646  INFO [Thread-3] (LogicalQFactory:createQueue:102)   Created queue testQ0 @ tcp://172.17.0.146:5500
-12:29:00,648  INFO [Thread-5] (RoQZooKeeperClient:createQueue:203)   
-12:29:00,813  INFO [Thread-5] (RoQZooKeeperClient:setRunning:228)   
-12:29:00,826  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
-12:29:00,828  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: tcp://172.17.0.146:5500
-12:29:00,828  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
-12:29:00,833  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: tcp://172.17.0.146:5800
-12:29:02,834  INFO [Thread-3] (RoQZooKeeperClient:removeQTransaction:167)   
-12:29:02,865  INFO [Thread-3] (RoQZooKeeperClient:getNameScalingConfig:328)   
-12:29:02,867  INFO [Thread-3] (RoQZooKeeperClient:getScalingConfig:357)   
-12:29:02,868  INFO [Thread-3] (RoQZooKeeperClient:getScalingConfig:357)   
-12:29:02,870  INFO [Thread-3] (RoQZooKeeperClient:getScalingConfig:357)   
-12:29:02,886  INFO [Thread-3] (RoQZooKeeperClient:getCloudConfig:306)   
-12:29:02,942  INFO [Thread-3] (RoQZooKeeperClient:qTransactionExists:157)   
-12:29:02,944  INFO [Thread-3] (RoQZooKeeperClient:getHCMList:120)   
-12:29:02,946  INFO [Thread-3] (RoQZooKeeperClient:createQTransaction:147)   
-12:29:02,978  INFO [Thread-5] (RoQZooKeeperClient:getHCMList:120)   
-12:29:02,985  INFO [Thread-5] (RoQZooKeeperClient:getQueueList:249)   
-12:29:02,986  INFO [Thread-5] (RoQZooKeeperClient:isRunning:244)   
-12:29:02,998  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
-12:29:03,000  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: tcp://172.17.0.146:5500
-12:29:03,006  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
-12:29:03,014  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: tcp://172.17.0.146:5800
-12:29:03,014  INFO [Thread-5] (RoQZooKeeperClient:getHCM:267)   
-12:29:03,016  INFO [Thread-5] (RoQZooKeeperClient:getHCM:270)   HCM address: 172.17.0.146
-12:29:03,019  INFO [Thread-3] (GlobalConfigurationStateClient:refreshConfiguration:98)   Getting configuration with 1 Host managers and 1 queues
-12:29:03,240  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
-12:29:03,246  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: null
-12:29:03,246  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
-12:29:03,248  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: null
-12:29:03,248  WARN [Thread-5] (GlobalConfigurationManager:processBSONRequest:279)    No logical queue as:testQ1
-12:29:03,274  INFO [Thread-3] (LogicalQFactory:createQueue:102)   Created queue testQ1 @ tcp://172.17.0.146:5506
-12:29:03,280  INFO [Thread-5] (RoQZooKeeperClient:createQueue:203)   
-12:29:03,306  INFO [Thread-5] (RoQZooKeeperClient:setRunning:228)   
-12:29:03,333  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
-12:29:03,334  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: tcp://172.17.0.146:5506
-12:29:03,334  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
-12:29:03,336  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: tcp://172.17.0.146:5804
-12:29:05,334  INFO [Thread-3] (RoQZooKeeperClient:removeQTransaction:167)   
-12:29:05,699  INFO [Thread-3] (RoQZooKeeperClient:getNameScalingConfig:328)   
-12:29:05,936  INFO [Thread-3] (RoQZooKeeperClient:getScalingConfig:357)   
-12:29:05,938  INFO [Thread-3] (RoQZooKeeperClient:getScalingConfig:357)   
-12:29:05,939  INFO [Thread-3] (RoQZooKeeperClient:getScalingConfig:357)   
-12:29:05,970  INFO [Thread-3] (RoQZooKeeperClient:getCloudConfig:306)   
-
-
-
- ---------------------------------- 
-
-
-Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF8
-Starting the  global configuration manager
-12:29:07,677  INFO [main] (GlobalConfigurationManager:init:111)   Started global config Runnable
-12:29:07,683  INFO [main] (GlobalConfigurationManager:init:118)   Configuration from props: GCM 60000 formatDB false
-12:29:07,936  INFO [main] (RoQZooKeeperClient:<init>:22)   
-12:29:07,942  INFO [main] (RoQZooKeeperClient:start:43)   
-12:29:07,951  INFO [main] (CuratorFrameworkImpl:start:238)   Starting
-12:29:07,971  INFO [main] (ZooKeeper:logEnv:100)   Client environment:zookeeper.version=3.4.6-1569965, built on 02/20/2014 09:09 GMT
-12:29:07,974  INFO [main] (ZooKeeper:logEnv:100)   Client environment:host.name=ed13865ecf5a
-12:29:07,974  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.version=1.7.0_75
-12:29:07,975  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.vendor=Oracle Corporation
-12:29:07,975  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.home=/usr/lib/jvm/java-7-openjdk-amd64/jre
-12:29:07,975  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.class.path=/lib/RoQ2/roq-management/target/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar
-12:29:07,976  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.library.path=/usr/local/lib
-12:29:07,976  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.io.tmpdir=/tmp
-12:29:07,976  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.compiler=<NA>
-12:29:07,976  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.name=Linux
-12:29:07,977  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.arch=amd64
-12:29:07,982  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.version=3.13.0-46-generic
-12:29:07,982  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.name=root
-12:29:07,983  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.home=/root
-12:29:07,983  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.dir=/
-12:29:07,984  INFO [main] (ZooKeeper:<init>:438)   Initiating client connection, connectString=172.17.0.144 sessionTimeout=60000 watcher=org.apache.curator.ConnectionState@2fb1a4cc
-12:29:08,029  INFO [main-SendThread(172.17.0.144:2181)] (ClientCnxn:logStartConnect:975)   Opening socket connection to server 172.17.0.144/172.17.0.144:2181. Will not attempt to authenticate using SASL (unknown error)
-12:29:08,066  INFO [main-SendThread(172.17.0.144:2181)] (ClientCnxn:primeConnection:852)   Socket connection established to 172.17.0.144/172.17.0.144:2181, initiating session
-12:29:08,086  INFO [main-SendThread(172.17.0.144:2181)] (ClientCnxn:onConnected:1235)   Session establishment complete on server 172.17.0.144/172.17.0.144:2181, sessionid = 0x14c50e81b420003, negotiated timeout = 40000
-12:29:08,100  INFO [main-EventThread] (ConnectionStateManager:postState:194)   State change: CONNECTED
-12:29:09,142  INFO [Thread-1] (ShutDownMonitor:run:62)   Shutdown monitor started for Global config manager
-12:29:09,302  INFO [main] (GlobalConfigurationManager:init:153)   Waiting for leadership
-12:29:46,080  INFO [main] (GlobalConfigurationManager:init:155)   Leadership acquired
-12:29:46,083  INFO [main] (RoQZooKeeperClient:setGCMLeader:114)   Set GCM address: 172.17.0.147 in ZK path: gcmLeader
-12:29:46,133  INFO [Thread-2] (ShutDownMonitor:run:62)   Shutdown monitor started for org.roqmessaging.management.server.MngtController Server
-12:29:46,699  INFO [Management config publisher] (RoQZooKeeperClient:getQueueList:249)   
-12:29:46,702  INFO [Management config publisher] (RoQZooKeeperClient:getHCM:267)   
-12:29:46,708  INFO [Management config publisher] (RoQZooKeeperClient:getHCM:270)   HCM address: 172.17.0.146
-12:29:46,709  INFO [Management config publisher] (RoQZooKeeperClient:getHCM:267)   
-12:29:46,711  INFO [Management config publisher] (RoQZooKeeperClient:getHCM:270)   HCM address: 172.17.0.146
-12:29:46,735  INFO [Management config publisher] (RoQZooKeeperClient:getHCMList:120)   
-12:29:47,991  INFO [Thread-3] (MngtController:run:232)   Start  Q Request ... checking whether the Queue is known ...
-12:29:48,114  INFO [Thread-5] (RoQZooKeeperClient:getHCMList:120)   
-12:29:48,116  INFO [Thread-5] (RoQZooKeeperClient:getQueueList:249)   
-12:29:48,118  INFO [Thread-5] (RoQZooKeeperClient:isRunning:244)   
-12:29:48,126  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
-12:29:48,134  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: tcp://172.17.0.146:5506
-12:29:48,135  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
-12:29:48,138  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: tcp://172.17.0.146:5804
-12:29:48,138  INFO [Thread-5] (RoQZooKeeperClient:getHCM:267)   
-12:29:48,146  INFO [Thread-5] (RoQZooKeeperClient:getHCM:270)   HCM address: 172.17.0.146
-12:29:48,147  INFO [Thread-5] (RoQZooKeeperClient:isRunning:244)   
-12:29:48,149  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
-12:29:48,150  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: tcp://172.17.0.146:5500
-12:29:48,151  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
-12:29:48,152  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: tcp://172.17.0.146:5800
-12:29:48,152  INFO [Thread-5] (RoQZooKeeperClient:getHCM:267)   
-12:29:48,154  INFO [Thread-5] (RoQZooKeeperClient:getHCM:270)   HCM address: 172.17.0.146
-12:29:48,161  INFO [Thread-3] (GlobalConfigurationStateClient:refreshConfiguration:98)   Getting configuration with 1 Host managers and 2 queues
-12:29:48,166 ERROR [Thread-3] (LogicalQFactory:queueAlreadyExists:135)   java.lang.IllegalStateException: The queue name testQ0 already exists
-12:29:48,198  INFO [Thread-3] (MngtController:run:232)   Start  Q Request ... checking whether the Queue is known ...
-12:29:48,206  INFO [Thread-5] (RoQZooKeeperClient:getHCMList:120)   
-12:29:48,210  INFO [Thread-5] (RoQZooKeeperClient:getQueueList:249)   
-12:29:48,214  INFO [Thread-5] (RoQZooKeeperClient:isRunning:244)   
-12:29:48,216  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
-12:29:48,222  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: tcp://172.17.0.146:5506
-12:29:48,223  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
-12:29:48,254  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: tcp://172.17.0.146:5804
-12:29:48,254  INFO [Thread-5] (RoQZooKeeperClient:getHCM:267)   
-12:29:48,256  INFO [Thread-5] (RoQZooKeeperClient:getHCM:270)   HCM address: 172.17.0.146
-12:29:48,256  INFO [Thread-5] (RoQZooKeeperClient:isRunning:244)   
-12:29:48,257  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
-12:29:48,266  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: tcp://172.17.0.146:5500
-12:29:48,266  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
-12:29:48,268  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: tcp://172.17.0.146:5800
-12:29:48,268  INFO [Thread-5] (RoQZooKeeperClient:getHCM:267)   
-12:29:48,269  INFO [Thread-5] (RoQZooKeeperClient:getHCM:270)   HCM address: 172.17.0.146
-12:29:48,272  INFO [Thread-3] (GlobalConfigurationStateClient:refreshConfiguration:98)   Getting configuration with 1 Host managers and 2 queues
-12:29:48,272 ERROR [Thread-3] (LogicalQFactory:queueAlreadyExists:135)   java.lang.IllegalStateException: The queue name testQ0 already exists
+13:07:02,701  INFO [main] (GlobalConfigurationManager:init:111)   Started global config Runnable
+13:07:02,704  INFO [main] (GlobalConfigurationManager:init:118)   Configuration from props: GCM 60000 formatDB false
+13:07:02,853  INFO [main] (RoQZooKeeperClient:<init>:22)   
+13:07:02,853  INFO [main] (RoQZooKeeperClient:start:43)   
+13:07:02,858  INFO [main] (CuratorFrameworkImpl:start:238)   Starting
+13:07:02,874  INFO [main] (ZooKeeper:logEnv:100)   Client environment:zookeeper.version=3.4.6-1569965, built on 02/20/2014 09:09 GMT
+13:07:02,875  INFO [main] (ZooKeeper:logEnv:100)   Client environment:host.name=04d20984149c
+13:07:02,875  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.version=1.7.0_75
+13:07:02,875  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.vendor=Oracle Corporation
+13:07:02,876  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.home=/usr/lib/jvm/java-7-openjdk-amd64/jre
+13:07:02,876  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.class.path=/lib/RoQ2/roq-management/target/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar
+13:07:02,876  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.library.path=/usr/local/lib
+13:07:02,877  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.io.tmpdir=/tmp
+13:07:02,878  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.compiler=<NA>
+13:07:02,878  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.name=Linux
+13:07:02,878  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.arch=amd64
+13:07:02,882  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.version=3.13.0-46-generic
+13:07:02,883  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.name=root
+13:07:02,883  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.home=/root
+13:07:02,883  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.dir=/
+13:07:02,885  INFO [main] (ZooKeeper:<init>:438)   Initiating client connection, connectString=172.17.0.163 sessionTimeout=60000 watcher=org.apache.curator.ConnectionState@2fb1a4cc
+13:07:02,932  INFO [main-SendThread(172.17.0.163:2181)] (ClientCnxn:logStartConnect:975)   Opening socket connection to server 172.17.0.163/172.17.0.163:2181. Will not attempt to authenticate using SASL (unknown error)
+13:07:02,942  WARN [main-SendThread(172.17.0.163:2181)] (ClientCnxn:run:1102)   Session 0x0 for server null, unexpected error, closing socket connection and attempting reconnect
+java.net.ConnectException: Connection refused
+	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
+	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:739)
+	at org.apache.zookeeper.ClientCnxnSocketNIO.doTransport(ClientCnxnSocketNIO.java:361)
+	at org.apache.zookeeper.ClientCnxn$SendThread.run(ClientCnxn.java:1081)
+13:07:04,054  INFO [main-SendThread(172.17.0.163:2181)] (ClientCnxn:logStartConnect:975)   Opening socket connection to server 172.17.0.163/172.17.0.163:2181. Will not attempt to authenticate using SASL (unknown error)
+13:07:04,055  INFO [main-SendThread(172.17.0.163:2181)] (ClientCnxn:primeConnection:852)   Socket connection established to 172.17.0.163/172.17.0.163:2181, initiating session
+13:07:05,129  INFO [main-SendThread(172.17.0.163:2181)] (ClientCnxn:onConnected:1235)   Session establishment complete on server 172.17.0.163/172.17.0.163:2181, sessionid = 0x14c510b152b0000, negotiated timeout = 40000
+13:07:05,133  INFO [main-EventThread] (ConnectionStateManager:postState:194)   State change: CONNECTED
+13:07:05,206  INFO [Thread-1] (ShutDownMonitor:run:62)   Shutdown monitor started for Global config manager
+13:07:05,310  INFO [main] (GlobalConfigurationManager:init:153)   Waiting for leadership
+13:07:05,396  INFO [main] (GlobalConfigurationManager:init:155)   Leadership acquired
+13:07:05,398  INFO [main] (RoQZooKeeperClient:setGCMLeader:114)   Set GCM address: 172.17.0.164 in ZK path: gcmLeader
+13:07:05,427  INFO [Thread-2] (ShutDownMonitor:run:62)   Shutdown monitor started for org.roqmessaging.management.server.MngtController Server
+13:07:05,443  INFO [Thread-5] (RoQZooKeeperClient:addHCM:99)   
+13:07:05,942  INFO [Management config publisher] (RoQZooKeeperClient:getQueueList:249)   
+13:07:05,985  INFO [Management config publisher] (RoQZooKeeperClient:getHCMList:120)   
+13:07:06,264  INFO [Thread-3] (RoQZooKeeperClient:qTransactionExists:157)   
+13:07:06,275  INFO [Thread-3] (RoQZooKeeperClient:getHCMList:120)   
+13:07:06,278  INFO [Thread-3] (RoQZooKeeperClient:createQTransaction:147)   
+13:07:06,287  INFO [Thread-5] (RoQZooKeeperClient:getHCMList:120)   
+13:07:06,288  INFO [Thread-5] (RoQZooKeeperClient:getQueueList:249)   
+13:07:06,298  INFO [Thread-3] (GlobalConfigurationStateClient:refreshConfiguration:98)   Getting configuration with 1 Host managers and 0 queues
+13:07:06,304  INFO [Thread-5] (RoQZooKeeperClient:getHCMList:120)   
+13:07:06,306  INFO [Thread-5] (RoQZooKeeperClient:getQueueList:249)   
+13:07:06,308  INFO [Thread-3] (GlobalConfigurationStateClient:refreshConfiguration:98)   Getting configuration with 1 Host managers and 0 queues
+13:07:06,530  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
+13:07:06,534  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: null
+13:07:06,534  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
+13:07:06,536  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: null
+13:07:06,536  WARN [Thread-5] (GlobalConfigurationManager:processBSONRequest:279)    No logical queue as:testQ0
+13:07:06,566  INFO [Thread-3] (LogicalQFactory:createQueue:102)   Created queue testQ0 @ tcp://172.17.0.165:5500
+13:07:06,567  INFO [Thread-5] (RoQZooKeeperClient:createQueue:203)   
+13:07:06,643  INFO [Thread-5] (RoQZooKeeperClient:setRunning:228)   
+13:07:06,653  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
+13:07:06,654  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: tcp://172.17.0.165:5500
+13:07:06,655  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
+13:07:06,656  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: tcp://172.17.0.165:5800
+13:07:08,654  INFO [Thread-3] (RoQZooKeeperClient:removeQTransaction:167)   
+13:07:08,686  INFO [Thread-3] (RoQZooKeeperClient:getNameScalingConfig:328)   
+13:07:08,699  INFO [Thread-3] (RoQZooKeeperClient:getScalingConfig:357)   
+13:07:08,705  INFO [Thread-3] (RoQZooKeeperClient:getScalingConfig:357)   
+13:07:08,707  INFO [Thread-3] (RoQZooKeeperClient:getScalingConfig:357)   
+13:07:08,709  INFO [Thread-3] (RoQZooKeeperClient:qTransactionExists:157)   
+13:07:08,713  INFO [Thread-3] (RoQZooKeeperClient:getHCMList:120)   
+13:07:08,718  INFO [Thread-3] (RoQZooKeeperClient:createQTransaction:147)   
+13:07:08,730  INFO [Thread-5] (RoQZooKeeperClient:getHCMList:120)   
+13:07:08,732  INFO [Thread-5] (RoQZooKeeperClient:getQueueList:249)   
+13:07:08,733  INFO [Thread-5] (RoQZooKeeperClient:isRunning:244)   
+13:07:08,745  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
+13:07:08,746  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: tcp://172.17.0.165:5500
+13:07:08,747  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
+13:07:08,748  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: tcp://172.17.0.165:5800
+13:07:08,748  INFO [Thread-5] (RoQZooKeeperClient:getHCM:267)   
+13:07:08,758  INFO [Thread-5] (RoQZooKeeperClient:getHCM:270)   HCM address: 172.17.0.165
+13:07:08,763  INFO [Thread-3] (GlobalConfigurationStateClient:refreshConfiguration:98)   Getting configuration with 1 Host managers and 1 queues
+13:07:08,918  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
+13:07:08,920  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: null
+13:07:08,920  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
+13:07:08,921  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: null
+13:07:08,922  WARN [Thread-5] (GlobalConfigurationManager:processBSONRequest:279)    No logical queue as:testQ1
+13:07:08,960  INFO [Thread-3] (LogicalQFactory:createQueue:102)   Created queue testQ1 @ tcp://172.17.0.165:5506
+13:07:08,961  INFO [Thread-5] (RoQZooKeeperClient:createQueue:203)   
+13:07:08,972  INFO [Thread-5] (RoQZooKeeperClient:setRunning:228)   
+13:07:08,983  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
+13:07:08,985  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: tcp://172.17.0.165:5506
+13:07:08,985  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
+13:07:08,987  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: tcp://172.17.0.165:5804
+13:07:10,986  INFO [Thread-3] (RoQZooKeeperClient:removeQTransaction:167)   
+13:07:11,002  INFO [Thread-3] (RoQZooKeeperClient:getCloudConfig:306)   
+13:07:11,004  INFO [Thread-3] (RoQZooKeeperClient:getNameScalingConfig:328)   
+13:07:11,006  INFO [Thread-3] (RoQZooKeeperClient:getScalingConfig:357)   
+13:07:11,007  INFO [Thread-3] (RoQZooKeeperClient:getScalingConfig:357)   
+13:07:11,018  INFO [Thread-3] (RoQZooKeeperClient:getScalingConfig:357)   
+13:07:11,033  INFO [Thread-3] (RoQZooKeeperClient:getCloudConfig:306)   
+13:07:37,698  INFO [main-SendThread(172.17.0.163:2181)] (ClientCnxn:run:1096)   Client session timed out, have not heard from server in 26679ms for sessionid 0x14c510b152b0000, closing socket connection and attempting reconnect
+13:07:37,800  INFO [main-EventThread] (ConnectionStateManager:postState:194)   State change: SUSPENDED
+13:07:37,801  INFO [Thread-5] (GlobalConfigurationManager:run:218)   connection with ZK has been lost, waiting for leadership
+13:07:37,801  INFO [Thread-5] (GlobalConfigTimer:cancel:106)   Stopping the Global configuration publisher
+13:07:39,210  INFO [main-SendThread(172.17.0.163:2181)] (ClientCnxn:logStartConnect:975)   Opening socket connection to server 172.17.0.163/172.17.0.163:2181. Will not attempt to authenticate using SASL (unknown error)
+13:07:39,211  INFO [main-SendThread(172.17.0.163:2181)] (ClientCnxn:primeConnection:852)   Socket connection established to 172.17.0.163/172.17.0.163:2181, initiating session
+13:07:41,055  INFO [main-SendThread(172.17.0.163:2181)] (ClientCnxn:onConnected:1235)   Session establishment complete on server 172.17.0.163/172.17.0.163:2181, sessionid = 0x14c510b152b0000, negotiated timeout = 40000
+13:07:41,059  INFO [main-EventThread] (ConnectionStateManager:postState:194)   State change: RECONNECTED
+13:07:41,086  INFO [Thread-3] (MngtController:run:602)   connection with ZK has been lost, waiting for leadership
+13:07:41,086  INFO [Thread-3] (MngtControllerTimer:cancel:89)   Stopping the Management controller publisher
+13:07:41,096  INFO [Thread-5] (GlobalConfigurationManager:run:243)   connection with ZK has been reetablished  GCM is replaning the tasks
+13:07:41,097  INFO [Thread-5] (RoQZooKeeperClient:setGCMLeader:114)   Set GCM address: 172.17.0.164 in ZK path: gcmLeader
+13:07:41,098  INFO [Thread-3] (MngtController:run:623)   connection with ZK has been re-etablished MngmtController restarted
+13:07:41,099  INFO [Thread-3] (MngtController:run:232)   Start  Q Request ... checking whether the Queue is known ...
+13:07:41,122  INFO [Thread-5] (RoQZooKeeperClient:getHCMList:120)   
+13:07:41,124  INFO [Thread-5] (RoQZooKeeperClient:getQueueList:249)   
+13:07:41,129  INFO [Thread-5] (RoQZooKeeperClient:isRunning:244)   
+13:07:41,134  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
+13:07:41,139  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: tcp://172.17.0.165:5506
+13:07:41,140  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
+13:07:41,143  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: tcp://172.17.0.165:5804
+13:07:41,144  INFO [Thread-5] (RoQZooKeeperClient:getHCM:267)   
+13:07:41,147  INFO [Thread-5] (RoQZooKeeperClient:getHCM:270)   HCM address: 172.17.0.165
+13:07:41,147  INFO [Thread-5] (RoQZooKeeperClient:isRunning:244)   
+13:07:41,155  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:278)   
+13:07:41,162  INFO [Thread-5] (RoQZooKeeperClient:getMonitor:281)   Monitor address: tcp://172.17.0.165:5500
+13:07:41,163  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:289)   
+13:07:41,166  INFO [Thread-5] (RoQZooKeeperClient:getStatMonitor:292)   StatMonitor address: tcp://172.17.0.165:5800
+13:07:41,166  INFO [Thread-5] (RoQZooKeeperClient:getHCM:267)   
+13:07:41,170  INFO [Thread-5] (RoQZooKeeperClient:getHCM:270)   HCM address: 172.17.0.165
+13:07:41,172  INFO [Thread-3] (GlobalConfigurationStateClient:refreshConfiguration:98)   Getting configuration with 1 Host managers and 2 queues
+13:07:41,172 ERROR [Thread-3] (LogicalQFactory:queueAlreadyExists:135)   java.lang.IllegalStateException: The queue name testQ0 already exists
 
 
 
