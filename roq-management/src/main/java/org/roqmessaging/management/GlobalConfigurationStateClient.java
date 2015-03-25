@@ -139,7 +139,7 @@ public class GlobalConfigurationStateClient extends GlobalConfigurationState {
 		}
 		for (String hostToadd : toAdd) {
 			try {
-				ZMQ.Socket socket = context.socket(ZMQ.PAIR);
+				ZMQ.Socket socket = context.socket(ZMQ.REQ);
 				String address = "tcp://" + hostToadd + ":5100";
 				logger.debug("Connect to " + address);
 				socket.setReceiveTimeOut(hcmTIMEOUT);

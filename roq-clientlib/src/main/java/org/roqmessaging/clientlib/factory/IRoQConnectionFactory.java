@@ -45,5 +45,10 @@ public interface IRoQConnectionFactory {
 	 * @throws ConnectException 
 	 */
 	public IRoQSubscriberConnection createRoQSubscriberConnection(String qName, String key) throws IllegalStateException, ConnectException;
+	
+	/**
+	 * close ZK
+	 */
+	public void close();
 
 }

@@ -24,8 +24,6 @@ public class RoQZooKeeper {
 				.namespace(cfg.namespace)
 				.retryPolicy(retryPolicy)
 				.build();
-		
-		this.start();
 	}
 
 	public RoQZooKeeper(RoQZKSimpleConfig config) {		

@@ -228,6 +228,25 @@ public class MngtController implements Runnable, IStoppable {
 							
 							logger.debug("Create queue name = " + qName + " on " + host + " from a start command");
 							break;
+						case RoQConstant.BSON_CONFIG_QUEUE_EXISTS:
+							logger.info("Start  Q Request ... checking whether the Queue is known ...");
+							logger.debug("Incoming request:" + request.toString());
+							// Check if queue QName exists
+							if (!checkField(request, "QName")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>");
+								break;
+							}
+							// 1. Get the name
+							qName = (String) request.get("QName");
+
+							if (!factory.queueAlreadyExists(qName)) {
+								sendReply_fail("NO");
+							} else {
+								sendReply_ok("YES");
+							}
+							
+							logger.debug("Create queue name = " + qName + " on " + host + " from a start command");
+							break;
 						case RoQConstant.BSON_CONFIG_CREATE_QUEUE:
 							logger.debug("Create Q request ...");
 							// Starting a queue

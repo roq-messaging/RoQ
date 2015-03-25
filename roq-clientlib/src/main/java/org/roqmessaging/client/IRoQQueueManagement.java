@@ -36,4 +36,19 @@ public interface IRoQQueueManagement {
 	 */
 	public boolean stopQueue(String queueName) throws IllegalStateException, ConnectException;
 	
+	/***
+	 * Check if a queue exists
+	 * @param queueName
+	 * @return true if queue exists
+	 * @throws IllegalStateException
+	 * @throws ConnectException
+	 */
+	public boolean queueExists(String queueName) throws IllegalStateException,
+			ConnectException;
+	
+	/**
+	 * Close Zk connection
+	 */
+	public void close();
+	
 }

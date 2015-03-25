@@ -74,7 +74,7 @@ public class TestLoadSender extends RoQTestCase {
 	 * @param qName the queue to attach the subs.
 	 */
 	protected void attachSUbscriber(String qName) {
-		IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getConfigurationServer());
+		IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getZkServerAddress());
 		// add a subscriber
 		try {
 			subscriberConnection = factory.createRoQSubscriberConnection(qName, "test");

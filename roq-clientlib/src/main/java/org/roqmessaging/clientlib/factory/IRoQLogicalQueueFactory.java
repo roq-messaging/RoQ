@@ -62,6 +62,11 @@ public interface IRoQLogicalQueueFactory {
 	 */
 	public boolean createExchange(String queueName, String targetAddress, String exchangeID);
 	
+	/**
+	 * @param qName, the queue to check
+	 * @return true if the queue exists 
+	 */
+	public boolean queueAlreadyExists(String qName);
 	
 	/**
 	 * As the queue factory will keep a local cache of the topology, we enable to refresh the cache.

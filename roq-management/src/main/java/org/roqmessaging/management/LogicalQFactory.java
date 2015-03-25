@@ -86,7 +86,6 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 			if(queueAlreadyExists(queueName) && !recoveryMod) return -1 ;
 			if(!hostExists(targetAddress)) return -2;			
 			//2. Sends the create event to the hostConfig manager thread
-			this.configurationState.refreshConfiguration();
 			ZMQ.Socket hostSocket = this.configurationState.getHostManagerMap().get(targetAddress);
 			hostSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE) + "," + queueName).getBytes(), 0);
 			byte[] response = hostSocket.recv(0);
@@ -128,7 +127,8 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	 * @param queueName the logical queue
 	 * @return true if the check is OK
 	 */
-	private boolean queueAlreadyExists(String queueName) {
+	public boolean queueAlreadyExists(String queueName) {
+		this.configurationState.refreshConfiguration();
 		// 1. Check if the name already exist in the topology
 		if (this.configurationState.getQueueMonitorMap().containsKey(queueName)) {
 			// the queue already exist
