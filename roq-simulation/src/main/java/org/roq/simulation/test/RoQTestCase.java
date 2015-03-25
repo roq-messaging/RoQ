@@ -68,6 +68,7 @@ public class RoQTestCase {
 	 */
 	@After
 	public void tearDown() throws Exception {
+		connection.close();
 		this.logger.info("Tear Down TEST");
 		if(this.subscriberConnection!=null){
 			subscriberConnection.close();

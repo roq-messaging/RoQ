@@ -14,6 +14,8 @@
  */
 package org.roq.simulation.test;
 
+import java.net.ConnectException;
+
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
@@ -30,8 +32,8 @@ import org.roqmessaging.core.factory.RoQQueueManager;
 public class RoQDockerTestCase {
 	protected RoQDockerLauncher launcher = null;
 	protected Logger logger = Logger.getLogger(RoQDockerTestCase.class);
-	protected RoQConnectionFactory connection = null;
-	protected IRoQQueueManagement queueManager = null;
+	protected static RoQConnectionFactory connection = null;
+	protected static IRoQQueueManagement queueManager = null;
 	
 	 /**
 	 * @throws java.lang.Exception
@@ -53,6 +55,8 @@ public class RoQDockerTestCase {
 	 */
 	@After
 	public void tearDown() throws Exception {
+		connection.close();
+		queueManager.close();
 		this.logger.info("Tear Down TEST");
 		this.launcher.tearDown();
 		Thread.sleep(4000);
@@ -63,7 +67,8 @@ public class RoQDockerTestCase {
 	 * @param qName the name of the queue
 	 * @throws Exception
 	 */
-	public void initQueue(String qName) throws Exception {
+	public static void initQueue(String qName) 
+			throws IllegalStateException, ConnectException {
 		queueManager.createQueue(qName);
 	}
 	
@@ -72,7 +77,8 @@ public class RoQDockerTestCase {
 	 * @param qName the name of the queue
 	 * @throws Exception
 	 */
-	public boolean queueExists(String qName) throws Exception {
+	public static boolean queueExists(String qName) 
+			throws IllegalStateException, ConnectException {
 		return queueManager.queueExists(qName);
 	}
 	
@@ -81,7 +87,8 @@ public class RoQDockerTestCase {
 	 * @param qName the name of the queue
 	 * @throws Exception
 	 */
-	public void rmQueue(String qName) throws Exception {
+	public static void rmQueue(String qName) 
+			throws IllegalStateException, ConnectException {
 		queueManager.removeQueue(qName);
 	}
 }
