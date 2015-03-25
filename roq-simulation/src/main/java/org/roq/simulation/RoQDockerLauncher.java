@@ -37,11 +37,11 @@ public class RoQDockerLauncher {
 	private ContainerConfig configGCM = null;
 	private ContainerConfig configZK = null;
 	
-	private String GCMProperties =  "/home/benjamin/Roq/RoQ/roq-simulation/src/main/resources/GCM-docker.properties";
-	private String HCMProperties =  "/home/benjamin/Roq/RoQ/roq-simulation/src/main/resources/HCM-docker.properties";
+	private String GCMProperties =  System.getenv("ROQPATH") + "/roq-simulation/src/main/resources/GCM-docker.properties";
+	private String HCMProperties =  System.getenv("ROQPATH") + "/roq-simulation/src/main/resources/HCM-docker.properties";
 	
-	private String GCMLog = "/home/benjamin/Roq/RoQ/roq-simulation/src/main/resources/GCM-docker.log";
-	private String HCMLog = "/home/benjamin/Roq/RoQ/roq-simulation/src/main/resources/HCM-docker.log";
+	private String GCMLog = System.getenv("ROQPATH") + "/roq-simulation/src/main/resources/GCM-docker.log";
+	private String HCMLog = System.getenv("ROQPATH") + "/roq-simulation/src/main/resources/HCM-docker.log";
 	
 	/**
 	 * Starts:<br>
@@ -113,7 +113,7 @@ public class RoQDockerLauncher {
 	 */
 	public void launchGCM() throws Exception {
 		final ImmutableList.Builder<String> binds = new ImmutableList.Builder<String>();
-		binds.add("/home/benjamin/Roq/RoQ:/lib/RoQ2");
+		binds.add(System.getenv("ROQPATH") + ":/lib/RoQ2");
 		
 		logger.info("Starting GCM container");
 		HostConfig.Builder hostConfig = HostConfig.builder().networkMode("bridge").binds(binds.build());
@@ -151,7 +151,7 @@ public class RoQDockerLauncher {
 		logger.info("Starting HCM container");
 		
 		final ImmutableList.Builder<String> binds = new ImmutableList.Builder<String>();
-		binds.add("/home/benjamin/Roq/RoQ:/lib/RoQ2");
+		binds.add(System.getenv("ROQPATH") + ":/lib/RoQ2");
 		
 		HostConfig.Builder hostConfig = HostConfig.builder().networkMode("bridge").binds(binds.build());
 		ContainerCreation creation = client.createContainer(configHCM);
