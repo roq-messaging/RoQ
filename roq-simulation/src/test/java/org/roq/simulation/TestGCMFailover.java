@@ -48,6 +48,36 @@ public class TestGCMFailover extends RoQDockerTestCase {
 		}
 	}
 	
+	@Test
+	public void testLeaderLostAndRecover() {
+		try {
+			// Create 2 queues
+			initQueue("testQ0");
+			initQueue("testQ1");
+			
+			// Provoking a fail-over by A & B & C
+			
+			// Pause and unpause zookeeper
+			launcher.pauseZookeeper(30000);
+			
+			// Wait for leadLost
+			Thread.sleep(15000);
+						
+			// Check if queues always exist
+			assertEquals(true, queueExists("testQ0"));
+			assertEquals(true, queueExists("testQ0"));
+						
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				launcher.saveLogs();
+			} catch (IOException | DockerException | InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	
 	
 //	@Test
