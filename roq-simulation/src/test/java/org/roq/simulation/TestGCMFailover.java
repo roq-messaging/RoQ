@@ -2,15 +2,11 @@ package org.roq.simulation;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.IOException;
 import java.util.ArrayList;
 
 import org.junit.Test;
 import org.roq.simulation.HALib.ClusterStateMaker;
 import org.roq.simulation.test.RoQDockerTestCase;
-
-import com.spotify.docker.client.DockerException;
-
 
 public class TestGCMFailover extends RoQDockerTestCase {
 		
@@ -38,42 +34,6 @@ public class TestGCMFailover extends RoQDockerTestCase {
 						
 		} catch (Exception e) {
 			e.printStackTrace();
-		} finally {
-			try {
-				launcher.saveLogs();
-			} catch (IOException | DockerException | InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-	
-	@Test
-	public void testLeaderLostAndRecover() {
-		try {
-			// Create 2 queues
-			initQueue("testQ0");
-			initQueue("testQ1");
-			
-			// Provoking a fail-over by A & B & C
-			
-			// Pause and unpause zookeeper
-			launcher.pauseZookeeper(30000);
-			
-			// Wait for leadLost
-			Thread.sleep(15000);
-						
-			// Check if queues always exist
-			assertEquals(true, queueExists("testQ0"));
-			assertEquals(true, queueExists("testQ0"));
-						
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				launcher.saveLogs();
-			} catch (IOException | DockerException | InterruptedException e) {
-				e.printStackTrace();
-			}
 		}
 	}
 		
@@ -87,6 +47,7 @@ public class TestGCMFailover extends RoQDockerTestCase {
 			String hcmAddress = hcmList.get(0);
 			String zkConnectionString = launcher.getZkConnectionString();		
 			
+			// Setup cluster state for test
 			if (!(ClusterStateMaker.createQueueOnHCM(hcmAddress, qName) 
 					&& ClusterStateMaker.createQueueTransaction(hcmAddress, zkConnectionString, qName)))
 				throw new Exception("State not well created...");
@@ -96,12 +57,6 @@ public class TestGCMFailover extends RoQDockerTestCase {
 			
 		} catch (Exception e) {
 			e.printStackTrace();
-		} finally {
-			try {
-				launcher.saveLogs(); // Save containers logs
-			} catch (IOException | DockerException | InterruptedException e) {
-				e.printStackTrace();
-			}
 		}
 	}
 	
@@ -115,6 +70,7 @@ public class TestGCMFailover extends RoQDockerTestCase {
 			String hcmAddress = hcmList.get(0);
 			String zkConnectionString = launcher.getZkConnectionString();		
 			
+			// Setup cluster state for test
 			if (!ClusterStateMaker.createQueueTransaction(hcmAddress, zkConnectionString, qName))
 				throw new Exception("State not well created...");
 			
@@ -123,12 +79,36 @@ public class TestGCMFailover extends RoQDockerTestCase {
 			
 		} catch (Exception e) {
 			e.printStackTrace();
-		} finally {
-			try {
-				launcher.saveLogs(); // Save containers logs
-			} catch (IOException | DockerException | InterruptedException e) {
-				e.printStackTrace();
-			}
+		}
+	}
+
+	@Test
+	public void testIdempotentExchange() {
+		try {
+			String qName = "testIdempotentQ2";
+			initQueue(qName);
+			
+			// Put the cluster in the state 1 Q not finished
+			ArrayList<String> hcmList = launcher.getHCMAddressList();
+			String hcmAddress = hcmList.get(0);
+			ArrayList<String> gcmList = launcher.getGCMAddressList();
+			String gcmAddress = gcmList.get(0);
+			String zkConnectionString = launcher.getZkConnectionString();
+			
+			
+			ClusterStateMaker.createExchangeTransaction(hcmAddress, zkConnectionString, "id000");
+			// Must create the transaction on the good hcm because it get it from the transaction
+			ClusterStateMaker.createExchangeOnHCM(gcmAddress, "0.5445.1544", qName, "id000");
+			
+			// Must not create transactions
+			ClusterStateMaker.createExchangeOnHCM(gcmAddress, "0.5445.1544", qName, "id000");
+			ClusterStateMaker.createExchangeOnHCM(gcmAddress, "0.5445.1544", qName, "id000");
+			
+			// The initial Exchange created with the queue + the second that we made
+			assertEquals(2, ClusterStateMaker.exchangeCountOnHCM(hcmAddress));
+			
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 	
