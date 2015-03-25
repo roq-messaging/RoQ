@@ -13,7 +13,6 @@ import jersey.repackaged.com.google.common.collect.ImmutableList;
 
 import org.apache.log4j.Logger;
 
-import com.kenai.jffi.Array;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
@@ -317,7 +316,8 @@ public class RoQDockerLauncher {
 	 * @throws java.lang.Exception
 	 */
 	public void tearDown() throws Exception {
-		logger.info("Stopping containers");
+		saveLogs();
+		logger.info("Stopping containers");		
 		for (String id : HCMList) {
 			// Kill container
 			client.stopContainer(id, 0);
@@ -413,6 +413,18 @@ public class RoQDockerLauncher {
 		ArrayList<String> list = new ArrayList<String>();
 		ContainerInfo info;
 		for (String id : HCMList) {
+			info = client.inspectContainer(id);
+			list.add(info.networkSettings().ipAddress());
+			logger.info(info);
+		}
+		return list;
+	}
+	
+	public ArrayList<String> getGCMAddressList() 
+			throws DockerException, InterruptedException {
+		ArrayList<String> list = new ArrayList<String>();
+		ContainerInfo info;
+		for (String id : GCMList) {
 			info = client.inspectContainer(id);
 			list.add(info.networkSettings().ipAddress());
 			logger.info(info);

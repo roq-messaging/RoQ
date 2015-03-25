@@ -308,6 +308,7 @@ public class MngtController implements Runnable, IStoppable {
 							// 1. Get the name
 							qName = (String) request.get("QName");
 							hostToRecover = zk.qTransactionExists(qName);
+							logger.info("transaction Exists? " + hostToRecover);
 							boolean hostFound = false;
 							ArrayList<String> hostsList = getHosts();
 							if (hostToRecover != null) {
@@ -406,19 +407,11 @@ public class MngtController implements Runnable, IStoppable {
 							// This ID is the best way to ensure that Exchange creation is idempotent.
 							// An ID could be IPadress:randomNumber
 							transID = (String) request.get("TransactionID");
-							hostToRecover = zk.qTransactionExists(qName);
+							hostToRecover = zk.exchangeTransactionExists(transID);
 							if (hostToRecover == null) {
 								zk.createExchangeTransaction(transID, host);
 							} else {
-								// Transaction already exists
-								if (getHosts().contains(hostToRecover)) {
-									host = hostToRecover;
-								} else {
-									// The initial host not exists
-									// change the transaction to target the new host
-									zk.removeQTransaction(qName);
-									zk.createQTransaction(qName, host);
-								}
+								host = hostToRecover;
 							}							
 							logger.debug("Create Xchange on queue " + qName + " on " + host);
 							if (!this.factory.createExchange(qName, host, transID)) {

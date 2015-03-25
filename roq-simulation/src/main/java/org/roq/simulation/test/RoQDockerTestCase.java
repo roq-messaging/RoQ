@@ -49,7 +49,7 @@ public class RoQDockerTestCase {
 		queueManager = new RoQQueueManager(zkConnectionString, 9, 5000);
 		connection = new RoQConnectionFactory(zkConnectionString, 9, 5000);
 	}
-
+	
 	/**
 	 * @throws java.lang.Exception
 	 */

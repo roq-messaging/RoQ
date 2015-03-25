@@ -279,7 +279,7 @@ public interface RoQConstant {
 	
 	/**
 	 *  Request command that can be sent to the Configuration server
-	 *   Request: "2004, QName, Host"
+	 *   Request: "2004, QName, Host, Transaction ID"
 	 *   Answer: 
 	 *   RESULT, OK
 	 *   COMMENT, "The reason why it fails". This comment is not present in case of success.
