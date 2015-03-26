@@ -22,7 +22,7 @@ public class HcmStateSurvey {
 	 */
 	
 	/**
-	 *  M2.0: Start a process
+	 *  M2.0: REStart a process
 	 */
 	 // M3.0 Recovery Mecanism
 	 // 1. to kill are those in allocated that are dead or disallowed

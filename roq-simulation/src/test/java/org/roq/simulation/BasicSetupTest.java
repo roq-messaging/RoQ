@@ -86,7 +86,7 @@ public class BasicSetupTest {
 		if(hostConfigManager==null){
 			hostConfigManager = new HostConfigManager("testHCM.properties");
 			// add a fake queue in the host config manager
-			this.hostConfigManager.getqMonitorMap().put("queue1", "tcp://localhost:"+basePort);
+			this.hostConfigManager.getServerState().putMonitor("queue1", "tcp://localhost:"+basePort);
 			Thread hostThread = new Thread(hostConfigManager);
 			hostThread.start();
 		}

@@ -17,28 +17,21 @@ package org.roqmessaging.management;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.Set;
 
 import junit.framework.Assert;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.Logger;
-import org.roqmessaging.core.Exchange;
-import org.roqmessaging.core.Monitor;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
-import org.roqmessaging.core.launcher.ExchangeLauncher;
-import org.roqmessaging.core.launcher.MonitorLauncher;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.factory.HostProcessFactory;
 import org.roqmessaging.management.config.internal.FileConfigurationReader;
 import org.roqmessaging.management.config.internal.HostConfigDAO;
-import org.roqmessaging.management.launcher.hook.ShutDownSender;
+import org.roqmessaging.management.monitor.HcmState;
 import org.roqmessaging.scaling.ScalingProcess;
 import org.roqmessaging.scaling.launcher.ScalingProcessLauncher;
 import org.zeromq.ZMQ;
@@ -65,19 +58,15 @@ public class HostConfigManager implements Runnable, IStoppable {
 	// The host configuration manager properties
 	private HostConfigDAO properties = null;
 	// Local configuration maintained by the host manager
-	// [qName, the monitor]
-	private HashMap<String, String> qMonitorMap = null;
-	// [qName, monitor stat server address]
-	private HashMap<String, String> qMonitorStatMap = null;
-	// [qName, list of Xchanges]
-	private HashMap<String, HashMap<String, String>> qExchangeMap = null;
-	//[qName, Scaling process shutdown port (on the same machine as host)] 
-	//TODO starting the process, register it and deleting it when stoping
-	private HashMap<String, Integer> qScalingProcessAddr = null;
+	
+	// Contains server state information
+	private HcmState serverState;
+	
+	// processFactory
+	private HostProcessFactory processFactory;
+	
 	//The shutdown monitor
 	private ShutDownMonitor shutDownMonitor = null;
-	//The lock to avoid any race condition
-	private Lock lockRemoveQ = new ReentrantLock();
 	//Network & IP address Configuration
 	private boolean useNif = false;
 
@@ -103,11 +92,10 @@ public class HostConfigManager implements Runnable, IStoppable {
 			this.clientReqSocket.bind("tcp://*:5100");
 			this.globalConfigSocket = context.socket(ZMQ.REQ);
 			this.globalConfigSocket.connect("tcp://" + this.properties.getGcmAddress() + ":5000");
-			// Init the map
-			this.qExchangeMap = new HashMap<String, HashMap<String, String>>();
-			this.qMonitorMap = new HashMap<String, String>();
-			this.qMonitorStatMap = new HashMap<String, String>();
-			this.qScalingProcessAddr = new HashMap<String, Integer>();
+			// Init ServerState
+			this.serverState = new HcmState();
+			// Init process Factory
+			this.processFactory = new HostProcessFactory(serverState, properties);
 			// Init the shutdown monitor
 			this.shutDownMonitor = new ShutDownMonitor(5101, this);
 			new Thread(this.shutDownMonitor).start();
@@ -144,29 +132,29 @@ public class HostConfigManager implements Runnable, IStoppable {
 					if (info.length == 2) {
 						String qName = info[1];
 						logger.debug("The request format is valid with 2 parts, Q to create:  " + qName);
-						String monitorAddress = qMonitorMap.get(qName);
+						String monitorAddress = serverState.getMonitor(qName);
 						if (monitorAddress == null) {
 							// 1. Start the monitor
-							monitorAddress = startNewMonitorProcess(qName);
+							monitorAddress = processFactory.startNewMonitorProcess(qName);
 						}
 						// 2. Start the exchange
 						// 2.1. Getting the monitor stat address
 						// 2.2. Start the exchange
-						boolean xChangeOK =  qExchangeMap.get(qName) != null;
+						boolean xChangeOK =  serverState.getExchanges(qName) != null;
 						
 						// The 00000000000000000 value is the id of the first Exchange process
 						if (!xChangeOK)
-							xChangeOK = startNewExchangeProcess(qName, this.qMonitorMap.get(qName),
-									this.qMonitorStatMap.get(qName), "00000000000000000"); 
+							xChangeOK = processFactory.startNewExchangeProcess(qName, serverState.getMonitor(qName),
+									serverState.getStat(qName), "00000000000000000"); 
 						//2.3. Start the scaling process
-						boolean scalingOK = qScalingProcessAddr.get(qName) != null;
+						boolean scalingOK = serverState.getScalingProcess(qName) != null;
 						if (!scalingOK)
 							scalingOK = startNewScalingProcess(qName);
 						// if OK send OK
 						if (monitorAddress != null & xChangeOK && scalingOK) {
 							logger.info("Successfully created new Q for " + qName + "@" + monitorAddress);
 							this.clientReqSocket.send(
-									(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK) + "," + monitorAddress + "," + qMonitorStatMap.get(qName))
+									(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK) + "," + monitorAddress + "," + serverState.getMonitor(qName))
 											.getBytes(), 0);
 						} else {
 							logger.error("The create queue request has failed at the monitor host,check log (when starting launching scripts");
@@ -185,12 +173,12 @@ public class HostConfigManager implements Runnable, IStoppable {
 					logger.debug("Recieveing remove Q request from a client ");
 					if (info.length == 2) {
 						String qName = info[1];
-						removingQueue(qName);
+						processFactory.removingQueue(qName);
 						// Removing Q information
-						this.qExchangeMap.remove(qName);
-						this.qMonitorMap.remove(qName);
-						this.qMonitorStatMap.remove(qName);
-						this.qScalingProcessAddr.remove(qName);
+						serverState.removeExchange(qName);
+						serverState.removeMonitor(qName);
+						serverState.removeStat(qName);
+						serverState.removeScalingProcess(qName);
 						this.clientReqSocket.send((Integer.toString(RoQConstant.OK) + ", ").getBytes(), 0);
 					} else {
 						logger.error("The remove queue request sent does not contain 2 part: ID, quName");
@@ -205,7 +193,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 						String qName = info[1];
 						String id = info[2];
 						// Qname, monitorhost, monitorstat host
-						if (startNewExchangeProcess(qName, info[3], info[4], id)) {
+						if (processFactory.startNewExchangeProcess(qName, info[3], info[4], id)) {
 							this.clientReqSocket.send((Integer.toString(RoQConstant.OK) ).getBytes(), 0);
 						} else {
 							this.clientReqSocket.send((Integer.toString(RoQConstant.FAIL) ).getBytes(), 0);
@@ -247,9 +235,9 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * @return true if the creation was OK
 	 */
 	private boolean startNewScalingProcess(String qName) {
-		if(this.qMonitorStatMap.containsKey(qName)){
+		if(serverState.statExists(qName)){
 			//1. Compute the stat monitor port+2
-			int basePort = RoQSerializationUtils.extractBasePort(this.qMonitorStatMap.get(qName));
+			int basePort = RoQSerializationUtils.extractBasePort(serverState.getMonitor(qName));
 			basePort+=2;
 			
 			// Get the address and the ports used by the GCM
@@ -287,7 +275,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 			}
 			//4. Add the configuration information
 			logger.debug("Storing scaling process information");
-			this.qScalingProcessAddr.put(qName, (basePort+1));
+			serverState.putScalingProcess(qName, basePort+1);
 		}else{
 			return false;
 		}
@@ -299,17 +287,17 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * house before closing the host.
 	 */
 	private void stopAllRunningQueueOnHost() {
-		List<String> toRemove = new ArrayList<String>(this.qMonitorMap.keySet());
-		for (String qName : this.qMonitorMap.keySet()) {
+		Set<String> monitors = serverState.getAllMonitors();
+		for (String qName : monitors) {
 			logger.info("Cleaning host - removing  "+qName);
-			this.removingQueue(qName);
+			processFactory.removingQueue(qName);
 		}
-		for (String qName : toRemove) {
+		for (String qName : monitors) {
 			// Removing Q information
-			this.qExchangeMap.remove(qName);
-			this.qMonitorMap.remove(qName);
-			this.qMonitorStatMap.remove(qName);
-			this.qScalingProcessAddr.remove(qName);
+			serverState.removeExchange(qName);
+			serverState.removeMonitor(qName);
+			serverState.removeStat(qName);
+			serverState.removeScalingProcess(qName);
 		}
 		
 	}
@@ -319,8 +307,8 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 */
 	private int getExchangeNumber() {
 		int total =0;
-		for (String  queue : this.qExchangeMap.keySet()) {
-			total+=this.qExchangeMap.get(queue).size();
+		for (String  queue : serverState.getAllExchanges()) {
+			total+=serverState.getExchanges(queue).size();
 		}
 		return total;
 	}
@@ -360,178 +348,6 @@ public class HostConfigManager implements Runnable, IStoppable {
 		
 	}
 
-	/**
-	 * Remove a complete queue: 1. Sends a shut down request to the
-	 * corresponding monitor 2. The monitor will send a shut down request to all
-	 * exchanges that it knows
-	 * 
-	 * @param qName
-	 *            the logical Q name to remove
-	 */
-	private void removingQueue(String qName) {
-		try {
-			this.lockRemoveQ.lock();
-			logger.debug("Removing Q  " + qName);
-			String monitorAddress = this.qMonitorMap.get(qName);
-			// The address is the address of the base monitor, we need to
-			// extract
-			// the port and make +5
-			// to get the shutdown monitor thread
-			int basePort = RoQSerializationUtils.extractBasePort(monitorAddress);
-			String portOff = monitorAddress.substring(0, monitorAddress.length() - "xxxx".length());
-			logger.info("Sending Remove Q request to " + portOff + (basePort + 5));
-			// 2. Send the remove message to the monitor
-			// The monitor will stop all the exchanges during its shut down
-			ShutDownSender shutDownSender = new ShutDownSender(portOff + (basePort + 5));
-			shutDownSender.shutdown();
-			//3. Stopping the scaling process
-			if(this.qScalingProcessAddr.containsKey(qName)){
-				shutDownSender.setAddress(portOff + this.qScalingProcessAddr.get(qName).toString());
-				shutDownSender.shutdown();
-			}
-			//The caller must remove the queue.
-		} finally {
-			this.lockRemoveQ.unlock();
-		}
-	}
-
-
-	/**
-	 * Start a new exchange process
-	 * <p>
-	 * 1. Check the number of local xChange present in the host 2. Start a new
-	 * xChange with port config + nchange
-	 * 
-	 * @param qName
-	 *            the name of the queue to create
-	 * @return true if the creation process worked well
-	 */
-	private boolean startNewExchangeProcess(String qName, String monitorAddress, String monitorStatAddress, String transID) {		
-		if (monitorAddress == null || monitorStatAddress == null) {
-			logger.error("The monitor or the monitor stat server is null", new IllegalStateException());
-			return false;
-		}
-		// Check if the Exchange already exists (idempotent exchange creation process)
-		if (this.qExchangeMap.containsKey(qName)) {
-			if (this.qExchangeMap.get(qName).containsKey(transID))
-				return true;
-		}
-		
-		// 1. Get the number of installed queues on this host
-		int number = 0;
-		for (String q_i : this.qExchangeMap.keySet()) {
-			number += this.qExchangeMap.get(q_i).size();
-		}
-		// 2. Assigns a front port and a back port
-		logger.debug(" This host contains already " + number + " Exchanges");
-		//x4 = Front, back, Shutdown, prod request
-		int frontPort = this.properties.getExchangeFrontEndPort() + number * 4;
-		// 3 because there is the front, back and the shut down
-		int backPort = frontPort + 1;
-		String ip = RoQUtils.getInstance().getLocalIP();
-
-		if (this.properties.isExchangeInHcmVm()) {
-			// We must start the thread in the same process
-			Exchange exchange = new Exchange(frontPort, backPort, monitorAddress, monitorStatAddress);
-			// Launch the thread
-			new Thread(exchange).start();
-		} else {
-			// We start the exchange in its own process
-			// Launch script
-			try {
-				ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
-						+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"), "-Xmx"+this.properties.getExchangeHeap()+"m","-XX:+UseConcMarkSweepGC",
-						ExchangeLauncher.class.getCanonicalName(), new Integer(frontPort).toString(), new Integer(
-								backPort).toString(), monitorAddress, monitorStatAddress);
-				logger.info("Starting: " + pb.command());
-				final Process process = pb.start();
-				pipe(process.getErrorStream(), System.err);
-				pipe(process.getInputStream(), System.out);
-			} catch (IOException e) {
-				logger.error("Error while executing script", e);
-				return false;
-			}
-		}
-
-		if (this.qExchangeMap.containsKey(qName)) {
-			this.qExchangeMap.get(qName).put(transID, "tcp://" + ip + ":" + frontPort);
-			logger.debug("Storing Xchange info: " + "tcp://" + ip + ":" + frontPort);
-		} else {
-			HashMap<String, String> xChange = new HashMap<String, String>();
-			xChange.put(transID, "tcp://" + ip + ":" + frontPort);
-			this.qExchangeMap.put(qName, xChange);
-			logger.debug("Storing Xchange info: " + "tcp://" + ip + ":" + frontPort);
-		}
-
-		return true;
-	}
-
-	/**
-	 * @return the monitor port
-	 */
-	private int getMonitorPort() {
-		return (this.properties.getMonitorBasePort() + this.qMonitorMap.size() * 6);
-	}
-
-	/**
-	 * @return the monitor stat port
-	 */
-	private int getStatMonitorPort() {
-		//By for because the stat monitor starts on port, its shutdown on port+1, the scaling process on 
-		//port+2 and its shuto down process on port +3.
-		return (this.properties.getStatMonitorBasePort() + this.qMonitorMap.size()*4);
-	}
-
-	/**
-	 * Start a new Monitor process
-	 * <p>
-	 * 1. Check the number of local monitor present in the host 2. Start a new
-	 * monitor with port config + nMonitor*4 because the monitor needs to book 4
-	 * ports + stat
-	 * 
-	 * @param qName
-	 *            the name of the queue to create
-	 * @return the monitor address as tcp://IP:port of the newly created monitor
-	 *         +"," tcp://IP: statport
-	 */
-	private String startNewMonitorProcess(String qName) {
-		// 1. Get the number of installed queues on this host
-		int frontPort = getMonitorPort();
-		int statPort = getStatMonitorPort();
-		logger.debug(" This host contains already " + this.qMonitorMap.size() + " Monitor");
-		String argument = frontPort + " " + statPort;
-		logger.debug("Starting monitor process by script launch on " + argument);
-		//Monitor configuration
-		String monitorAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + frontPort;
-		String statAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + statPort;
-		//Checking whether we must create the monitor, stat monitor and the scaling process in the same VM
-		if(this.properties.isQueueInHcmVm()){
-			logger.info("Creating the Monitor of the "+ qName +" on the same VM as the local HCM");
-			 Monitor monitor = new Monitor(frontPort, statPort,  qName, new Integer(this.properties.getStatPeriod()).toString());
-			new Thread(monitor).start();
-		} else {
-			// 2. Launch script in its onw VM
-			// ProcessBuilder pb = new ProcessBuilder(this.monitorScript,
-			// argument);
-			ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
-					+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),	MonitorLauncher.class.getCanonicalName(), new Integer(frontPort).toString(),
-					new Integer(statPort).toString(), qName, new Integer(this.properties.getStatPeriod()).toString());
-			try {
-				logger.debug("Starting: " + pb.command());
-				final Process process = pb.start();
-				pipe(process.getErrorStream(), System.err);
-				pipe(process.getInputStream(), System.out);
-			} catch (IOException e) {
-				logger.error("Error while executing script", e);
-				return null;
-			}
-		}
-		//add the monitor configuration
-		this.qMonitorMap.put(qName, (monitorAddress));
-		this.qMonitorStatMap.put(qName, statAddress);
-		return monitorAddress + "," + statAddress;
-	}
-
 	private static void pipe(final InputStream src, final PrintStream dest) {
 		new Thread(new Runnable() {
 			public void run() {
@@ -545,7 +361,16 @@ public class HostConfigManager implements Runnable, IStoppable {
 			}
 		}).start();
 	}
-
+	
+	/**
+	 * return the HCM State  
+	 * @return HcmState
+	 * 
+	 */
+	public HcmState getServerState() {
+		return this.serverState;
+	}
+	
 	/**
 	 * 
 	 */
@@ -559,22 +384,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	public String getName() {
 		return "Host config manager " + RoQUtils.getInstance().getLocalIP();
 	}
-
-	/**
-	 * @return the qMonitorMap
-	 */
-	public HashMap<String, String> getqMonitorMap() {
-		return qMonitorMap;
-	}
-
-	/**
-	 * @param qMonitorMap
-	 *            the qMonitorMap to set
-	 */
-	public void setqMonitorMap(HashMap<String, String> qMonitorMap) {
-		this.qMonitorMap = qMonitorMap;
-	}
-
+	
 	/**
 	 * Use the encapsulation to let the shutdown monitor manage all shutdown 
 	 * related actions.
