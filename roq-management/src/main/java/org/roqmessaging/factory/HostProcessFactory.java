@@ -3,19 +3,21 @@ package org.roqmessaging.factory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
-import org.roqmessaging.core.Exchange;
-import org.roqmessaging.core.Monitor;
+import org.roqmessaging.core.RoQConstantInternal;
 import org.roqmessaging.core.launcher.ExchangeLauncher;
 import org.roqmessaging.core.launcher.MonitorLauncher;
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.config.internal.HostConfigDAO;
 import org.roqmessaging.management.launcher.hook.ShutDownSender;
-import org.roqmessaging.management.monitor.HcmState;
+import org.roqmessaging.management.monitor.ProcessMonitor;
+import org.roqmessaging.management.server.state.HcmState;
+import org.roqmessaging.scaling.launcher.ScalingProcessLauncher;
 	
 public class HostProcessFactory {
 	// Logger
@@ -27,10 +29,13 @@ public class HostProcessFactory {
 	
 	private HcmState serverState;
 	
+	private ProcessMonitor processMonitor;
 	
-	public HostProcessFactory(HcmState serverState, HostConfigDAO properties) {
+	public HostProcessFactory(HcmState serverState, HostConfigDAO properties, ProcessMonitor processMonitor) 
+			throws IOException {
 		this.serverState = serverState;
 		this.properties = properties;
+		this.processMonitor = processMonitor;
 	}
 	
 	/**
@@ -101,28 +106,36 @@ public class HostProcessFactory {
 		int backPort = frontPort + 1;
 		String ip = RoQUtils.getInstance().getLocalIP();
 
-		if (this.properties.isExchangeInHcmVm()) {
-			// We must start the thread in the same process
-			Exchange exchange = new Exchange(frontPort, backPort, monitorAddress, monitorStatAddress);
-			// Launch the thread
-			new Thread(exchange).start();
-		} else {
-			// We start the exchange in its own process
-			// Launch script
-			try {
-				ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
-						+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"), "-Xmx"+this.properties.getExchangeHeap()+"m","-XX:+UseConcMarkSweepGC",
-						ExchangeLauncher.class.getCanonicalName(), new Integer(frontPort).toString(), new Integer(
-								backPort).toString(), monitorAddress, monitorStatAddress);
-				logger.info("Starting: " + pb.command());
-				final Process process = pb.start();
-				pipe(process.getErrorStream(), System.err);
-				pipe(process.getInputStream(), System.out);
-			} catch (IOException e) {
-				logger.error("Error while executing script", e);
-				return false;
+		// We start the exchange in its own process
+		// Launch script
+		try {
+			ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
+					+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"), "-Xmx"+this.properties.getExchangeHeap()+"m","-XX:+UseConcMarkSweepGC",
+					ExchangeLauncher.class.getCanonicalName(), new Integer(frontPort).toString(), new Integer(
+							backPort).toString(), monitorAddress, monitorStatAddress);
+			logger.info("Starting: " + pb.command());
+			final Process process = pb.start();
+	        try {
+	        	Class<?> asker = Class.forName("java.lang.UNIXProcess");
+				Field pidField = asker.getDeclaredField("pid");
+				pidField.setAccessible(true);
+				Object pid = pidField.get(process);
+				logger.info("Start process monitoring for pid = " + pid);
+				// Start process monitoring
+				processMonitor.addprocess(Integer.toString(frontPort), (String) pid, RoQConstantInternal.PROCESS_EXCHANGE);
+				
+			} catch (Throwable e) {
+					logger.error("Error while getting pid", e);
+					process.destroy();
+					return false;
 			}
+			pipe(process.getErrorStream(), System.err);
+			pipe(process.getInputStream(), System.out);
+		} catch (IOException e) {
+			logger.error("Error while executing script", e);
+			return false;
 		}
+		
 		logger.debug("Storing Xchange id: " + transID + " info: " + "tcp://" + ip + ":" + frontPort);
 		serverState.putExchange(qName, transID, "tcp://" + ip + ":" + frontPort);
 		return true;
@@ -167,31 +180,96 @@ public class HostProcessFactory {
 		String monitorAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + frontPort;
 		String statAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + statPort;
 		//Checking whether we must create the monitor, stat monitor and the scaling process in the same VM
-		if(this.properties.isQueueInHcmVm()){
-			logger.info("Creating the Monitor of the "+ qName +" on the same VM as the local HCM");
-			 Monitor monitor = new Monitor(frontPort, statPort,  qName, new Integer(this.properties.getStatPeriod()).toString());
-			new Thread(monitor).start();
-		} else {
-			// 2. Launch script in its onw VM
-			// ProcessBuilder pb = new ProcessBuilder(this.monitorScript,
-			// argument);
-			ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
-					+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),	MonitorLauncher.class.getCanonicalName(), new Integer(frontPort).toString(),
-					new Integer(statPort).toString(), qName, new Integer(this.properties.getStatPeriod()).toString());
+
+		// We start the monitor in its own process
+		// ProcessBuilder pb = new ProcessBuilder(this.monitorScript,
+		// argument);
+		ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
+				+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),	MonitorLauncher.class.getCanonicalName(), new Integer(frontPort).toString(),
+				new Integer(statPort).toString(), qName, new Integer(this.properties.getStatPeriod()).toString());
+		try {
+			logger.debug("Starting: " + pb.command());
+			final Process process = pb.start();
 			try {
-				logger.debug("Starting: " + pb.command());
-				final Process process = pb.start();
-				pipe(process.getErrorStream(), System.err);
-				pipe(process.getInputStream(), System.out);
-			} catch (IOException e) {
-				logger.error("Error while executing script", e);
-				return null;
+	        	Class<?> asker = Class.forName("java.lang.UNIXProcess");
+				Field pidField = asker.getDeclaredField("pid");
+				pidField.setAccessible(true);
+				Object pid = pidField.get(process);
+				logger.info("Start process monitoring for pid = " + pid);
+				// Start process monitoring
+				processMonitor.addprocess(Integer.toString(frontPort), (String) pid, RoQConstantInternal.PROCESS_MONITOR);
+			} catch (Throwable e) {
+					logger.error("Error while getting pid", e);
+					process.destroy();
+					return null;
 			}
+			pipe(process.getErrorStream(), System.err);
+			pipe(process.getInputStream(), System.out);
+		} catch (IOException e) {
+			logger.error("Error while executing script", e);
+			return null;
 		}
+		
 		//add the monitor configuration
 		serverState.putMonitor(qName, monitorAddress);
 		serverState.putStat(qName, statAddress);
 		return monitorAddress + "," + statAddress;
+	}
+	
+	/**
+	 * @param qName the name of queue for which we need to create the scaling process
+	 * @param port the listener port on wich the sclaing process will scubscribe to configuration update
+	 * @return true if the creation was OK
+	 */
+	public boolean startNewScalingProcess(String qName) {
+		if(serverState.statExists(qName)){
+			//1. Compute the stat monitor port+2
+			int basePort = RoQSerializationUtils.extractBasePort(serverState.getMonitor(qName));
+			basePort+=2;
+			
+			// Get the address and the ports used by the GCM
+			String gcm_address = this.properties.getGcmAddress();
+			int gcm_interfacePort = this.properties.ports.get("GlobalConfigurationManager.interface");
+			int gcm_adminPort    = this.properties.ports.get("MngtController.interface");
+			
+			
+			// Start scalingProcess in its own process
+			// 2. Launch script
+			try {
+				ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
+						+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),
+						ScalingProcessLauncher.class.getCanonicalName(),
+						gcm_address, Integer.toString(gcm_interfacePort), Integer.toString(gcm_adminPort),
+						qName, Integer.toString(basePort));
+				logger.debug("Starting: " + pb.command());
+				final Process process = pb.start();
+				try {
+		        	Class<?> asker = Class.forName("java.lang.UNIXProcess");
+					Field pidField = asker.getDeclaredField("pid");
+					pidField.setAccessible(true);
+					Object pid = pidField.get(process);
+					logger.info("Start process monitoring for pid = " + pid);
+					// Start process monitoring
+					processMonitor.addprocess(Integer.toString(basePort), (String) pid, RoQConstantInternal.PROCESS_SCALING);
+				} catch (Throwable e) {
+						logger.error("Error while getting pid", e);
+						process.destroy();
+						return false;
+				}
+				pipe(process.getErrorStream(), System.err);
+				pipe(process.getInputStream(), System.out);
+			} catch (IOException e) {
+				logger.error("Error while executing script", e);
+				return false;
+			}	
+
+			//4. Add the configuration information
+			logger.debug("Storing scaling process information");
+			serverState.putScalingProcess(qName, basePort+1);
+		}else{
+			return false;
+		}
+		return true;
 	}
 	
 	private static void pipe(final InputStream src, final PrintStream dest) {

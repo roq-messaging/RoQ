@@ -107,6 +107,9 @@ public class FileConfigurationReader {
 			configDao.setMaxNumberEchanges(config.getInt("exchange.max.perhost"));
 			configDao.setQueueInHcmVm(config.getBoolean("queue.hcm.vm"));
 			configDao.setExchangeInHcmVm(config.getBoolean("exchange.hcm.vm"));
+			configDao.setLocalStatePath(config.getString("localstate.path"));
+			configDao.setMonitorTimeOut(config.getInt("monitor.timeout"));
+			configDao.setMonitorMaxTimeToStart(config.getInt("monitor.maxtimetostart"));
 			configDao.setExchangeHeap(config.getInt("exchange.vm.heap")!=-1?config.getInt("exchange.vm.heap"):256);
 			if (config.containsKey("network.interface"))
 				configDao.setNetworkInterface(config.getString("network.interface"));
