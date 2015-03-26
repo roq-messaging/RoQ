@@ -11,6 +11,9 @@ import org.roq.simulation.test.RoQDockerTestCase;
 public class TestGCMFailover extends RoQDockerTestCase {
 		
 	@Test
+	/**
+	 * This test if the Q data are consistent after a failover
+	 */
 	public void testDataConsistency() {
 		try {
 			// Create 2 queues
@@ -38,6 +41,12 @@ public class TestGCMFailover extends RoQDockerTestCase {
 	}
 		
 	@Test
+	/**
+	 * This test check if a queue insertion is idempotent,
+	 * ie. if a crash of the GCM occurs during the queue insertion
+	 * process, a second request will recover the partially 
+	 * created queue
+	 */
 	public void testIdempotentQueueTransactionAndHCM() {
 		try {
 			String qName = "testIdempotentQ0";
@@ -61,6 +70,13 @@ public class TestGCMFailover extends RoQDockerTestCase {
 	}
 	
 	@Test
+	/**
+	 * Same as previous one but with another inital state
+	 * This test check if a queue insertion is idempotent,
+	 * ie. if a crash of the GCM occurs during the queue insertion
+	 * process, a second request will recover the partially 
+	 * created queue
+	 */
 	public void testIdempotentQueueTransaction() {
 		try {
 			String qName = "testIdempotentQ1";
@@ -83,6 +99,10 @@ public class TestGCMFailover extends RoQDockerTestCase {
 	}
 
 	@Test
+	/**
+	 * The same as idempotent queue 
+	 * but for the exchange creation process
+	 */
 	public void testIdempotentExchange() {
 		try {
 			String qName = "testIdempotentQ2";
