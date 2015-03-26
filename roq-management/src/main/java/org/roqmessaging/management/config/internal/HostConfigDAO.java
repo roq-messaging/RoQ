@@ -31,6 +31,9 @@ public class HostConfigDAO {
 	private boolean queueInHcmVm = true;
 	private boolean exchangeInHcmVm = true;
 	private int exchangeHeap = 256;
+	private String statePath = "";
+	private int monitorTimeOut = 10000;
+	private int monitorMaxTimeToStart = 20000;
 	
 	// Class which contains the ports used for the various components of the GCM.
 	public GCMPorts ports = new GCMPorts();
@@ -46,6 +49,12 @@ public class HostConfigDAO {
 	 */
 	public void setNetworkInterface(String networkInterface) {
 		this.networkInterface = networkInterface;
+	}
+	public void setMonitorTimeOut(int timeout) {
+		monitorTimeOut = timeout;
+	}
+	public void setMonitorMaxTimeToStart(int timeToStart) {
+		monitorMaxTimeToStart = timeToStart;
 	}
 	/**
 	 * @return the gcmAddress
@@ -111,6 +120,12 @@ public class HostConfigDAO {
 		return statPeriod;
 	}
 	/**
+	 * @return the localstatePath
+	 */
+	public String getLocalPath() {
+		return statePath;
+	}
+	/**
 	 * @param statPeriod the statPeriod to set
 	 */
 	public void setStatPeriod(int statPeriod) {
@@ -165,5 +180,17 @@ public class HostConfigDAO {
 		this.exchangeHeap = exchangeHeap;
 	}
 	
+	/**
+	 * @param the path for localstateDB
+	 */
+	public void setLocalStatePath(String localPath) {
+		this.statePath = localPath;
+	}
+	public int getMonitorTimeOut() {
+		return monitorTimeOut;
+	}
+	public int getMonitorMaxTimeToStart() {
+		return monitorMaxTimeToStart;
+	}
 
 }

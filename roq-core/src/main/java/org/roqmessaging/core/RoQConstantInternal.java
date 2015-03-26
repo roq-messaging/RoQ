@@ -57,4 +57,24 @@ public interface RoQConstantInternal {
 	 */
 	public static String CONTEXT_KPI_Q_THROUGPUT = "context.kpi.queue.througput";
 	
+	/**
+	 * Used to idenify Monitor process
+	 */
+	public static int PROCESS_MONITOR = 0;
+	
+	/**
+	 * Used to idenify Monitor process
+	 */
+	public static int PROCESS_STAT = 1;
+	
+	/**
+	 * Used to idenify Monitor process
+	 */
+	public static int PROCESS_EXCHANGE = 2;
+	
+	/**
+	 * Used to idenify Monitor process
+	 */
+	public static int PROCESS_SCALING = 3;
+	
 }

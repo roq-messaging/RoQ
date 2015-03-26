@@ -1,4 +1,4 @@
-package org.roqmessaging.management.monitor;
+package org.roqmessaging.management.server.state;
 
 import java.util.HashMap;
 import java.util.Set;

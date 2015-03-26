@@ -15,8 +15,6 @@
 package org.roqmessaging.management;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
 import java.util.Set;
 
 import junit.framework.Assert;
@@ -26,14 +24,12 @@ import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
-import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.factory.HostProcessFactory;
 import org.roqmessaging.management.config.internal.FileConfigurationReader;
 import org.roqmessaging.management.config.internal.HostConfigDAO;
-import org.roqmessaging.management.monitor.HcmState;
-import org.roqmessaging.scaling.ScalingProcess;
-import org.roqmessaging.scaling.launcher.ScalingProcessLauncher;
+import org.roqmessaging.management.monitor.ProcessMonitor;
+import org.roqmessaging.management.server.state.HcmState;
 import org.zeromq.ZMQ;
 
 /**
@@ -59,6 +55,9 @@ public class HostConfigManager implements Runnable, IStoppable {
 	private HostConfigDAO properties = null;
 	// Local configuration maintained by the host manager
 	
+	// the hbMonitors Thread
+	private ProcessMonitor hbMonitor;
+	
 	// Contains server state information
 	private HcmState serverState;
 	
@@ -69,10 +68,12 @@ public class HostConfigManager implements Runnable, IStoppable {
 	private ShutDownMonitor shutDownMonitor = null;
 	//Network & IP address Configuration
 	private boolean useNif = false;
+	
 
 	/**
 	 * Constructor
 	 * @param propertyFile the location of the property file
+	 * @throws IOException 
 	 */
 	public HostConfigManager(String propertyFile) {
 		try {
@@ -95,12 +96,17 @@ public class HostConfigManager implements Runnable, IStoppable {
 			// Init ServerState
 			this.serverState = new HcmState();
 			// Init process Factory
-			this.processFactory = new HostProcessFactory(serverState, properties);
+			this.processFactory = new HostProcessFactory(serverState, properties, hbMonitor);
 			// Init the shutdown monitor
 			this.shutDownMonitor = new ShutDownMonitor(5101, this);
+			hbMonitor = new ProcessMonitor(properties.getLocalPath(), 
+						properties.getMonitorTimeOut(), properties.getMonitorMaxTimeToStart(), this.processFactory);
+			new Thread(hbMonitor).start();
 			new Thread(this.shutDownMonitor).start();
 		} catch (ConfigurationException e) {
 			logger.error("Error while reading configuration in " + propertyFile, e);
+		} catch (IOException e) {
+			logger.error("Error while reading localstateDB", e);
 		}
 	}
 	
@@ -149,7 +155,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 						//2.3. Start the scaling process
 						boolean scalingOK = serverState.getScalingProcess(qName) != null;
 						if (!scalingOK)
-							scalingOK = startNewScalingProcess(qName);
+							scalingOK = processFactory.startNewScalingProcess(qName);
 						// if OK send OK
 						if (monitorAddress != null & xChangeOK && scalingOK) {
 							logger.info("Successfully created new Q for " + qName + "@" + monitorAddress);
@@ -227,60 +233,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 		this.globalConfigSocket.setLinger(0);
 		this.clientReqSocket.close();
 		this.globalConfigSocket.close();
-	}
-
-	/**
-	 * @param qName the name of queue for which we need to create the scaling process
-	 * @param port the listener port on wich the sclaing process will scubscribe to configuration update
-	 * @return true if the creation was OK
-	 */
-	private boolean startNewScalingProcess(String qName) {
-		if(serverState.statExists(qName)){
-			//1. Compute the stat monitor port+2
-			int basePort = RoQSerializationUtils.extractBasePort(serverState.getMonitor(qName));
-			basePort+=2;
-			
-			// Get the address and the ports used by the GCM
-			String gcm_address = this.properties.getGcmAddress();
-			int gcm_interfacePort = this.properties.ports.get("GlobalConfigurationManager.interface");
-			int gcm_adminPort    = this.properties.ports.get("MngtController.interface");
-			
-			//2. Check wether we need to launch it locally or in its own process
-			if(this.properties.isQueueInHcmVm()){
-				// Local startup in the same VM as the host config Monitor
-				logger.info("Starting the scaling process  for queue " + qName + ", using a listener port= " + basePort +", GCM ="+this.properties.getGcmAddress() );
-				
-				ScalingProcess scalingProcess = new ScalingProcess(gcm_address, gcm_interfacePort, gcm_adminPort, qName, basePort);
-				//Here is the problem we still do not have registred the queue at the GCM
-				scalingProcess.subscribe();
-				// Launch the thread
-				new Thread(scalingProcess).start();
-			}else{
-				//Start in its own VM
-				// 2. Launch script
-				try {
-					ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
-							+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),
-							ScalingProcessLauncher.class.getCanonicalName(),
-							gcm_address, Integer.toString(gcm_interfacePort), Integer.toString(gcm_adminPort),
-							qName, Integer.toString(basePort));
-					logger.debug("Starting: " + pb.command());
-					final Process process = pb.start();
-					pipe(process.getErrorStream(), System.err);
-					pipe(process.getInputStream(), System.out);
-				} catch (IOException e) {
-					logger.error("Error while executing script", e);
-					return false;
-				}	
-			}
-			//4. Add the configuration information
-			logger.debug("Storing scaling process information");
-			serverState.putScalingProcess(qName, basePort+1);
-		}else{
-			return false;
-		}
-		return true;
-	}
+	}	
 
 	/**
 	 * Remove all queues delcared on this host. This operation is part of the cleaning 
@@ -348,20 +301,6 @@ public class HostConfigManager implements Runnable, IStoppable {
 		
 	}
 
-	private static void pipe(final InputStream src, final PrintStream dest) {
-		new Thread(new Runnable() {
-			public void run() {
-				try {
-					byte[] buffer = new byte[1024];
-					for (int n = 0; n != -1; n = src.read(buffer)) {
-						dest.write(buffer, 0, n);
-					}
-				} catch (IOException e) { // just exit
-				}
-			}
-		}).start();
-	}
-	
 	/**
 	 * return the HCM State  
 	 * @return HcmState
@@ -375,6 +314,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * 
 	 */
 	public void shutDown() {
+		hbMonitor.isRunning = false;
 		this.running = false;
 	}
 
