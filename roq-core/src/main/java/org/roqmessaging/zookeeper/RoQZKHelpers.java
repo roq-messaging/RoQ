@@ -29,7 +29,7 @@ public class RoQZKHelpers {
 	 */
 	public static void createQueueZNodes(CuratorFramework client, String queuePath,
 			String monitorPath, String monitorPL, String statMonitorPath, 
-			String statMonitorPL, String hcmPath, String hcmPL) {
+			String statMonitorPL, String hcmPath, String hcmPL, String ExchPath) {
 		try {
 			client.inTransaction().create().forPath(queuePath)
 				.and().create().forPath(monitorPath, monitorPL.getBytes())

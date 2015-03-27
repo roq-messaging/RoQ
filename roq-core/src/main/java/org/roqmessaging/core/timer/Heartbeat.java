@@ -45,6 +45,7 @@ public class Heartbeat extends TimerTask implements IStoppable {
     @Override
 	public void run() {
 		if(hbsocket!=null){
+			logger.info("EXCHANGE HB");
 			String address = RoQUtils.getInstance().getLocalIP();
 			logger.debug("Local address to send with heart bit "+  address+","+fwPort+","+ bkPort);
 			hbsocket.send((new Integer(RoQConstant.EVENT_HEART_BEAT).toString()+"," +address+","+fwPort+","+ bkPort ).getBytes(), 0);

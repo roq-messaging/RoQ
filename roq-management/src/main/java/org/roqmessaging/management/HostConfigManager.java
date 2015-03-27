@@ -96,11 +96,12 @@ public class HostConfigManager implements Runnable, IStoppable {
 			// Init ServerState
 			this.serverState = new HcmState();
 			// Init process Factory
-			this.processFactory = new HostProcessFactory(serverState, properties, hbMonitor);
+			this.processFactory = new HostProcessFactory(serverState, properties);
 			// Init the shutdown monitor
 			this.shutDownMonitor = new ShutDownMonitor(5101, this);
 			hbMonitor = new ProcessMonitor(properties.getLocalPath(), 
 						properties.getMonitorTimeOut(), properties.getMonitorMaxTimeToStart(), this.processFactory);
+			this.processFactory.setProcessMonitor(hbMonitor);
 			new Thread(hbMonitor).start();
 			new Thread(this.shutDownMonitor).start();
 		} catch (ConfigurationException e) {

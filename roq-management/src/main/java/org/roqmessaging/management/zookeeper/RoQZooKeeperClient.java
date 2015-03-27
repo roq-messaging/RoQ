@@ -206,11 +206,12 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		String monitorPath = RoQZKHelpers.makePath(queuePath, "monitor");
 		String statMonitorPath = RoQZKHelpers.makePath(queuePath, "stat-monitor");
 		String hcmPath = RoQZKHelpers.makePath(queuePath, "hcm");
+		String exchPath = RoQZKHelpers.makePath(queuePath, "exchanges");
 		// RoQZKHelpers.createZNodeAndParents(client, queuePath);
 		// Add queue children nodes inside a single transaction
 		RoQZKHelpers.createQueueZNodes(client, queuePath, monitorPath, 
 				monitor.address, statMonitorPath, statMonitor.address, 
-				hcmPath, hcm.address);
+				hcmPath, hcm.address, exchPath);
 	}
 	
 	public void removeQueue(Metadata.Queue queue) {

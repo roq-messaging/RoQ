@@ -108,10 +108,11 @@ public class RoQQueueManager implements IRoQQueueManagement {
 		request.put("CMD", RoQConstant.BSON_CONFIG_REMOVE_QUEUE);
 		// Get Response
 		byte[] responseBytes = sendRequest(BSON.encode(request));
-		int response = Integer.parseInt(new String(responseBytes));
-		if(response == RoQConstant.FAIL){
+		BSONObject result = BSON.decode(responseBytes);
+		// Close socket
+		if ((Integer)result.get("RESULT") ==  RoQConstant.FAIL) {
 			throw  new IllegalStateException("The queue removal process failed @ Management Controller");
-		} else if (response == RoQConstant.EXCHANGE_LOST){
+		} else if ((Integer)result.get("RESULT") == RoQConstant.EXCHANGE_LOST){
 			logger.error("The queue creation for  " + queueName
 					+ " failed. Reason: " + "the leader has changed");
 			return false;
@@ -158,10 +159,10 @@ public class RoQQueueManager implements IRoQQueueManagement {
 		request.put("CMD", RoQConstant.BSON_CONFIG_START_QUEUE);
 		// Get Response
 		byte[] responseBytes = sendRequest(BSON.encode(request));
-		int response = Integer.parseInt(new String(responseBytes));
-		if(response == RoQConstant.FAIL){
+		BSONObject result = BSON.decode(responseBytes);
+		if((Integer)result.get("RESULT") ==  RoQConstant.FAIL){
 			throw  new IllegalStateException("The queue start process failed @ Management Controller");
-		} else if (response == RoQConstant.EXCHANGE_LOST){
+		} else if ((Integer)result.get("RESULT") == RoQConstant.EXCHANGE_LOST){
 			logger.error("The queue creation for  " + queueName
 					+ " failed. Reason: " + "the leader has changed");
 			return false;

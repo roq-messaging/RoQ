@@ -34,6 +34,7 @@ public class HostConfigDAO {
 	private String statePath = "";
 	private int monitorTimeOut = 10000;
 	private int monitorMaxTimeToStart = 20000;
+	private long monitorHbPeriod = 1000;
 	
 	// Class which contains the ports used for the various components of the GCM.
 	public GCMPorts ports = new GCMPorts();
@@ -191,6 +192,12 @@ public class HostConfigDAO {
 	}
 	public int getMonitorMaxTimeToStart() {
 		return monitorMaxTimeToStart;
+	}
+	public long getMonitorHbPeriod() {
+		return monitorHbPeriod;
+	}
+	public void setMonitorHbPeriod(long period) {
+		monitorHbPeriod = period;
 	}
 
 }
