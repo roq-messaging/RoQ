@@ -41,7 +41,9 @@ import org.roqmessaging.management.stat.KPISubscriber;
 public class TestStatMonitor {
 	protected RoQAllLocalLauncher launcher = null;
 	protected 	KPISubscriber kpiSubscriber = null;
+	protected IRoQConnectionFactory factory;
 	private Logger logger = Logger.getLogger(TestStatMonitor.class);
+	
 	
 	/**
 	 * @throws java.lang.Exception
@@ -58,6 +60,7 @@ public class TestStatMonitor {
 	 */
 	@After
 	public void tearDown() throws Exception {
+		factory.close();
 		this.kpiSubscriber.shutDown();
 		this.launcher.tearDown();
 		Thread.sleep(3000);
@@ -86,7 +89,7 @@ public class TestStatMonitor {
 			new Thread(kpiSubscriber).start();
 
 			// 3. Create a subscriber
-			IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getZkServerAddress());
+			factory = new RoQConnectionFactory(launcher.getZkServerAddress());
 			// add a subscriber
 			IRoQSubscriberConnection subConnection = factory.createRoQSubscriberConnection("queue1", "key");
 			// Open the connection to the logical queue

@@ -11,29 +11,26 @@ import org.roqmessaging.factory.HostProcessFactory;
 import org.roqmessaging.utils.LocalState;
 import org.roqmessaging.utils.Time;
 
-public class ProcessMonitor implements Runnable{
+import com.google.common.collect.ImmutableList;
+
+public class ProcessMonitor implements Runnable {
 	Logger logger = Logger.getLogger(ProcessMonitor.class);
 	
 	// The timeout after which process is considered a dead
 	private int processTimeOut;
 	private int maxTimeToStart;
 	
-	/**
-	 * The localState Database
-	 * contains HB from processes 
-	 * that run on the Host
-	 */
-	LocalState localState;
-	
 	// used to shutdown thread
 	public volatile boolean isRunning = true;
 	
+	private String LocalStatePath;
+	
 	/**
-	 * The key is the port (because port is unique and allows to identify
-	 * The value is the PID
+	 * The maps/lists to manage the processes
+	 * the keys are often the port of the process because
+	 * it is unique for a given host
 	 */
-	private HashMap<String, String> processesPID = 	  new HashMap<String, String>();
-	private HashMap<String, Integer> processesType =  new HashMap<String, Integer>();
+	private HashMap<String, MonitoredProcess> processes = 	  new HashMap<String, MonitoredProcess>();
 	private HashMap<String, Integer> processesToAdd = new HashMap<String, Integer>();
 	private ArrayList<String> processesFailed =		  new ArrayList<String>();
 	private ArrayList<String> processesRunning = 	  new ArrayList<String>();
@@ -44,19 +41,48 @@ public class ProcessMonitor implements Runnable{
 	// Allows the thread to start/stop processes
 	private HostProcessFactory processFactory;
 	
+	/**
+	 * A class to represent a monitored
+	 * process
+	 */
+	private class MonitoredProcess {
+		private final Process process;
+		private final String key;
+		private final int type;
+		
+		public MonitoredProcess(Process process, String key, int type) {
+			this.process = process;
+			this.key = key;
+			this.type = type;
+		}
+		
+		public Process getProcess() {
+			return process;
+		}
+		
+		public String getKey() {
+			return key;
+		}
+		
+		public int getType() {
+			return type;
+		}
+		
+	}
+	
 	public ProcessMonitor(String LocalStatePath, int processTimeout, int maxTimeToStart, HostProcessFactory processFactory) 
 				throws IOException {
 		super();
+		this.LocalStatePath = LocalStatePath;
 		this.processTimeOut = processTimeout;
-		this.localState = new LocalState(LocalStatePath);
 		this.maxTimeToStart = maxTimeToStart;
 		this.processFactory = processFactory;
 	}
 	
-	public void addprocess(String id, String pid, int type) {
+	public void addprocess(String id, Process process, int type, String key) {
+		logger.info("adding process: " + id + " in process monitoring system");
 		processLock.lock();
-		processesPID.put(id, pid);
-		processesType.put(id, type);
+		processes.put(id, new MonitoredProcess(process, key, type));
 		processesToAdd.put(id, Time.currentTimeSecs());
 		processLock.unlock();
 	}
@@ -69,9 +95,11 @@ public class ProcessMonitor implements Runnable{
 	 */
 	public HashMap<String, Long> getprocessesHB() 
 			throws IOException {
+		LocalState localState;
 		HashMap<String, Long> processHbs = new HashMap<String, Long>();
 		for (String process : processesRunning) {
-			processHbs.put(process ,(Long) localState.get(process));
+			localState = new LocalState(LocalStatePath + "/" + process);
+			processHbs.put(process ,(Long) localState.get("HB"));
 		}
 		return processHbs;
 	}
@@ -83,8 +111,10 @@ public class ProcessMonitor implements Runnable{
 	 */
 	public void run() {
 		HashMap<String, Long> processesHB;
+		logger.info("Starting heartbeat monitor");
 		while (isRunning) {
 			try {
+				logger.info("check up loop");
 				// Add the just spawned process
 				// to the running list when
 				// max start time has elapsed
@@ -97,7 +127,7 @@ public class ProcessMonitor implements Runnable{
 				// Restart timed out processes
 				restartFailedProcesses();
 				// Dont waste resources
-				Thread.sleep(processTimeOut / 2);
+				Thread.sleep((processTimeOut * 1000) / 2);
 			} catch (IOException e) {
 				logger.error("Failed to read locState DB");
 				e.printStackTrace();
@@ -106,6 +136,7 @@ public class ProcessMonitor implements Runnable{
 				e.printStackTrace();
 			}
 		}
+		logger.info("heartbeat monitor stopped");
 	}
 	
 	/***
@@ -114,8 +145,10 @@ public class ProcessMonitor implements Runnable{
 	 */
 	private void startProcessMonitoring() {
 		processLock.lock();
-		for (String processID: processesToAdd.keySet()) {
-			if (processesToAdd.get(processID) > maxTimeToStart) {
+		ImmutableList<String> processesList = ImmutableList.copyOf(processesToAdd.keySet());
+		for (String processID: processesList) {
+			if ((Time.currentTimeSecs() - processesToAdd.get(processID)) > maxTimeToStart) {
+				logger.info("begin to monitor: " + processID);
 				processesToAdd.remove(processID);
 				processesRunning.add(processID);
 			}
@@ -130,10 +163,15 @@ public class ProcessMonitor implements Runnable{
 	 */
 	private void classifyProcesses(HashMap<String, Long> processesHB) {
 		int current = Time.currentTimeSecs();
-		for (String processID : processesHB.keySet()) {
-			if (current - processesHB.get(processID) > processTimeOut) {
+		ImmutableList<String> processesList = ImmutableList.copyOf(processesRunning);
+		for (String processID : processesList) {
+			logger.info("check: " + processID);
+			if (processesHB.get(processID) == null || current - processesHB.get(processID) > processTimeOut) {
+				logger.info("process: " + processID + " has timed out");
 				processesFailed.add(processID);
 				processesRunning.remove(processID);
+			} else {
+				logger.info("process: " + processID + " has sent hb");
 			}
 		}
 	}
@@ -143,44 +181,41 @@ public class ProcessMonitor implements Runnable{
 	 * @param processesHB
 	 */
 	private void restartFailedProcesses() {
-		for (String processID : processesFailed) {
-			stopProcess(processID);
-			restartProcess(processID);
+		ImmutableList<String> processesList = ImmutableList.copyOf(processesFailed);
+		String key;
+		int type;
+		for (String processID : processesList) {
+			logger.info("restarting process: " + processID);
+			key = processes.get(processID).getKey();
+			type = processes.get(processID).getType();
+			stopAndRemoveProcess(processID);
+			restartProcess(type, key);
+			
 		}
 	}
 	
 	/**
-	 * kill a process
-	 * @param processesHB
+	 * Stop the process and removes it from the list
 	 */
-	private boolean stopProcess(String processID) {
-		int processType = processesType.get(processID);
-		switch (processType) {
-		case RoQConstantInternal.PROCESS_MONITOR:
-			
-			break;
-		case RoQConstantInternal.PROCESS_SCALING:
-			
-			break;
-		case RoQConstantInternal.PROCESS_STAT:
-			
-			break;
-		case RoQConstantInternal.PROCESS_EXCHANGE:
-			
-			break;
+	private void stopAndRemoveProcess(String processID) {
+		MonitoredProcess process;
+		process = processes.get(processID);
+		// kill the process
+		if (	process.getType() == RoQConstantInternal.PROCESS_MONITOR) {
+			process.getProcess().destroy();
+			processesFailed.remove(processID);
+			processes.remove(processID);
 		}
-		return false;
 	}
 	
 	/**
 	 * Restart a process
 	 * @param processesHB
 	 */
-	private boolean restartProcess(String processID) {
-		int processType = processesType.get(processID);
-		switch (processType) {
+	private boolean restartProcess(int type, String key) {
+		switch (type) {
 		case RoQConstantInternal.PROCESS_MONITOR:
-			
+			processFactory.startNewMonitorProcess(key);
 			break;
 		case RoQConstantInternal.PROCESS_SCALING:
 			

@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.core;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -25,6 +26,8 @@ import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.stat.StatisticMonitor;
 import org.roqmessaging.core.timer.MonitorStatTimer;
 import org.roqmessaging.state.ExchangeState;
+import org.roqmessaging.utils.LocalState;
+import org.roqmessaging.utils.Time;
 import org.zeromq.ZMQ;
 
 /**
@@ -63,6 +66,11 @@ public class Monitor implements Runnable, IStoppable {
 	//The queue name
 	private String qName = "name";
 	
+	//Local State for heartbeats
+	private LocalState localState;
+	// Minimum time between two heartbeats (in millis)
+	private long hbPeriod;
+	
 	private Lock lock = new ReentrantLock();
 
 	
@@ -72,8 +80,9 @@ public class Monitor implements Runnable, IStoppable {
 	 * @param qname the logical queue from which the monitor belongs to
 	 * @param period the stat period for publication
 	 */
-	public Monitor(int basePort, int statPort, String qname, String period) {
+	public Monitor(int basePort, int statPort, String qname, String period, String localStatePath, long hbPeriod) {
 		try {
+			this.basePort = basePort;
 			this.statPort = statPort;
 			this.qName = qname;
 			this.period = Integer.parseInt(period);
@@ -81,7 +90,8 @@ public class Monitor implements Runnable, IStoppable {
 			hostsToRemove = new ArrayList<Integer>();
 			maxThroughput = 75000000L; // Maximum throughput per exchange, in
 										// bytes/minute
-
+			localState = new LocalState(localStatePath + "/" + basePort);
+			this.hbPeriod = hbPeriod;
 			context = ZMQ.context(1);
 
 			producersPub = context.socket(ZMQ.PUB);
@@ -345,7 +355,8 @@ public class Monitor implements Runnable, IStoppable {
 
 		logger.info("Monitor started");
 		long lastPublish = System.currentTimeMillis();
-		
+		long lastHb = Time.currentTimeMillis() - hbPeriod;
+		long current;
 		//2. Start the main run of the monitor
 		while (this.active) {
 			//not really clean, workaround to the fact thats sockets cannot be shared between threads
@@ -363,6 +374,17 @@ public class Monitor implements Runnable, IStoppable {
 				}finally {
 				}
 			}
+			// Write Heartbeat
+			if ((Time.currentTimeMillis() - lastHb) >= hbPeriod) {
+				try {
+					current = Time.currentTimeSecs();
+					logger.info("Writing hb " + basePort + " " + current);
+					localState.put("HB", current);
+					lastHb = Time.currentTimeMillis();
+				} catch (IOException e) {
+					logger.info("Failed to write in local db: " + e);
+				}
+			}
 			
 			//3. According to the channel bit used, we can define what kind of info is sent
 			items.poll(100);
@@ -373,7 +395,7 @@ public class Monitor implements Runnable, IStoppable {
 					// connection
 					if (info.length > 1) {
 						infoCode = Integer.parseInt(info[0]);
-						logger.trace("Recieving message from Exhange:" + infoCode + " info array " + info.length);
+						logger.info("Recieving message from Exhange:" + infoCode + " info array " + info.length);
 						switch (infoCode) {
 						case RoQConstant.DEBUG:
 							// Broker debug code

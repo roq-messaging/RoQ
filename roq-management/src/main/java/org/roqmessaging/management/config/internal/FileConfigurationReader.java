@@ -110,6 +110,7 @@ public class FileConfigurationReader {
 			configDao.setLocalStatePath(config.getString("localstate.path"));
 			configDao.setMonitorTimeOut(config.getInt("monitor.timeout"));
 			configDao.setMonitorMaxTimeToStart(config.getInt("monitor.maxtimetostart"));
+			configDao.setMonitorHbPeriod(config.getInt("monitor.HBPeriod"));
 			configDao.setExchangeHeap(config.getInt("exchange.vm.heap")!=-1?config.getInt("exchange.vm.heap"):256);
 			if (config.containsKey("network.interface"))
 				configDao.setNetworkInterface(config.getString("network.interface"));

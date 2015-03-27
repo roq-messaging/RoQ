@@ -33,7 +33,7 @@ public class TestGCMFailover extends RoQDockerTestCase {
 						
 			// Check if queues always exist
 			assertEquals(true, queueExists("testQ0"));
-			assertEquals(true, queueExists("testQ0"));
+			assertEquals(true, queueExists("testQ1"));
 						
 		} catch (Exception e) {
 			e.printStackTrace();

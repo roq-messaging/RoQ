@@ -3,7 +3,6 @@ package org.roqmessaging.factory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.lang.reflect.Field;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -31,10 +30,13 @@ public class HostProcessFactory {
 	
 	private ProcessMonitor processMonitor;
 	
-	public HostProcessFactory(HcmState serverState, HostConfigDAO properties, ProcessMonitor processMonitor) 
+	public HostProcessFactory(HcmState serverState, HostConfigDAO properties) 
 			throws IOException {
 		this.serverState = serverState;
 		this.properties = properties;
+	}
+	
+	public void setProcessMonitor(ProcessMonitor processMonitor) {
 		this.processMonitor = processMonitor;
 	}
 	
@@ -115,20 +117,8 @@ public class HostProcessFactory {
 							backPort).toString(), monitorAddress, monitorStatAddress);
 			logger.info("Starting: " + pb.command());
 			final Process process = pb.start();
-	        try {
-	        	Class<?> asker = Class.forName("java.lang.UNIXProcess");
-				Field pidField = asker.getDeclaredField("pid");
-				pidField.setAccessible(true);
-				Object pid = pidField.get(process);
-				logger.info("Start process monitoring for pid = " + pid);
-				// Start process monitoring
-				processMonitor.addprocess(Integer.toString(frontPort), (String) pid, RoQConstantInternal.PROCESS_EXCHANGE);
-				
-			} catch (Throwable e) {
-					logger.error("Error while getting pid", e);
-					process.destroy();
-					return false;
-			}
+			// Start process monitoring
+			processMonitor.addprocess(Integer.toString(frontPort), process, RoQConstantInternal.PROCESS_EXCHANGE, transID);
 			pipe(process.getErrorStream(), System.err);
 			pipe(process.getInputStream(), System.out);
 		} catch (IOException e) {
@@ -170,39 +160,39 @@ public class HostProcessFactory {
 	 *         +"," tcp://IP: statport
 	 */
 	public String startNewMonitorProcess(String qName) {
-		// 1. Get the number of installed queues on this host
-		int frontPort = getMonitorPort();
-		int statPort = getStatMonitorPort();
-		logger.debug(" This host contains already " + serverState.getAllMonitors().size() + " Monitor");
-		String argument = frontPort + " " + statPort;
-		logger.debug("Starting monitor process by script launch on " + argument);
-		//Monitor configuration
-		String monitorAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + frontPort;
-		String statAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + statPort;
-		//Checking whether we must create the monitor, stat monitor and the scaling process in the same VM
-
+		
+		int statPort, frontPort;
+		String monitorAddress, statAddress;
+		if (serverState.MonitorExists(qName)) {
+			monitorAddress = serverState.getMonitor(qName);
+			statAddress = serverState.getStat(qName);
+			String[] splitAddress = monitorAddress.split(":");
+			frontPort = new Integer((splitAddress[splitAddress.length - 1]));
+			splitAddress = statAddress.split(":");
+			statPort = new Integer((splitAddress[splitAddress.length - 1]));
+		}
+		else {
+			// 1. Get the number of installed queues on this host
+			frontPort = getMonitorPort();
+			statPort = getStatMonitorPort();
+			logger.debug(" This host contains already " + serverState.getAllMonitors().size() + " Monitor");
+			String argument = frontPort + " " + statPort;
+			logger.debug("Starting monitor process by script launch on " + argument);
+			//Monitor configuration
+			monitorAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + frontPort;
+			statAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + statPort;
+		}
 		// We start the monitor in its own process
 		// ProcessBuilder pb = new ProcessBuilder(this.monitorScript,
 		// argument);
 		ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
 				+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),	MonitorLauncher.class.getCanonicalName(), new Integer(frontPort).toString(),
-				new Integer(statPort).toString(), qName, new Integer(this.properties.getStatPeriod()).toString());
+				new Integer(statPort).toString(), qName, new Integer(this.properties.getStatPeriod()).toString(), this.properties.getLocalPath(), new Long( this.properties.getMonitorHbPeriod()).toString());
 		try {
 			logger.debug("Starting: " + pb.command());
 			final Process process = pb.start();
-			try {
-	        	Class<?> asker = Class.forName("java.lang.UNIXProcess");
-				Field pidField = asker.getDeclaredField("pid");
-				pidField.setAccessible(true);
-				Object pid = pidField.get(process);
-				logger.info("Start process monitoring for pid = " + pid);
-				// Start process monitoring
-				processMonitor.addprocess(Integer.toString(frontPort), (String) pid, RoQConstantInternal.PROCESS_MONITOR);
-			} catch (Throwable e) {
-					logger.error("Error while getting pid", e);
-					process.destroy();
-					return null;
-			}
+			// Start process monitoring
+			processMonitor.addprocess(Integer.toString(frontPort), process, RoQConstantInternal.PROCESS_MONITOR, qName);
 			pipe(process.getErrorStream(), System.err);
 			pipe(process.getInputStream(), System.out);
 		} catch (IOException e) {
@@ -225,7 +215,7 @@ public class HostProcessFactory {
 		if(serverState.statExists(qName)){
 			//1. Compute the stat monitor port+2
 			int basePort = RoQSerializationUtils.extractBasePort(serverState.getMonitor(qName));
-			basePort+=2;
+			basePort+=3;
 			
 			// Get the address and the ports used by the GCM
 			String gcm_address = this.properties.getGcmAddress();
@@ -243,19 +233,8 @@ public class HostProcessFactory {
 						qName, Integer.toString(basePort));
 				logger.debug("Starting: " + pb.command());
 				final Process process = pb.start();
-				try {
-		        	Class<?> asker = Class.forName("java.lang.UNIXProcess");
-					Field pidField = asker.getDeclaredField("pid");
-					pidField.setAccessible(true);
-					Object pid = pidField.get(process);
-					logger.info("Start process monitoring for pid = " + pid);
-					// Start process monitoring
-					processMonitor.addprocess(Integer.toString(basePort), (String) pid, RoQConstantInternal.PROCESS_SCALING);
-				} catch (Throwable e) {
-						logger.error("Error while getting pid", e);
-						process.destroy();
-						return false;
-				}
+				// Start process monitoring
+				processMonitor.addprocess(Integer.toString(basePort), process, RoQConstantInternal.PROCESS_SCALING, qName);
 				pipe(process.getErrorStream(), System.err);
 				pipe(process.getInputStream(), System.out);
 			} catch (IOException e) {
@@ -284,6 +263,10 @@ public class HostProcessFactory {
 				}
 			}
 		}).start();
+	}
+
+	public void stopProcess(String pid) {
+				
 	}
 
 }
