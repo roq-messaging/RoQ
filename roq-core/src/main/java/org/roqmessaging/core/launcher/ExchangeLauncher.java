@@ -48,7 +48,7 @@ public class ExchangeLauncher {
 	 */
 	public static void main(String[] args) throws InterruptedException {
 		System.out.println("Launching Exchange process with arg "+displayArg(args));
-		if (args.length != 4) {
+		if (args.length != 6) {
 			System.out
 					.println("The argument should be <int front port> <int back port> < tcp:// monitor:monitorPort>  <tcp:// monitor:statport>");
 			return;
@@ -67,8 +67,9 @@ public class ExchangeLauncher {
 			shutDownSocket = shutDownContext.socket(ZMQ.PUB);
 			shutDownSocket.connect(args[2]);
 			shutDownSocket.setLinger(3500);
+			long hbPeriod = Long.parseLong(args[5]);
 			// Instanciate the exchange
-			final Exchange exchange = new Exchange(frontPort, backPort, args[2], args[3]);
+			final Exchange exchange = new Exchange(frontPort, backPort, args[2], args[3], args[4], hbPeriod);
 			// Launch the thread
 			Thread t = new Thread(exchange);
 			t.start();

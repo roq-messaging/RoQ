@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstantInternal;
 import org.roqmessaging.factory.HostProcessFactory;
+import org.roqmessaging.management.config.internal.HostConfigDAO;
 import org.roqmessaging.utils.LocalState;
 import org.roqmessaging.utils.Time;
 
@@ -16,10 +17,7 @@ import com.google.common.collect.ImmutableList;
 public class ProcessMonitor implements Runnable {
 	Logger logger = Logger.getLogger(ProcessMonitor.class);
 	
-	// The timeout after which process is considered a dead
-	private int processTimeOut;
-	private int maxTimeToStart;
-	
+	private HostConfigDAO properties = null;
 	// used to shutdown thread
 	public volatile boolean isRunning = true;
 	
@@ -70,12 +68,11 @@ public class ProcessMonitor implements Runnable {
 		
 	}
 	
-	public ProcessMonitor(String LocalStatePath, int processTimeout, int maxTimeToStart, HostProcessFactory processFactory) 
+	public ProcessMonitor(String LocalStatePath, HostConfigDAO properties, HostProcessFactory processFactory) 
 				throws IOException {
 		super();
 		this.LocalStatePath = LocalStatePath;
-		this.processTimeOut = processTimeout;
-		this.maxTimeToStart = maxTimeToStart;
+		this.properties = properties;
 		this.processFactory = processFactory;
 	}
 	
@@ -127,7 +124,7 @@ public class ProcessMonitor implements Runnable {
 				// Restart timed out processes
 				restartFailedProcesses();
 				// Dont waste resources
-				Thread.sleep((processTimeOut * 1000) / 2);
+				Thread.sleep((properties.getMonitorTimeOut() * 1000) / 2);
 			} catch (IOException e) {
 				logger.error("Failed to read locState DB");
 				e.printStackTrace();
@@ -147,7 +144,13 @@ public class ProcessMonitor implements Runnable {
 		processLock.lock();
 		ImmutableList<String> processesList = ImmutableList.copyOf(processesToAdd.keySet());
 		for (String processID: processesList) {
-			if ((Time.currentTimeSecs() - processesToAdd.get(processID)) > maxTimeToStart) {
+			if (((processes.get(processID).getType() == RoQConstantInternal.PROCESS_MONITOR)
+						&& (Time.currentTimeSecs() - processesToAdd.get(processID)) > properties.getMonitorMaxTimeToStart())
+				|| ((processes.get(processID).getType() == RoQConstantInternal.PROCESS_EXCHANGE)
+						&& (Time.currentTimeSecs() - processesToAdd.get(processID)) > properties.getExchangeMaxTimeToStart())
+				|| ((processes.get(processID).getType() == RoQConstantInternal.PROCESS_SCALING)
+						&& (Time.currentTimeSecs() - processesToAdd.get(processID)) > properties.getScalingProcessMaxTimeToStart()))
+			{
 				logger.info("begin to monitor: " + processID);
 				processesToAdd.remove(processID);
 				processesRunning.add(processID);
@@ -166,7 +169,14 @@ public class ProcessMonitor implements Runnable {
 		ImmutableList<String> processesList = ImmutableList.copyOf(processesRunning);
 		for (String processID : processesList) {
 			logger.info("check: " + processID);
-			if (processesHB.get(processID) == null || current - processesHB.get(processID) > processTimeOut) {
+			if ((processesHB.get(processID) == null)
+				|| ((processes.get(processID).getType() == RoQConstantInternal.PROCESS_MONITOR)
+							&& (current - processesHB.get(processID)) > properties.getMonitorTimeOut())
+				|| ((processes.get(processID).getType() == RoQConstantInternal.PROCESS_EXCHANGE)
+							&& (current - processesHB.get(processID)) > properties.getExchangeTimeOut())
+				|| ((processes.get(processID).getType() == RoQConstantInternal.PROCESS_SCALING)
+							&& (current - processesHB.get(processID)) > properties.getScalingProcessTimeOut()))
+			{
 				logger.info("process: " + processID + " has timed out");
 				processesFailed.add(processID);
 				processesRunning.remove(processID);
@@ -190,7 +200,6 @@ public class ProcessMonitor implements Runnable {
 			type = processes.get(processID).getType();
 			stopAndRemoveProcess(processID);
 			restartProcess(type, key);
-			
 		}
 	}
 	
@@ -201,7 +210,7 @@ public class ProcessMonitor implements Runnable {
 		MonitoredProcess process;
 		process = processes.get(processID);
 		// kill the process
-		if (	process.getType() == RoQConstantInternal.PROCESS_MONITOR) {
+		if (process.getType() == RoQConstantInternal.PROCESS_MONITOR) { //TODO: If to remove !!
 			process.getProcess().destroy();
 			processesFailed.remove(processID);
 			processes.remove(processID);

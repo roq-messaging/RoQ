@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.scaling;
 
+import java.io.IOException;
 import java.util.HashMap;
 
 import org.apache.log4j.Logger;
@@ -31,6 +32,8 @@ import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.stat.KPISubscriber;
 import org.roqmessaging.scaling.policy.IScalingPolicy;
 import org.roqmessaging.scaling.policy.NullScalingPolicy;
+import org.roqmessaging.utils.LocalState;
+import org.roqmessaging.utils.Time;
 import org.zeromq.ZMQ;
 
 /**
@@ -69,6 +72,10 @@ public class ScalingProcess extends KPISubscriber {
 	private CloudConfig cloudProps = null;
 	// The port to listen
 	private int listnerPort = 0;
+	//Local State for heartbeats
+	private LocalState localState;
+	// Minimum time between two heartbeats (in millis)
+	private long hbPeriod;
 
 	/**
 	 * Notice the scaling process starts a shutdown monitor on the listener port
@@ -84,16 +91,23 @@ public class ScalingProcess extends KPISubscriber {
 	 *            is the port on which the scaling process will listen for push
 	 *            request when a new configuration will be published
 	 */
-	public ScalingProcess(String gcm_address, int gcm_interfacePort, int gcm_adminPort, String qName, int listnerPort) {
+	public ScalingProcess(String gcm_address, int gcm_interfacePort, int gcm_adminPort, String qName, int listnerPort, String localStatePath, long hbPeriod) {
 		super(gcm_address, gcm_interfacePort, qName);
-		this.qName = qName;
-		this.listnerPort = listnerPort;
-		this.serializer = new RoQBSONSerializer();
-		// ZMQ init
-		this.context = ZMQ.context(1);
-		// Prepare the request socket to the management controller
-		this.requestSocket = this.context.socket(ZMQ.REQ);
-		this.requestSocket.connect("tcp://" + gcm_address + ":" + gcm_adminPort);
+		try {
+			this.qName = qName;
+			this.listnerPort = listnerPort;
+			this.serializer = new RoQBSONSerializer();
+			localState = new LocalState(localStatePath + "/" + listnerPort);
+			this.hbPeriod = hbPeriod;
+			// ZMQ init
+			this.context = ZMQ.context(1);
+			// Prepare the request socket to the management controller
+			this.requestSocket = this.context.socket(ZMQ.REQ);
+			this.requestSocket.connect("tcp://" + gcm_address + ":" + gcm_adminPort);
+		} catch (Exception e) {
+			logger.error("Error while creating Monitor, ABORDED", e);
+			return;
+		}
 	}
 
 	/**
@@ -244,7 +258,20 @@ public class ScalingProcess extends KPISubscriber {
 		ZMQ.Poller poller = new ZMQ.Poller(1);
 		poller.register(kpiSocket);
 		poller.register(pullListnerConfigSocket);
+		long current;
+		long lastHb = Time.currentTimeMillis() - hbPeriod;
 		while (active) {
+			// Write Heartbeat
+			if ((Time.currentTimeMillis() - lastHb) >= hbPeriod) {
+				try {
+					current = Time.currentTimeSecs();
+					logger.info("SP Writing hb " + listnerPort + " " + current);
+					localState.put("HB", current);
+					lastHb = Time.currentTimeMillis();
+				} catch (IOException e) {
+					logger.info("Failed to write in local db: " + e);
+				}
+			}
 			poller.poll(200);
 			if (active & poller.pollin(0)) {
 				do {
