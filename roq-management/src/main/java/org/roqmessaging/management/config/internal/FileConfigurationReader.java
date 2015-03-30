@@ -111,6 +111,12 @@ public class FileConfigurationReader {
 			configDao.setMonitorTimeOut(config.getInt("monitor.timeout"));
 			configDao.setMonitorMaxTimeToStart(config.getInt("monitor.maxtimetostart"));
 			configDao.setMonitorHbPeriod(config.getInt("monitor.HBPeriod"));
+			configDao.setExchangeTimeOut(config.getInt("exchange.timeout"));
+			configDao.setExchangeMaxTimeToStart(config.getInt("exchange.maxtimetostart"));
+			configDao.setExchangeHbPeriod(config.getInt("exchange.HBPeriod"));
+			configDao.setScalingProcessTimeOut(config.getInt("scalingProcess.timeout"));
+			configDao.setScalingProcessMaxTimeToStart(config.getInt("scalingProcess.maxtimetostart"));
+			configDao.setScalingProcessHbPeriod(config.getInt("scalingProcess.HBPeriod"));
 			configDao.setExchangeHeap(config.getInt("exchange.vm.heap")!=-1?config.getInt("exchange.vm.heap"):256);
 			if (config.containsKey("network.interface"))
 				configDao.setNetworkInterface(config.getString("network.interface"));

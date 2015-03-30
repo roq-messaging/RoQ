@@ -100,7 +100,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 			// Init the shutdown monitor
 			this.shutDownMonitor = new ShutDownMonitor(5101, this);
 			hbMonitor = new ProcessMonitor(properties.getLocalPath(), 
-						properties.getMonitorTimeOut(), properties.getMonitorMaxTimeToStart(), this.processFactory);
+						properties, this.processFactory);
 			this.processFactory.setProcessMonitor(hbMonitor);
 			new Thread(hbMonitor).start();
 			new Thread(this.shutDownMonitor).start();

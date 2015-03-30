@@ -357,6 +357,7 @@ public class Monitor implements Runnable, IStoppable {
 		long lastPublish = System.currentTimeMillis();
 		long lastHb = Time.currentTimeMillis() - hbPeriod;
 		long current;
+
 		//2. Start the main run of the monitor
 		while (this.active) {
 			//not really clean, workaround to the fact thats sockets cannot be shared between threads
@@ -378,7 +379,7 @@ public class Monitor implements Runnable, IStoppable {
 			if ((Time.currentTimeMillis() - lastHb) >= hbPeriod) {
 				try {
 					current = Time.currentTimeSecs();
-					logger.info("Writing hb " + basePort + " " + current);
+					logger.info("Monitor Writing hb " + basePort + " " + current);
 					localState.put("HB", current);
 					lastHb = Time.currentTimeMillis();
 				} catch (IOException e) {
@@ -395,7 +396,6 @@ public class Monitor implements Runnable, IStoppable {
 					// connection
 					if (info.length > 1) {
 						infoCode = Integer.parseInt(info[0]);
-						logger.info("Recieving message from Exhange:" + infoCode + " info array " + info.length);
 						switch (infoCode) {
 						case RoQConstant.DEBUG:
 							// Broker debug code

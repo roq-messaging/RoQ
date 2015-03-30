@@ -57,6 +57,18 @@ public class HostConfigDAO {
 	public void setMonitorMaxTimeToStart(int timeToStart) {
 		monitorMaxTimeToStart = timeToStart;
 	}
+	public void setExchangeTimeOut(int timeout) {
+		monitorTimeOut = timeout;
+	}
+	public void setExchangeMaxTimeToStart(int timeToStart) {
+		monitorMaxTimeToStart = timeToStart;
+	}
+	public void setScalingProcessTimeOut(int timeout) {
+		monitorTimeOut = timeout;
+	}
+	public void setScalingProcessMaxTimeToStart(int timeToStart) {
+		monitorMaxTimeToStart = timeToStart;
+	}
 	/**
 	 * @return the gcmAddress
 	 */
@@ -197,6 +209,29 @@ public class HostConfigDAO {
 		return monitorHbPeriod;
 	}
 	public void setMonitorHbPeriod(long period) {
+		monitorHbPeriod = period;
+	}
+	public int getExchangeTimeOut() {
+		return monitorTimeOut;
+	}
+	public int getExchangeMaxTimeToStart() {
+		return monitorMaxTimeToStart;
+	}
+	public long getExchangeHbPeriod() {
+		return monitorHbPeriod;
+	}
+	public void setExchangeHbPeriod(long period) {
+		monitorHbPeriod = period;
+	}public int getScalingProcessTimeOut() {
+		return monitorTimeOut;
+	}
+	public int getScalingProcessMaxTimeToStart() {
+		return monitorMaxTimeToStart;
+	}
+	public long getScalingProcessHbPeriod() {
+		return monitorHbPeriod;
+	}
+	public void setScalingProcessHbPeriod(long period) {
 		monitorHbPeriod = period;
 	}
 

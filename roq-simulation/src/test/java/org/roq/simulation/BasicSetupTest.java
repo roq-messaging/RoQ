@@ -152,7 +152,7 @@ public class BasicSetupTest {
 	 * parameter are loaded.
 	 */
 	private void startExchange(String monitorHost, String statHost) {
-		this.xChange = new Exchange(frontPort, (frontPort+1), monitorHost,statHost );
+		this.xChange = new Exchange(frontPort, (frontPort+1), monitorHost,statHost, "/tmp/ROQlocalDB", 1000);
 		Thread t = new Thread(this.xChange);
 		t.start();
 		

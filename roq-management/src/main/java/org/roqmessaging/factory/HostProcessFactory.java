@@ -114,7 +114,7 @@ public class HostProcessFactory {
 			ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
 					+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"), "-Xmx"+this.properties.getExchangeHeap()+"m","-XX:+UseConcMarkSweepGC",
 					ExchangeLauncher.class.getCanonicalName(), new Integer(frontPort).toString(), new Integer(
-							backPort).toString(), monitorAddress, monitorStatAddress);
+							backPort).toString(), monitorAddress, monitorStatAddress, this.properties.getLocalPath(), new Long( this.properties.getExchangeHbPeriod()).toString());
 			logger.info("Starting: " + pb.command());
 			final Process process = pb.start();
 			// Start process monitoring
@@ -135,7 +135,9 @@ public class HostProcessFactory {
 	 * @return the monitor port
 	 */
 	private int getMonitorPort() {
-		return (this.properties.getMonitorBasePort() + serverState.getAllMonitors().size() * 6);
+		return (this.properties.getMonitorBasePort() + serverState.getAllMonitors().size() * 8); 
+		// TODO * 8 is too much, but the previous value assigned to the stat monitor was 
+		// always already used...
 	}
 
 	/**
@@ -215,7 +217,7 @@ public class HostProcessFactory {
 		if(serverState.statExists(qName)){
 			//1. Compute the stat monitor port+2
 			int basePort = RoQSerializationUtils.extractBasePort(serverState.getMonitor(qName));
-			basePort+=3;
+			basePort+=6;
 			
 			// Get the address and the ports used by the GCM
 			String gcm_address = this.properties.getGcmAddress();
@@ -230,7 +232,7 @@ public class HostProcessFactory {
 						+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),
 						ScalingProcessLauncher.class.getCanonicalName(),
 						gcm_address, Integer.toString(gcm_interfacePort), Integer.toString(gcm_adminPort),
-						qName, Integer.toString(basePort));
+						qName, Integer.toString(basePort), this.properties.getLocalPath(), new Long( this.properties.getScalingProcessHbPeriod()).toString());
 				logger.debug("Starting: " + pb.command());
 				final Process process = pb.start();
 				// Start process monitoring

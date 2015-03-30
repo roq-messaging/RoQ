@@ -49,9 +49,8 @@ public class ScalingProcessLauncher {
 	 */
 	public static void main(String[] args) throws InterruptedException {
 		System.out.println("Launching Scaling process with arg "+displayArg(args));
-		if (args.length != 5) {
-			System.out
-					.println("The arguments should be <GCM IP address> <GCM interface port> <GCM admin port> <Queue Name> <Listener port>  ");
+		if (args.length != 7) {
+			System.out.println("The arguments should be <GCM IP address> <GCM interface port> <GCM admin port> <Queue Name> <Listener port>  ");
 			return;
 		}
 		
@@ -61,11 +60,11 @@ public class ScalingProcessLauncher {
 			int gcm_adminPort = Integer.parseInt(args[2]);
 			String qName = args[3];
 			int listenerPort = Integer.parseInt(args[4]);
-			
+			long hbPeriod = Long.parseLong(args[6]);
 			System.out.println("Starting Scaling process for queue " + qName + ", using listener port " + listenerPort);
 			
 			// Instanciate the exchange
-			final ScalingProcess scalingProcess = new ScalingProcess(gcm_address, gcm_interfacePort, gcm_adminPort, qName, listenerPort);
+			final ScalingProcess scalingProcess = new ScalingProcess(gcm_address, gcm_interfacePort, gcm_adminPort, qName, listenerPort, args[5], hbPeriod);
 			scalingProcess.subscribe();
 			// Launch the thread
 			Thread t = new Thread(scalingProcess);
