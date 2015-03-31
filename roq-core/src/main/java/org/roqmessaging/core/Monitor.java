@@ -379,7 +379,7 @@ public class Monitor implements Runnable, IStoppable {
 			if ((Time.currentTimeMillis() - lastHb) >= hbPeriod) {
 				try {
 					current = Time.currentTimeSecs();
-					logger.info("Monitor Writing hb " + basePort + " " + current);
+					logger.info("Writing hb " + basePort + " " + current);
 					localState.put("HB", current);
 					lastHb = Time.currentTimeMillis();
 				} catch (IOException e) {

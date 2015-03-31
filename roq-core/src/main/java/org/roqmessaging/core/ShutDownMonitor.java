@@ -47,6 +47,7 @@ public class ShutDownMonitor implements Runnable {
 		this.context = ZMQ.context(1);
 		this.shutDownSocket = context.socket(ZMQ.REP);
 		this.shutDownSocket.bind("tcp://*:" + port);
+		this.shutDownSocket.setLinger(0);
 		logger.debug("Shut down request socket to " + "tcp://*:" + (port));
 	}
 

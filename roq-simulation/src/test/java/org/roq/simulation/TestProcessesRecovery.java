@@ -12,6 +12,7 @@ import org.roqmessaging.client.IRoQQueueManagement;
 import org.roqmessaging.client.IRoQSubscriber;
 import org.roqmessaging.client.IRoQSubscriberConnection;
 import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
+import org.roqmessaging.core.RoQConstantInternal;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.factory.RoQQueueManager;
 
@@ -43,7 +44,7 @@ public class TestProcessesRecovery  {
 	}
 	
 	@Test
-	public void testMonitorRecover() {
+	public void testMonitorRecovery() {
 		String qName ="queueTestRecovery";
 		try {
 			// 1. Create a Queue
@@ -60,12 +61,141 @@ public class TestProcessesRecovery  {
 			IRoQSubscriber subs = new IRoQSubscriber() {
 				public void onEvent(byte[] msg) {
 					String content = new String(msg, 0, msg.length);
+					logger.info("message get: " + content);
 					assertEquals(content.startsWith("hello"), true);
 				}
 			};
 			subConnection.setMessageSubscriber(subs);
 			
-			//kill the monitor process
+			// wait for start of processes
+			Thread.sleep(5000);
+			
+			// Kill the monitor
+			if (!launcher.getHCMInstance().killProcess(RoQConstantInternal.PROCESS_MONITOR))
+				throw new Exception("failed to kill process");
+			// Wait for process recovery
+			Thread.sleep(60000);
+
+			// 4. Create a publisher// Add a publisher
+			// Creating the connection
+			IRoQConnection connection = factory.createRoQConnection(qName);
+			connection.open();
+			// Creating the publisher and sending message
+			IRoQPublisher publisher = connection.createPublisher();
+			// Wait for the connection is established before sending the first
+			// message
+			connection.blockTillReady(10000);
+
+			// 5 Sending the message
+			logger.info("Sending MESSAGES ...");
+			for (int i = 0; i < 500; i++) {
+				publisher.sendMessage("key".getBytes(), ("hello" + i).getBytes());
+			}
+			
+			// End close connection
+			connection.close();
+			subConnection.close();
+
+			// Delete the queue
+			assertEquals(this.qManagementfactory.removeQueue(qName), true);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	@Test
+	public void testExchangeRecovery() {
+		String qName ="queueTestRecovery";
+		try {
+			// 1. Create a Queue
+			
+			qManagementfactory = new RoQQueueManager(launcher.getZkServerAddress());
+			assertEquals(this.qManagementfactory.createQueue(qName), true);
+			
+			// 3. Create a subscriber
+			factory = new RoQConnectionFactory(launcher.getZkServerAddress());
+			IRoQSubscriberConnection subConnection = factory.createRoQSubscriberConnection(qName, "key");
+			// Open the connection to the logical queue
+			subConnection.open();
+			// Register a message listener
+			IRoQSubscriber subs = new IRoQSubscriber() {
+				public void onEvent(byte[] msg) {
+					String content = new String(msg, 0, msg.length);
+					logger.info("message get: " + content);
+					assertEquals(content.startsWith("hello"), true);
+				}
+			};
+			subConnection.setMessageSubscriber(subs);
+			
+			// wait for start of processes
+			Thread.sleep(5000);
+			
+			// Kill the monitor
+			if (!launcher.getHCMInstance().killProcess(RoQConstantInternal.PROCESS_EXCHANGE))
+				throw new Exception("failed to kill process");
+			// Wait for process recovery
+			Thread.sleep(60000);
+
+			// 4. Create a publisher// Add a publisher
+			// Creating the connection
+			IRoQConnection connection = factory.createRoQConnection(qName);
+			connection.open();
+			// Creating the publisher and sending message
+			IRoQPublisher publisher = connection.createPublisher();
+			// Wait for the connection is established before sending the first
+			// message
+			connection.blockTillReady(10000);
+
+			// 5 Sending the message
+			logger.info("Sending MESSAGES ...");
+			for (int i = 0; i < 500; i++) {
+				publisher.sendMessage("key".getBytes(), ("hello" + i).getBytes());
+			}
+			
+			// End close connection
+			connection.close();
+			subConnection.close();
+
+			// Delete the queue
+			assertEquals(this.qManagementfactory.removeQueue(qName), true);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	@Test
+	public void testScalingRecovery() {
+		String qName ="queueTestRecovery";
+		try {
+			// 1. Create a Queue
+			
+			qManagementfactory = new RoQQueueManager(launcher.getZkServerAddress());
+			assertEquals(this.qManagementfactory.createQueue(qName), true);
+			
+			// 3. Create a subscriber
+			factory = new RoQConnectionFactory(launcher.getZkServerAddress());
+			IRoQSubscriberConnection subConnection = factory.createRoQSubscriberConnection(qName, "key");
+			// Open the connection to the logical queue
+			subConnection.open();
+			// Register a message listener
+			IRoQSubscriber subs = new IRoQSubscriber() {
+				public void onEvent(byte[] msg) {
+					String content = new String(msg, 0, msg.length);
+					logger.info("message get: " + content);
+					assertEquals(content.startsWith("hello"), true);
+				}
+			};
+			subConnection.setMessageSubscriber(subs);
+			
+			// wait for start of processes
+			Thread.sleep(5000);
+			
+			// Kill the monitor
+			if (!launcher.getHCMInstance().killProcess(RoQConstantInternal.PROCESS_SCALING))
+				throw new Exception("failed to kill process");
+			// Wait for process recovery
 			Thread.sleep(60000);
 
 			// 4. Create a publisher// Add a publisher

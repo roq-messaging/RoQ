@@ -65,11 +65,6 @@ public interface RoQConstantInternal {
 	/**
 	 * Used to idenify Monitor process
 	 */
-	public static int PROCESS_STAT = 1;
-	
-	/**
-	 * Used to idenify Monitor process
-	 */
 	public static int PROCESS_EXCHANGE = 2;
 	
 	/**
