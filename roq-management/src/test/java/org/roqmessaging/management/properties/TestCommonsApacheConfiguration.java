@@ -81,8 +81,8 @@ public class TestCommonsApacheConfiguration {
 			
 			
 			HostConfigDAO hostDao = reader.loadHCMConfiguration("HCM.properties");
-			logger.info("gcm.address = "+ hostDao.getGcmAddress());
-			Assert.assertEquals("localhost", hostDao.getGcmAddress());
+			logger.info("zk.address = "+ hostDao.getZkAddress());
+			Assert.assertEquals("localhost", hostDao.getZkAddress());
 			Assert.assertEquals(5800, hostDao.getStatMonitorBasePort());
 			Assert.assertEquals(5500, hostDao.getMonitorBasePort());
 			Assert.assertEquals(6000, hostDao.getExchangeFrontEndPort());

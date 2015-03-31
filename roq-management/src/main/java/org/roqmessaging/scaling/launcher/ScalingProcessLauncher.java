@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.scaling.launcher;
 
+import java.net.ConnectException;
+
 import org.roqmessaging.scaling.ScalingProcess;
 
 /**
@@ -50,12 +52,12 @@ public class ScalingProcessLauncher {
 	public static void main(String[] args) throws InterruptedException {
 		System.out.println("Launching Scaling process with arg "+displayArg(args));
 		if (args.length != 7) {
-			System.out.println("The arguments should be <GCM IP address> <GCM interface port> <GCM admin port> <Queue Name> <Listener port>  ");
+			System.out.println("The arguments should be <zk IP address> <GCM interface port> <GCM admin port> <Queue Name> <Listener port>  ");
 			return;
 		}
 		
 		try {
-			String gcm_address = args[0];
+			String zk_address = args[0];
 			int gcm_interfacePort = Integer.parseInt(args[1]);
 			int gcm_adminPort = Integer.parseInt(args[2]);
 			String qName = args[3];
@@ -64,8 +66,12 @@ public class ScalingProcessLauncher {
 			System.out.println("Starting Scaling process for queue " + qName + ", using listener port " + listenerPort);
 			
 			// Instanciate the exchange
-			final ScalingProcess scalingProcess = new ScalingProcess(gcm_address, gcm_interfacePort, gcm_adminPort, qName, listenerPort, args[5], hbPeriod);
-			scalingProcess.subscribe();
+			final ScalingProcess scalingProcess = new ScalingProcess(zk_address, gcm_interfacePort, gcm_adminPort, qName, listenerPort, args[5], hbPeriod);
+			try {
+				scalingProcess.subscribe();
+			} catch (IllegalStateException | ConnectException e) {
+				e.printStackTrace();
+			}
 			// Launch the thread
 			Thread t = new Thread(scalingProcess);
 			t.start();
@@ -86,8 +92,5 @@ public class ScalingProcessLauncher {
 		}
 		return result;
 	}
-
-
-
 
 }
