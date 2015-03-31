@@ -45,10 +45,13 @@ public class TestProcessesRecovery  {
 	
 	@Test
 	public void testMonitorRecovery() {
+		logger.info("Monitor Recovery TEST");
 		String qName ="queueTestRecovery";
 		try {
-			// 1. Create a Queue
+			// 0. Wait for cluster confguration hcm registration etc..
+			Thread.sleep(5000);
 			
+			// 1. Create a Queue
 			qManagementfactory = new RoQQueueManager(launcher.getZkServerAddress());
 			assertEquals(this.qManagementfactory.createQueue(qName), true);
 			
@@ -71,8 +74,7 @@ public class TestProcessesRecovery  {
 			Thread.sleep(5000);
 			
 			// Kill the monitor
-			if (!launcher.getHCMInstance().killProcess(RoQConstantInternal.PROCESS_MONITOR))
-				throw new Exception("failed to kill process");
+			assertEquals(true, launcher.getHCMInstance().killProcess(RoQConstantInternal.PROCESS_MONITOR));
 			// Wait for process recovery
 			Thread.sleep(60000);
 
@@ -106,10 +108,13 @@ public class TestProcessesRecovery  {
 	
 	@Test
 	public void testExchangeRecovery() {
+		logger.info("Exchange Recovery TEST");
 		String qName ="queueTestRecovery";
 		try {
-			// 1. Create a Queue
+			// 0. Wait for cluster confguration hcm registration etc..
+			Thread.sleep(5000);
 			
+			// 1. Create a Queue
 			qManagementfactory = new RoQQueueManager(launcher.getZkServerAddress());
 			assertEquals(this.qManagementfactory.createQueue(qName), true);
 			
@@ -131,9 +136,8 @@ public class TestProcessesRecovery  {
 			// wait for start of processes
 			Thread.sleep(5000);
 			
-			// Kill the monitor
-			if (!launcher.getHCMInstance().killProcess(RoQConstantInternal.PROCESS_EXCHANGE))
-				throw new Exception("failed to kill process");
+			// Kill the exchange
+			assertEquals(true, launcher.getHCMInstance().killProcess(RoQConstantInternal.PROCESS_EXCHANGE));
 			// Wait for process recovery
 			Thread.sleep(60000);
 
@@ -167,10 +171,13 @@ public class TestProcessesRecovery  {
 	
 	@Test
 	public void testScalingRecovery() {
+		logger.info("ScalingProcess Recovery TEST");
 		String qName ="queueTestRecovery";
 		try {
-			// 1. Create a Queue
+			// 0. Wait for cluster confguration hcm registration etc..
+			Thread.sleep(5000);
 			
+			// 1. Create a Queue
 			qManagementfactory = new RoQQueueManager(launcher.getZkServerAddress());
 			assertEquals(this.qManagementfactory.createQueue(qName), true);
 			
@@ -192,9 +199,8 @@ public class TestProcessesRecovery  {
 			// wait for start of processes
 			Thread.sleep(5000);
 			
-			// Kill the monitor
-			if (!launcher.getHCMInstance().killProcess(RoQConstantInternal.PROCESS_SCALING))
-				throw new Exception("failed to kill process");
+			// Kill the scaling process
+			assertEquals(true, launcher.getHCMInstance().killProcess(RoQConstantInternal.PROCESS_SCALING));
 			// Wait for process recovery
 			Thread.sleep(60000);
 

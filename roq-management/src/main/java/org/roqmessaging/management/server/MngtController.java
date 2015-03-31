@@ -476,13 +476,16 @@ public class MngtController implements Runnable, IStoppable {
 								String addressCallBack = (String) request.get("Address");
 								logger.debug("REGISTER autoscaling configuration update  for " + qName
 										+ " on call back " + addressCallBack);
-								// 2. Register the address
-								// 2.1 Create a push socket To check if the bind can be done at the pull side
-								ZMQ.Socket push = context.socket(ZMQ.PUSH);
-								// WARNING no check of address format && check that the bind can be done at the client level
-								push.connect(addressCallBack);
-								// 2.2 Add the socket in the hash map
-								this.scalingConfigListener.put(qName, push);
+								// add the socket for the listener if it not already exists
+								if (!this.scalingConfigListener.containsKey(qName)) {
+									// 2. Register the address
+									// 2.1 Create a push socket To check if the bind can be done at the pull side
+									ZMQ.Socket push = context.socket(ZMQ.PUSH);
+									// WARNING no check of address format && check that the bind can be done at the client level
+									push.connect(addressCallBack);
+									// 2.2 Add the socket in the hash map
+									this.scalingConfigListener.put(qName, push);
+								}
 								sendReply_ok("Registrated on "+addressCallBack);
 							} catch (Exception e) {
 								logger.error("Error when registrating the listener, the request was " + request, e);

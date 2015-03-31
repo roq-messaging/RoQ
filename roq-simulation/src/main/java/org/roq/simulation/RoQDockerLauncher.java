@@ -124,12 +124,7 @@ public class RoQDockerLauncher {
 				
 		// Update HCM properties
 		File configFile = new File(HCMProperties);
-				
-		// Inspect container
-		ContainerInfo info = client.inspectContainer(GCMList.get(0));
-
-		String GCMAddress = info.networkSettings().ipAddress();
-		
+						
 		Properties props = new Properties();
 	    InputStream input = null;
 	    
@@ -137,7 +132,7 @@ public class RoQDockerLauncher {
 	 
         // Try loading properties from the file (if found)
         props.load( input );
-	    props.setProperty("gcm.address", GCMAddress);
+	    props.setProperty("zk.address", getZkConnectionString());
 	    FileWriter writer = new FileWriter(configFile);
 	    props.store(writer, "host settings");
 	    writer.close();

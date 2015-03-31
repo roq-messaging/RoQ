@@ -233,7 +233,7 @@ public class HostProcessFactory {
 			basePort+=6;
 			
 			// Get the address and the ports used by the GCM
-			String gcm_address = this.properties.getGcmAddress();
+			String zk_address = this.properties.getZkAddress();
 			int gcm_interfacePort = this.properties.ports.get("GlobalConfigurationManager.interface");
 			int gcm_adminPort    = this.properties.ports.get("MngtController.interface");
 			
@@ -244,7 +244,7 @@ public class HostProcessFactory {
 				ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
 						+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),
 						ScalingProcessLauncher.class.getCanonicalName(),
-						gcm_address, Integer.toString(gcm_interfacePort), Integer.toString(gcm_adminPort),
+						zk_address, Integer.toString(gcm_interfacePort), Integer.toString(gcm_adminPort),
 						qName, Integer.toString(basePort), this.properties.getLocalPath(), new Long( this.properties.getScalingProcessHbPeriod()).toString());
 				logger.debug("Starting: " + pb.command());
 				final Process process = pb.start();
@@ -281,9 +281,5 @@ public class HostProcessFactory {
 			}
 		}).start();
 	}
-
-	public void stopProcess(String pid) {
-				
-	}
-
+	
 }

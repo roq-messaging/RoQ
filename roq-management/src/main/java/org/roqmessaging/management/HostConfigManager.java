@@ -15,6 +15,7 @@
 package org.roqmessaging.management;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.Set;
 
 import junit.framework.Assert;
@@ -22,6 +23,7 @@ import junit.framework.Assert;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.core.RoQGCMConnection;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.utils.RoQUtils;
@@ -30,6 +32,8 @@ import org.roqmessaging.management.config.internal.FileConfigurationReader;
 import org.roqmessaging.management.config.internal.HostConfigDAO;
 import org.roqmessaging.management.monitor.ProcessMonitor;
 import org.roqmessaging.management.server.state.HcmState;
+import org.roqmessaging.zookeeper.RoQZKSimpleConfig;
+import org.roqmessaging.zookeeper.RoQZooKeeper;
 import org.zeromq.ZMQ;
 
 /**
@@ -45,7 +49,6 @@ import org.zeromq.ZMQ;
 public class HostConfigManager implements Runnable, IStoppable {
 	// ZMQ config
 	private ZMQ.Socket clientReqSocket = null;
-	private ZMQ.Socket globalConfigSocket =null;
 	private ZMQ.Context context;
 	// Logger
 	private Logger logger = Logger.getLogger(HostConfigManager.class);
@@ -64,14 +67,42 @@ public class HostConfigManager implements Runnable, IStoppable {
 	// processFactory
 	private HostProcessFactory processFactory;
 	
+	private RoQZooKeeper zkClient;
+	
 	//The shutdown monitor
 	private ShutDownMonitor shutDownMonitor = null;
 	//Network & IP address Configuration
 	private boolean useNif = false;
 	
+	private RoQGCMConnection gcmConnection;
+	
 
 	/**
 	 * Constructor
+	 * @param propertyFile the location of the property file
+	 * @throws IOException 
+	 */
+	public HostConfigManager(String propertyFile, String zkAddresses) {
+		try {
+			// Global init
+			FileConfigurationReader reader = new FileConfigurationReader();
+			this.properties = reader.loadHCMConfiguration(propertyFile);
+			if(this.properties.getNetworkInterface()==null)
+				useNif=false;
+			else {
+				useNif=true;
+			}
+			this.properties.setZkAddress(zkAddresses);
+			logger.info(this.properties.toString());
+			initialize();
+		} catch (ConfigurationException e) {
+			logger.error("Error while reading configuration in " + propertyFile, e);
+		}
+			
+	}
+	
+	/**
+	 * Constructor used for test purpose
 	 * @param propertyFile the location of the property file
 	 * @throws IOException 
 	 */
@@ -86,13 +117,28 @@ public class HostConfigManager implements Runnable, IStoppable {
 				useNif=true;
 			}
 			logger.info(this.properties.toString());
+			initialize();
+		} catch (ConfigurationException e) {
+			logger.error("Error while reading configuration in " + propertyFile, e);
+		}
+			
+	}
+		
+		
+	public void initialize() {
+		try {
+			RoQZKSimpleConfig zkConf = new RoQZKSimpleConfig();
+			zkConf.servers = this.properties.getZkAddress();
+			// ZK INIT
+			zkClient = new RoQZooKeeper(zkConf);
+			zkClient.start();
+			
+			gcmConnection = new RoQGCMConnection(zkClient, 50, 4000);
 			// ZMQ Init
 			this.context = ZMQ.context(1);
 			this.clientReqSocket = context.socket(ZMQ.REP);
 			this.clientReqSocket.setLinger(0);
 			this.clientReqSocket.bind("tcp://*:5100");
-			this.globalConfigSocket = context.socket(ZMQ.REQ);
-			this.globalConfigSocket.connect("tcp://" + this.properties.getGcmAddress() + ":5000");
 			// Init ServerState
 			this.serverState = new HcmState();
 			// Init process Factory
@@ -104,9 +150,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 			this.processFactory.setProcessMonitor(hbMonitor);
 			new Thread(hbMonitor).start();
 			new Thread(this.shutDownMonitor).start();
-		} catch (ConfigurationException e) {
-			logger.error("Error while reading configuration in " + propertyFile, e);
-		} catch (IOException e) {
+		}  catch (IOException e) {
 			logger.error("Error while reading localstateDB", e);
 		}
 	}
@@ -117,7 +161,12 @@ public class HostConfigManager implements Runnable, IStoppable {
 	public void run() {
 		this.running = true;
 		//1. Register to the global configuration
-		registerHost();
+		try {
+			registerHost();
+		} catch (ConnectException | IllegalStateException e1) {
+			logger.warn("FAILED TO REGISTER HOST !");
+			e1.printStackTrace();
+		}
 		// ZMQ init
 		ZMQ.Poller items = new ZMQ.Poller(1);
 		items.register(this.clientReqSocket);
@@ -227,12 +276,16 @@ public class HostConfigManager implements Runnable, IStoppable {
 			}
 		}
 		stopAllRunningQueueOnHost();
-		unregisterHostFromConfig();
+		try {
+			unregisterHostFromConfig();
+		} catch (ConnectException | IllegalStateException e) {
+			logger.warn("FAILED TO UNREGISTER HOST !");
+			e.printStackTrace();
+		}
 		logger.info("Closing the client & global config sockets.");
 		this.clientReqSocket.setLinger(0);
-		this.globalConfigSocket.setLinger(0);
 		this.clientReqSocket.close();
-		this.globalConfigSocket.close();
+		zkClient.close();
 	}	
 
 	/**
@@ -268,14 +321,16 @@ public class HostConfigManager implements Runnable, IStoppable {
 
 	/**
 	 * Unregister the host from the configuration management when shutdown.
+	 * @throws IllegalStateException 
+	 * @throws ConnectException 
 	 */
-	private void unregisterHostFromConfig() {
+	private void unregisterHostFromConfig() throws ConnectException, IllegalStateException {
 		logger.info("UN-Registration process started");
 		if(useNif)Assert.assertNotNull(this.properties.getNetworkInterface());
-		this.globalConfigSocket.send((new Integer(RoQConstant.CONFIG_REMOVE_HOST).toString()+"," +
-				(!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()))).getBytes(),0);
-		String   info[] = new String (this.globalConfigSocket.recv(0)).split(",");
-		int infoCode = Integer.parseInt(info[0]);
+		byte[] info = gcmConnection.sendRequest((new Integer(RoQConstant.CONFIG_REMOVE_HOST).toString()+"," +
+				(!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()))).getBytes(), 5000);
+		String result[] = (new String(info)).split(",");
+		int infoCode = Integer.parseInt(result[0]);
 		logger.debug("Start analysing info code = "+ infoCode);
 		if(infoCode != RoQConstant.OK){
 			throw new IllegalStateException("The global config manager cannot register us ..");
@@ -285,14 +340,15 @@ public class HostConfigManager implements Runnable, IStoppable {
 
 	/**
 	 * Register the host config manager to the global configration
+	 * @throws ConnectException 
 	 */
-	private void registerHost() throws IllegalStateException {
+	private void registerHost() throws IllegalStateException, ConnectException {
 		logger.info("Registration process started");
 		if(useNif)Assert.assertNotNull(this.properties.getNetworkInterface());
-		this.globalConfigSocket.send((new Integer(RoQConstant.CONFIG_ADD_HOST).toString()+"," +
-				(!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()))).getBytes(),0);
-		String   info[] = new String (this.globalConfigSocket.recv(0)).split(",");
-		int infoCode = Integer.parseInt(info[0]);
+		byte[] info = gcmConnection.sendRequest((new Integer(RoQConstant.CONFIG_ADD_HOST).toString()+"," +
+							(!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()))).getBytes(), 5000);
+		String result[] = (new String(info)).split(",");
+		int infoCode = Integer.parseInt(result[0]);
 		logger.debug("Start analysing info code = "+ infoCode);
 		if(infoCode != RoQConstant.OK){
 			throw new IllegalStateException("The global config manager cannot register us ..");
@@ -314,6 +370,12 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 * 
 	 */
 	public void shutDown() {
+		gcmConnection.active = false;
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		hbMonitor.isRunning = false;
 		this.running = false;
 	}

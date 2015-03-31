@@ -1,7 +1,7 @@
 #Host configuration management properties
 
-#SECTION 1 The global configuration manager server
-gcm.address={{hostvars["localhost"]["roqGCM"]["tagged_instances"][0]["private_ip"]}}
+#SECTION 1 ZK SERVERS
+zk.address=localhost
 gcm.ports.base=5000
 
 #SECTION 2 IP address registration

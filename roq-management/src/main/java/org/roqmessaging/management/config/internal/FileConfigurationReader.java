@@ -97,7 +97,7 @@ public class FileConfigurationReader {
 			PropertiesConfiguration config = new PropertiesConfiguration();
 			config.load(file);
 			// 3. Set the properties
-			configDao.setGcmAddress(config.getString("gcm.address")!=null?config.getString("gcm.address"):configDao.getGcmAddress());
+			configDao.setZkAddress(config.getString("zk.address")!=null?config.getString("zk.address"):configDao.getZkAddress());
 			configDao.ports.setBasePort(config.getInt("gcm.ports.base"));
 			
 			configDao.setExchangeFrontEndPort(config.getInt("exchange.base.port"));

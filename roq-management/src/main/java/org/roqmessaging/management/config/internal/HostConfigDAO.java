@@ -22,7 +22,7 @@ package org.roqmessaging.management.config.internal;
  */
 public class HostConfigDAO {
 	private String networkInterface = null;
-	private String gcmAddress = "localhost";
+	private String zkAddress = "localhost";
 	private int statMonitorBasePort = 5800;
 	private int monitorBasePort = 5500;
 	private int exchangeFrontEndPort = 6000;
@@ -72,14 +72,14 @@ public class HostConfigDAO {
 	/**
 	 * @return the gcmAddress
 	 */
-	public String getGcmAddress() {
-		return gcmAddress;
+	public String getZkAddress() {
+		return zkAddress;
 	}
 	/**
 	 * @param gcmAddress the gcmAddress to set
 	 */
-	public void setGcmAddress(String gcmAddress) {
-		this.gcmAddress = gcmAddress;
+	public void setZkAddress(String zkAddress) {
+		this.zkAddress = zkAddress;
 	}
 	/**
 	 * @return the statMonitorBasePort
@@ -123,7 +123,7 @@ public class HostConfigDAO {
 	 */
 	@Override
 	public String toString() {
-		return "Host configuration manager [GCM :"+gcmAddress +"] [Exhange FE :" +exchangeFrontEndPort+"] [Monitor base port: "+ monitorBasePort+"]\n" +
+		return "Host configuration manager [Zk :"+zkAddress +"] [Exhange FE :" +exchangeFrontEndPort+"] [Monitor base port: "+ monitorBasePort+"]\n" +
 				" [Create Queue in the same HCM VM: "+ queueInHcmVm+"] [Create Exchange in same HCM VM: "+ exchangeInHcmVm+"] [ Exchange Heap: "+ exchangeHeap+"]";
 	}
 	/**
