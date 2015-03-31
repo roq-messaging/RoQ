@@ -3,6 +3,7 @@ package org.roqmessaging.factory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.HashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -85,32 +86,40 @@ public class HostProcessFactory {
 	 *            the name of the queue to create
 	 * @return true if the creation process worked well
 	 */
-	public boolean startNewExchangeProcess(String qName, String monitorAddress, String monitorStatAddress, String transID) {		
+	public boolean startNewExchangeProcess(String qName, String transID, boolean recovery) {	
+		String monitorAddress = serverState.getMonitor(qName);
+		String monitorStatAddress = serverState.getStat(qName);
 		if (monitorAddress == null || monitorStatAddress == null) {
 			logger.error("The monitor or the monitor stat server is null", new IllegalStateException());
 			return false;
 		}
 		// Check if the Exchange already exists (idempotent exchange creation process)
-		if (serverState.ExchangeExists(qName, transID)) {
+		if (serverState.ExchangeExists(qName, transID) && !recovery) {
 				return true;
 		}
-		
-		// 1. Get the number of installed queues on this host
-		int number = 0;
-		for (String q_i : serverState.getAllExchanges()) {
-			number += serverState.getExchanges(q_i).size();
-		}
-		// 2. Assigns a front port and a back port
-		logger.debug(" This host contains already " + number + " Exchanges");
-		//x4 = Front, back, Shutdown, prod request
-		int frontPort = this.properties.getExchangeFrontEndPort() + number * 4;
-		// 3 because there is the front, back and the shut down
-		int backPort = frontPort + 1;
+		int frontPort = -1, backPort = -1;
 		String ip = RoQUtils.getInstance().getLocalIP();
-
+		if (recovery) {
+			String[] splitAddress = serverState.getExchange(qName, transID).split(":");
+			frontPort = new Integer((splitAddress[splitAddress.length - 1]));
+		} else {
+			// 1. Get the number of installed queues on this host
+			int number = 0;
+			for (String q_i : serverState.getAllExchanges()) {
+				number += serverState.getExchanges(q_i).size();
+			}
+			// 2. Assigns a front port and a back port
+			logger.debug(" This host contains already " + number + " Exchanges");
+			//x4 = Front, back, Shutdown, prod request
+			frontPort = this.properties.getExchangeFrontEndPort() + number * 4;			
+		}
+		// 3 because there is the front, back and the shut down
+		backPort = frontPort + 1;
 		// We start the exchange in its own process
 		// Launch script
 		try {
+			if (frontPort == -1 || backPort == -1)
+				throw new Exception("port not found for exchange: " + transID);
 			ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
 					+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"), "-Xmx"+this.properties.getExchangeHeap()+"m","-XX:+UseConcMarkSweepGC",
 					ExchangeLauncher.class.getCanonicalName(), new Integer(frontPort).toString(), new Integer(
@@ -118,10 +127,13 @@ public class HostProcessFactory {
 			logger.info("Starting: " + pb.command());
 			final Process process = pb.start();
 			// Start process monitoring
-			processMonitor.addprocess(Integer.toString(frontPort), process, RoQConstantInternal.PROCESS_EXCHANGE, transID);
+			HashMap<String, String> keys = new HashMap<String, String>();
+			keys.put("qName", qName);
+			keys.put("transID", transID);
+			processMonitor.addprocess(Integer.toString(frontPort), process, RoQConstantInternal.PROCESS_EXCHANGE, keys);
 			pipe(process.getErrorStream(), System.err);
 			pipe(process.getInputStream(), System.out);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			logger.error("Error while executing script", e);
 			return false;
 		}
@@ -162,7 +174,6 @@ public class HostProcessFactory {
 	 *         +"," tcp://IP: statport
 	 */
 	public String startNewMonitorProcess(String qName) {
-		
 		int statPort, frontPort;
 		String monitorAddress, statAddress;
 		if (serverState.MonitorExists(qName)) {
@@ -194,7 +205,9 @@ public class HostProcessFactory {
 			logger.debug("Starting: " + pb.command());
 			final Process process = pb.start();
 			// Start process monitoring
-			processMonitor.addprocess(Integer.toString(frontPort), process, RoQConstantInternal.PROCESS_MONITOR, qName);
+			HashMap<String, String> keys = new HashMap<String, String>();
+			keys.put("qName", qName);
+			processMonitor.addprocess(Integer.toString(frontPort), process, RoQConstantInternal.PROCESS_MONITOR, keys);
 			pipe(process.getErrorStream(), System.err);
 			pipe(process.getInputStream(), System.out);
 		} catch (IOException e) {
@@ -236,7 +249,9 @@ public class HostProcessFactory {
 				logger.debug("Starting: " + pb.command());
 				final Process process = pb.start();
 				// Start process monitoring
-				processMonitor.addprocess(Integer.toString(basePort), process, RoQConstantInternal.PROCESS_SCALING, qName);
+				HashMap<String, String> keys = new HashMap<String, String>();
+				keys.put("qName", qName);
+				processMonitor.addprocess(Integer.toString(basePort), process, RoQConstantInternal.PROCESS_SCALING, keys);
 				pipe(process.getErrorStream(), System.err);
 				pipe(process.getInputStream(), System.out);
 			} catch (IOException e) {

@@ -212,4 +212,11 @@ public class RoQAllLocalLauncher {
 	public void setConfigFile(String configFile) {
 		this.configFile = configFile;
 	}
+	
+	/**
+	 * @return HCM instance
+	 */
+	public HostConfigManager getHCMInstance() {
+		return this.hostConfigManager;
+	}
 }

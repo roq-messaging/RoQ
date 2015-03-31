@@ -67,6 +67,13 @@ public class HcmState {
 		return this.qExchangeMap.get(qName);
 	}
 	
+	public String getExchange(String qName, String transID) {
+		if (!ExchangeExists(qName))
+			return null;
+		else
+			return this.qExchangeMap.get(qName).get(transID);
+	}
+	
 	public String getMonitor(String qName) {
 		return this.qMonitorMap.get(qName);
 	}

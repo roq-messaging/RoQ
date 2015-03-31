@@ -151,8 +151,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 						
 						// The 00000000000000000 value is the id of the first Exchange process
 						if (!xChangeOK)
-							xChangeOK = processFactory.startNewExchangeProcess(qName, serverState.getMonitor(qName),
-									serverState.getStat(qName), "00000000000000000"); 
+							xChangeOK = processFactory.startNewExchangeProcess(qName, "00000000000000000", false); 
 						//2.3. Start the scaling process
 						boolean scalingOK = serverState.getScalingProcess(qName) != null;
 						if (!scalingOK)
@@ -200,7 +199,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 						String qName = info[1];
 						String id = info[2];
 						// Qname, monitorhost, monitorstat host
-						if (processFactory.startNewExchangeProcess(qName, info[3], info[4], id)) {
+						if (processFactory.startNewExchangeProcess(qName, id, false)) {
 							this.clientReqSocket.send((Integer.toString(RoQConstant.OK) ).getBytes(), 0);
 						} else {
 							this.clientReqSocket.send((Integer.toString(RoQConstant.FAIL) ).getBytes(), 0);
@@ -333,6 +332,16 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 */
 	public ShutDownMonitor getShutDownMonitor() {
 		return shutDownMonitor;
+	}
+	
+	/**
+	 * Allow to get kill a type of process,
+	 * SCALINGPROCESS, MONITOR, EXCHANGE
+	 * Useful for process recovery tests
+	 * @param the type of process to kill (RoQInternalConstant)
+	 */
+	public boolean killProcess(int type) {
+		return hbMonitor.killProcess(type);
 	}
 
 }

@@ -45,12 +45,12 @@ public class ProcessMonitor implements Runnable {
 	 */
 	private class MonitoredProcess {
 		private final Process process;
-		private final String key;
+		private final HashMap<String, String> keys;
 		private final int type;
 		
-		public MonitoredProcess(Process process, String key, int type) {
+		public MonitoredProcess(Process process, HashMap<String, String> keys, int type) {
 			this.process = process;
-			this.key = key;
+			this.keys = keys;
 			this.type = type;
 		}
 		
@@ -58,8 +58,8 @@ public class ProcessMonitor implements Runnable {
 			return process;
 		}
 		
-		public String getKey() {
-			return key;
+		public HashMap<String, String> getKeys() {
+			return keys;
 		}
 		
 		public int getType() {
@@ -76,10 +76,10 @@ public class ProcessMonitor implements Runnable {
 		this.processFactory = processFactory;
 	}
 	
-	public void addprocess(String id, Process process, int type, String key) {
+	public void addprocess(String id, Process process, int type, HashMap<String, String> keys) {
 		logger.info("adding process: " + id + " in process monitoring system");
 		processLock.lock();
-		processes.put(id, new MonitoredProcess(process, key, type));
+		processes.put(id, new MonitoredProcess(process, keys, type));
 		processesToAdd.put(id, Time.currentTimeSecs());
 		processLock.unlock();
 	}
@@ -192,14 +192,14 @@ public class ProcessMonitor implements Runnable {
 	 */
 	private void restartFailedProcesses() {
 		ImmutableList<String> processesList = ImmutableList.copyOf(processesFailed);
-		String key;
+		HashMap<String, String> keys;
 		int type;
 		for (String processID : processesList) {
 			logger.info("restarting process: " + processID);
-			key = processes.get(processID).getKey();
+			keys = processes.get(processID).getKeys();
 			type = processes.get(processID).getType();
 			stopAndRemoveProcess(processID);
-			restartProcess(type, key);
+			restartProcess(type, keys);
 		}
 	}
 	
@@ -210,33 +210,48 @@ public class ProcessMonitor implements Runnable {
 		MonitoredProcess process;
 		process = processes.get(processID);
 		// kill the process
-		if (process.getType() == RoQConstantInternal.PROCESS_MONITOR) { //TODO: If to remove !!
-			process.getProcess().destroy();
-			processesFailed.remove(processID);
-			processes.remove(processID);
-		}
+		process.getProcess().destroy();
+		processesFailed.remove(processID);
+		processes.remove(processID);
 	}
 	
 	/**
 	 * Restart a process
 	 * @param processesHB
 	 */
-	private boolean restartProcess(int type, String key) {
+	private void restartProcess(int type,HashMap<String, String> keys) {
 		switch (type) {
 		case RoQConstantInternal.PROCESS_MONITOR:
-			processFactory.startNewMonitorProcess(key);
+			processFactory.startNewMonitorProcess(keys.get("qName"));
 			break;
 		case RoQConstantInternal.PROCESS_SCALING:
-			
-			break;
-		case RoQConstantInternal.PROCESS_STAT:
-			
+			processFactory.startNewScalingProcess(keys.get("qName"));
 			break;
 		case RoQConstantInternal.PROCESS_EXCHANGE:
-			
+			processFactory.startNewExchangeProcess(keys.get("qName"), keys.get("transID"), true);
 			break;
 		}
-		return false;
 	}
-	
+
+	/**
+	 * This method kill all the processes for a specific type
+	 * 
+	 * @WARNING
+	 * This method is only used for test
+	 * purpose, don't use it if you don't
+	 * know what you do, the process monitor
+	 * normally runs autonomously.
+	 * @param type
+	 * @return true if one or more processes killed
+	 */
+	public boolean killProcess(int type) {
+		boolean processDestroyed = false;
+		for (MonitoredProcess process : processes.values()) {
+			if (process.getType() == type) {
+				process.getProcess().destroy();
+				processDestroyed = true;
+			}
+		}
+		return processDestroyed;
+	}
 }
