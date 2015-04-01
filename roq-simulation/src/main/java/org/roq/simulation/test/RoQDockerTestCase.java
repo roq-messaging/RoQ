@@ -44,10 +44,10 @@ public class RoQDockerTestCase {
 		Thread.sleep(3000);
 		this.launcher = new RoQDockerLauncher();
 		this.launcher.setUp();
-		Thread.sleep(1000);
+		Thread.sleep(10000); // Wait for cluster configuration (HCM registration etc.)
 		String zkConnectionString = launcher.getZkConnectionString();
-		queueManager = new RoQQueueManager(zkConnectionString, 9, 5000);
-		connection = new RoQConnectionFactory(zkConnectionString, 9, 5000);
+		queueManager = new RoQQueueManager(zkConnectionString, 8, 8000);
+		connection = new RoQConnectionFactory(zkConnectionString, 8, 8000);
 	}
 	
 	/**

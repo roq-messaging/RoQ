@@ -94,7 +94,8 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 
 		
 		String monitorStatServer = addSubscriberToGCM();
-		Assert.assertNotNull(monitorStatServer);
+		if (monitorStatServer == null)
+			throw new IllegalStateException("monitor not found for KPI subscriber");
 		logger.debug("Got the Stat monitor address @"+ monitorStatServer);
 		
 		// 2. Register a socket to the stat monitor
@@ -170,6 +171,7 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	 */
 	protected boolean checkField(BSONObject request, String field) throws AssertionError {
 		if (!request.containsField(field)) {
+			logger.info("ERROR:");
 			logger.error("The " + field + "  field is not present, INVALID REQUEST");
 			logger.error("Invalid request, does not contain Host field.");
 			try {

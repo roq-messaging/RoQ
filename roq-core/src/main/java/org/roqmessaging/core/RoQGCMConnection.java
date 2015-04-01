@@ -3,6 +3,7 @@ package org.roqmessaging.core;
 import java.net.ConnectException;
 
 import org.apache.log4j.Logger;
+import org.apache.zookeeper.server.Request;
 import org.roqmessaging.zookeeper.RoQZooKeeper;
 import org.zeromq.ZMQ;
 
@@ -86,20 +87,20 @@ public class RoQGCMConnection {
 					logger.info("GCM not found");
 					Thread.sleep(3000); // Wait between two requests
 				}
-				initSocketConnection(port);
+				//if (requestSocket == null)
+					initSocketConnection(port);
 				this.requestSocket.send(request, 0);
 				response = this.requestSocket.recv(0);
 				if (response != null) {
-					logger.info("GCM found");
 					responseString = new String(response);
 				}
 			} catch (Exception e1) {
 				logger.info("Zk failed to return the GCM Address");
 			} finally {
-				if (this.requestSocket != null) {
+				//if ((response == null || responseString.equals(Integer.toString(RoQConstant.EVENT_LEAD_LOST))) && this.requestSocket != null) {
 					closeSocketConnection();
 					this.requestSocket = null;
-				}
+				//}
 				retry++;
 			}
 		} while (((response == null || responseString.equals(Integer.toString(RoQConstant.EVENT_LEAD_LOST))) 

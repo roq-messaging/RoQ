@@ -219,7 +219,7 @@ public class Exchange implements Runnable, IStoppable {
 					message = frontendSub.recv(0);
 					part++;
 					if (part == 2) {
-						prodID=bytesToStringUTFCustom(message);
+						prodID= new String(message);
 					}
 					if (part == 3) {
 						logPayload(message.length, prodID);
@@ -233,6 +233,7 @@ public class Exchange implements Runnable, IStoppable {
 					byte[] info = pubInfoRep.recv(0);
 					String mInfo = new String(info);
 					String[] arrayInfo = mInfo.split(","); //CODE, ID
+					logger.info("Unregistering: " + arrayInfo[1]);
 					if(knownProd.remove(arrayInfo[1])!=null){
 						logger.info("Successfully removed publisher "+arrayInfo[1] +" remains "+ knownProd.size() + " publishers.");
 						this.pubInfoRep.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
@@ -256,15 +257,15 @@ public class Exchange implements Runnable, IStoppable {
 	 *  @param bytes the encoded byte array
 	 * @return the decoded string
 	 */
-	public String bytesToStringUTFCustom(byte[] bytes) {
-		char[] buffer = new char[bytes.length >> 1];
-		for (int i = 0; i < buffer.length; i++) {
-			int bpos = i << 1;
-			char c = (char) (((bytes[bpos] & 0x00FF) << 8) + (bytes[bpos + 1] & 0x00FF));
-			buffer[i] = c;
-		}
-		return new String(buffer);
-	}
+//	public String bytesToStringUTFCustom(byte[] bytes) {
+//		char[] buffer = new char[bytes.length >> 1];
+//		for (int i = 0; i < buffer.length; i++) {
+//			int bpos = i << 1;
+//			char c = (char) (((bytes[bpos] & 0x00FF) << 8) + (bytes[bpos + 1] & 0x00FF));
+//			buffer[i] = c;
+//		}
+//		return new String(buffer);
+//	}
 
 
 	/**

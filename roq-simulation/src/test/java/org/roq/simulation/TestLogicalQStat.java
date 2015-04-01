@@ -40,7 +40,7 @@ public class TestLogicalQStat extends RoQTestCase {
 			attachSUbscriber(qName);
 			//3. Create subscriber
 			KPILogicalQSubscriber subscriber = new KPILogicalQSubscriber(
-					launcher.configurationServer,
+					launcher.getZkServerAddress(),
 					launcher.configurationServerInterfacePort,
 					qName);
 			subscriber.subscribe();
@@ -62,10 +62,9 @@ public class TestLogicalQStat extends RoQTestCase {
 			subscriber.setXchangeToCheck(2);
 			Thread.sleep(5000);
 			
-			
 			//7. Shutdown
 			factory.removeQueue(qName);
-			subscriber.shutDown();
+			//subscriber.shutDown();
 			Thread.sleep(5000);
 			
 		} catch (Exception e) {

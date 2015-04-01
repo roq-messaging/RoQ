@@ -31,6 +31,7 @@ public class RoQZooKeeper {
 		// Start a Curator client, through which we can access ZooKeeper
 		// Note: retry policy should be made configurable
 		RetryPolicy retryPolicy = new RetryOneTime(1000);
+		RoQZKHelpers.ZK_BASE = config.namespace;
 		cfg = config;
 		client = CuratorFrameworkFactory.builder()
 					.connectString(config.servers)

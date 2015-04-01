@@ -4,9 +4,12 @@ import java.util.List;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.ZKUtil;
 
 // Helper functions to wrap the zookeeper operations. 
 public class RoQZKHelpers {
+	public static String ZK_BASE;
+	
 	public static boolean zNodeExists(CuratorFramework client, String path) {
 		try {
 			return client.checkExists().forPath(path) != null;
@@ -29,12 +32,13 @@ public class RoQZKHelpers {
 	 */
 	public static void createQueueZNodes(CuratorFramework client, String queuePath,
 			String monitorPath, String monitorPL, String statMonitorPath, 
-			String statMonitorPL, String hcmPath, String hcmPL, String ExchPath) {
+			String statMonitorPL, String hcmPath, String hcmPL, String ExchPath, String scalingPath) {
 		try {
 			client.inTransaction().create().forPath(queuePath)
 				.and().create().forPath(monitorPath, monitorPL.getBytes())
 				.and().create().forPath(statMonitorPath, statMonitorPL.getBytes())
 				.and().create().forPath(hcmPath, hcmPL.getBytes())
+				.and().create().forPath(scalingPath)
 				.and().commit();
 		} catch (Exception e) {
 			// e.printStackTrace();
@@ -85,9 +89,9 @@ public class RoQZKHelpers {
 	}
 	public static void deleteZNodeAndChildren(CuratorFramework client, String path) {
 		try {
-			client.delete().deletingChildrenIfNeeded().forPath(path);
+			ZKUtil.deleteRecursive(client.getZookeeperClient().getZooKeeper(), "/" + ZK_BASE + "/" + path);
 		} catch (Exception e) {
-			// e.printStackTrace();
+			e.printStackTrace();
 		}
 	}
 	

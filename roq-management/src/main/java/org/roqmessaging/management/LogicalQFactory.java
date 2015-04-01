@@ -128,7 +128,8 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	 * @return true if the check is OK
 	 */
 	public boolean queueAlreadyExists(String queueName) {
-		this.configurationState.refreshConfiguration();
+		if (!initialized)
+			this.configurationState.refreshConfiguration();
 		// 1. Check if the name already exist in the topology
 		if (this.configurationState.getQueueMonitorMap().containsKey(queueName)) {
 			// the queue already exist

@@ -1,0 +1,60 @@
+Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF8
+Starting the  global configuration manager
+14:51:07,480  INFO [main] (GlobalConfigurationManager:init:111)   Started global config Runnable
+14:51:07,485  INFO [main] (GlobalConfigurationManager:init:118)   Configuration from props: GCM 60000 formatDB false
+14:51:07,695  INFO [main] (RoQZooKeeperClient:<init>:22)   
+14:51:07,696  INFO [main] (RoQZooKeeperClient:start:45)   
+14:51:07,700  INFO [main] (CuratorFrameworkImpl:start:238)   Starting
+14:51:07,720  INFO [main] (ZooKeeper:logEnv:100)   Client environment:zookeeper.version=3.4.6-1569965, built on 02/20/2014 09:09 GMT
+14:51:07,720  INFO [main] (ZooKeeper:logEnv:100)   Client environment:host.name=0ab2392a6eff
+14:51:07,720  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.version=1.7.0_75
+14:51:07,721  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.vendor=Oracle Corporation
+14:51:07,721  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.home=/usr/lib/jvm/java-7-openjdk-amd64/jre
+14:51:07,721  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.class.path=/lib/RoQ2/roq-management/target/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar
+14:51:07,721  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.library.path=/usr/local/lib
+14:51:07,722  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.io.tmpdir=/tmp
+14:51:07,722  INFO [main] (ZooKeeper:logEnv:100)   Client environment:java.compiler=<NA>
+14:51:07,722  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.name=Linux
+14:51:07,723  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.arch=amd64
+14:51:07,729  INFO [main] (ZooKeeper:logEnv:100)   Client environment:os.version=3.13.0-46-generic
+14:51:07,729  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.name=root
+14:51:07,729  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.home=/root
+14:51:07,730  INFO [main] (ZooKeeper:logEnv:100)   Client environment:user.dir=/
+14:51:07,731  INFO [main] (ZooKeeper:<init>:438)   Initiating client connection, connectString=172.17.0.71 sessionTimeout=60000 watcher=org.apache.curator.ConnectionState@2f79b905
+14:51:07,768  INFO [main-SendThread(172.17.0.71:2181)] (ClientCnxn:logStartConnect:975)   Opening socket connection to server 172.17.0.71/172.17.0.71:2181. Will not attempt to authenticate using SASL (unknown error)
+14:51:07,783  INFO [main-SendThread(172.17.0.71:2181)] (ClientCnxn:primeConnection:852)   Socket connection established to 172.17.0.71/172.17.0.71:2181, initiating session
+14:51:08,917  INFO [main-SendThread(172.17.0.71:2181)] (ClientCnxn:onConnected:1235)   Session establishment complete on server 172.17.0.71/172.17.0.71:2181, sessionid = 0x14c7576df660000, negotiated timeout = 40000
+14:51:08,924  INFO [main-EventThread] (ConnectionStateManager:postState:194)   State change: CONNECTED
+14:51:09,975  INFO [Thread-1] (ShutDownMonitor:run:63)   Shutdown monitor started for Global config manager
+14:51:10,057  INFO [main] (GlobalConfigurationManager:init:153)   Waiting for leadership
+14:51:10,141  INFO [main] (GlobalConfigurationManager:init:155)   Leadership acquired
+14:51:10,145  INFO [main] (RoQZooKeeperClient:setGCMLeader:112)   Set GCM address: 172.17.0.72 in ZK path: gcmLeader
+14:51:10,200  INFO [Thread-2] (ShutDownMonitor:run:63)   Shutdown monitor started for org.roqmessaging.management.server.MngtController Server
+14:51:10,889  INFO [Management config publisher] (RoQZooKeeperClient:getQueueList:248)   
+14:51:10,937  INFO [Management config publisher] (RoQZooKeeperClient:getHCMList:118)   
+14:51:12,715  INFO [Thread-5] (RoQZooKeeperClient:addHCM:97)   
+14:51:17,658  INFO [Thread-3] (RoQZooKeeperClient:qTransactionExists:155)   
+14:51:17,696  INFO [Thread-3] (MngtController:run:311)   transaction Exists? null
+14:51:17,696  INFO [Thread-3] (RoQZooKeeperClient:getHCMList:118)   
+14:51:17,698  INFO [Thread-3] (RoQZooKeeperClient:createQTransaction:145)   
+14:51:17,715  INFO [Thread-5] (RoQZooKeeperClient:getHCMList:118)   
+14:51:17,717  INFO [Thread-5] (RoQZooKeeperClient:getQueueList:248)   
+14:51:17,732  INFO [Thread-3] (GlobalConfigurationStateClient:refreshConfiguration:98)   Getting configuration with 1 Host managers and 0 queues
+14:51:17,845  INFO [Thread-3] (LogicalQFactory:createQueue:102)   Created queue testQ0 @ tcp://172.17.0.73:5500
+14:51:17,847  INFO [Thread-5] (RoQZooKeeperClient:createQueue:201)   
+14:51:17,903  INFO [Thread-5] (RoQZooKeeperClient:setRunning:227)   
+14:51:19,911  INFO [Thread-3] (RoQZooKeeperClient:removeQTransaction:165)   
+14:51:19,985  INFO [Thread-3] (RoQZooKeeperClient:qTransactionExists:155)   
+14:51:19,987  INFO [Thread-3] (MngtController:run:311)   transaction Exists? null
+14:51:19,987  INFO [Thread-3] (RoQZooKeeperClient:getHCMList:118)   
+14:51:19,988  INFO [Thread-3] (RoQZooKeeperClient:createQTransaction:145)   
+14:51:20,377  INFO [Thread-3] (LogicalQFactory:createQueue:102)   Created queue testQ1 @ tcp://172.17.0.73:5508
+14:51:20,385  INFO [Thread-5] (RoQZooKeeperClient:createQueue:201)   
+14:51:20,401  INFO [Thread-5] (RoQZooKeeperClient:setRunning:227)   
+14:51:22,429  INFO [Thread-3] (RoQZooKeeperClient:removeQTransaction:165)   
+
+
+
+ ---------------------------------- 
+
+

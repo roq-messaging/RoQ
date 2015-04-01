@@ -317,17 +317,17 @@ public class RoQDockerLauncher {
 			// Kill container
 			client.stopContainer(id, 0);
 			// Remove container
-			client.removeContainer(id);
+			// client.removeContainer(id);
 		}
 		for (String id : GCMList) {
 			// Kill container
 			client.stopContainer(id, 0);
 			// Remove container
-			client.removeContainer(id);
+			// client.removeContainer(id);
 		}
 		for (String id : ZKList) {
 			client.stopContainer(id, 0);
-			client.removeContainer(id);
+			// client.removeContainer(id);
 		}
 		client.close();
 	}

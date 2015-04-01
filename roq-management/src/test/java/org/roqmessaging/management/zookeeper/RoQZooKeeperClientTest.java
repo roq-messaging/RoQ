@@ -1,5 +1,6 @@
 package org.roqmessaging.management.zookeeper;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.curator.test.TestingServer;
@@ -8,6 +9,7 @@ import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.management.config.internal.CloudConfig;
 import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
+import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
 import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 
 import junit.extensions.TestSetup;
@@ -41,37 +43,41 @@ public class RoQZooKeeperClientTest extends TestCase {
 	public static Test suite() {
 		return new TestSetup(new TestSuite(RoQZooKeeperClientTest.class)) {
 	        protected void setUp() throws Exception {
-	            log.info("Setting up test suite");
 	            
-	            log.info("Starting ZooKeeper server");
-	            zkServer = new TestingServer();
-	            
-	            RoQZooKeeperConfig cfg = new RoQZooKeeperConfig();
-	    		cfg.servers = zkServer.getConnectString();
-
-	    		log.info("Starting ZooKeeper client");
-	    		client = new RoQZooKeeperClient(cfg);
-	    		client.start();
 	        }
 	        protected void tearDown() throws Exception {
-	        	log.info("Tearing down test suite");
-	            client.close();
-	            zkServer.close();
+	        	
 	        }
 		};
 	}
 	
 	public void setUp() {
-		log.info("test setUp()");
-		
-		// Make sure ZooKeeper is clean within the namespace we have
-		// defined.
-		client.clear();
+		log.info("test setUp()");        
+        log.info("Starting ZooKeeper server");
+        try {
+			zkServer = new TestingServer();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        
+        RoQZooKeeperConfig cfg = new RoQZooKeeperConfig();
+		cfg.servers = zkServer.getConnectString();
+
+		log.info("Starting ZooKeeper client");
+		client = new RoQZooKeeperClient(cfg);
+		client.start();
 		client.initZkClusterNodes();
 	}
 	
 	public void tearDown() {
-		log.info("test tearDown()");
+		log.info("test tearDown()");       
+		client.close();
+        try {
+			zkServer.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -259,12 +265,12 @@ public class RoQZooKeeperClientTest extends TestCase {
 		AutoScalingConfig sc1 = new AutoScalingConfig();
 		sc1.hostRule = new HostScalingRule(1, 2);
 		sc1.xgRule   = new XchangeScalingRule(3, 4f);
-		// sc1.qRule    = new LogicalQScalingRule(5, 6);
+		sc1.qRule    = new LogicalQScalingRule(5, 6);
 		
 		// add the config to zookeeper
 		client.setHostScalingConfig(utils.serialiseObject(sc1.hostRule), queue);
 		client.setExchangeScalingConfig(utils.serialiseObject(sc1.xgRule), queue);
-		// client.setQueueScalingConfig(utils.serialiseObject(sc1.qRule), queue);
+		client.setQueueScalingConfig(utils.serialiseObject(sc1.qRule), queue);
 		
 		// modify configuration to test whether it can be overwritten
 		sc1.xgRule.Throughput_Limit = 8;

@@ -60,7 +60,7 @@ public class TestMngtController extends RoQTestCase {
 			Assert.assertEquals(2, queues.size());
 			
 			logger.info("---> Test 3 check  3 Qs");
-			 this.factory.createQueue("queue2", RoQUtils.getInstance().getLocalIP().toString(), false);
+			this.factory.createQueue("queue2", RoQUtils.getInstance().getLocalIP().toString(), false);
 			//3. Sleep for test
 			Thread.sleep(5000);
 			Assert.assertEquals(3,  mngtController.getQueues().size());

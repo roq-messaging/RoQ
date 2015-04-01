@@ -40,14 +40,14 @@ public class TestHostExchangeInfo extends RoQTestCase {
 		public void testExchangeInfo() {
 			String qName ="queueInfoXchange";
 			try {
-				Logger.getLogger(this.getClass().getName()).info("Starting main TestHostExchangeInfo  ");
+				logger.info("Starting main TestHostExchangeInfo");
 				//1. Create a queue
 				this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
 				//2. Attach subscriber
 				attachSUbscriber(qName);
 				//3. Create subscriber
 				KPILogicalQSubscriber subscriber = new KPILogicalQSubscriber(
-						launcher.configurationServer,
+						launcher.getZkServerAddress(),
 						launcher.configurationServerInterfacePort,
 						qName);
 				subscriber.subscribe();
@@ -80,8 +80,9 @@ public class TestHostExchangeInfo extends RoQTestCase {
 				
 				
 				//7. Shutdown
-				factory.removeQueue(qName);
 				subscriber.shutDown();
+				Thread.sleep(5000);
+				factory.removeQueue(qName);
 				Thread.sleep(5000);
 				
 			} catch (Exception e) {
@@ -89,9 +90,9 @@ public class TestHostExchangeInfo extends RoQTestCase {
 		}
 	}
 
-		/**
-		 * @return the number of exchanges given by the host
-		 */
+	/**
+	 * @return the number of exchanges given by the host
+	 */
 	private int askHostExchangeInfo() {
 		ZMQ.Socket hostSocket = ZMQ.context(1).socket(ZMQ.REQ);
 		hostSocket.connect("tcp://" + RoQUtils.getInstance().getLocalIP() + ":5100");
@@ -102,16 +103,16 @@ public class TestHostExchangeInfo extends RoQTestCase {
 		// [OK or FAIL], [Number of exchange on host], [max limit of exchange
 		// defined in property]
 		String resultHost = new String(hostSocket.recv(0));
-		logger.debug("Revieved "+ resultHost);
+		System.out.println("Revieved "+ resultHost);
 		if (Integer.parseInt(resultHost) == RoQConstant.OK) {
 			// [Number of exchange on host]
 			resultHost = new String(hostSocket.recv(0));
 			int exchange = Integer.parseInt(resultHost);
 			resultHost = new String(hostSocket.recv(0));
 			int limit = Integer.parseInt(resultHost);
-			logger.debug("Host "+ RoQUtils.getInstance().getLocalIP()+ " has already "+exchange +" and the limit is "+ limit);
+			System.out.println("Host "+ RoQUtils.getInstance().getLocalIP()+ " has already "+exchange +" and the limit is "+ limit);
 			int freeSlot = limit-exchange;
-			logger.debug("There are "+ freeSlot+ " free slots");
+			System.out.println("There are "+ freeSlot+ " free slots");
 			return exchange;
 		}
 		return 0;

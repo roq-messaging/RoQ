@@ -49,8 +49,6 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		RoQZKHelpers.createZNodeAndParents(client, path);
 		path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions);
 		RoQZKHelpers.createZNodeAndParents(client, path);
-		path = RoQZKHelpers.makePath(cfg.znode_gcm);
-		RoQZKHelpers.createZNodeAndParents(client, path);
 		path = RoQZKHelpers.makePath(cfg.znode_hcm);
 		RoQZKHelpers.createZNodeAndParents(client, path);
 	}
@@ -207,16 +205,16 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		String statMonitorPath = RoQZKHelpers.makePath(queuePath, "stat-monitor");
 		String hcmPath = RoQZKHelpers.makePath(queuePath, "hcm");
 		String exchPath = RoQZKHelpers.makePath(queuePath, "exchanges");
+		String scalingPath = RoQZKHelpers.makePath(queuePath, "scaling");
 		// RoQZKHelpers.createZNodeAndParents(client, queuePath);
 		// Add queue children nodes inside a single transaction
 		RoQZKHelpers.createQueueZNodes(client, queuePath, monitorPath, 
 				monitor.address, statMonitorPath, statMonitor.address, 
-				hcmPath, hcm.address, exchPath);
+				hcmPath, hcm.address, exchPath, scalingPath);
 	}
 	
 	public void removeQueue(Metadata.Queue queue) {
 		log.info("");
-		
 		RoQZKHelpers.deleteZNodeAndChildren(client, getZKPath(queue));
 	}
 	
