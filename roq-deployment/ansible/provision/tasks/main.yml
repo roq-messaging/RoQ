@@ -8,7 +8,7 @@
       wait: yes
       exact_count: "{{ gcm_count }}"
       region: "{{ aws_region }}"
-      vpc_subnet_id: subnet-842be7ed
+      vpc_subnet_id: {{aws_vpc_subnet_id}}
       count_tag:
          Name: GCM
       instance_tags:
@@ -25,7 +25,7 @@
       wait: yes
       exact_count: "{{ hcm_count }}"
       region: "{{ aws_region }}"
-      vpc_subnet_id: subnet-842be7ed
+      vpc_subnet_id: {{aws_vpc_subnet_id}}
       count_tag:
          Name: HCM
       instance_tags:
@@ -42,7 +42,7 @@
       wait: yes
       exact_count: "{{ zk_count }}"
       region: "{{ aws_region }}"
-      vpc_subnet_id: subnet-842be7ed
+      vpc_subnet_id: {{aws_vpc_subnet_id}}
       count_tag:
          Name: ZK
       instance_tags:
@@ -57,9 +57,9 @@
       group: "{{ security_group }}"
       image: "{{ roq_ami }}"
       wait: yes
-      exact_count: 2
+      exact_count: 2 #Fixed to one pub, one sub
       region: "{{ aws_region }}"
-      vpc_subnet_id: subnet-842be7ed
+      vpc_subnet_id: {{aws_vpc_subnet_id}}
       count_tag:
          Name: CLIENT
       instance_tags:
@@ -70,6 +70,8 @@
 
 -  name: debug
    debug: msg="GCM private IP {{ hostvars["localhost"]["roqGCM"]["tagged_instances"][0]["private_ip"] }}"
+   tags: 
+    - demo
 
 -  name: Wait for ZK SSH to come up
    wait_for: host={{ item.public_ip }}

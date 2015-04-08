@@ -2,7 +2,7 @@
   file: path=~/.roq state=directory mode=777
 
 - name: Overwrite GCM default config file
-  template: src=GCM.properties.j2 dest='~/.roq/GCM.properties'
+  template: src=GCM.properties.j2 dest='{{roq_temp_path}}/GCM.properties'
 
 - name: Copy init.d file
   template: src=roqgcm.j2 dest='/etc/init.d/roqgcm' mode=777

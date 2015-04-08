@@ -62,6 +62,13 @@ public class RoQZKHelpers {
 			// e.printStackTrace();
 		}
 	}
+	public static void createEphemeralZNode(CuratorFramework client, String path) {
+		try {
+			client.create().withMode(CreateMode.EPHEMERAL).forPath(path);
+		} catch (Exception e) {
+			// e.printStackTrace();
+		}
+	}
 	public static void createZNodeAndParents(CuratorFramework client, String path) {
 		try {
 			client.create().creatingParentsIfNeeded().forPath(path);

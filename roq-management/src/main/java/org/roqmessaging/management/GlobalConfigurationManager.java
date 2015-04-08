@@ -15,6 +15,7 @@
 package org.roqmessaging.management;
 
 import java.io.EOFException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -155,6 +156,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			logger.info("Leadership acquired");
 			// Set leader address in ZK
 			zk.setGCMLeader();		
+			// Start service discovery
+			zk.startServiceDiscovery();
 			// Set that the process got the lead
 			hasLead = true;
 			// The Management controller - the start is in the run to take the
@@ -165,6 +168,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			logger.info("The leader election has failed, stopping the " +
 					"GCM");
 			this.mngtController.getShutDownMonitor().shutDown();
+			e.printStackTrace();
+		} catch (Exception e) {
+			logger.info("An error occured with the curator service discovery");
 			e.printStackTrace();
 		}
 	}
@@ -206,7 +212,11 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				
 				//check if the string contains a "," if not that means that it is a BSON encoded request
 				if(content.contains(",")) {
-					processStandardRequest(content);
+					try {
+						processStandardRequest(content);
+					} catch (Exception e) {
+						logger.warn("A failure has occured, cause ZK discovery service" + e);
+					}
 				}else{
 					processBSONRequest(encoded);
 				}
@@ -300,8 +310,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	/**
 	 * This method processes the string we got.
 	 * @param request the string request we received.
+	 * @throws Exception 
 	 */
-	private void processStandardRequest(String request) {
+	private void processStandardRequest(String request) throws Exception {
 		String  info[] = request.split(",");
 		int infoCode = Integer.parseInt(info[0]);
 		logger.debug("Start analysing info code = "+ infoCode);
@@ -529,8 +540,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 
 	/**
 	 * @param host the ip address of the host to remove.
+	 * @throws Exception 
 	 */
-	public void removeHostManager(String host) {
+	public void removeHostManager(String host) throws Exception {
 		zk.removeHCM(new Metadata.HCM(host));
 	}
 
@@ -546,7 +558,11 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		//deactivate the timer
 		configTimerTask.shutDown();
 		this.mngtController.getShutDownMonitor().shutDown();
-		zk.close();
+		try {
+			zk.closeGCM();
+		} catch (IOException e) {
+			logger.warn("FAILED to close ZK at GCM");
+		}
 		this.logger.info("Shutting down config server");
 	}
 	
@@ -556,7 +572,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * manager per host machine.
 	 */
 	public void addHostManager(String host){
-		zk.addHCM(new Metadata.HCM(host));
+		// zk.watchHCM(new Metadata.HCM(host));
 	}
 	
 
@@ -609,8 +625,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 
 	/**
 	 * @return the list of host manager addresses
+	 * @throws Exception 
 	 */
-	public List<String> getHostManagerAddresses() {
+	public List<String> getHostManagerAddresses() throws Exception {
 		List<Metadata.HCM> hcmList = zk.getHCMList();
 		List<String> returnValue = new ArrayList<String>();
 		

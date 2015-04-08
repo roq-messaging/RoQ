@@ -105,7 +105,7 @@ Ready for the deployment of your application in the cloud ? We provide an amazon
 ### Prerequisite (get these packages via yum or apt-get):
 - ansible (tested with version 1.8.4)
 
-### Configuration step
+### Configuration steps
 
 First, you must set environment variables to allow ansible to communicate with your Amazon account:
 Run the following commands in the shell:
@@ -129,10 +129,10 @@ Don't forget to set the key_path var to the value of your amazon ssh pem key (th
 You are ready to run your first ROQ cluster on amazon !
 Run the following script: 
 ```
-ansible-playbook "PATH TO ROQ"/roq-deployment/ --skip-tags "demonstration"
+./"PATH TO ROQ"/roq-deployment/amazon/startCluster.sh
 ```
 
-Note: If you run several times this script, the instances number stay fixed to the values that you set in the config file.
+Note: If you run several times this idempotent script, the instances number stay fixed to the values that you set in the config file.
 
 Your cluster is ready !
 

@@ -4,9 +4,9 @@
 . /lib/lsb/init-functions
 
 ROQ={{ roq_path }}
-HCM_PIDFILE=/var/run/roqHCM.pid
-HCM_LOGFILE=/var/log/roqHCM.log
-HCM_CONFIG=/root/.roq/HCM.properties
+GCM_PIDFILE=/var/run/roqGCM.pid
+GCM_LOGFILE=/var/log/roqGCM.log
+GCM_CONFIG={{ roq_temp_path }}/GCM.properties
 
 # Check roq is present
 if [ ! -x $ROQ ]; then
@@ -16,7 +16,7 @@ fi
 
 fail_unless_root() {
 	if [ "$(id -u)" != '0' ]; then
-		log_failure_msg "ROQ HCM must be run as root"
+		log_failure_msg "ROQ GCM must be run as root"
 		exit 1
 	fi
 }
@@ -27,26 +27,25 @@ case "$1" in
 	start)
 		java -Djava.library.path=/usr/local/lib -cp \
 		$ROQ/roq-management/target/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar \
-		org.roqmessaging.management.launcher.HostConfigManagerLauncher $HCM_CONFIG > $HCM_LOGFILE 2>&1 &
+		org.roqmessaging.management.launcher.GlobalConfigurationLauncher $GCM_CONFIG > $GCM_LOGFILE 2>&1 &
 
 		PID=$!
 
-		log_begin_msg "HCM Started [$PID]"
+		log_begin_msg "GCM Started [$PID]"
 
-		echo $PID > $HCM_PIDFILE
+		echo $PID > $GCM_PIDFILE
 		;;
 
 	stop)
-        fail_unless_root
-		if [ -f $HCM_PIDFILE ]; then
-	        PID=`cat $HCM_PIDFILE`
+		if [ -f $GCM_PIDFILE ]; then
+	        PID=`cat $GCM_PIDFILE`
 	        if [ -z "`ps axf | grep ${PID} | grep -v grep`" ]; then
 	            log_begin_msg "Not running (process dead but pidfile exists)"
 	            exit 1
 	        else
-	            PID=`cat $HCM_PIDFILE`
-	            log_begin_msg "Stopping ROQ HCM"
-	            start-stop-daemon --stop --pidfile "$HCM_PIDFILE"
+	            PID=`cat $GCM_PIDFILE`
+	            log_begin_msg "Stopping ROQ GCM"
+	            start-stop-daemon --stop --pidfile "$GCM_PIDFILE"
 	            log_begin_msg "Stopped [$PID]"
 	            log_end_msg $?
 	            exit 0
@@ -58,7 +57,7 @@ case "$1" in
 		;;
 
 	status)
-		status_of_proc -p "$HCM_PIDFILE" "HCM" HCM
+		status_of_proc -p "$GCM_PIDFILE" "GCM" GCM
 		;;
 	restart)
 		$0 stop

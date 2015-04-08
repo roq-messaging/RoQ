@@ -1,27 +1,55 @@
 package org.roqmessaging.management.zookeeper;
 
 import java.io.EOFException;
+import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
 
+
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
+import org.apache.curator.x.discovery.ServiceCache;
+import org.apache.curator.x.discovery.ServiceDiscovery;
+import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
+import org.apache.curator.x.discovery.ServiceInstance;
+import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.zookeeper.RoQZKHelpers;
 import org.roqmessaging.zookeeper.RoQZooKeeper;
 import org.roqmessaging.management.GlobalConfigLeaderListener;
+import org.roqmessaging.management.zookeeper.Metadata.HCM;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperConfig;
 
+/**
+ * TODO Split the class in two classes:
+ * GCMClient
+ * HCMClient
+ */
 public class RoQZooKeeperClient extends RoQZooKeeper {
 	private final Logger log = Logger.getLogger(getClass());
 	private LeaderLatch leaderLatch;
 	private RoQZooKeeperConfig cfg;
+	
+	private ServiceDiscovery<HostDetails> serviceDiscovery = null;
+	
+	private ServiceInstance<HostDetails> instance;
+	
+	private ServiceCache<HostDetails> cache;
 	
 	public RoQZooKeeperClient(RoQZooKeeperConfig config) {
 		super(config);
 		log.info("");
 		
 		cfg = config;	
+	}
+	
+	public void closeGCM() throws IOException {
+		if (cache != null)
+			cache.close();
+		if (serviceDiscovery != null)
+			serviceDiscovery.close();
+		super.close();
 	}
 	
 	/**
@@ -39,8 +67,18 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		}
 	}
 	
+	public void startServiceDiscovery() throws Exception {
+		String path = RoQZKHelpers.makePath(cfg.znode_hcm);
+		JsonInstanceSerializer<HostDetails> serializer = new JsonInstanceSerializer<HostDetails>(HostDetails.class);
+		serviceDiscovery = ServiceDiscoveryBuilder.builder(HostDetails.class).client(client).basePath(path).serializer(serializer).build();
+		serviceDiscovery.start();
+		cache = serviceDiscovery.serviceCacheBuilder().name("HCM").build();
+		cache.addListener(new HcmListener());
+		cache.start();
+	}
+	
 	/**
-	 * Create the parent znodes for the different ZK znodes.
+	 * Create the zookeeper path tree for RoQ
 	 */
 	public void initZkClusterNodes() {
 		String path = RoQZKHelpers.makePath(cfg.znode_queues);
@@ -48,8 +86,6 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		path = RoQZKHelpers.makePath(cfg.znode_queueTransactions);
 		RoQZKHelpers.createZNodeAndParents(client, path);
 		path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions);
-		RoQZKHelpers.createZNodeAndParents(client, path);
-		path = RoQZKHelpers.makePath(cfg.znode_hcm);
 		RoQZKHelpers.createZNodeAndParents(client, path);
 	}
 	
@@ -67,11 +103,19 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		leaderLatch.addListener(new GlobalConfigLeaderListener());
 	}	
 
+	/**
+	 * This method return true if this instance of the zk client
+	 * has the leadership
+	 * @return true if it is the leader
+	 */
 	public boolean isLeader() {
 		log.info("");
 		return leaderLatch.hasLeadership();
 	}
 	
+	/**
+	 * Remove all the nodes in RoQ/
+	 */
 	public void clear() {
 		log.info("");
 		
@@ -91,19 +135,7 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 			}
 		}
 	}
-	
-	// Create the znode for the HCM if it does not already exist.
-	public void addHCM(Metadata.HCM hcm) {
-		log.info("");
-		RoQZKHelpers.createZNodeAndParents(client, getZKPath(hcm));
-	}
-	
-	// Remove the znode if it exists.
-	public void removeHCM(Metadata.HCM hcm) {
-		log.info("");
-		RoQZKHelpers.deleteZNode(client, getZKPath(hcm));
-	}
-	
+		
 	// Create the znode for the HCM if it does not already exist.
 	public void setGCMLeader() {
 		RoQUtils utils = RoQUtils.getInstance();
@@ -114,24 +146,79 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		RoQZKHelpers.createEphemeralZNode(client, path, address.getBytes());
 	}
 
-	public List<Metadata.HCM> getHCMList() {
+	/**
+	 * Get the list of the HCM registered on the cluster
+	 * @return a List of HCM addresses
+	 * @throws Exception 
+	 */
+	public List<Metadata.HCM> getHCMList() throws Exception {
 		log.info("");
 		
 		List<Metadata.HCM> hcms = new ArrayList<Metadata.HCM>();
-		List<String> znodes = RoQZKHelpers.getChildren(client, cfg.znode_hcm);
+		Collection<ServiceInstance<HostDetails>> instances = cache.getInstances();
 		
-		// If something goes wrong, return an empty list.
-		if (znodes == null) {
-			log.debug("Helpers.getChildren() failed. Aborting getHCMList().");
-			return hcms;
+		for (ServiceInstance<HostDetails> instance : instances) {
+			log.info("host address: " + instance.getAddress());
+			hcms.add(new Metadata.HCM(instance.getPayload().getAddress()));
 		}
-		
-		for (String node : znodes) {
-			hcms.add(new Metadata.HCM(node));
-		}
+
 		return hcms;
 	}
 	
+	/**
+	 * This method remove explicitly a hcm Znode and its watcher
+	 * There is actually two ways to lost a hcm znode
+	 * by removing the node explicitly (when we use this) method.
+	 * Because the hcm has crashed, in this case the watcher detects the node lost
+	 * and the GCM triggers a recovery process
+	 * @param hcm
+	 * @throws Exception 
+	 */
+	public void removeHCM(Metadata.HCM hcm) throws Exception {
+		log.info("");
+		if (instance == null)
+			throw new IllegalStateException();
+		// RoQZKHelpers.deleteZNode(client, getZKPath(hcm));
+		serviceDiscovery.unregisterService(instance);
+		serviceDiscovery.close();
+	}
+	
+	/**
+	 * This method registers an ephemeral Znode
+	 * in zookeeper. This Znode will be watched by 
+	 * the GCM, in order to handle HCM crash
+	 * @param hcm
+	 * @throws Exception 
+	 */
+	public void registerHCM(HCM hcm) throws Exception {
+		// Check whether the HCM is not register
+		List<HCM> hcms = getHCMList();
+		boolean duplicata = false;
+		for (HCM hcmTemp : hcms) {
+			if (hcmTemp.equals(hcm)) {
+				duplicata = true;
+			}
+		}
+		
+		// We cannot duplicate the same hcm in the discovery service
+		if (!duplicata) {
+			log.info("Registering hcm with address: " + hcm.address);
+			instance = ServiceInstance.<HostDetails>builder()
+					.name("HCM").payload(new HostDetails(hcm.address)).build();
+			String path = RoQZKHelpers.makePath(cfg.znode_hcm);
+			JsonInstanceSerializer<HostDetails> serializer = new JsonInstanceSerializer<HostDetails>(HostDetails.class);
+			serviceDiscovery = ServiceDiscoveryBuilder.builder(HostDetails.class)
+					.client(client).basePath(path).serializer(serializer).thisInstance(instance).build();
+			serviceDiscovery.start();
+		}
+	}
+	
+	/**
+	 * Check whether a logical queue
+	 * exists in RoQ.
+	 * @param queue
+	 * @return
+	 */
 	public boolean queueExists(Metadata.Queue queue) {
 		log.info("");
 		return RoQZKHelpers.zNodeExists(client, getZKPath(queue));
@@ -339,6 +426,7 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	}
 	
 	// Private methods
+	
 	private String getZKPath(Metadata.Queue queue) {
 		return RoQZKHelpers.makePath(cfg.znode_queues, queue.name);
 	}
@@ -356,5 +444,5 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		log.info("");
 		String path = RoQZKHelpers.makePath(getZKPath(queue), cfg.znode_scaling, leafNode);
 		return RoQZKHelpers.getData(client, path);
-	}
+	}	
 }

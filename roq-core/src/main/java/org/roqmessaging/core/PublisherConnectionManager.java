@@ -264,7 +264,7 @@ public class PublisherConnectionManager implements Runnable {
 	/**
 	 * @return the current configuration from which the {@linkplain PublisherClient} will connect the exchange.
 	 */
-	public PublisherConfigState getConfiguration(){
+	public PublisherConfigState getConfiguration() {
 		return this.configState;
 	}
 	

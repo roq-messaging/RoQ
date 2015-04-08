@@ -2,7 +2,7 @@
   file: path=~/.roq state=directory mode=777
 
 - name: Overwrite HCM default config file
-  template: src=HCM.properties.j2 dest='~/.roq/HCM.properties'
+  template: src=HCM.properties.j2 dest='{{roq_temp_path}}/HCM.properties'
 
 - name: Copy init.d file
   template: src=roqhcm.j2 dest='/etc/init.d/roqhcm' mode=777

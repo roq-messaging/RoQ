@@ -1,4 +1,7 @@
 # The script only supports 64bit architectures
+- name: JAVA_HOME Path for this OS in i386
+  vars:
+    java_home: /etc/alternatives/java_sdk_1.7.0
 
 - name: Add zmq repository
   copy: src=home:fengshuo:zeromq.repo dest=/etc/yum.repos.d/ mode=554
@@ -8,26 +11,5 @@
 - name: Install required packages
   yum: name="{{item}}" state=latest enablerepo=home_fengshuo_zeromq
   with_items: ['libczmq1', 'libczmq1-devel','java-1.7.0-openjdk', 'gcc-c++', 'maven2', 'libtool', 'autoconf', 'automake', 'git', 'make', 'wget']
-  tags:
-    - full-install
-
-- name: Pull ZMQ GIT repository
-  git: repo=git://github.com/zeromq/jzmq
-       dest="{{jzmq_path}}"
-       version=v2.1.3
-       ssh_opts="-o StrictHostKeyChecking=no"
-  tags:
-    - full-install
-
-- name: Copy custom pom file
-  copy: src=pom.xml dest="{{jzmq_path}}/pom.xml" mode=554
-  tags:
-    - full-install
-
-- name: Configure and Install ZMQ V2.1.3
-  shell: "cd {{jzmq_path}}; {{item}}"
-  with_items: ['./autogen.sh', './configure', 'make', 'sudo make install', 'mvn install']
-  environment:
-       JAVA_HOME: /etc/alternatives/java_sdk_1.7.0
   tags:
     - full-install

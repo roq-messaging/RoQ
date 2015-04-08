@@ -158,7 +158,7 @@ public class UnitTestManagement {
 			QueueManagementState q2 = this.globalConfigurationManager.getMngtController().getQueue("queue2");
 			Assert.assertEquals(false, q2.isRunning());
 			
-		} catch (InterruptedException e) {
+		} catch (Exception e) {
 			logger.error("Error while waiting", e);
 		}
 

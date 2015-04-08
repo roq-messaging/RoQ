@@ -715,7 +715,7 @@ public class MngtController implements Runnable, IStoppable {
 		return shutDownMonitor;
 	}
 	
-	public ArrayList<String> getHosts() {
+	public ArrayList<String> getHosts() throws Exception {
 		// Get the hosts
 		List<Metadata.HCM> hosts = zk.getHCMList();
 		ArrayList<String> hostAddresses = new ArrayList<String>();

@@ -32,8 +32,9 @@ import org.roqmessaging.management.config.internal.FileConfigurationReader;
 import org.roqmessaging.management.config.internal.HostConfigDAO;
 import org.roqmessaging.management.monitor.ProcessMonitor;
 import org.roqmessaging.management.server.state.HcmState;
-import org.roqmessaging.zookeeper.RoQZKSimpleConfig;
-import org.roqmessaging.zookeeper.RoQZooKeeper;
+import org.roqmessaging.management.zookeeper.Metadata;
+import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
+import org.roqmessaging.management.zookeeper.RoQZooKeeperConfig;
 import org.zeromq.ZMQ;
 
 /**
@@ -67,7 +68,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	// processFactory
 	private HostProcessFactory processFactory;
 	
-	private RoQZooKeeper zkClient;
+	private RoQZooKeeperClient zkClient;
 	
 	//The shutdown monitor
 	private ShutDownMonitor shutDownMonitor = null;
@@ -127,10 +128,10 @@ public class HostConfigManager implements Runnable, IStoppable {
 		
 	public void initialize() {
 		try {
-			RoQZKSimpleConfig zkConf = new RoQZKSimpleConfig();
+			RoQZooKeeperConfig zkConf = new RoQZooKeeperConfig();
 			zkConf.servers = this.properties.getZkAddress();
 			// ZK INIT
-			zkClient = new RoQZooKeeper(zkConf);
+			zkClient = new RoQZooKeeperClient(zkConf);
 			zkClient.start();
 			
 			gcmConnection = new RoQGCMConnection(zkClient, 50, 4000);
@@ -163,7 +164,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 		//1. Register to the global configuration
 		try {
 			registerHost();
-		} catch (ConnectException | IllegalStateException e1) {
+		} catch (Exception e1) {
 			logger.warn("FAILED TO REGISTER HOST !");
 			e1.printStackTrace();
 		}
@@ -340,13 +341,16 @@ public class HostConfigManager implements Runnable, IStoppable {
 
 	/**
 	 * Register the host config manager to the global configration
-	 * @throws ConnectException 
+	 * @throws Exception 
 	 */
-	private void registerHost() throws IllegalStateException, ConnectException {
+	private void registerHost() throws Exception {
 		logger.info("Registration process started");
 		if(useNif)Assert.assertNotNull(this.properties.getNetworkInterface());
-		byte[] info = gcmConnection.sendRequest((new Integer(RoQConstant.CONFIG_ADD_HOST).toString()+"," +
-							(!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()))).getBytes(), 5000);
+		String hcmAddress = (!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()));
+		// Register the ephemeral node on ZK
+		zkClient.registerHCM(new Metadata.HCM(hcmAddress));
+		// Send the notification to the GCM, the GCM will register a watcher on the ephemeral node
+		byte[] info = gcmConnection.sendRequest((new Integer(RoQConstant.CONFIG_ADD_HOST).toString()+"," + hcmAddress).getBytes(), 5000);
 		String result[] = (new String(info)).split(",");
 		int infoCode = Integer.parseInt(result[0]);
 		logger.debug("Start analysing info code = "+ infoCode);
@@ -354,7 +358,6 @@ public class HostConfigManager implements Runnable, IStoppable {
 			throw new IllegalStateException("The global config manager cannot register us ..");
 		}
 		logger.info("Registration process sucessfull");
-		
 	}
 
 	/**

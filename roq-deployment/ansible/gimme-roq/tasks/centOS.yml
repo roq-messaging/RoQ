@@ -1,4 +1,7 @@
 # The script only supports 64bit architectures
+- name: JAVA_HOME Path for this OS
+  vars:
+    java_home: /usr/lib/jvm/jre-1.7.0-openjdk.x86_64
 
 - name: Add zmq repository
   copy: src=home:fengshuo:zeromq.repo dest=/etc/yum.repos.d/ mode=554
@@ -30,26 +33,5 @@
 - name: Add Maven2 entries in .bashrc
   lineinfile: "dest=~/.bashrc line='{{item}}'"
   with_items: ['MAVEN_HOME=/usr/local/maven', 'export MAVEN_HOME', 'PATH=$PATH:$MAVEN_HOME/bin']
-  tags:
-    - full-install
-
-- name: Pull ZMQ GIT repository
-  git: repo=git://github.com/zeromq/jzmq
-       dest="{{jzmq_path}}"
-       version=v2.1.3
-       ssh_opts="-o StrictHostKeyChecking=no"
-  tags:
-    - full-install
-
-- name: Copy custom pom file
-  copy: src=pom.xml dest="{{jzmq_path}}/pom.xml" mode=554
-  tags:
-    - full-install
-
-- name: Configure and Install ZMQ V2.1.3
-  shell: "cd {{jzmq_path}}; {{item}}"
-  with_items: ['./autogen.sh', './configure', 'make', 'sudo make install', 'mvn install']
-  environment:
-       JAVA_HOME: /usr/lib/jvm/jre-1.7.0-openjdk.x86_64
   tags:
     - full-install

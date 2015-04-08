@@ -7,3 +7,5 @@
 - include: centOS.yml
   when: ansible_distribution == 'CentOS'
 
+- include: zmq.yml
+
