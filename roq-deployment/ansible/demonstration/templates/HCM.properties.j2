@@ -1,7 +1,7 @@
 #Host configuration management properties
 
 #SECTION 1 ZK SERVERS
-zk.address=localhost
+zk.address={{hostvars['ZK.roq.org']['ansible_ssh_host']}}:2181
 gcm.ports.base=5000
 
 #SECTION 2 IP address registration

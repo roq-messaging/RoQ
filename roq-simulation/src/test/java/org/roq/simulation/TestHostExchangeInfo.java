@@ -16,6 +16,8 @@ package org.roq.simulation;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.ArrayList;
+
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.roq.simulation.stat.KPILogicalQSubscriber;
@@ -42,7 +44,7 @@ public class TestHostExchangeInfo extends RoQTestCase {
 			try {
 				logger.info("Starting main TestHostExchangeInfo");
 				//1. Create a queue
-				this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
+				this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), new ArrayList<String>(), false);
 				//2. Attach subscriber
 				attachSUbscriber(qName);
 				//3. Create subscriber

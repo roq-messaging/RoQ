@@ -30,6 +30,8 @@ public class GCMPropertyDAO {
 	private int hcmTIMEOUT = 5000;
 	//Define whether we format the DB
 	private boolean formatDB = false;
+	// The targeted replication factor for monitors
+	private int replicationFactor = 2;
 	// Indicates if the master must register the cloud configuration
 	private boolean hasCloudConfiguration = false;
 	// Class which contains the ports used for the various components of the GCM.
@@ -99,5 +101,13 @@ public class GCMPropertyDAO {
 	@Override
 	public String toString() {
 		return "GCM "+ this.getPeriod()+" formatDB "+ this.isFormatDB();
+	}
+
+	public void setReplicationFactor(int replicationFactor) {
+		this.replicationFactor = replicationFactor;
+	}
+	
+	public int getReplicationFactor() {
+		return replicationFactor;
 	}
 }

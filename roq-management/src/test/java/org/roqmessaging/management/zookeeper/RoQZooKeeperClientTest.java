@@ -1,6 +1,7 @@
 package org.roqmessaging.management.zookeeper;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.curator.test.TestingServer;
@@ -11,6 +12,7 @@ import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
 import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
 import org.roqmessaging.management.config.scaling.XchangeScalingRule;
+import org.roqmessaging.zookeeper.Metadata;
 
 import junit.framework.TestCase;
 
@@ -70,16 +72,19 @@ public class RoQZooKeeperClientTest extends TestCase {
 		Metadata.HCM   hcm   = new Metadata.HCM("192.168.0.1");
 		Metadata.Monitor monitor = new Metadata.Monitor("tcp://192.168.0.1:1234");
 		Metadata.StatMonitor statMonitor = new Metadata.StatMonitor("tcp://192.168.0.1:9876");
-		
+		Metadata.Monitor monitor2 = new Metadata.Monitor("tcp://192.128.0.1:956");
+		ArrayList<Metadata.Monitor> monitorsList = new ArrayList<Metadata.Monitor>();
+		monitorsList.add(monitor2);
 		// First, make sure we start with a clean state.
 		assertFalse(client.queueExists(queue));
 		
 		// Now try to add a queue and check the result.
-		client.createQueue(queue, hcm, monitor, statMonitor);
+		client.createQueue(queue, hcm, monitor, statMonitor, monitorsList);
 		assertTrue(client.queueExists(queue));
 		assertTrue(hcm.equals(client.getHCM(queue)));
 		assertTrue(monitor.equals(client.getMonitor(queue)));
 		assertTrue(statMonitor.equals(client.getStatMonitor(queue)));
+		assertTrue(client.getBackUpMonitors(queue).contains(monitor2));
 		
 		// Remove the host and check the result.
 		client.removeQueue(queue);
@@ -99,12 +104,12 @@ public class RoQZooKeeperClientTest extends TestCase {
 		assertEquals(null, client.exchangeTransactionExists("Test"));
 		
 	}
-	
+		
 	public void testCreateRemoveQueueTransaction() {
 		log.info("");
 		String host = "192.168.0.1";
 		
-		client.createQTransaction("TestQ", host);
+		client.createQTransaction("TestQ", host, new ArrayList<String>());
 		
 		assertEquals(host, client.qTransactionExists("TestQ"));
 		
@@ -127,13 +132,14 @@ public class RoQZooKeeperClientTest extends TestCase {
 			Metadata.Monitor monitor = new Metadata.Monitor("tcp://192.168.0.1:1234");
 			Metadata.StatMonitor statMonitor = new Metadata.StatMonitor("tcp://192.168.0.1:9876");
 			
+			
 			// First, make sure we start with a clean state.
 			assertFalse(client.queueExists(queue1));
 			assertFalse(client.queueExists(queue2));
 			
 			// Now add the queues to ZooKeeper.
-			client.createQueue(queue1, hcm, monitor, statMonitor);
-			client.createQueue(queue2, hcm, monitor, statMonitor);
+			client.createQueue(queue1, hcm, monitor, statMonitor, new ArrayList<Metadata.Monitor>());
+			client.createQueue(queue2, hcm, monitor, statMonitor, new ArrayList<Metadata.Monitor>());
 			
 			// Get the list of queues from ZooKeeper.
 			List<Metadata.Queue> queues = client.getQueueList();
@@ -165,8 +171,7 @@ public class RoQZooKeeperClientTest extends TestCase {
 		Metadata.Monitor monitor = new Metadata.Monitor("tcp://192.168.0.1:1234");
 		Metadata.StatMonitor statMonitor = new Metadata.StatMonitor("tcp://192.168.0.1:9876");
 		
-		// Now try to add a queue and check the result.
-		client.createQueue(queue, hcm, monitor, statMonitor);
+		client.createQueue(queue, hcm, monitor, statMonitor, new ArrayList<Metadata.Monitor>());
 		
 		client.setRunning(queue, true);
 		assertTrue(client.isRunning(queue));
@@ -213,7 +218,7 @@ public class RoQZooKeeperClientTest extends TestCase {
 		Metadata.Monitor monitor = new Metadata.Monitor("tcp://192.168.0.1:1234");
 		Metadata.StatMonitor statMonitor = new Metadata.StatMonitor("tcp://192.168.0.1:9876");
 		
-		client.createQueue(queue, hcm, monitor, statMonitor);
+		client.createQueue(queue, hcm, monitor, statMonitor, new ArrayList<Metadata.Monitor>());
 		
 		// Create its scaling config
 		// Note: queue config is left null on purpose

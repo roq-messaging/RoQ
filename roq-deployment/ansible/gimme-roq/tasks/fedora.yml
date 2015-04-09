@@ -1,6 +1,6 @@
 # The script only supports 64bit architectures
 - name: JAVA_HOME Path for this OS in i386
-  vars:
+  set_fact:
     java_home: /etc/alternatives/java_sdk_1.7.0
 
 - name: Add zmq repository

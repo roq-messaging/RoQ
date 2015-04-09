@@ -117,6 +117,18 @@ public interface RoQConstant {
 	public static int EVENT_LEAD_LOST = 8;
 	
 	/**
+	 * Notifies the Monitor that it becomes
+	 * the new master
+	 */
+	public static int EVENT_MONITOR_FAILOVER = 9;
+	
+	/**
+	 * Notifies the Monitor that it becomes
+	 * the new master
+	 */
+	public static int EVENT_MONITOR_ACTIVATED = 10;
+	
+	/**
 	 * Event sent from subscriber to monitor.
 	 * “31,totalreceived”
 	 */
@@ -165,12 +177,12 @@ public interface RoQConstant {
 	/**
 	 * GLobal Configuration request to create a queue 
 	 */
-	public static int CONFIG_CREATE_QUEUE_OK = 1003;
+	public static int CONFIG_REQUEST_OK = 1003;
 	
 	/**
 	 * GLobal Configuration request to create a queue 
 	 */
-	public static int CONFIG_CREATE_QUEUE_FAIL = 1004;
+	public static int CONFIG_REQUEST_FAIL = 1004;
 
 	/**
 	 * Global configuration request to create a new host manager configuration entry
@@ -215,6 +227,10 @@ public interface RoQConstant {
 	public static int CONFIG_STOP_QUEUE = 1012;
 	
 	public static int CONFIG_START_QUEUE = 1013;
+	
+	public static int CONFIG_CREATE_STBY_MONITOR = 1014;
+	
+	public static int CONFIG_START_STBY_MONITOR = 1015;
 	
 	
 	/**
@@ -447,5 +463,4 @@ public interface RoQConstant {
 	 */
 	public static String CACHE_Q_MONITOR_STAT_MAP="queue.monitor.stat.map";
 
-	
 }

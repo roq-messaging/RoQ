@@ -63,7 +63,7 @@ public class Test117b extends RoQTestCase {
 		// The Qname
 		String qName = "test117b-Q";
 		// Init 1. create the test queue
-		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
+		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), new ArrayList<String>(), false);
 		// Init 2. let the queue start
 		Thread.sleep(2000);
 		//3. Attach 2 subscriber

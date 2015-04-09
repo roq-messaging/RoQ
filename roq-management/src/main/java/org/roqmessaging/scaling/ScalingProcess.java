@@ -221,6 +221,7 @@ public class ScalingProcess extends KPISubscriber {
 			// 3. Check the result
 			BSONObject props = BSON.decode(bres);
 			CloudConfig result = new CloudConfig();
+			
 			if ((Boolean) props.get("cloud.use")) {
 				logger.info("A cloud configuration has been provided");
 				result.inUse = true;

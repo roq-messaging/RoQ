@@ -14,6 +14,8 @@
  */
 package org.roq.simulation.simplelaunch;
 
+import java.util.ArrayList;
+
 import org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory;
 import org.roqmessaging.management.LogicalQFactory;
 
@@ -39,7 +41,7 @@ public class LaunchSubscriber {
 		
 		// Create Q
 		IRoQLogicalQueueFactory factory = new LogicalQFactory(args[0]);
-		factory.createQueue(args[1], args[0], false);
+		factory.createQueue(args[1], args[0], new ArrayList<String>(), false);
 		
 		//Create publisher and producer
 		PublisherInit init = new PublisherInit(args[1], args[0]);

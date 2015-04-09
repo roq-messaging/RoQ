@@ -4,11 +4,20 @@ import java.util.HashMap;
 import java.util.Set;
 
 public class HcmState {
+	// Allow to calculate the port for the next monitor
+	// this variable is only incremented, never decremented
+	// in order to avoid port collisions
+	private int portMultiplicator = 0;
+	private int exchangesPortMultiplicator = 0;
 	// [qName, the monitor]
 	private HashMap<String, String> qMonitorMap = null;
 	// [qName, monitor stat server address]
 	private HashMap<String, String> qMonitorStatMap = null;
-	// [qName, list of Xchanges]
+	// [qName, the monitor]
+	private HashMap<String, String> qSTBYMonitorMap = null;
+	// [qName, monitor stat server address]
+	private HashMap<String, String> qSTBYMonitorStatMap = null;
+	// [qName, [XchangesID, Address]]
 	private HashMap<String, HashMap<String, String>> qExchangeMap = null;
 	//[qName, Scaling process shutdown port (on the same machine as host)] 
 	//TODO starting the process, register it and deleting it when stoping
@@ -22,7 +31,17 @@ public class HcmState {
 		this.qExchangeMap = new HashMap<String, HashMap<String, String>>();
 		this.qMonitorMap = new HashMap<String, String>();
 		this.qMonitorStatMap = new HashMap<String, String>();
+		this.qSTBYMonitorMap = new HashMap<String, String>();
+		this.qSTBYMonitorStatMap = new HashMap<String, String>();
 		this.qScalingProcessAddr = new HashMap<String, Integer>();
+	}
+	
+	public int getPortMultiplicator() {
+		return this.portMultiplicator;
+	}
+	
+	public int getExchangesPortMultiplicator() {
+		return this.exchangesPortMultiplicator;
 	}
 	
 	public void removeExchange(String qName) {
@@ -37,6 +56,14 @@ public class HcmState {
 		this.qMonitorStatMap.remove(qName);
 	}
 	
+	public void removeSTBYMonitor(String qName) {
+		this.qSTBYMonitorMap.remove(qName);
+	}
+	
+	public void removeSTBYStat(String qName) {
+		this.qSTBYMonitorStatMap.remove(qName);
+	}
+	
 	public void removeScalingProcess(String qName) {
 		this.qScalingProcessAddr.remove(qName);
 	}
@@ -49,14 +76,25 @@ public class HcmState {
 			exchange.put(id, exchangeAddress);
 			this.qExchangeMap.put(qName, exchange);
 		}
+		this.exchangesPortMultiplicator++;
 	}
 	
 	public void putMonitor(String qName, String monitorAddress) {
 		this.qMonitorMap.put(qName, monitorAddress);
+		this.portMultiplicator++;
 	}
 	
 	public void putStat(String qName, String StateMonitorAddress) {
 		this.qMonitorStatMap.put(qName, StateMonitorAddress);
+	}
+	
+	public void putSTBYMonitor(String qName, String monitorAddress) {
+		this.qSTBYMonitorMap.put(qName, monitorAddress);
+		this.portMultiplicator++;
+	}
+	
+	public void putSTBYStat(String qName, String StateMonitorAddress) {
+		this.qSTBYMonitorStatMap.put(qName, StateMonitorAddress);
 	}
 	
 	public void putScalingProcess(String qName, int scalingProcessAddress) {
@@ -80,6 +118,14 @@ public class HcmState {
 	
 	public String getStat(String qName) {
 		return this.qMonitorStatMap.get(qName);
+	}
+	
+	public String getSTBYMonitor(String qName) {
+		return this.qSTBYMonitorMap.get(qName);
+	}
+	
+	public String getSTBYStat(String qName) {
+		return this.qSTBYMonitorStatMap.get(qName);
 	}
 	
 	public Integer getScalingProcess(String qName) {
@@ -106,6 +152,14 @@ public class HcmState {
 		return qMonitorStatMap.containsKey(qName);
 	}
 	
+	public boolean MonitorSTBYExists(String qName) {
+		return qSTBYMonitorMap.containsKey(qName);
+	}
+	
+	public boolean statSTBYExists(String qName) {
+		return qSTBYMonitorStatMap.containsKey(qName);
+	}
+	
 	public boolean ExchangeExists(String qName, String id) {
 		if (qExchangeMap.containsKey(qName))
 			return qExchangeMap.get(qName).containsKey(id);
@@ -114,5 +168,19 @@ public class HcmState {
 	
 	public boolean ExchangeExists(String qName) {
 		return qExchangeMap.containsKey(qName);
+	}
+	
+	/**
+	 * This function transfer the monitor from standbylist to
+	 * master list without modifying the portMultiplicator
+	 * @param qName
+	 */
+	public void switchToMaster(String qName) {
+		String monitorAddress = this.qSTBYMonitorMap.get(qName);
+		this.qSTBYMonitorMap.remove(qName);
+		this.qMonitorMap.put(qName, monitorAddress);
+		String monitorStatAddress = this.qSTBYMonitorStatMap.get(qName);
+		this.qSTBYMonitorStatMap.remove(qName);
+		this.qMonitorStatMap.put(qName, monitorStatAddress);
 	}
 }

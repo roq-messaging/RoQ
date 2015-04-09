@@ -1,5 +1,7 @@
 package org.roq.simulation.HALib;
 
+import java.util.ArrayList;
+
 import org.bson.BSON;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
@@ -24,7 +26,7 @@ public class ClusterStateMaker {
 		byte[] response = hcmSocket.recv(0);
 		hcmSocket.close();
 		String[] resultHost = new String(response).split(",");
-		if (Integer.parseInt(resultHost[0]) == RoQConstant.CONFIG_CREATE_QUEUE_OK) {
+		if (Integer.parseInt(resultHost[0]) == RoQConstant.CONFIG_REQUEST_OK) {
 			return true;
 		} else {
 			return false;
@@ -89,7 +91,7 @@ public class ClusterStateMaker {
 		RoQZooKeeperClient zk = createZkClient(zkConnectionString);
 		zk.initZkClusterNodes();
 		zk.start();
-		zk.createQTransaction(qName, host);
+		zk.createQTransaction(qName, host, new ArrayList<String>());
 		zk.close();
 		return true;
 	}

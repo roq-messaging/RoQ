@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.clientlib.factory;
 
+import java.util.ArrayList;
+
 /**
  * Interface IRoQLogicalQueueFactory
  * <p> Description: represents the Global monitor manager. As those manager are intended to be stateless, a 
@@ -31,7 +33,7 @@ public interface IRoQLogicalQueueFactory {
 	 * @throws IllegalStateException if a queue already exist with this name, the name must be unique for 
 	 * the complete cluster.
 	 */
-	public int createQueue(String queueName, String targetAddress, boolean recoveryMod) throws IllegalStateException;
+	public int createQueue(String queueName, String targetAddress, ArrayList<String> backupHosts, boolean recoveryMod) throws IllegalStateException;
 	
 	/**
 	 * Removes a logical queue.

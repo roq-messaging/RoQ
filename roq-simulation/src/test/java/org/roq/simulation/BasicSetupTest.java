@@ -17,6 +17,7 @@ package org.roq.simulation;
 import static org.junit.Assert.assertNotNull;
 
 import java.net.ConnectException;
+import java.util.ArrayList;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -92,7 +93,7 @@ public class BasicSetupTest {
 		}
 		//1. Create a fake logical queue
 		// if we use the logical q Factory API we would not need to cheat
-		configManager.addQueue("queue1", "tcp://localhost:"+basePort, "tcp://localhost:"+stat, "localhost");
+		configManager.addQueue("queue1", "tcp://localhost:"+basePort, "tcp://localhost:"+stat, "localhost", new ArrayList<String>());
 		Thread thread = new Thread(configManager);
 		thread.start();
 	}
@@ -213,7 +214,7 @@ public class BasicSetupTest {
 	 * @param basePort the base port on which the monitor starts
 	 */
 	private void startMonitor(int basePort, int statPort) {
-		this.monitor = new Monitor(basePort, statPort, "queue1", "5000", "/tmp/ROQlocalDB", 1000);
+		this.monitor = new Monitor(basePort, statPort, "queue1", "5000", "/tmp/ROQlocalDB", 1000, true);
 		Thread t = new Thread(this.monitor);
 		t.start();
 		

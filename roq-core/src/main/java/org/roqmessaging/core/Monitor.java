@@ -66,10 +66,13 @@ public class Monitor implements Runnable, IStoppable {
 	//The queue name
 	private String qName = "name";
 	
+	private volatile boolean master;
+	
 	//Local State for heartbeats
 	private LocalState localState;
 	// Minimum time between two heartbeats (in millis)
 	private long hbPeriod;
+	private long lastHb;
 	
 	private Lock lock = new ReentrantLock();
 
@@ -80,7 +83,7 @@ public class Monitor implements Runnable, IStoppable {
 	 * @param qname the logical queue from which the monitor belongs to
 	 * @param period the stat period for publication
 	 */
-	public Monitor(int basePort, int statPort, String qname, String period, String localStatePath, long hbPeriod) {
+	public Monitor(int basePort, int statPort, String qname, String period, String localStatePath, long hbPeriod, boolean master) {
 		try {
 			this.basePort = basePort;
 			this.statPort = statPort;
@@ -92,6 +95,7 @@ public class Monitor implements Runnable, IStoppable {
 										// bytes/minute
 			localState = new LocalState(localStatePath + "/" + basePort);
 			this.hbPeriod = hbPeriod;
+			this.master = master;
 			context = ZMQ.context(1);
 
 			producersPub = context.socket(ZMQ.PUB);
@@ -347,19 +351,32 @@ public class Monitor implements Runnable, IStoppable {
 		Timer reportTimer = new Timer();
 		reportTimer.schedule(new ReportExchanges(), 0, period+10);
 		this.monitorStat = new MonitorStatTimer(this);
-		reportTimer.schedule(this.monitorStat, 0, period);
-
+		
 		ZMQ.Poller items = new ZMQ.Poller(3);
 		items.register(brokerSub);//0
 		items.register(initRep);//1
 
 		logger.info("Monitor started");
 		long lastPublish = System.currentTimeMillis();
-		long lastHb = Time.currentTimeMillis() - hbPeriod;
-		long current;
+		lastHb = Time.currentTimeMillis() - hbPeriod;
 
+		// The Monitor active/backup mechanism
+		// Remark: Once master we never becomes backup again
+		while (this.active && !this.master) {
+			items.poll(500);
+			if (items.pollin(0)) { // Info from Exchange
+				HCMHeartbeat();
+				String info[] = new String(brokerSub.recv(0)).split(",");
+				// Check if the message indicates hat the monitor becomes the master
+				if (info[0].equals(RoQConstant.EVENT_MONITOR_FAILOVER)) {
+					this.master = true;
+					initRep.send((RoQConstant.EVENT_MONITOR_ACTIVATED + ", ").getBytes(), 0);
+				}
+			}
+		}
+		reportTimer.schedule(this.monitorStat, 0, period);
 		//2. Start the main run of the monitor
-		while (this.active) {
+		while (this.active) {			
 			//not really clean, workaround to the fact thats sockets cannot be shared between threads
 			if (System.currentTimeMillis() - lastPublish > 10000) { 
 				listenersPub.send(("2," + bcastExchg()).getBytes(), 0);
@@ -375,18 +392,8 @@ public class Monitor implements Runnable, IStoppable {
 				}finally {
 				}
 			}
-			// Write Heartbeat
-			if ((Time.currentTimeMillis() - lastHb) >= hbPeriod) {
-				try {
-					current = Time.currentTimeSecs();
-					logger.info("Writing hb " + basePort + " " + current);
-					localState.put("HB", current);
-					lastHb = Time.currentTimeMillis();
-				} catch (IOException e) {
-					logger.info("Failed to write in local db: " + e);
-				}
-			}
 			
+			HCMHeartbeat();
 			//3. According to the channel bit used, we can define what kind of info is sent
 			items.poll(100);
 			if (items.pollin(0)) { // Info from Exchange
@@ -499,7 +506,23 @@ public class Monitor implements Runnable, IStoppable {
 		listenersPub.close();
 		heartBeat.close();
 	}
-
+	
+	/**
+	 * Write the heartbeat in the system
+	 */
+	private void HCMHeartbeat() {
+		// Write Heartbeat
+		if ((Time.currentTimeMillis() - lastHb) >= hbPeriod) {
+			try {
+				long current = Time.currentTimeSecs();
+				logger.info("Writing hb " + basePort + " " + current);
+				localState.put("HB", current);
+				lastHb = Time.currentTimeMillis();
+			} catch (IOException e) {
+				logger.info("Failed to write in local db: " + e);
+			}
+		}
+	}
 
 	/**
 	 * Class ReportExchanges

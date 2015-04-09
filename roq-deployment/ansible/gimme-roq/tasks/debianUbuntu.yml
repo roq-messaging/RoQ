@@ -1,10 +1,10 @@
 - name: JAVA_HOME Path for this OS in x86_64
-  vars:
+  set_fact:
     java_home: /usr/lib/jvm/java-7-openjdk-i386
   when: ansible_architecture == "x86_64"
 
 - name: JAVA_HOME Path for this OS in i386
-  vars:
+  set_fact:
     java_home: /usr/lib/jvm/java-7-openjdk-i386
   when: ansible_architecture == "i386"
 

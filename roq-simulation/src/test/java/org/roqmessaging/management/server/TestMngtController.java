@@ -44,8 +44,8 @@ public class TestMngtController extends RoQTestCase {
 			MngtController mngtController = this.launcher.getMngtController();
 			logger.info("---> Test 1 create  2 Qs");
 			// 1. Create Q
-			 this.factory.createQueue("queue1", RoQUtils.getInstance().getLocalIP().toString(), false);
-			 this.factory.createQueue("queueTest", RoQUtils.getInstance().getLocalIP().toString(), false);
+			 this.factory.createQueue("queue1", RoQUtils.getInstance().getLocalIP().toString(), new ArrayList<String>(), false);
+			 this.factory.createQueue("queueTest", RoQUtils.getInstance().getLocalIP().toString(), new ArrayList<String>(), false);
 			
 			 //2. Start the test class
 			MngtSubscriber subscriber = new MngtSubscriber();
@@ -60,7 +60,7 @@ public class TestMngtController extends RoQTestCase {
 			Assert.assertEquals(2, queues.size());
 			
 			logger.info("---> Test 3 check  3 Qs");
-			this.factory.createQueue("queue2", RoQUtils.getInstance().getLocalIP().toString(), false);
+			this.factory.createQueue("queue2", RoQUtils.getInstance().getLocalIP().toString(), new ArrayList<String>(), false);
 			//3. Sleep for test
 			Thread.sleep(5000);
 			Assert.assertEquals(3,  mngtController.getQueues().size());
@@ -69,8 +69,7 @@ public class TestMngtController extends RoQTestCase {
 			logger.info("---> Test 4 Remove  1Q and check 2 Qs");
 			this.factory.removeQueue("queue1");
 			Thread.sleep(5000);
-			Assert.assertEquals(3,  mngtController.getQueues().size());
-			Assert.assertFalse(mngtController.getQueue("queue1").isRunning());
+			Assert.assertEquals(2,  mngtController.getQueues().size());
 			
 			//Clean all
 			this.factory.removeQueue("queueTest");

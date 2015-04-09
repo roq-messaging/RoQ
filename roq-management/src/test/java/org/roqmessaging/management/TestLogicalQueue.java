@@ -15,6 +15,7 @@
 package org.roqmessaging.management;
 
 import java.net.ConnectException;
+import java.util.ArrayList;
 
 import org.apache.curator.test.TestingServer;
 import org.apache.log4j.Logger;
@@ -154,7 +155,7 @@ public class TestLogicalQueue {
 	private void testQueue(String qName) throws InterruptedException {
 		logger.info("**********Testing Q "+ qName+"***************");
 		String host = RoQUtils.getInstance().getLocalIP();
-		factory.createQueue(qName, host, false);
+		factory.createQueue(qName, host, new ArrayList<String>(), false);
 		//Wait for the queue ready
 		Thread.sleep(2000);
 		//Add a subscriber

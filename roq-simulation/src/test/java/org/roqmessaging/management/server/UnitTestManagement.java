@@ -127,9 +127,9 @@ public class UnitTestManagement {
 			
 			// 2. Add queues
 			// TODO Fix this test. Addresses for monitor and stat monitor should be "tcp://ip:port".
-			this.globalConfigurationManager.addQueue("queue1", "127.0.0.1", "127.0.0.1", "127.0.0.1");
-			this.globalConfigurationManager.addQueue("queue2", "127.0.0.2", "127.0.0.2", "127.0.0.2");
-			this.globalConfigurationManager.addQueue("TestQueue", "227.0.0.1", "127.0.0.1", "127.0.0.1");
+			this.globalConfigurationManager.addQueue("queue1", "127.0.0.1", "127.0.0.1", "127.0.0.1", new ArrayList<String>());
+			this.globalConfigurationManager.addQueue("queue2", "127.0.0.2", "127.0.0.2", "127.0.0.2", new ArrayList<String>());
+			this.globalConfigurationManager.addQueue("TestQueue", "227.0.0.1", "127.0.0.1", "127.0.0.1", new ArrayList<String>());
 
 			// 3. Wait for update
 			Thread.sleep(5000);
@@ -139,24 +139,20 @@ public class UnitTestManagement {
 			ArrayList<QueueManagementState>queues = this.globalConfigurationManager.getMngtController().getQueues();
 			Assert.assertEquals(3, queues.size());
 			ArrayList<String> hosts = this.globalConfigurationManager.getMngtController().getHosts();
-			Assert.assertEquals(2, hosts.size());
+			Assert.assertEquals(3, hosts.size());
 			
 			//5. Removes Qs
 			logger.debug("Checking queues size at management aftrer remove");
 			this.globalConfigurationManager.removeQueue("TestQueue");
 			Thread.sleep(5000);
-			QueueManagementState testQueue = this.globalConfigurationManager.getMngtController().getQueue("TestQueue");
-			Assert.assertTrue(!testQueue.isRunning());
 			
 			ArrayList<QueueManagementState>allQs = this.globalConfigurationManager.getMngtController().getQueues();
-			Assert.assertEquals(3, allQs.size());
+			Assert.assertEquals(2, allQs.size());
 			
 			
 			this.globalConfigurationManager.removeQueue("queue2");
 			Thread.sleep(5000);
 			this.globalConfigurationManager.getMngtController().getQueues();
-			QueueManagementState q2 = this.globalConfigurationManager.getMngtController().getQueue("queue2");
-			Assert.assertEquals(false, q2.isRunning());
 			
 		} catch (Exception e) {
 			logger.error("Error while waiting", e);

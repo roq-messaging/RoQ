@@ -15,6 +15,7 @@
 package org.roqmessaging.testload;
 
 import java.net.ConnectException;
+import java.util.ArrayList;
 import java.util.Timer;
 
 import org.apache.log4j.Logger;
@@ -49,7 +50,7 @@ public class Test117a extends RoQTestCase {
 		// The Qname
 		String qName = "test117-Q";
 		// Init 1. create the test queue
-		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
+		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), new ArrayList<String>(), false);
 		// Init 2. let the queue start
 		Thread.sleep(2000);
 		//3. Attach a subscriber

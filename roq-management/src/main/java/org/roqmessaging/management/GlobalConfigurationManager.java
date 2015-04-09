@@ -37,8 +37,8 @@ import org.roqmessaging.management.config.internal.GCMPropertyDAO;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.MngtController;
-import org.roqmessaging.management.zookeeper.Metadata;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
+import org.roqmessaging.zookeeper.Metadata;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Poller;
 
@@ -133,12 +133,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		if (properties.isFormatDB()) {
 			zk.clear();
 		}
-		
-		// Set cloudConfig if the configuration is available
-		if (properties.hasCloudConfiguration()) {
-			logger.info("Writing cloud configuration to zookeeper");
-			this.zk.setCloudConfig(serializationUtils.serialiseObject(cloudConfig));
-		}
+
+		logger.info("Writing cloud configuration to zookeeper");
+		this.zk.setCloudConfig(serializationUtils.serialiseObject(cloudConfig));
 		
 		// Start the shutdown thread
 		int shutDownPort = properties.ports.get("GlobalConfigurationManager.shutDown");
@@ -410,12 +407,16 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				String monitorAddress = info[2];
 				String statMonitorAddress = info[3];
 				String hcmAddress = info[4];
+				ArrayList<String> monitorsBU = new ArrayList<String>();
+				for (int i = 5; i < info.length; i++) {
+					monitorsBU.add(info[i]);
+				}
 				// register the queue
-				addQueue(queueName, monitorAddress, statMonitorAddress, hcmAddress);
-				this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK).getBytes(), 0);
+				addQueue(queueName, monitorAddress, statMonitorAddress, hcmAddress, monitorsBU);
+				this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_REQUEST_OK).getBytes(), 0);
 			}else{
 					logger.error("The create queue request sent does not contain 3 part: ID, quName, Monitor host");
-					this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL).getBytes(), 0);
+					this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL).getBytes(), 0);
 				}
 			break;
 			
@@ -502,13 +503,17 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * @param statMonitorAddress address of the queue's StatisticMonitor in the format "tcp://x.y.z:port"
 	 * @param hcmAddress ip address of the host that handles the queue 
 	 */
-	public void addQueue(String queueName, String monitorAddress, String statMonitorAddress, String hcmAddress) {
+	public void addQueue(String queueName, String monitorAddress, String statMonitorAddress, String hcmAddress, List<String> monitorsBU) {
 		Metadata.Queue queue = new Metadata.Queue(queueName);
 		Metadata.Monitor monitor = new Metadata.Monitor(monitorAddress);
 		Metadata.StatMonitor statMonitor = new Metadata.StatMonitor(statMonitorAddress);
 		Metadata.HCM hcm = new Metadata.HCM(hcmAddress);
-
-		zk.createQueue(queue, hcm, monitor, statMonitor);
+		ArrayList<Metadata.Monitor> monitorsBUMeta = new ArrayList<Metadata.Monitor>();
+		for (String monitorBU : monitorsBU) {
+			monitorsBUMeta.add(new Metadata.Monitor(monitorBU));
+		}
+		
+		zk.createQueue(queue, hcm, monitor, statMonitor, monitorsBUMeta);
 		setQueueStarted(queueName);
 	}
 
@@ -570,9 +575,10 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * Add a host manager address to the array.
 	 * @param host the host to add (ip address), the port is defined by default as there is only 1 Host 
 	 * manager per host machine.
+	 * @throws Exception 
 	 */
-	public void addHostManager(String host){
-		// zk.watchHCM(new Metadata.HCM(host));
+	public void addHostManager(String host) throws Exception{
+		zk.registerHCM(new Metadata.HCM(host));
 	}
 	
 

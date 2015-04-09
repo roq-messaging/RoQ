@@ -15,10 +15,12 @@ import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.zookeeper.Metadata;
+import org.roqmessaging.zookeeper.Metadata.Queue;
 import org.roqmessaging.zookeeper.RoQZKHelpers;
 import org.roqmessaging.zookeeper.RoQZooKeeper;
+import org.roqmessaging.zookeeper.Metadata.HCM;
 import org.roqmessaging.management.GlobalConfigLeaderListener;
-import org.roqmessaging.management.zookeeper.Metadata.HCM;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperConfig;
 
 /**
@@ -228,10 +230,15 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	 * This method create a transaction for the queue creation in ZK
 	 * @param queueName
 	 */
-	public void createQTransaction (String queueName, String host) {
+	public void createQTransaction (String queueName, String host, ArrayList<String> backupHosts) {
 		log.info("");
 		String path = RoQZKHelpers.makePath(cfg.znode_queueTransactions, queueName);
-		RoQZKHelpers.createZNode(client, path, host);
+		String payload = host;
+		for (int i = 0; i < backupHosts.size(); i++) {
+			payload += "," + backupHosts.get(i);
+		}
+		
+		RoQZKHelpers.createZNode(client, path, payload);
 	}
 	
 	/**
@@ -284,20 +291,23 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		RoQZKHelpers.deleteZNode(client, path);
 	}
 	
-	public void createQueue(Metadata.Queue queue, Metadata.HCM hcm, Metadata.Monitor monitor, Metadata.StatMonitor statMonitor) {
+	public void createQueue(Metadata.Queue queue, Metadata.HCM hcm, 
+			Metadata.Monitor monitor, Metadata.StatMonitor statMonitor, 
+			List<Metadata.Monitor> monitorBU) {
 		log.info("");
+
 		
 		String queuePath = getZKPath(queue);
 		String monitorPath = RoQZKHelpers.makePath(queuePath, "monitor");
 		String statMonitorPath = RoQZKHelpers.makePath(queuePath, "stat-monitor");
 		String hcmPath = RoQZKHelpers.makePath(queuePath, "hcm");
-		String exchPath = RoQZKHelpers.makePath(queuePath, "exchanges");
 		String scalingPath = RoQZKHelpers.makePath(queuePath, "scaling");
-		// RoQZKHelpers.createZNodeAndParents(client, queuePath);
+		String backupMonitorsPath = RoQZKHelpers.makePath(queuePath, "monitorBU");
 		// Add queue children nodes inside a single transaction
 		RoQZKHelpers.createQueueZNodes(client, queuePath, monitorPath, 
 				monitor.address, statMonitorPath, statMonitor.address, 
-				hcmPath, hcm.address, exchPath, scalingPath);
+				hcmPath, hcm.address, scalingPath, 
+				backupMonitorsPath, monitorBU);
 	}
 	
 	public void removeQueue(Metadata.Queue queue) {
@@ -430,9 +440,6 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	private String getZKPath(Metadata.Queue queue) {
 		return RoQZKHelpers.makePath(cfg.znode_queues, queue.name);
 	}
-	private String getZKPath(Metadata.HCM hcm) {
-		return RoQZKHelpers.makePath(cfg.znode_hcm, hcm.address);
-	}
 	private void setScalingConfig(byte[] scalingConfig, Metadata.Queue queue, String leafNode) {
 		log.info("");
 		String path = RoQZKHelpers.makePath(getZKPath(queue), cfg.znode_scaling, leafNode);
@@ -444,5 +451,24 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		log.info("");
 		String path = RoQZKHelpers.makePath(getZKPath(queue), cfg.znode_scaling, leafNode);
 		return RoQZKHelpers.getData(client, path);
+	}
+
+	public ArrayList<Metadata.Exchange> getExchanges(Queue queue) {
+		List<String> addresses = RoQZKHelpers.getChildren(client,  RoQZKHelpers.makePath(getZKPath(queue), "exchanges"));
+		ArrayList<Metadata.Exchange> exchanges = new ArrayList<Metadata.Exchange>();
+		for (String address : addresses) {
+			exchanges.add(new Metadata.Exchange(address));
+		}
+		return exchanges;
+	}
+
+	public ArrayList<Metadata.Monitor> getBackUpMonitors(Queue queue) {
+		log.info("");
+		String[] addresses = new String(RoQZKHelpers.getData(client,  RoQZKHelpers.makePath(getZKPath(queue), "monitorBU"))).split(",");
+		ArrayList<Metadata.Monitor> monitors = new ArrayList<Metadata.Monitor>();
+		for (String address : addresses) {
+			monitors.add(new Metadata.Monitor(address));
+		}
+		return monitors;
 	}	
 }

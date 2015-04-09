@@ -35,7 +35,7 @@ public class ProcessMonitor implements Runnable {
 	
 	// Lock to avoid race condition when modifying processesToAdd Map
 	private ReentrantLock processLock = new ReentrantLock();
-	
+
 	// Allows the thread to start/stop processes
 	private HostProcessFactory processFactory;
 	
@@ -90,15 +90,30 @@ public class ProcessMonitor implements Runnable {
 	 * 
 	 *  
 	 */
-	public HashMap<String, Long> getprocessesHB() 
-			throws IOException {
+	public HashMap<String, Long> getprocessesHB() {
 		LocalState localState;
+		processLock.lock();
 		HashMap<String, Long> processHbs = new HashMap<String, Long>();
-		for (String process : processesRunning) {
-			localState = new LocalState(LocalStatePath + "/" + process);
-			processHbs.put(process ,(Long) localState.get("HB"));
+		try {
+			for (String process : processesRunning) {
+				localState = new LocalState(LocalStatePath + "/" + process);
+				processHbs.put(process ,(Long) localState.get("HB"));
+			}
+		} catch (IOException e) {
+			logger.error("Failed to read locState DB");
+		} finally {
+			processLock.unlock();
 		}
 		return processHbs;
+	}
+	
+	/**
+	 * Set in process monitor that this monitor
+	 * is now the master
+	 * @param id
+	 */
+	public void switchMonitorToMaster(String id) {
+		processes.get(id).keys.put("isMaster", new Boolean(true).toString());
 	}
 
 	@Override
@@ -125,9 +140,6 @@ public class ProcessMonitor implements Runnable {
 				restartFailedProcesses();
 				// Dont waste resources
 				Thread.sleep((properties.getMonitorTimeOut() * 1000) / 2);
-			} catch (IOException e) {
-				logger.error("Failed to read locState DB");
-				e.printStackTrace();
 			} catch (InterruptedException e) {
 				logger.error("Thread interrupted");
 				e.printStackTrace();
@@ -165,6 +177,7 @@ public class ProcessMonitor implements Runnable {
 	 * @param processesHB
 	 */
 	private void classifyProcesses(HashMap<String, Long> processesHB) {
+		processLock.lock();
 		int current = Time.currentTimeSecs();
 		ImmutableList<String> processesList = ImmutableList.copyOf(processesRunning);
 		for (String processID : processesList) {
@@ -184,6 +197,7 @@ public class ProcessMonitor implements Runnable {
 				logger.info("process: " + processID + " has sent hb");
 			}
 		}
+		processLock.unlock();
 	}
 	
 	/**
@@ -191,6 +205,7 @@ public class ProcessMonitor implements Runnable {
 	 * @param processesHB
 	 */
 	private void restartFailedProcesses() {
+		processLock.lock();
 		ImmutableList<String> processesList = ImmutableList.copyOf(processesFailed);
 		HashMap<String, String> keys;
 		int type;
@@ -201,6 +216,7 @@ public class ProcessMonitor implements Runnable {
 			stopAndRemoveProcess(processID);
 			restartProcess(type, keys);
 		}
+		processLock.unlock();
 	}
 	
 	/**
@@ -219,10 +235,10 @@ public class ProcessMonitor implements Runnable {
 	 * Restart a process
 	 * @param processesHB
 	 */
-	private void restartProcess(int type,HashMap<String, String> keys) {
+	private void restartProcess(int type, HashMap<String, String> keys) {
 		switch (type) {
 		case RoQConstantInternal.PROCESS_MONITOR:
-			processFactory.startNewMonitorProcess(keys.get("qName"));
+			processFactory.startNewMonitorProcess(keys.get("qName"), Boolean.parseBoolean(keys.get("isMaster")));
 			break;
 		case RoQConstantInternal.PROCESS_SCALING:
 			processFactory.startNewScalingProcess(keys.get("qName"));
@@ -231,6 +247,21 @@ public class ProcessMonitor implements Runnable {
 			processFactory.startNewExchangeProcess(keys.get("qName"), keys.get("transID"), true);
 			break;
 		}
+	}
+	
+	
+	/**
+	 * This method remove a process from the monitoring
+	 * system in order to shutdown them properly
+	 * 
+	 */
+	public void removeProcess(String id) {
+		processLock.lock();
+		processesFailed.remove(id);
+		processesToAdd.remove(id);
+		processesRunning.remove(id);
+		processes.remove(id);
+		processLock.unlock();
 	}
 
 	/**
@@ -246,12 +277,14 @@ public class ProcessMonitor implements Runnable {
 	 */
 	public boolean killProcess(int type) {
 		boolean processDestroyed = false;
+		processLock.lock();
 		for (MonitoredProcess process : processes.values()) {
 			if (process.getType() == type) {
 				process.getProcess().destroy();
 				processDestroyed = true;
 			}
 		}
+		processLock.unlock();
 		return processDestroyed;
 	}
 }

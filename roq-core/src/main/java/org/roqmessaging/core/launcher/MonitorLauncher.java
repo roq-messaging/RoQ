@@ -34,17 +34,18 @@ public class MonitorLauncher {
 	 */
 	public static void main(String[] args) {
 		System.out.println("Launching Monitor process with arg "+displayArg(args));
-		if(args.length != 6){
-			System.out.println("The argument should be <int: base port> <int: stat port> <qname> <localStateDbPath> <hbPeriod>");
+		if(args.length != 7){
+			System.out.println("The argument should be <int: base port> <int: stat port> <qname> <localStateDbPath> <hbPeriod> <isMaster>");
 			return;
 		}
 		//TODO for future evolution: replacing the 3rd argument by the property file location directly
-		System.out.println("Starting Monitor on base port "+ args[0] + ", "+args[1] +", "+ args[2] +" "+ args[3] + " " + args[4] + " " + args[5]) ;
+		System.out.println("Starting Monitor on base port "+ args[0] + ", "+args[1] +", "+ args[2] +" "+ args[3] + " " + args[4] + " " + args[5] + " " + args[6]) ;
 		try {
 			int basePort = Integer.parseInt(args[0]);
 			int statPort = Integer.parseInt(args[1]);
 			long hbPeriod = Long.parseLong(args[5]);
-			final Monitor monitor = new Monitor(basePort, statPort,  args[2], args[3], args[4], hbPeriod);
+			boolean isMaster = Boolean.parseBoolean(args[6]);
+			final Monitor monitor = new Monitor(basePort, statPort,  args[2], args[3], args[4], hbPeriod, isMaster);
 			Thread t = new Thread(monitor);
 			t.start();
 			

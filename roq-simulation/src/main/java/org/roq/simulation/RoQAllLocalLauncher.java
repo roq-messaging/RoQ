@@ -103,8 +103,8 @@ public class RoQAllLocalLauncher {
 		this.hostConfigManager.getShutDownMonitor().shutDown();
 		Thread.sleep(3000);
 		this.configurationManager.getShutDownMonitor().shutDown();
+		Thread.sleep(3000);
 		this.zkServer.close();
-		Thread.sleep(6000);
 	}
 
 	/**

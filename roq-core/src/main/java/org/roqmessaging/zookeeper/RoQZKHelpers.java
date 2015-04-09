@@ -3,6 +3,7 @@ package org.roqmessaging.zookeeper;
 import java.util.List;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZKUtil;
 
@@ -31,17 +32,24 @@ public class RoQZKHelpers {
 	 * @param path
 	 */
 	public static void createQueueZNodes(CuratorFramework client, String queuePath,
-			String monitorPath, String monitorPL, String statMonitorPath, 
-			String statMonitorPL, String hcmPath, String hcmPL, String ExchPath, String scalingPath) {
+			String monitorPath, String monitorPL, String statMonitorPath,
+			String statMonitorPL, String hcmPath, String hcmPL, String scalingPath, String backupMonitorsPath, List<Metadata.Monitor> backupMonitors) {
 		try {
-			client.inTransaction().create().forPath(queuePath)
+			CuratorTransactionBridge transaction = client.inTransaction().create().forPath(queuePath)
 				.and().create().forPath(monitorPath, monitorPL.getBytes())
 				.and().create().forPath(statMonitorPath, statMonitorPL.getBytes())
 				.and().create().forPath(hcmPath, hcmPL.getBytes())
-				.and().create().forPath(scalingPath)
-				.and().commit();
+				.and().create().forPath(scalingPath);
+			String buPL = "";
+			for (int i = 0; i < backupMonitors.size(); i++) {
+				if (i > 0)
+					buPL += ",";
+				buPL += backupMonitors.get(i).address;
+			}
+			transaction.and().create().forPath(backupMonitorsPath, buPL.getBytes());
+			transaction.and().commit();
 		} catch (Exception e) {
-			// e.printStackTrace();
+			e.printStackTrace();
 		}
 	}
 	

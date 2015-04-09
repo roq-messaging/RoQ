@@ -15,6 +15,6 @@
   shell: "cd {{jzmq_path}}; {{item}}"
   with_items: ['./autogen.sh', './configure', 'make', 'sudo make install', 'mvn install']
   environment:
-       JAVA_HOME: {{java_home}}
+       JAVA_HOME: "{{java_home}}"
   tags:
     - full-install

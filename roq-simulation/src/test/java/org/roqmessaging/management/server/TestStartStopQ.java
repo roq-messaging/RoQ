@@ -68,6 +68,7 @@ public class TestStartStopQ extends RoQTestCase {
 		client.testStart(qName);
 		
 		//4. Remove the queue
+		Thread.sleep(3000);
 		client.testRemove(qName);
 		
 		//Phase 3 Test the automatic queues
@@ -84,9 +85,7 @@ public class TestStartStopQ extends RoQTestCase {
 		
 		//4. Remove the queue
 		client.testRemove(qName);
-		
-		
-		
+				
 		//5. Test the get cloud property API
 		client.testCloudPropertiesAPI();
 		

@@ -32,7 +32,6 @@ import org.roqmessaging.management.config.internal.FileConfigurationReader;
 import org.roqmessaging.management.config.internal.HostConfigDAO;
 import org.roqmessaging.management.monitor.ProcessMonitor;
 import org.roqmessaging.management.server.state.HcmState;
-import org.roqmessaging.management.zookeeper.Metadata;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperConfig;
 import org.zeromq.ZMQ;
@@ -192,7 +191,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 						String monitorAddress = serverState.getMonitor(qName);
 						if (monitorAddress == null) {
 							// 1. Start the monitor
-							monitorAddress = processFactory.startNewMonitorProcess(qName);
+							monitorAddress = processFactory.startNewMonitorProcess(qName, true);
 						}
 						// 2. Start the exchange
 						// 2.1. Getting the monitor stat address
@@ -201,7 +200,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 						
 						// The 00000000000000000 value is the id of the first Exchange process
 						if (!xChangeOK)
-							xChangeOK = processFactory.startNewExchangeProcess(qName, "00000000000000000", false); 
+							xChangeOK = processFactory.startNewExchangeProcess(qName, "INITIAL_EXCHANGE_000", false); 
 						//2.3. Start the scaling process
 						boolean scalingOK = serverState.getScalingProcess(qName) != null;
 						if (!scalingOK)
@@ -210,21 +209,127 @@ public class HostConfigManager implements Runnable, IStoppable {
 						if (monitorAddress != null & xChangeOK && scalingOK) {
 							logger.info("Successfully created new Q for " + qName + "@" + monitorAddress);
 							this.clientReqSocket.send(
-									(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK) + "," + monitorAddress + "," + serverState.getMonitor(qName))
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_OK) + "," + monitorAddress + "," + serverState.getStat(qName))
 											.getBytes(), 0);
 						} else {
 							logger.error("The create queue request has failed at the monitor host,check log (when starting launching scripts");
 							this.clientReqSocket.send(
-									(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) + "," + monitorAddress)
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + "," + monitorAddress)
 											.getBytes(), 0);
 						}
 					} else {
-						logger.error("The create queue request sent does not contain 3 part: ID, quName, Monitor host");
+						logger.error("The create queue request sent does not contain 2 part: ID, quName");
 						this.clientReqSocket.send(
-								(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) + ", ").getBytes(), 0);
+								(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + ", ").getBytes(), 0);
 					}
 					break;
+				case RoQConstant.CONFIG_CREATE_STBY_MONITOR:
+					logger.debug("Recieveing create Q request from a client ");
+					if (info.length == 2) {
+						String qName = info[1];
+						logger.debug("The request format is valid with 2 parts, Standby monitor to create:  " + qName);
+						String monitorAddress = serverState.getMonitor(qName);
+						if (monitorAddress == null) {
+							// 1. Start the monitor
+							monitorAddress = processFactory.startNewMonitorProcess(qName, false);
+						}
 
+						// if OK send OK
+						if (monitorAddress != null) {
+							logger.info("Successfully created standby monitor for " + qName + "@" + monitorAddress);
+							this.clientReqSocket.send(
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_OK) + "," + monitorAddress)
+											.getBytes(), 0);
+						} else {
+							logger.error("Failed to create the Standby monitor");
+							this.clientReqSocket.send(
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + "," + monitorAddress)
+											.getBytes(), 0);
+						}
+					} else {
+						logger.error("The create STBY monitor request sent does not contain 2 part: ID, quName");
+						this.clientReqSocket.send(
+								(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + ", ").getBytes(), 0);
+					}
+					break;
+				case RoQConstant.CONFIG_START_STBY_MONITOR:
+					if (info.length == 2) {
+						String qName = info[1];
+						logger.debug("The request format is valid with 2 parts, Standby monitor to start:  " + qName);
+						String monitorAddress = serverState.getSTBYMonitor(qName);
+						hbMonitor.switchMonitorToMaster(monitorAddress);
+						boolean monitorStarted = false;
+						boolean exchange = false;
+						boolean scalingProcess = false;
+						// Send a request to the monitor to ask for its startup
+						if (monitorAddress != null) {
+							String[] splitAddress = monitorAddress.split(":");
+							int frontPort = new Integer((splitAddress[splitAddress.length - 1]));
+							monitorAddress = splitAddress[0] + ":" + frontPort+1; // Monitor request address
+							
+							// TODO start a scaling process
+							
+							// We create a port only for that request toward the monitor
+							ZMQ.Socket monitorREQ = context.socket(ZMQ.REQ);
+							monitorREQ.setLinger(0);
+							monitorREQ.bind(monitorAddress);
+							monitorREQ.setReceiveTimeOut(5000);
+							monitorREQ.send((RoQConstant.EVENT_MONITOR_FAILOVER + ", ").getBytes(), 0);
+							byte[] result = monitorREQ.recv(0);
+							
+							//Check the result
+							if (result != null && new String(result).split(",")[0].equals(RoQConstant.EVENT_MONITOR_ACTIVATED))
+								monitorStarted = true;
+							monitorREQ.setLinger(0);
+							monitorREQ.close(); // We close the socket							
+						} else if (serverState.getMonitor(qName) != null) { // check if it was not already created
+							monitorStarted = true;
+						}
+						// Run a new exchange in a indempotent way to avoid request duplication issues
+						if (serverState.ExchangeExists(qName, "INIT_EXCHANGE_11111")) {
+							exchange = true;
+						} else {
+							exchange = processFactory.startNewExchangeProcess(qName, "INIT_EXCHANGE_11111", false);
+						}
+						if (serverState.scalingProcessExists(qName)) {
+							scalingProcess = true;
+						} else {
+							scalingProcess = processFactory.startNewScalingProcess(qName);
+						}
+						// if OK send OK
+						if (monitorAddress != null && monitorStarted && exchange && scalingProcess) {
+							serverState.switchToMaster(qName);
+							logger.info("Successfully started standby monitor for " + qName + "@" + monitorAddress);
+							this.clientReqSocket.send(
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_OK) + "," + monitorAddress)
+											.getBytes(), 0);
+						} else if (!monitorStarted) {
+							logger.error("The standby monitor has not been started, it doesnt answer correctly");
+							this.clientReqSocket.send(
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + "," + monitorAddress)
+											.getBytes(), 0);
+						} else if (!exchange) {
+							logger.error("The standby monitor has not been totally started, exchange creation failed");
+							this.clientReqSocket.send(
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + "," + monitorAddress)
+											.getBytes(), 0);
+						} else if (!scalingProcess) {
+							logger.error("The standby monitor has not been totally started, scaling process");
+							this.clientReqSocket.send(
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + "," + monitorAddress)
+											.getBytes(), 0);
+						} else {
+							logger.error("The standby monitor has not been started, it was not found on the machine");
+							this.clientReqSocket.send(
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + "," + monitorAddress)
+											.getBytes(), 0);
+						}
+					} else {
+						logger.error("The STBY monitor startup request sent does not contain 2 part: ID, quName");
+						this.clientReqSocket.send(
+								(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + ", ").getBytes(), 0);
+					}
+					break;
 				case RoQConstant.CONFIG_REMOVE_QUEUE:
 					logger.debug("Recieveing remove Q request from a client ");
 					if (info.length == 2) {
@@ -239,7 +344,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 					} else {
 						logger.error("The remove queue request sent does not contain 2 part: ID, quName");
 						this.clientReqSocket.send(
-								(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) + ", ").getBytes(), 0);
+								(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + ", ").getBytes(), 0);
 					}
 					break;
 
@@ -257,7 +362,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 					} else {
 						logger.error("The create new exchange does not contain 4 parts: ID, Qname, monitor, monitor host");
 						this.clientReqSocket.send(
-								(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) ).getBytes(), 0);
+								(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) ).getBytes(), 0);
 					}
 					break;
 				case RoQConstant.CONFIG_INFO_EXCHANGE:
@@ -348,7 +453,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 		if(useNif)Assert.assertNotNull(this.properties.getNetworkInterface());
 		String hcmAddress = (!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()));
 		// Register the ephemeral node on ZK
-		zkClient.registerHCM(new Metadata.HCM(hcmAddress));
+		// zkClient.registerHCM(new Metadata.HCM(hcmAddress));
 		// Send the notification to the GCM, the GCM will register a watcher on the ephemeral node
 		byte[] info = gcmConnection.sendRequest((new Integer(RoQConstant.CONFIG_ADD_HOST).toString()+"," + hcmAddress).getBytes(), 5000);
 		String result[] = (new String(info)).split(",");

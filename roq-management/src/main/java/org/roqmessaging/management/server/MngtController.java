@@ -39,8 +39,9 @@ import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
-import org.roqmessaging.management.zookeeper.Metadata;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
+import org.roqmessaging.zookeeper.Metadata;
+import org.roqmessaging.zookeeper.Metadata.HCM;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Poller;
 import org.zeromq.ZMQ.Socket;
@@ -187,8 +188,10 @@ public class MngtController implements Runnable, IStoppable {
 						String transID = "?";
 						boolean recoveryMod = false;
 						String hostToRecover = "";
+						String transaction = "";
 						AutoScalingConfig config = null;
 						Metadata.Queue queue = null;
+						ArrayList<String> backupHost = new ArrayList<String>();
 
 						// 2. Getting the command ID
 						switch ((Integer) request.get("CMD")) {
@@ -259,17 +262,20 @@ public class MngtController implements Runnable, IStoppable {
 							// 1. Get the name
 							qName = (String) request.get("QName");
 							host = (String) request.get("Host");
-							hostToRecover = zk.qTransactionExists(qName);
+							transaction = zk.qTransactionExists(qName);
+							hostToRecover = transactionExtractMasterHost(transaction);
 							if (hostToRecover != null) {
 								// The transaction already exists, recovery mod
 								recoveryMod = true;
 								if (getHosts().contains(hostToRecover)) {
 									host = hostToRecover;
+									backupHost = transactionExtractSTBYHosts(transaction);
 								} else {
 									// The initial host not exists
 									// change the transaction to target the new host
 									zk.removeQTransaction(qName);
-									zk.createQTransaction(qName, host);
+									backupHost = pickBackupHosts(host);
+									zk.createQTransaction(qName, host, backupHost);
 									
 								}
 								logger.info("Recover process for queue " + qName + " started " +
@@ -277,11 +283,12 @@ public class MngtController implements Runnable, IStoppable {
 							}
 							else {
 								// We create a transaction 
-								zk.createQTransaction(qName, host);
+								backupHost = pickBackupHosts(host);
+								zk.createQTransaction(qName, host, backupHost);
 							}
 							// Just create queue the timer will update the
 							// management server configuration
-							int returnCode = factory.createQueue(qName, host, recoveryMod);
+							int returnCode = factory.createQueue(qName, host, backupHost, recoveryMod);
 							if (returnCode == -1) {
 								// We remove the transaction if the queue already exists
 								zk.removeQTransaction(qName);
@@ -307,7 +314,8 @@ public class MngtController implements Runnable, IStoppable {
 							}
 							// 1. Get the name
 							qName = (String) request.get("QName");
-							hostToRecover = zk.qTransactionExists(qName);
+							transaction = zk.qTransactionExists(qName);
+							hostToRecover = transactionExtractMasterHost(transaction);
 							logger.info("transaction Exists? " + hostToRecover);
 							boolean hostFound = false;
 							ArrayList<String> hostsList = getHosts();
@@ -327,11 +335,12 @@ public class MngtController implements Runnable, IStoppable {
 										logger.info("Original host lost: " + hostToRecover);
 										// TODO Select the less loaded host
 										host = hostsList.get((int) Math.random() % hostsList.size());
-										// Create a transaction with the new host
-										zk.createQTransaction(qName, host);
+										backupHost = pickBackupHosts(host);
+										zk.createQTransaction(qName, host, backupHost);
 										hostFound = true;
 									}
 								} else {
+									backupHost = transactionExtractSTBYHosts(transaction);
 									hostFound = true;
 								}
 								logger.info("Recover process for queue " + qName + " started " +
@@ -346,7 +355,8 @@ public class MngtController implements Runnable, IStoppable {
 									// TODO Select the less loaded host
 									// We create a transaction
 									host = hostsList.get((int) Math.random() % hostsList.size());
-									zk.createQTransaction(qName, host);
+									backupHost = pickBackupHosts(host);
+									zk.createQTransaction(qName, host, backupHost);
 									hostFound = true;
 								}
 							}
@@ -354,7 +364,7 @@ public class MngtController implements Runnable, IStoppable {
 							if (hostFound) {
 								// Just create queue the timer will update the
 								// management server configuration
-								int code = factory.createQueue(qName, host, recoveryMod);
+								int code = factory.createQueue(qName, host, backupHost, recoveryMod);
 								if (code == -1) {
 									// We remove the transaction if the queue already exists
 									zk.removeQTransaction(qName);
@@ -669,6 +679,49 @@ public class MngtController implements Runnable, IStoppable {
 			isMulti = true;
 		}
 		return isMulti;
+	}
+	
+	private String transactionExtractMasterHost(String transaction) {
+		if (transaction == null)
+			return null;
+		String[] servers = transaction.split(",");
+		return servers[0];
+	}
+	
+	private ArrayList<String> transactionExtractSTBYHosts(String transaction) {
+		ArrayList<String> hostsList = new ArrayList<String>();
+		if (transaction == null)
+			return hostsList;
+		String[] servers = transaction.split(",");
+		for (int i = 1; i < servers.length; i++) {
+			hostsList.add(servers[i]);
+		}
+		return hostsList;
+	}
+	
+	/**
+	 * This method find the hosts
+	 * on which the backup of the monitor will be created
+	 * @param host
+	 * @throws Exception 
+	 */
+	private ArrayList<String> pickBackupHosts(String address) throws Exception {
+		List<HCM> hosts = zk.getHCMList();
+		Metadata.HCM host = new Metadata.HCM(address);
+		ArrayList<String> backupHosts = new ArrayList<String>();
+		if (hosts.size() <= 1)
+			return backupHosts;
+		int nextToPick = (int) Math.random() % hosts.size();
+		Metadata.HCM currentHost = null;
+		int hostToPick = properties.getReplicationFactor() - 1;
+		for (int i = 0; i < hosts.size() && hostToPick > 0; i++) {
+			currentHost = hosts.get(nextToPick + i); 
+			if(!currentHost.equals(host)) { // TODO check host load
+				backupHosts.add(currentHost.address);
+				hostToPick --;
+			}
+		}
+		return backupHosts;
 	}
 
 	/**

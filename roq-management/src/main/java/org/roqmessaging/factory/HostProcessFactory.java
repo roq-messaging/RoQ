@@ -105,10 +105,7 @@ public class HostProcessFactory {
 				frontPort = new Integer((splitAddress[splitAddress.length - 1]));
 			} else {
 				// 1. Get the number of installed queues on this host
-				int number = 0;
-				for (String q_i : serverState.getAllExchanges()) {
-					number += serverState.getExchanges(q_i).size();
-				}
+				int number = serverState.getExchangesPortMultiplicator();
 				// 2. Assigns a front port and a back port
 				logger.debug(" This host contains already " + number + " Exchanges");
 				//x4 = Front, back, Shutdown, prod request
@@ -147,7 +144,7 @@ public class HostProcessFactory {
 	 * @return the monitor port
 	 */
 	private int getMonitorPort() {
-		return (this.properties.getMonitorBasePort() + serverState.getAllMonitors().size() * 8); 
+		return (this.properties.getMonitorBasePort() + serverState.getPortMultiplicator() * 8); 
 		// TODO * 8 is too much, but the previous value assigned to the stat monitor was 
 		// always already used...
 	}
@@ -158,7 +155,7 @@ public class HostProcessFactory {
 	private int getStatMonitorPort() {
 		//By for because the stat monitor starts on port, its shutdown on port+1, the scaling process on 
 		//port+2 and its shuto down process on port +3.
-		return (this.properties.getStatMonitorBasePort() + serverState.getAllMonitors().size()*4);
+		return (this.properties.getStatMonitorBasePort() + serverState.getPortMultiplicator() * 4);
 	}
 
 	/**
@@ -173,7 +170,7 @@ public class HostProcessFactory {
 	 * @return the monitor address as tcp://IP:port of the newly created monitor
 	 *         +"," tcp://IP: statport
 	 */
-	public String startNewMonitorProcess(String qName) {
+	public String startNewMonitorProcess(String qName, boolean isMaster) {
 			int statPort, frontPort;
 			String monitorAddress, statAddress;
 		try {
@@ -201,12 +198,14 @@ public class HostProcessFactory {
 			// argument);
 			ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
 					+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),	MonitorLauncher.class.getCanonicalName(), new Integer(frontPort).toString(),
-					new Integer(statPort).toString(), qName, new Integer(this.properties.getStatPeriod()).toString(), this.properties.getLocalPath(), new Long( this.properties.getMonitorHbPeriod()).toString());
+					new Integer(statPort).toString(), qName, new Integer(this.properties.getStatPeriod()).toString(), this.properties.getLocalPath(), 
+					new Long( this.properties.getMonitorHbPeriod()).toString(), new Boolean(isMaster).toString());
 			logger.debug("Starting: " + pb.command());
 			final Process process = pb.start();
 			// Start process monitoring
 			HashMap<String, String> keys = new HashMap<String, String>();
 			keys.put("qName", qName);
+			keys.put("isMaster", new Boolean(isMaster).toString());
 			processMonitor.addprocess(Integer.toString(frontPort), process, RoQConstantInternal.PROCESS_MONITOR, keys);
 			pipe(process.getErrorStream(), System.err);
 			pipe(process.getInputStream(), System.out);
@@ -216,8 +215,13 @@ public class HostProcessFactory {
 		}
 		
 		//add the monitor configuration
-		serverState.putMonitor(qName, monitorAddress);
-		serverState.putStat(qName, statAddress);
+		if (isMaster) {
+			serverState.putMonitor(qName, monitorAddress);
+			serverState.putStat(qName, statAddress);
+		} else {
+			serverState.putSTBYMonitor(qName, monitorAddress);
+			serverState.putSTBYStat(qName, statAddress);
+		}
 		return monitorAddress + "," + statAddress;
 	}
 	

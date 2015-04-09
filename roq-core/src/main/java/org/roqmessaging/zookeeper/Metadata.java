@@ -1,4 +1,4 @@
-package org.roqmessaging.management.zookeeper;
+package org.roqmessaging.zookeeper;
 
 public class Metadata {
 	public static class HCM {
@@ -63,6 +63,29 @@ public class Metadata {
 			if (getClass() != obj.getClass())
 				return false;
 			Monitor other = (Monitor) obj;
+			if (address == null) {
+				if (other.address != null)
+					return false;
+			} else if (!address.equals(other.address))
+				return false;
+			return true;
+		}
+	}
+	
+	public static class Exchange {
+		public String address;
+		public Exchange(String address) {
+			this.address = address;
+		}
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Exchange other = (Exchange) obj;
 			if (address == null) {
 				if (other.address != null)
 					return false;

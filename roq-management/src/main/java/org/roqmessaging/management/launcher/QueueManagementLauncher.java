@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.management.launcher;
 
+import java.util.ArrayList;
 import java.util.Scanner;
 
 import org.roqmessaging.core.utils.RoQUtils;
@@ -52,7 +53,7 @@ public class QueueManagementLauncher {
 		if(args[1].equalsIgnoreCase("add")){
 			System.out.println("Do you confirm to create the queue "+ args[2] +" (GCM @"+ args[0]+ ") [Y,N] ?");
 			if(checkYes(scan))
-				factory.createQueue(args[2], RoQUtils.getInstance().getLocalIP(), false);
+				factory.createQueue(args[2], RoQUtils.getInstance().getLocalIP(), new ArrayList<String>(), false);
 		}else{
 			if(args[1].equalsIgnoreCase("del")){
 				System.out.println("Do you confirm to remove the queue "+ args[2] +" (GCM @"+ args[0]+ ")[Y,N] ?");

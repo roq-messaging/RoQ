@@ -45,7 +45,7 @@ public class FileConfigurationReader {
 			configDao.setPeriod(config.getInt("period"));
 			configDao.sethcmTIMEOUT(config.getInt("hcmTIMEOUT"));
 			configDao.setFormatDB(config.getBoolean("formatDB"));
-			configDao.hasCloudConfiguration(config.getBoolean("hasCloudConfiguration"));
+			configDao.setReplicationFactor(config.getInt("monitor.replication.factor"));
 			// initialize the ports used by the GCM
 			configDao.ports.setBasePort(config.getInt("ports.base"));
 			// intialize the zookeeper configuration
