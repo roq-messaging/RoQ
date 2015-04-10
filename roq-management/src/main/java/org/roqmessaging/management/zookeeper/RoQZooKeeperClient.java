@@ -16,6 +16,7 @@ import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.zookeeper.Metadata;
+import org.roqmessaging.zookeeper.Metadata.Monitor;
 import org.roqmessaging.zookeeper.Metadata.Queue;
 import org.roqmessaging.zookeeper.RoQZKHelpers;
 import org.roqmessaging.zookeeper.RoQZooKeeper;
@@ -49,9 +50,13 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	public void closeGCM() throws IOException {
 		if (cache != null)
 			cache.close();
+		closeServiceDiscovery();
+		super.close();
+	}
+	
+	public void closeServiceDiscovery() throws IOException {
 		if (serviceDiscovery != null)
 			serviceDiscovery.close();
-		super.close();
 	}
 	
 	/**
@@ -75,7 +80,7 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		serviceDiscovery = ServiceDiscoveryBuilder.builder(HostDetails.class).client(client).basePath(path).serializer(serializer).build();
 		serviceDiscovery.start();
 		cache = serviceDiscovery.serviceCacheBuilder().name("HCM").build();
-		cache.addListener(new HcmListener());
+		cache.addListener(new HcmListener(this));
 		cache.start();
 	}
 	
@@ -85,9 +90,11 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	public void initZkClusterNodes() {
 		String path = RoQZKHelpers.makePath(cfg.znode_queues);
 		RoQZKHelpers.createZNodeAndParents(client, path);
-		path = RoQZKHelpers.makePath(cfg.znode_queueTransactions);
+		path = RoQZKHelpers.makePath(cfg.znode_queue_transactions);
 		RoQZKHelpers.createZNodeAndParents(client, path);
-		path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions);
+		path = RoQZKHelpers.makePath(cfg.znode_exchange_transactions);
+		RoQZKHelpers.createZNodeAndParents(client, path);
+		path = RoQZKHelpers.makePath(cfg.znode_hcm_remove_transactions);
 		RoQZKHelpers.createZNodeAndParents(client, path);
 	}
 	
@@ -194,25 +201,14 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	 */
 	public void registerHCM(HCM hcm) throws Exception {
 		// Check whether the HCM is not register
-		List<HCM> hcms = getHCMList();
-		boolean duplicata = false;
-		for (HCM hcmTemp : hcms) {
-			if (hcmTemp.equals(hcm)) {
-				duplicata = true;
-			}
-		}
-		
-		// We cannot duplicate the same hcm in the discovery service
-		if (!duplicata) {
-			log.info("Registering hcm with address: " + hcm.address);
-			instance = ServiceInstance.<HostDetails>builder()
-					.name("HCM").payload(new HostDetails(hcm.address)).build();
-			String path = RoQZKHelpers.makePath(cfg.znode_hcm);
-			JsonInstanceSerializer<HostDetails> serializer = new JsonInstanceSerializer<HostDetails>(HostDetails.class);
-			serviceDiscovery = ServiceDiscoveryBuilder.builder(HostDetails.class)
-					.client(client).basePath(path).serializer(serializer).thisInstance(instance).build();
-			serviceDiscovery.start();
-		}
+		log.info("Registering hcm with address: " + hcm.address);
+		instance = ServiceInstance.<HostDetails>builder()
+				.name("HCM").id(hcm.zkNodeString()).payload(new HostDetails(hcm.address)).build();
+		String path = RoQZKHelpers.makePath(cfg.znode_hcm);
+		JsonInstanceSerializer<HostDetails> serializer = new JsonInstanceSerializer<HostDetails>(HostDetails.class);
+		serviceDiscovery = ServiceDiscoveryBuilder.builder(HostDetails.class)
+				.client(client).basePath(path).serializer(serializer).thisInstance(instance).build();
+		serviceDiscovery.start();
 	}
 	
 	/**
@@ -226,13 +222,44 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		return RoQZKHelpers.zNodeExists(client, getZKPath(queue));
 	}
 	
+	
+	/**
+	 * This method create a transaction for the queue creation in ZK
+	 * @param queueName
+	 */
+	public void createHcmRemoveTransaction (Metadata.HCM hcm) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_hcm_remove_transactions, hcm.zkNodeString());
+		RoQZKHelpers.createZNode(client, path, hcm.address);
+	}
+	
+	/**
+	 * This method fetch if a transaction exists for the queue
+	 * @param queueName
+	 */
+	public String hcmRemoveTransactionExists (Metadata.HCM  hcm) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_hcm_remove_transactions, hcm.zkNodeString());
+		return RoQZKHelpers.getDataString(client, path);
+	}
+	
+	/**
+	 * This method remove the transaction node when the transaction has been completed
+	 * @param queueName
+	 */
+	public void removeHcmRemoveTransaction (Metadata.HCM hcm) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_hcm_remove_transactions, hcm.zkNodeString());
+		RoQZKHelpers.deleteZNode(client, path);
+	}
+	
 	/**
 	 * This method create a transaction for the queue creation in ZK
 	 * @param queueName
 	 */
 	public void createQTransaction (String queueName, String host, ArrayList<String> backupHosts) {
 		log.info("");
-		String path = RoQZKHelpers.makePath(cfg.znode_queueTransactions, queueName);
+		String path = RoQZKHelpers.makePath(cfg.znode_queue_transactions, queueName);
 		String payload = host;
 		for (int i = 0; i < backupHosts.size(); i++) {
 			payload += "," + backupHosts.get(i);
@@ -247,7 +274,7 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	 */
 	public String qTransactionExists (String queueName) {
 		log.info("");
-		String path = RoQZKHelpers.makePath(cfg.znode_queueTransactions, queueName);
+		String path = RoQZKHelpers.makePath(cfg.znode_queue_transactions, queueName);
 		return RoQZKHelpers.getDataString(client, path);
 	}
 	
@@ -257,7 +284,7 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	 */
 	public void removeQTransaction (String queueName) {
 		log.info("");
-		String path = RoQZKHelpers.makePath(cfg.znode_queueTransactions, queueName);
+		String path = RoQZKHelpers.makePath(cfg.znode_queue_transactions, queueName);
 		RoQZKHelpers.deleteZNode(client, path);
 	}
 	
@@ -267,7 +294,7 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	 */
 	public void createExchangeTransaction (String transID, String targetHost) {
 		log.info("");
-		String path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions, transID);
+		String path = RoQZKHelpers.makePath(cfg.znode_exchange_transactions, transID);
 		RoQZKHelpers.createZNode(client, path, targetHost);
 	}
 	
@@ -277,7 +304,7 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	 */
 	public String exchangeTransactionExists (String transID) {
 		log.info("");
-		String path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions, transID);
+		String path = RoQZKHelpers.makePath(cfg.znode_exchange_transactions, transID);
 		return RoQZKHelpers.getDataString(client, path);
 	}
 	
@@ -287,15 +314,14 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	 */
 	public void removeExchangeTransaction (String transID) {
 		log.info("");
-		String path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions, transID);
+		String path = RoQZKHelpers.makePath(cfg.znode_exchange_transactions, transID);
 		RoQZKHelpers.deleteZNode(client, path);
 	}
 	
 	public void createQueue(Metadata.Queue queue, Metadata.HCM hcm, 
 			Metadata.Monitor monitor, Metadata.StatMonitor statMonitor, 
-			List<Metadata.Monitor> monitorBU) {
+			List<Metadata.Monitor> monitorBU, List<Metadata.HCM> monitorBUHost) {
 		log.info("");
-
 		
 		String queuePath = getZKPath(queue);
 		String monitorPath = RoQZKHelpers.makePath(queuePath, "monitor");
@@ -307,13 +333,20 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		RoQZKHelpers.createQueueZNodes(client, queuePath, monitorPath, 
 				monitor.address, statMonitorPath, statMonitor.address, 
 				hcmPath, hcm.address, scalingPath, 
-				backupMonitorsPath, monitorBU);
+				backupMonitorsPath, monitorBU, monitorBUHost);
 	}
 	
 	public void removeQueue(Metadata.Queue queue) {
 		log.info("");
 		RoQZKHelpers.deleteZNodeAndChildren(client, getZKPath(queue));
 	}
+	
+	public Metadata.HCM getBuMonitorHostAddress(Queue queue, Monitor monitor) {
+		String path = RoQZKHelpers.makePath(getZKPath(queue), "monitorBU", monitor.zkNodeString());
+		List<String> children = RoQZKHelpers.getChildren(client, path);
+		path = RoQZKHelpers.makePath(getZKPath(queue), "monitorBU", monitor.zkNodeString(), children.get(0));
+		return new Metadata.HCM(RoQZKHelpers.getDataString(client, path));
+	}	
 	
 	/**
 	 * @param queue
@@ -464,11 +497,12 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 
 	public ArrayList<Metadata.Monitor> getBackUpMonitors(Queue queue) {
 		log.info("");
-		String[] addresses = new String(RoQZKHelpers.getData(client,  RoQZKHelpers.makePath(getZKPath(queue), "monitorBU"))).split(",");
+		List<String> addresses = RoQZKHelpers.getChildren(client, RoQZKHelpers.makePath(getZKPath(queue), "monitorBU"));
 		ArrayList<Metadata.Monitor> monitors = new ArrayList<Metadata.Monitor>();
 		for (String address : addresses) {
-			monitors.add(new Metadata.Monitor(address));
+			monitors.add(new Metadata.Monitor(RoQZKHelpers.getDataString(client, RoQZKHelpers.makePath(getZKPath(queue), "monitorBU", address))));
 		}
 		return monitors;
-	}	
+	}
+
 }

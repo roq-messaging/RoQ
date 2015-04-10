@@ -85,6 +85,33 @@ public class RoQQueueManager implements IRoQQueueManagement {
 	}
 	
 	@Override
+	public boolean createQueue(String queueName, String targetHost)
+			throws IllegalStateException, ConnectException {
+		// Open socket and init BSON request
+		BSONObject request = new BasicBSONObject();
+		request.put("QName", queueName);
+		request.put("Host", targetHost);
+		request.put("CMD", RoQConstant.BSON_CONFIG_CREATE_QUEUE);
+		// Send request
+		byte[] responseBytes = gcmConnection.sendRequest(BSON.encode(request), 5003);
+		// Get Response
+		BSONObject result = BSON.decode(responseBytes);
+		// Close socket
+		if ((Integer)result.get("RESULT") ==  RoQConstant.FAIL) {
+			logger.error("The queue creation for  " + queueName
+					+ " failed. Reason: " + ((String) result.get("COMMENT")));
+			throw  new IllegalStateException("The queue removal process failed @ Management Controller");
+		} else if ((Integer)result.get("RESULT") == RoQConstant.EXCHANGE_LOST){
+			logger.error("The queue creation for  " + queueName
+					+ " failed. Reason: " + "the leader has changed");
+			return false;
+		} else {
+			logger.info("Queue " + queueName + " has been created");
+			return true;
+		}
+	}
+	
+	@Override
 	/**
 	 * Remove a queue from the cluster
 	 * @param the name of the queue to remove

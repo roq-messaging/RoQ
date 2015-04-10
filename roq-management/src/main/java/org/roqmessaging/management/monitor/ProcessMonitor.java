@@ -100,7 +100,7 @@ public class ProcessMonitor implements Runnable {
 				processHbs.put(process ,(Long) localState.get("HB"));
 			}
 		} catch (IOException e) {
-			logger.error("Failed to read locState DB");
+			logger.error("Failed to read localState DB");
 		} finally {
 			processLock.unlock();
 		}
@@ -190,9 +190,16 @@ public class ProcessMonitor implements Runnable {
 				|| ((processes.get(processID).getType() == RoQConstantInternal.PROCESS_SCALING)
 							&& (current - processesHB.get(processID)) > properties.getScalingProcessTimeOut()))
 			{
-				logger.info("process: " + processID + " has timed out");
-				processesFailed.add(processID);
-				processesRunning.remove(processID);
+				if (processesHB.get(processID) == 0) {
+					logger.info("process: " + processID + " has been stopped by user" +
+							", stop the monitoring");
+					processesRunning.remove(processID);
+					processes.remove(processID);
+				} else {
+					logger.info("process: " + processID + " has timed out");
+					processesFailed.add(processID);
+					processesRunning.remove(processID);
+				}
 			} else {
 				logger.info("process: " + processID + " has sent hb");
 			}

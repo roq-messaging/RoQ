@@ -92,7 +92,6 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	public boolean subscribe() throws IllegalStateException, ConnectException {
 		logger.debug("Get the stat monitor address from the GCM");
 
-		
 		String monitorStatServer = addSubscriberToGCM();
 		if (monitorStatServer == null)
 			throw new IllegalStateException("monitor not found for KPI subscriber");

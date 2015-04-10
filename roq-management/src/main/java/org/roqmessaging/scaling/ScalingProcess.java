@@ -289,6 +289,13 @@ public class ScalingProcess extends KPISubscriber {
 				this.scalingConfig = serializer.unserializeConfig(pullListnerConfigSocket.recv(0));
 			}
 		}
+		try {
+			// 0 indicates that the process has been shutdown by the user & have not timed out
+			localState.put("HB", 0);
+		} catch (IOException e) {
+			logger.error("Failed to stop properly the process, it will be restarted...");
+			e.printStackTrace();
+		}
 		// Closing sockets
 		this.kpiSocket.setLinger(0);
 		this.pullListnerConfigSocket.setLinger(0);

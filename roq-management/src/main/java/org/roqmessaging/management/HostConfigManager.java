@@ -34,6 +34,7 @@ import org.roqmessaging.management.monitor.ProcessMonitor;
 import org.roqmessaging.management.server.state.HcmState;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperConfig;
+import org.roqmessaging.zookeeper.Metadata;
 import org.zeromq.ZMQ;
 
 /**
@@ -252,6 +253,20 @@ public class HostConfigManager implements Runnable, IStoppable {
 								(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + ", ").getBytes(), 0);
 					}
 					break;
+				case RoQConstant.CONFIG_REMOVE_STBY_MONITOR:
+					logger.debug("Recieveing remove Q request from a client ");
+					if (info.length == 2) {
+						String qName = info[1];
+						processFactory.removingSTBYMonitor(qName);
+						// Removing Q information
+						serverState.removeSTBYMonitor(qName);
+						this.clientReqSocket.send((Integer.toString(RoQConstant.OK) + ", ").getBytes(), 0);
+					} else {
+						logger.error("The remove queue request sent does not contain 2 part: ID, quName");
+						this.clientReqSocket.send(
+								(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + ", ").getBytes(), 0);
+					}
+					break;
 				case RoQConstant.CONFIG_START_STBY_MONITOR:
 					if (info.length == 2) {
 						String qName = info[1];
@@ -347,7 +362,6 @@ public class HostConfigManager implements Runnable, IStoppable {
 								(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + ", ").getBytes(), 0);
 					}
 					break;
-
 				case RoQConstant.CONFIG_CREATE_EXCHANGE:
 					logger.debug("Recieveing create XChange request from a client ");
 					if (info.length == 5) {
@@ -453,15 +467,15 @@ public class HostConfigManager implements Runnable, IStoppable {
 		if(useNif)Assert.assertNotNull(this.properties.getNetworkInterface());
 		String hcmAddress = (!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()));
 		// Register the ephemeral node on ZK
-		// zkClient.registerHCM(new Metadata.HCM(hcmAddress));
+		zkClient.registerHCM(new Metadata.HCM(hcmAddress));
 		// Send the notification to the GCM, the GCM will register a watcher on the ephemeral node
-		byte[] info = gcmConnection.sendRequest((new Integer(RoQConstant.CONFIG_ADD_HOST).toString()+"," + hcmAddress).getBytes(), 5000);
-		String result[] = (new String(info)).split(",");
-		int infoCode = Integer.parseInt(result[0]);
-		logger.debug("Start analysing info code = "+ infoCode);
-		if(infoCode != RoQConstant.OK){
-			throw new IllegalStateException("The global config manager cannot register us ..");
-		}
+//		byte[] info = gcmConnection.sendRequest((new Integer(RoQConstant.CONFIG_ADD_HOST).toString()+"," + hcmAddress).getBytes(), 5000);
+//		String result[] = (new String(info)).split(",");
+//		int infoCode = Integer.parseInt(result[0]);
+//		logger.debug("Start analysing info code = "+ infoCode);
+//		if(infoCode != RoQConstant.OK){
+//			throw new IllegalStateException("The global config manager cannot register us ..");
+//		}
 		logger.info("Registration process sucessfull");
 	}
 

@@ -73,6 +73,18 @@ public class RoQDockerTestCase {
 	}
 	
 	/**
+	 * Create a queue
+	 * @param qName the name of the queue
+	 * @param the address on which master host is installed
+	 * @throws IllegalStateException 
+	 * @throws ConnectException 
+	 * @throws Exception
+	 */
+	public static boolean initQueue(String qName, String targetAddress) throws ConnectException, IllegalStateException {
+		return queueManager.createQueue(qName, targetAddress);
+	}
+	
+	/**
 	 * Check if queue exists
 	 * @param qName the name of the queue
 	 * @throws Exception

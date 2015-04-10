@@ -15,6 +15,7 @@
 package org.roqmessaging.management;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -82,8 +83,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		logger.info("Queue creation process for queue: " + queueName + " on: " + targetAddress + " with " + monitorsBU.size() + " backup monitor(s)");
 		try {
 			this.lockCreateQ.lock();
-			if (!this.initialized)
-				this.refreshTopology();
+			this.refreshTopology();
 			if(queueAlreadyExists(queueName) && !recoveryMod) return -1 ; // The queue exists and was well created
 			if(!hostExists(targetAddress)) return -2; // HCM not exists	
 			//2. Sends the create event to the hostConfig manager thread
@@ -101,6 +101,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 				return -3; // Failure at the HCM
 			} else {
 				// Create the backup hosts
+				String monitorsBUString = "";
 				for (String buHost : monitorsBU) {
 					logger.info("Create a backup on: " + buHost);
 					if(!hostExists(targetAddress)) {
@@ -113,19 +114,19 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 					if (response == null) {
 						logger.info("HCM: " + buHost + " has timeout");
 						// return -6; // BACKUP HCM has timeout
-					} else if (Integer.parseInt(resultHost[0]) != RoQConstant.CONFIG_REQUEST_OK) {
-						logger.error("The backup monitor creation process for  " + queueName
-								+ " failed on: " + buHost);
-						// return -7; // Failure at the HCM
+					} else {
+						resultHost =new String(response).split(",");
+						if (Integer.parseInt(resultHost[0]) != RoQConstant.CONFIG_REQUEST_OK) {
+							logger.error("The backup monitor creation process for  " + queueName
+									+ " failed on: " + buHost);
+							// return -7; // Failure at the HCM
+						} else {
+							monitorsBUString += ",";
+							monitorsBUString += buHost + "," + resultHost[1];
+						}
 					}
+						
 				}
-				// Compose the monitors BackUp String
-				String monitorsBUString = "";
-				for (int i = 0; i < monitorsBU.size(); i++) {
-					monitorsBUString += ",";
-					monitorsBUString += monitorsBU;
-				}
-				
 				
 				logger.info("Created queue " + queueName + " @ " + resultHost[1]);
 				// 3.B. Create the entry in the global config
@@ -255,6 +256,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 						"The Q name is not registred in the local cache"));
 				return false;
 			}
+	
 			// 2. Get the socket of the host local manager
 			ZMQ.Socket hostManagerSocket = this.configurationState.getHostManagerMap().get(host);
 			if (hostManagerSocket == null) {
@@ -266,6 +268,23 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 			logger.debug("Sending remove queue request to host manager at " + host +" "+ hostManagerSocket.toString());
 			hostManagerSocket.send((Integer.toString(RoQConstant.CONFIG_REMOVE_QUEUE) + "," + queueName).getBytes(), 0);
 			logger.debug("Answer from the host config manager "+  new String(hostManagerSocket.recv(0)));
+
+			// 4. Remove standby monitors
+			List<String> buHost = this.configurationState.getQueueBUMonitorHostMap().get(queueName);
+			for (String backupHost : buHost) {
+				hostManagerSocket = this.configurationState.getHostManagerMap().get(backupHost);
+				if (hostManagerSocket == null) {
+					logger.error("The host manager socket is not registrated in the local cache for: " + backupHost,
+							new IllegalStateException("The Q host manager socke is not registred in the local cache"));
+					return false;
+				}
+				// 3. send the shutdown request
+				logger.debug("Sending remove queue request to host manager at " + host +" "+ hostManagerSocket.toString());
+				hostManagerSocket.send((Integer.toString(RoQConstant.CONFIG_REMOVE_STBY_MONITOR) + "," + queueName).getBytes(), 0);
+				logger.debug("Answer from the host config manager "+  new String(hostManagerSocket.recv(0)));
+			}
+			
+			// 5. Remove Metadata
 			removeQFromGlobalConfig(queueName);
 		} finally {
 			this.lockRemoveQ.unlock();
@@ -333,6 +352,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 								+ " failed on the global configuration server"));
 				return false;
 			}
+			
 		} finally {
 			this.lockRemoveQ.unlock();
 		}

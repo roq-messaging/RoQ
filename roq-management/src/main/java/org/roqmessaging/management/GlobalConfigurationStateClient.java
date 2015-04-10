@@ -95,6 +95,16 @@ public class GlobalConfigurationStateClient extends GlobalConfigurationState {
 			byte[] qConfiguration = globalConfigReq.recv(0);
 			queueMonitorStatMap = this.serializationUtils.deserializeObject(qConfiguration);
 		}
+		if (globalConfigReq.hasReceiveMore()) {
+			// The backup monitors for each logical queue is sent in the part 5
+			byte[] qConfiguration = globalConfigReq.recv(0);
+			queueBUMonitorMap = this.serializationUtils.deserializeObject(qConfiguration);
+		}
+		if (globalConfigReq.hasReceiveMore()) {
+			// The backup monitors hcm address for each logical queue is sent in the part 6
+			byte[] qConfiguration = globalConfigReq.recv(0);
+			queueBUMonitorHostMap = this.serializationUtils.deserializeObject(qConfiguration);
+		}
 		logger.info("Getting configuration with " + hostManagers.size() + " Host managers and "
 				+ queueMonitorMap.size() + " queues");
 		updateLocalConfiguration(hostManagers);

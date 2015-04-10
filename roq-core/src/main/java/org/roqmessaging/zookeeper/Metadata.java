@@ -7,6 +7,11 @@ public class Metadata {
 		public HCM(String address) {
 			this.address = address;
 		}
+		
+		public String zkNodeString() {
+			return address.replace("/", "").replace(":", "");
+		}
+		
 		@Override
 		public boolean equals(Object obj) {
 			if (this == obj)
@@ -54,6 +59,11 @@ public class Metadata {
 		public Monitor(String address) {
 			this.address = address;
 		}
+		
+		public String zkNodeString() {
+			return address.replace("/", "").replace(":", "");
+		}
+		
 		@Override
 		public boolean equals(Object obj) {
 			if (this == obj)

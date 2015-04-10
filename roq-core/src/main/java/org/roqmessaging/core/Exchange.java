@@ -244,6 +244,13 @@ public class Exchange implements Runnable, IStoppable {
 				}
 			}
 		}
+		try {
+			// 0 indicates that the process has been shutdown by the user & have not timed out
+			localState.put("HB", 0);
+		} catch (IOException e) {
+			logger.error("Failed to stop properly the process, it will be restarted...");
+			e.printStackTrace();
+		}
 		closeSockets();
 		exchStatTimer.shutDown();
 		heartBeatTimer.shutDown();

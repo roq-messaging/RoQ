@@ -325,6 +325,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			Map<String, String> queueMonitorMap = new HashMap<String, String>();
 			Map<String, String> queueStatMonitorMap = new HashMap<String, String>();
 			Map<String, String> queueHCMMap = new HashMap<String, String>();
+			Map<String, List<String>> queueBUMonitorMap = new HashMap<String, List<String>>();
+			Map<String, List<String>> queueBUMonitorHCMMap = new HashMap<String, List<String>>();
 
 			// This is very ugly because for the moment the client does not cache anything,
 			// meaning that each call represents a ZooKeeper transaction.
@@ -341,7 +343,16 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				Metadata.Monitor m = zk.getMonitor(queue);
 				Metadata.StatMonitor sm = zk.getStatMonitor(queue);
 				Metadata.HCM hcm = zk.getHCM(queue);
-
+				
+				ArrayList<Metadata.Monitor> buList = zk.getBackUpMonitors(queue);
+				List<String> monitorsSTBY = new ArrayList<String>();
+				List<String> monitorsHostSTBY = new ArrayList<String>();
+				for (Metadata.Monitor monitor : buList) {
+					monitorsSTBY.add(monitor.address);
+					monitorsHostSTBY.add(zk.getBuMonitorHostAddress(queue, monitor).address);
+				}
+				queueBUMonitorHCMMap.put(queue.name, monitorsHostSTBY);
+				queueBUMonitorMap.put(queue.name, monitorsSTBY);
 				queueMonitorMap.put(queue.name, m.address);
 				queueStatMonitorMap.put(queue.name, sm.address);
 				queueHCMMap.put(queue.name, hcm.address);
@@ -350,7 +361,10 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			this.clientReqSocket.send(this.serializationUtils.serialiseObject(hcmStringList),       ZMQ.SNDMORE);
 			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueMonitorMap),     ZMQ.SNDMORE);
 			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueHCMMap),         ZMQ.SNDMORE);
-			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueStatMonitorMap), 0);
+			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueStatMonitorMap), ZMQ.SNDMORE);
+			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueBUMonitorMap), 	ZMQ.SNDMORE);
+			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueBUMonitorHCMMap), 	0);
+			
 			
 			logger.debug("Sending back the topology - list of local host");
 			break;
@@ -408,11 +422,14 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				String statMonitorAddress = info[3];
 				String hcmAddress = info[4];
 				ArrayList<String> monitorsBU = new ArrayList<String>();
-				for (int i = 5; i < info.length; i++) {
-					monitorsBU.add(info[i]);
+				ArrayList<String> monitorsBUHost = new ArrayList<String>();
+				
+				for (int i = 5; i < info.length; i+=2) {
+					monitorsBUHost.add(info[i]);
+					monitorsBU.add(info[i+1]);
 				}
 				// register the queue
-				addQueue(queueName, monitorAddress, statMonitorAddress, hcmAddress, monitorsBU);
+				addQueue(queueName, monitorAddress, statMonitorAddress, hcmAddress, monitorsBU, monitorsBUHost);
 				this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_REQUEST_OK).getBytes(), 0);
 			}else{
 					logger.error("The create queue request sent does not contain 3 part: ID, quName, Monitor host");
@@ -503,17 +520,21 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * @param statMonitorAddress address of the queue's StatisticMonitor in the format "tcp://x.y.z:port"
 	 * @param hcmAddress ip address of the host that handles the queue 
 	 */
-	public void addQueue(String queueName, String monitorAddress, String statMonitorAddress, String hcmAddress, List<String> monitorsBU) {
+	public void addQueue(String queueName, String monitorAddress, String statMonitorAddress, String hcmAddress, List<String> monitorsBU,  List<String> monitorsBUHost) {
 		Metadata.Queue queue = new Metadata.Queue(queueName);
 		Metadata.Monitor monitor = new Metadata.Monitor(monitorAddress);
 		Metadata.StatMonitor statMonitor = new Metadata.StatMonitor(statMonitorAddress);
 		Metadata.HCM hcm = new Metadata.HCM(hcmAddress);
 		ArrayList<Metadata.Monitor> monitorsBUMeta = new ArrayList<Metadata.Monitor>();
+		ArrayList<Metadata.HCM> monitorsBUHostMeta = new ArrayList<Metadata.HCM>();
 		for (String monitorBU : monitorsBU) {
 			monitorsBUMeta.add(new Metadata.Monitor(monitorBU));
 		}
+		for (String monitorBUHost : monitorsBUHost) {
+			monitorsBUHostMeta.add(new Metadata.HCM(monitorBUHost));
+		}
 		
-		zk.createQueue(queue, hcm, monitor, statMonitor, monitorsBUMeta);
+		zk.createQueue(queue, hcm, monitor, statMonitor, monitorsBUMeta, monitorsBUHostMeta);
 		setQueueStarted(queueName);
 	}
 
@@ -548,7 +569,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * @throws Exception 
 	 */
 	public void removeHostManager(String host) throws Exception {
-		zk.removeHCM(new Metadata.HCM(host));
+		Metadata.HCM hcm = new Metadata.HCM(host);
+		zk.createHcmRemoveTransaction(hcm);
+		zk.removeHCM(hcm);
 	}
 
 
@@ -578,7 +601,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * @throws Exception 
 	 */
 	public void addHostManager(String host) throws Exception{
-		zk.registerHCM(new Metadata.HCM(host));
+		// zk.registerHCM(new Metadata.HCM(host));
 	}
 	
 

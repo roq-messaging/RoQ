@@ -255,6 +255,32 @@ public class RoQDockerLauncher {
 		}
 	}
 	
+	public void stopHCMByID(String id) throws IOException, DockerException, InterruptedException {
+		logger.info("Writing HCM container log");
+		File hcmFile = new File(HCMLog);
+		FileWriter writer = new FileWriter(hcmFile, true);
+		ContainerInfo info;
+		LogStream stream;
+		info = client.inspectContainer(id);
+		stream = client.logs(info.id(), STDOUT, STDERR);
+		writer.append(stream.readFully());
+		writer.append("\n\n\n ---------------------------------- \n\n\n");
+		writer.close();
+		
+		logger.info("Stopping HCM container: " + id);
+		// Kill container
+		client.stopContainer(id, 0);
+		// Remove container
+		client.removeContainer(id);
+		
+		// Remove the HCM from the list
+		Iterator<String> iter = HCMList.iterator();
+		while (iter.hasNext()) {
+			if (iter.next().equals(id))
+				iter.remove();
+		}
+	}
+	
 	/**
 	 * Write the logs of the containers (GCM and HCM)
 	 * in files
@@ -317,17 +343,17 @@ public class RoQDockerLauncher {
 			// Kill container
 			client.stopContainer(id, 0);
 			// Remove container
-			// client.removeContainer(id);
+			client.removeContainer(id);
 		}
 		for (String id : GCMList) {
 			// Kill container
 			client.stopContainer(id, 0);
 			// Remove container
-			// client.removeContainer(id);
+			client.removeContainer(id);
 		}
 		for (String id : ZKList) {
 			client.stopContainer(id, 0);
-			// client.removeContainer(id);
+			client.removeContainer(id);
 		}
 		client.close();
 	}
@@ -426,4 +452,5 @@ public class RoQDockerLauncher {
 		}
 		return list;
 	}
+
 }

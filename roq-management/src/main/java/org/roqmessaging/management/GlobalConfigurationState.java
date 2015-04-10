@@ -16,6 +16,7 @@ package org.roqmessaging.management;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.zeromq.ZMQ;
@@ -37,8 +38,10 @@ public class GlobalConfigurationState {
 	//QName, stat monitor address server (ready to connect!)
 	protected HashMap<String, String> queueMonitorStatMap = null;
 	//Configuration data: list of host manager (1 per RoQ Host)
-	private ArrayList<String> hostManagerAddresses = null; 
-	
+	protected ArrayList<String> hostManagerAddresses = null;
+	//QName, stat monitor address server (ready to connect!)
+	protected HashMap<String, List<String>> queueBUMonitorMap = null;
+	protected HashMap<String, List<String>> queueBUMonitorHostMap = null;
 	//utils
 	protected RoQSerializationUtils serializationUtils=null;
 
@@ -52,6 +55,8 @@ public class GlobalConfigurationState {
 		this.hostManagerMap = new HashMap<String, ZMQ.Socket>();
 		this.queueHostLocation = new HashMap<String, String>();
 		this.queueMonitorMap = new HashMap<String, String>();
+		this.queueBUMonitorMap = new HashMap<String, List<String>>();
+		this.queueBUMonitorHostMap = new HashMap<String, List<String>>();
 		this.queueMonitorStatMap = new HashMap<String, String>();
 		this.hostManagerAddresses = new ArrayList<String>();
 	}
@@ -110,6 +115,34 @@ public class GlobalConfigurationState {
 	 */
 	public void setQueueMonitorStatMap(HashMap<String, String> queueMonitorStatMap) {
 		this.queueMonitorStatMap = queueMonitorStatMap;
+	}
+	
+	/**
+	 * @return the queueMonitorStatMap
+	 */
+	public HashMap<String, List<String>> getQueueBUMonitorMap() {
+		return queueBUMonitorMap;
+	}
+
+	/**
+	 * @param queueMonitorStatMap the queueMonitorStatMap to set
+	 */
+	public void setQueueBUMonitorMap(HashMap<String, List<String>> queueBUMonitorMap) {
+		this.queueBUMonitorMap = queueBUMonitorMap;
+	}
+	
+	/**
+	 * @return the queueMonitorStatMap
+	 */
+	public HashMap<String, List<String>> getQueueBUMonitorHostMap() {
+		return queueBUMonitorHostMap;
+	}
+
+	/**
+	 * @param queueMonitorStatMap the queueMonitorStatMap to set
+	 */
+	public void setQueueBUMonitorHostMap(HashMap<String, List<String>> queueBUMonitorHostMap) {
+		this.queueBUMonitorHostMap = queueBUMonitorHostMap;
 	}
 
 	/**

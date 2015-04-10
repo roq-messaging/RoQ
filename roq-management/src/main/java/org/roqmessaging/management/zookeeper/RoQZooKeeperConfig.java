@@ -16,8 +16,10 @@ public class RoQZooKeeperConfig extends RoQZKSimpleConfig{
 	// Path is thus /"RoQ"/"queues"/queue/"scaling"
 	public String znode_scaling = "scaling";
 	// Path to transaction node for queues
-	public String znode_queueTransactions = "queueTransactions";
+	public String znode_queue_transactions = "queueTransactions";
+	
+	public String znode_hcm_remove_transactions = "hcmRMTransactions";
 	// Path to transaction node for exchanges
-	public String znode_exchangeTransactions = "xchangeTransactions";
+	public String znode_exchange_transactions = "xchangeTransactions";
 	
 }

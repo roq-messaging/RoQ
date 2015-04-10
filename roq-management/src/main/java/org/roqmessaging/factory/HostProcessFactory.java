@@ -75,6 +75,26 @@ public class HostProcessFactory {
 			this.lockRemoveQ.unlock();
 		}
 	}
+	
+	public void removingSTBYMonitor(String qName) {
+		try {
+			this.lockRemoveQ.lock();
+			logger.debug("Removing STBY monitor  " + qName);
+			String monitorAddress = serverState.getSTBYMonitor(qName);
+			// The address is the address of the base monitor, we need to
+			// extract
+			// the port and make +5
+			// to get the shutdown monitor thread
+			int basePort = RoQSerializationUtils.extractBasePort(monitorAddress);
+			String portOff = monitorAddress.substring(0, monitorAddress.length() - "xxxx".length());
+			logger.info("Sending Remove Q request to " + portOff + (basePort + 5));
+			// 2. Send the remove message to the monitor
+			ShutDownSender shutDownSender = new ShutDownSender(portOff + (basePort + 5));
+			shutDownSender.shutdown();
+		} finally {
+			this.lockRemoveQ.unlock();
+		}
+	}
 
 
 	/**
@@ -174,9 +194,14 @@ public class HostProcessFactory {
 			int statPort, frontPort;
 			String monitorAddress, statAddress;
 		try {
-			if (serverState.MonitorExists(qName)) {
-				monitorAddress = serverState.getMonitor(qName);
-				statAddress = serverState.getStat(qName);
+			if (serverState.MonitorExists(qName) || serverState.MonitorSTBYExists(qName)) {
+				if (serverState.MonitorExists(qName)) {
+					monitorAddress = serverState.getMonitor(qName);
+					statAddress = serverState.getStat(qName);
+				} else {
+					monitorAddress = serverState.getSTBYMonitor(qName);
+					statAddress = serverState.getSTBYStat(qName);
+				}
 				String[] splitAddress = monitorAddress.split(":");
 				frontPort = new Integer((splitAddress[splitAddress.length - 1]));
 				splitAddress = statAddress.split(":");

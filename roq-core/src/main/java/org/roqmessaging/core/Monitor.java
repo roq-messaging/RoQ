@@ -356,21 +356,26 @@ public class Monitor implements Runnable, IStoppable {
 		items.register(brokerSub);//0
 		items.register(initRep);//1
 
-		logger.info("Monitor started");
+		logger.info("Monitor started isMaster: " + master);
 		long lastPublish = System.currentTimeMillis();
 		lastHb = Time.currentTimeMillis() - hbPeriod;
 
+		
+		
 		// The Monitor active/backup mechanism
 		// Remark: Once master we never becomes backup again
 		while (this.active && !this.master) {
+			HCMHeartbeat();
 			items.poll(500);
 			if (items.pollin(0)) { // Info from Exchange
-				HCMHeartbeat();
-				String info[] = new String(brokerSub.recv(0)).split(",");
-				// Check if the message indicates hat the monitor becomes the master
-				if (info[0].equals(RoQConstant.EVENT_MONITOR_FAILOVER)) {
-					this.master = true;
-					initRep.send((RoQConstant.EVENT_MONITOR_ACTIVATED + ", ").getBytes(), 0);
+				items.poll(100);
+				if (items.pollin(1)) {
+					String info[] = new String(brokerSub.recv(0)).split(",");
+					// Check if the message indicates hat the monitor becomes the master
+					if (info[0].equals(RoQConstant.EVENT_MONITOR_FAILOVER)) {
+						this.master = true;
+						initRep.send((RoQConstant.EVENT_MONITOR_ACTIVATED + ", ").getBytes(), 0);
+					}
 				}
 			}
 		}
@@ -397,7 +402,7 @@ public class Monitor implements Runnable, IStoppable {
 			//3. According to the channel bit used, we can define what kind of info is sent
 			items.poll(100);
 			if (items.pollin(0)) { // Info from Exchange
-								String info[] = new String(brokerSub.recv(0)).split(",");
+					String info[] = new String(brokerSub.recv(0)).split(",");
 					// Check if exchanges are present: this happens when the
 					// queue is shutting down a client is asking for a
 					// connection
@@ -488,6 +493,13 @@ public class Monitor implements Runnable, IStoppable {
 			}
 		}
 		// Exit running
+		try {
+			// 0 indicates that the process has been shutdown by the user & have not timed out
+			localState.put("HB", 0);
+		} catch (IOException e) {
+			logger.error("Failed to stop properly the process, it will be restarted...");
+			e.printStackTrace();
+		}
 		this.monitorStat.shutTdown();
 		this.knownHosts.clear();
 		reportTimer.cancel();

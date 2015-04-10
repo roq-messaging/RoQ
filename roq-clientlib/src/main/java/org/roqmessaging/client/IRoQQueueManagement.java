@@ -12,6 +12,15 @@ public interface IRoQQueueManagement {
 	public boolean createQueue(String queueName) throws IllegalStateException, ConnectException;
 	
 	/**
+	 * Creates a logical queue automatically.
+	 * @param queueName the queue name
+	 * @param the address on which master monitor is installed
+	 * @throws IllegalStateException if a queue already exist with this name, the name must be unique for 
+	 * the complete cluster.
+	 */
+	public boolean createQueue(String queueName, String targetHost) throws IllegalStateException, ConnectException;
+	
+	/**
 	 * Removes a logical queue.
 	 * @param queueName the name of the queue to remove.
 	 * @return true if we the deletion was OK.

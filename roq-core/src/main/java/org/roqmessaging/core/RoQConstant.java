@@ -232,6 +232,8 @@ public interface RoQConstant {
 	
 	public static int CONFIG_START_STBY_MONITOR = 1015;
 	
+	public static int CONFIG_REMOVE_STBY_MONITOR = 1016;
+	
 	
 	/**
 	 * Send to shut donw a {@linkplain IStoppable} element
