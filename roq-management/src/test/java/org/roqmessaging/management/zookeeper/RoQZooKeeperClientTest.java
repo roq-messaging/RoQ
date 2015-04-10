@@ -8,7 +8,6 @@ import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.management.config.internal.CloudConfig;
 import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
-import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
 import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 
 import junit.extensions.TestSetup;
