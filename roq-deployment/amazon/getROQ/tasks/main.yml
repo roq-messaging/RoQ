@@ -1,0 +1,19 @@
+- name: Pull ROQ from GIT repository
+  git: repo={{roq_repo}}
+       dest="{{roq_path}}"
+       version="{{roq_branch}}"
+       ssh_opts="-o StrictHostKeyChecking=no"
+
+- name: install ROQ
+  shell: "cd {{roq_path}}; mvn install -Dmaven.test.skip=true"
+  environment:
+    JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF8
+    JAVA_HOME: /usr/lib/jvm/java-7-openjdk-i386
+  when: ansible_architecture == "i386"
+
+- name: install ROQ
+  shell: "cd {{roq_path}}; mvn install -Dmaven.test.skip=true"
+  environment:
+    JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF8
+    JAVA_HOME: /usr/lib/jvm/java-7-openjdk-amd64
+  when: ansible_architecture == "x86_64"

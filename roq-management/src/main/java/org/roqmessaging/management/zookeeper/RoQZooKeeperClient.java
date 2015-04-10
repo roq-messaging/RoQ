@@ -224,7 +224,12 @@ public class RoQZooKeeperClient {
 		log.info("");
 		return RoQZKHelpers.getData(client, cfg.znode_cloud);
 	}
-	
+	public void setNameScalingConfig(String name, Metadata.Queue queue) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(getZKPath(queue), cfg.znode_scaling, "name");
+		RoQZKHelpers.createZNodeAndParents(client, path);
+		RoQZKHelpers.setData(client, path, name.getBytes());
+	}
 	public void setHostScalingConfig(byte[] scalingConfig, Metadata.Queue queue) {
 		log.info("");
 		setScalingConfig(scalingConfig, queue, "host");
@@ -236,6 +241,11 @@ public class RoQZooKeeperClient {
 	public void setQueueScalingConfig(byte[] scalingConfig, Metadata.Queue queue) {
 		log.info("");
 		setScalingConfig(scalingConfig, queue, "queue");
+	}
+	public byte[] getNameScalingConfig(Metadata.Queue queue) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(getZKPath(queue), cfg.znode_scaling, "name");
+		return RoQZKHelpers.getData(client, path);
 	}
 	public byte[] getHostScalingConfig(Metadata.Queue queue) {
 		return getScalingConfig(queue, "host");

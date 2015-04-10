@@ -330,6 +330,16 @@ public interface RoQConstant {
 	public static int BSON_CONFIG_GET_CLOUD_PROPERTIES = 2009;
 	
 	/**
+	 *  Request command that can be sent to the Configuration server
+	 *   Request: "2010, QName"
+	 *   Answer:
+	 *   RESULT, OK
+	 *   COMMENT, "The reason why it fails". This comment is not present in case of success.
+	 *   This request will create a queue in the cluster.
+	 */
+	public static int BSON_CONFIG_CREATE_QUEUE_AUTOMATICALLY = 2010;
+	
+	/**
 	 * Used by the management server to broadcast configuration.
 	 */
 	public static String BSON_QUEUES = "Queues";

@@ -4,86 +4,139 @@ RoQ Messaging
 RoQ, Elastically scalable MOM.
 Release-0.3.1 "Marina"
 
-Building & installing
----------------------
+Installation
+------------
 
-This procedure is meant for Ubuntu. It should be easy, though, to adapt it to another distribution or operating system. In this case we advise the reader to look at the https://github.com/roq-messaging/RoQ/wiki/Manual-installation.
+We cover different use cases in order to provide you the most suitable way to get your first experience with ROQ.
+You want to just get a try of ROQ ? Go to the 'demonstration' section, you will run ROQ on local docker containers which allow you to get your first experience with ROQ without disturbing your working environment.
+Do you want to contribute to ROQ ? Let's go to the 'local deployment' section in order to deploy ROQ on you machine in order to debug etc.
+Get reday for the production ? Go to the 'production' section, we provide you an automatic deployment script which allows to deploy ROQ on Amazon (we plan to support other environments, stay tunned).
 
-### Install RoQ
-Get the ```GimmeRoQ.sh``` script and use it to install RoQ.
+Demonstration
+-------------
 
-```sh
-wget https://github.com/roq-messaging/RoQ/raw/develop/GimmeRoQ.sh
-chmod +x GimmeRoQ.sh
-./GimmeRoQ.sh path/to/installation method
+This procedure allows you to run ROQ on your local machine. All the ROQ components and their dependencies will be installed on isolated docker containers. Therefore, your local system environment will be not impacted by the procedure.
+
+### Prerequisite (get these packages via yum or apt-get):
+- docker-io (tested with version 1.12)
+- sshpass
+- git
+- ansible (tested with version 1.8.4)
+
+/!\ Don't forget to run the docker service once the package installed. 
+/!\ If you have an issue when trying to running the docker service on fedora, looks at the following post: http://stackoverflow.com/questions/24288616/permission-denied-on-accessing-host-directory-in-docker
+
+### Start the demonstration
+
+Clone this git repository on your machine. And run the following bash script:
+```
+RoQ/roq-deployment/demo-start-subscriber.sh
+```
+Once that the terminal shows that the subscriber is connected, open a second terminal and runs this script: 
+```
+RoQ/roq-deployment/demo-start-publisher.sh
+```
+Once the publisher connected, write your messages in the second terminal, the messages will appear on the first one. ROQ is working !
+
+Now you can get the GCM local ip address thanks to the following command:
+```
+sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' ROQGCM
 ```
 
-Where "path/to/installation" : Path where you want to put your RoQ installation and "method" = CI or GIT
-CI : Get the latest nightly build of RoQ from the Continuous Integration server (http://dev.roq-messaging.org/ci/).
-GIT : Get the latest release of RoQ on GitHub", this option is recommended to contribute or browse the RoQ code.
+Take note of this address and use it with your own application to communicate with ROQ, see the tutorial to know how to use the ROQ API. You can stop the publisher and subscriber containers with these docker commands (They are not required to use ROQ with your application):
+```
+sudo docker stop ROQPUB
+sudo docker rm ROQPUB
+sudo docker stop ROQSUB
+sudo docker rm ROQSUB
+```
 
-We recommend to select CI. If you selected the GIT option, you will find examples of JUnit tests in the page https://github.com/roq-messaging/RoQ/wiki/Writing-&-executing-Tests.
+Finish ? Run this script to stop all the roq containers: 
+```
+RoQ/roq-deployment/demo-stop.sh
+```
+
+Hope that you enjoy ROQ !
+
+Local installation and local deployment
+---------------------------------------
+
+You are sure that Roq is a suitable solution for your system ? This section allows you to install the ROQ components and their dependencies on you local machine in order to contribute to ROQ or to customize it.
+The script is working for the following OS: Ubuntu (x86, x64), CentOS (x64), Fedora (x64).
+
+### Prerequisite (get these packages via yum or apt-get):
+- docker-io (tested with version 1.12)
+- sshpass
+- git
+- ansible (tested with version 1.8.4)
+
+Clone this git repository on your machine.
+
+### Install RoQ
+Run the following script (be sure that the prerequisite package have been installed):
+```
+RoQ/roq-deployment/development/install-roq.sh
+```
+
+### Start RoQ
+Once that the script has finished to install ROQ dependencies, run the following script:
+```
+RoQ/roq-deployment/development/restart-components.sh
+```
+
+This script is idempotent and can start and restart ROQ main processes (GCM and HCM). The Roq code in the repository will be reompiled before, to take into account your modifications.
+
+If you want to be sure that all the ROQ processes have been killed, run this script:
+```
+RoQ/roq-deployment/development/stop-roq.sh
+```
 
 The script will install:
+* Maven 2
 * Zeromq 3.X and its dependency
 * JZMQ 2.1
 * JDK 1.7
 
-### Install ZooKeeper
-Get the ```install-zk.sh``` script and use it to install ZooKeeper in the directory pointed to by the environment variable ROQ_ZK. It downloads a precompiled ZooKeeper package, extracts it into the desired directory and creates a default configuration file.
+Production
+----------
 
-```sh
-wget https://github.com/roq-messaging/RoQ/raw/develop/install-zk.sh
-chmod +x install-zk.sh
-./install-zk.sh $ROQ_ZK
+Ready for the deployment of your application in the cloud ? We provide an amazon script able to deploy a complete ROQ cluster automatically !
+
+### Prerequisite (get these packages via yum or apt-get):
+- ansible (tested with version 1.8.4)
+
+### Configuration step
+
+First, you must set environment variables to allow ansible to communicate with your Amazon account:
+Run the following commands in the shell:
+```
+export AWS_ACCESS_KEY_ID='YOU AMAZON ACCESS KEY'
+export AWS_SECRET_ACCESS_KEY='your AMAZON SECRET KEY'
+export ANSIBLE_HOSTS='YOUR PATH TO ROQ/roq-deployment/amazon/plugin/ec2.py'
+export export EC2_INI_PATH='YOUR PATH TO ROQ/roq-deployment/amazon/plugin/ec2.ini'
+```
+Second, Add you amazon ssh keys with ssh-add (the keys set must be created in amazon EC2).
+
+Finally, go into the following file:
+```
+roq-deployment/amazon/group_vars/all/vars.yml
+```
+And set the number of instances for each ROQ components.
+Don't forget to set the key_path var to the value of your amazon ssh pem key (the value must match with the key name that you get when running "ssh-add -L").
+
+### Deployment step
+
+You are ready to run your first ROQ cluster on amazon !
+Run the following script: 
+```
+ansible-playbook "PATH TO ROQ"/roq-deployment/ --skip-tags "demonstration"
 ```
 
-Edit the configuration file ```$ROQ_ZK/zookeeper/conf/zoo.cfg``` if necessary, then start a ZooKeeper instance.
-```sh
-$ROQ_ZK/zookeeper/bin/zkServer.sh start
-```
+Note: If you run several times this script, the instances number stay fixed to the values that you set in the config file.
 
-### Start RoQ
-Once RoQ has been installed from the CI server, a RoQ cluster can be started by launching two main components: (1) The Global Configuration Manager (GCM) and (2) the Host Configuration Manager (HCM). Then, each new host machine that must join the cluster just needs to start its own HCM. Note that you may need to edit the file ```roq/config/GCM.properties``` to provide the addresses and ports of the ZooKeeper cluster.
+Your cluster is ready !
 
-```sh
-cd roq/bin
-./startGCM.sh
-```
+Don't forget to terminate amazon instances through EC2 console to don't lost your credits.
 
-In other terminal you can start the host daemons (on each host of the cluster. In case of local installation, just start it on the same machine as the GCM):
-```sh
-cd roq/bin
-./startHost.sh
-```
-
-RoQ is running ! For creating a Queue, we can either create programatically a queue as described in https://github.com/roq-messaging/RoQ/wiki/Client-API or using a queue launcher:
-
-```java
-java -Djava.library.path=/usr/local/lib -Dlog4j.configuration="file:roq/config/log4j.properties" -cp roq/lib/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar org.roqmessaging.management.launcher.QueueManagementLauncher 127.0.0.1 add myqueue
-```
-
-Where the 127.0.0.1 (just an example) is the GCM address, the second argument can be "add" or "del" it specifies whether we need to create or remove a queue, and finally the last argument, "myqueue" here is the queue name we want to create. The queue is ready
-
-To stop the cluster:
-```sh
-# Stop RoQ components
-cd roq/bin
-./stopRoQ.sh HCM
-./stopRoQ.sh GCM
-
-# Stop ZooKeeper
-$ROQ_ZK/zookeeper/bin/zkServer.sh stop
-```
-
-To test the code locally on 1 VM, we have created a simple launcher which instantiates the complete RoQ stack. To start this class just open a terminal:
-
-```
- java -Djava.library.path=/usr/local/lib -cp roq-simulation-1.0-SNAPSHOT-jar-with-dependencies.jar org.roq.simulation.RoQAllLocalLauncher 
-```
-
-RoQ is shipped with a back-end for management. It is installed with the GimmeRoQ script and more information about usage of the CLI can be found on https://github.com/roq-messaging/roq-backend/blob/master/README.md.
-
-
-
-
+Hope that you enjoyed this straightforward tutorial that allows you to use ROQ !
+Trouble ? Contact me at vanmelle.benjamin@gmail.com

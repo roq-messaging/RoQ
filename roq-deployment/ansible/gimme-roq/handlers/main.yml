@@ -1,0 +1,5 @@
+- name: Restart zookeeper
+  service: name=zookeeper state=restarted enabled=yes
+
+- name: Restart zookeeper fedora
+  shell: "/bin/zookeeper/zookeeper/bin/zkServer.sh restart"

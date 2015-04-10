@@ -256,6 +256,34 @@ public class MngtController implements Runnable, IStoppable {
 							}
 							logger.debug("Create queue name = " + qName + " on " + host);
 							break;
+						case RoQConstant.BSON_CONFIG_CREATE_QUEUE_AUTOMATICALLY:
+							logger.debug("Create Q automatically request ...");
+							// Starting a queue
+							// Just create a queue on a host
+							if (!checkField(request, "QName")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>");
+								break;
+							}
+							// 1. Get the name
+							qName = (String) request.get("QName");
+							// Select a random host
+							// TODO Select the less loaded host
+							ArrayList<String> hostsList = getHosts();
+							hostsList = getHosts();
+							host = hostsList.get((int) Math.random() % hostsList.size());
+							if (hostsList.isEmpty()) {
+								sendReply_fail("ERROR when selecting a host, check logs of the logical queue factory");
+							} else {
+								// Just create queue the timer will update the
+								// management server configuration
+								if (!factory.createQueue(qName, host)) {
+									sendReply_fail("ERROR when starting  queue, check logs of the logical queue factory");
+								} else {
+									sendReply_ok("SUCCESS");
+								}
+								logger.debug("Create queue name = " + qName + " on " + host);
+							}
+							break;
 
 						case RoQConstant.BSON_CONFIG_STOP_QUEUE:
 							logger.debug("Stop queue Request");
@@ -312,6 +340,10 @@ public class MngtController implements Runnable, IStoppable {
 							config = new AutoScalingConfig();
 							queue = new Metadata.Queue(qName);
 							
+							temp = zk.getNameScalingConfig(queue);
+							if (temp != null) {
+								config.setName(new String(temp));
+							}
 							temp = zk.getHostScalingConfig(queue);
 							if (temp != null) {
 								config.hostRule = serializationUtils.deserializeObject(temp);
@@ -371,6 +403,9 @@ public class MngtController implements Runnable, IStoppable {
 							qName = (String) request.get("QName");
 							logger.debug("Adding autoscaling configuration for " + qName);
 							
+							// Set host config name
+							config.setName((String) request.get(RoQConstant.BSON_AUTOSCALING_CFG_NAME));
+							
 							// Decode host rule if it is present in the request
 							BSONObject hostRule = (BSONObject) request.get(RoQConstant.BSON_AUTOSCALING_HOST);
 							if (hostRule != null) {
@@ -385,7 +420,7 @@ public class MngtController implements Runnable, IStoppable {
 							if (exchangeRule != null) {
 								config.setXgRule(
 										new XchangeScalingRule(
-												((Integer) hostRule.get(RoQConstant.BSON_AUTOSCALING_XCHANGE_THR)).intValue(),
+												((Integer) exchangeRule.get(RoQConstant.BSON_AUTOSCALING_XCHANGE_THR)).intValue(),
 												0));
 								logger.debug("Xchange scaling rule : " + config.getXgRule().toString());
 							}
@@ -395,13 +430,14 @@ public class MngtController implements Runnable, IStoppable {
 							if (queueRule != null) {
 								config.setqRule(
 										new LogicalQScalingRule(
-												((Integer) hostRule.get(RoQConstant.BSON_AUTOSCALING_Q_PROD_EXCH)).intValue(),
-												((Integer) hostRule.get(RoQConstant.BSON_AUTOSCALING_Q_THR_EXCH)).intValue()));
+												((Integer) queueRule.get(RoQConstant.BSON_AUTOSCALING_Q_PROD_EXCH)).intValue(),
+												((Integer) queueRule.get(RoQConstant.BSON_AUTOSCALING_Q_THR_EXCH)).intValue()));
 								logger.debug("Queue scaling rule : " + config.getqRule().toString());
 							}
 							
 							// save scaling config to zookeeper
 							queue = new Metadata.Queue(qName);
+							zk.setNameScalingConfig(config.getName(), queue);
 							zk.setHostScalingConfig(serializationUtils.serialiseObject(config.hostRule), queue);
 							zk.setExchangeScalingConfig(serializationUtils.serialiseObject(config.xgRule), queue);
 							zk.setQueueScalingConfig(serializationUtils.serialiseObject(config.qRule), queue);

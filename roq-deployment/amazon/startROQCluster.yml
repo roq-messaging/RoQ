@@ -1,0 +1,32 @@
+- name: Provision EC2 instances for ROQ cluster
+  hosts: localhost
+  gather_facts: False
+  connection: local
+  roles: 
+    - { role: provision }
+
+- hosts: ZK
+  user: ubuntu
+  sudo: yes
+  roles:
+    - { role: ZK }
+
+- hosts: GCM
+  user: ubuntu
+  sudo: yes
+  roles:
+    - { role: getROQ }
+    - { role: GCM }
+
+- hosts: HCM
+  user: ubuntu
+  sudo: yes
+  roles:
+    - { role: getROQ }
+    - { role: HCM }
+
+- hosts: CLIENT
+  user: ubuntu
+  sudo: yes
+  roles:
+    - { role: getROQ }
