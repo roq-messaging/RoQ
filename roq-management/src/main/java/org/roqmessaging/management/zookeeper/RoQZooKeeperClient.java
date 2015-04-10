@@ -16,7 +16,6 @@ import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 import org.apache.log4j.Logger;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.zookeeper.Metadata;
-import org.roqmessaging.zookeeper.Metadata.Monitor;
 import org.roqmessaging.zookeeper.Metadata.Queue;
 import org.roqmessaging.zookeeper.RoQZKHelpers;
 import org.roqmessaging.zookeeper.RoQZooKeeper;
@@ -95,6 +94,8 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		path = RoQZKHelpers.makePath(cfg.znode_exchange_transactions);
 		RoQZKHelpers.createZNodeAndParents(client, path);
 		path = RoQZKHelpers.makePath(cfg.znode_hcm_remove_transactions);
+		RoQZKHelpers.createZNodeAndParents(client, path);
+		path = RoQZKHelpers.makePath(cfg.znode_hcm_state);
 		RoQZKHelpers.createZNodeAndParents(client, path);
 	}
 	
@@ -320,7 +321,7 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	
 	public void createQueue(Metadata.Queue queue, Metadata.HCM hcm, 
 			Metadata.Monitor monitor, Metadata.StatMonitor statMonitor, 
-			List<Metadata.Monitor> monitorBU, List<Metadata.HCM> monitorBUHost) {
+			List<Metadata.BackupMonitor> monitorBU) {
 		log.info("");
 		
 		String queuePath = getZKPath(queue);
@@ -333,7 +334,7 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		RoQZKHelpers.createQueueZNodes(client, queuePath, monitorPath, 
 				monitor.address, statMonitorPath, statMonitor.address, 
 				hcmPath, hcm.address, scalingPath, 
-				backupMonitorsPath, monitorBU, monitorBUHost);
+				backupMonitorsPath, monitorBU);
 	}
 	
 	public void removeQueue(Metadata.Queue queue) {
@@ -341,12 +342,6 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		RoQZKHelpers.deleteZNodeAndChildren(client, getZKPath(queue));
 	}
 	
-	public Metadata.HCM getBuMonitorHostAddress(Queue queue, Monitor monitor) {
-		String path = RoQZKHelpers.makePath(getZKPath(queue), "monitorBU", monitor.zkNodeString());
-		List<String> children = RoQZKHelpers.getChildren(client, path);
-		path = RoQZKHelpers.makePath(getZKPath(queue), "monitorBU", monitor.zkNodeString(), children.get(0));
-		return new Metadata.HCM(RoQZKHelpers.getDataString(client, path));
-	}	
 	
 	/**
 	 * @param queue
@@ -495,12 +490,12 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		return exchanges;
 	}
 
-	public ArrayList<Metadata.Monitor> getBackUpMonitors(Queue queue) {
+	public ArrayList<Metadata.BackupMonitor> getBackUpMonitors(Queue queue) {
 		log.info("");
 		List<String> addresses = RoQZKHelpers.getChildren(client, RoQZKHelpers.makePath(getZKPath(queue), "monitorBU"));
-		ArrayList<Metadata.Monitor> monitors = new ArrayList<Metadata.Monitor>();
+		ArrayList<Metadata.BackupMonitor> monitors = new ArrayList<Metadata.BackupMonitor>();
 		for (String address : addresses) {
-			monitors.add(new Metadata.Monitor(RoQZKHelpers.getDataString(client, RoQZKHelpers.makePath(getZKPath(queue), "monitorBU", address))));
+			monitors.add(new Metadata.BackupMonitor(RoQZKHelpers.getDataString(client, RoQZKHelpers.makePath(getZKPath(queue), "monitorBU", address))));
 		}
 		return monitors;
 	}

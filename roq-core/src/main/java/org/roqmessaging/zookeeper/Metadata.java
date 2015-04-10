@@ -30,6 +30,45 @@ public class Metadata {
 		}
 	}
 	
+	public static class BackupMonitor {
+		public String hcmAddress;
+		public String monitorAddress;
+		
+		public BackupMonitor(String state) {
+			String[] elem = state.split(",");
+			hcmAddress = elem[0];
+			monitorAddress = elem[1];
+		}
+		
+		public String zkNodeString() {
+			return monitorAddress.replace("/", "").replace(":", "");
+		}
+		
+		public String getData() {
+			return hcmAddress + "," + monitorAddress;
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			BackupMonitor other = (BackupMonitor) obj;
+			if (hcmAddress == null) {
+				if (other.hcmAddress != null)
+					return false;
+			} else if (monitorAddress == null) {
+				if (other.monitorAddress != null)
+					return false;
+			} else if (!(monitorAddress.equals(other.monitorAddress) && hcmAddress.equals(other.hcmAddress)))
+				return false;
+			return true;
+		}
+	}
+	
 	public static class Queue {
 		public String name;
 		public Queue(String name) {

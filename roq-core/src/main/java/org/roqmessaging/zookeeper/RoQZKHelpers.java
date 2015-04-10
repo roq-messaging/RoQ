@@ -34,7 +34,7 @@ public class RoQZKHelpers {
 	public static void createQueueZNodes(CuratorFramework client, String queuePath,
 			String monitorPath, String monitorPL, String statMonitorPath,
 			String statMonitorPL, String hcmPath, String hcmPL, String scalingPath, String backupMonitorsPath,
-			List<Metadata.Monitor> backupMonitors,  List<Metadata.HCM> backupMonitorsHosts) {
+			List<Metadata.BackupMonitor> backupMonitors) {
 		try {
 			CuratorTransactionBridge transaction = client.inTransaction().create().forPath(queuePath)
 				.and().create().forPath(monitorPath, monitorPL.getBytes())
@@ -43,9 +43,8 @@ public class RoQZKHelpers {
 				.and().create().forPath(scalingPath)
 				.and().create().forPath(backupMonitorsPath);
 			for (int i = 0; i < backupMonitors.size(); i++) {
-				transaction.and().create().forPath(makePath(backupMonitorsPath, backupMonitors.get(i).zkNodeString()), backupMonitors.get(i).address.getBytes());
-				transaction.and().create().forPath(makePath(backupMonitorsPath, backupMonitors.get(i).zkNodeString(), backupMonitorsHosts.get(i).zkNodeString()), 
-						backupMonitorsHosts.get(i).address.getBytes());
+				transaction.and().create().forPath(makePath(backupMonitorsPath, backupMonitors.get(i).zkNodeString()), 
+						(backupMonitors.get(i).getData()).getBytes());
 			}
 			transaction.and().commit();
 		} catch (Exception e) {

@@ -344,12 +344,12 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				Metadata.StatMonitor sm = zk.getStatMonitor(queue);
 				Metadata.HCM hcm = zk.getHCM(queue);
 				
-				ArrayList<Metadata.Monitor> buList = zk.getBackUpMonitors(queue);
+				ArrayList<Metadata.BackupMonitor> buList = zk.getBackUpMonitors(queue);
 				List<String> monitorsSTBY = new ArrayList<String>();
 				List<String> monitorsHostSTBY = new ArrayList<String>();
-				for (Metadata.Monitor monitor : buList) {
-					monitorsSTBY.add(monitor.address);
-					monitorsHostSTBY.add(zk.getBuMonitorHostAddress(queue, monitor).address);
+				for (Metadata.BackupMonitor backup : buList) {
+					monitorsSTBY.add(backup.monitorAddress);
+					monitorsHostSTBY.add(backup.hcmAddress);
 				}
 				queueBUMonitorHCMMap.put(queue.name, monitorsHostSTBY);
 				queueBUMonitorMap.put(queue.name, monitorsSTBY);
@@ -525,16 +525,13 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		Metadata.Monitor monitor = new Metadata.Monitor(monitorAddress);
 		Metadata.StatMonitor statMonitor = new Metadata.StatMonitor(statMonitorAddress);
 		Metadata.HCM hcm = new Metadata.HCM(hcmAddress);
-		ArrayList<Metadata.Monitor> monitorsBUMeta = new ArrayList<Metadata.Monitor>();
-		ArrayList<Metadata.HCM> monitorsBUHostMeta = new ArrayList<Metadata.HCM>();
-		for (String monitorBU : monitorsBU) {
-			monitorsBUMeta.add(new Metadata.Monitor(monitorBU));
-		}
-		for (String monitorBUHost : monitorsBUHost) {
-			monitorsBUHostMeta.add(new Metadata.HCM(monitorBUHost));
+		ArrayList<Metadata.BackupMonitor> monitorsBUMeta = new ArrayList<Metadata.BackupMonitor>();
+		
+		for (int i =0; i < monitorsBU.size(); i++) {
+			monitorsBUMeta.add(new Metadata.BackupMonitor(monitorsBUHost.get(i) + "," + monitorsBU.get(i)));
 		}
 		
-		zk.createQueue(queue, hcm, monitor, statMonitor, monitorsBUMeta, monitorsBUHostMeta);
+		zk.createQueue(queue, hcm, monitor, statMonitor, monitorsBUMeta);
 		setQueueStarted(queueName);
 	}
 

@@ -8,6 +8,9 @@ public class RoQZooKeeperConfig extends RoQZKSimpleConfig{
 	public String znode_gcm = "gcm";
 	// ZNode used to register HostConfigManager instances
 	public String znode_hcm = "hcm-list";
+	// Under this node we save the monitors
+	// handled by this node
+	public String znode_hcm_state = "hcm-state";
 	// Parent ZNode for all queues
 	public String znode_queues = "queues";
 	// ZNode used to store the cloud configuration
