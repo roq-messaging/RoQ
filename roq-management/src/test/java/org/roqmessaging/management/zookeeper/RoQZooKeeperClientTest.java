@@ -93,6 +93,22 @@ public class RoQZooKeeperClientTest extends TestCase {
 		assertFalse(client.queueExists(queue));
 	}
 	
+	public void testHCMState() {
+		log.info("");
+		Metadata.HCM   hcm   = new Metadata.HCM("192.168.0.1");
+		
+		client.addHCMState(hcm);
+		client.addHCMBUMonitor(hcm, "queue1");
+		client.addHCMBUMonitor(hcm, "queue2");
+		client.addHCMMonitor(hcm, "queue3");
+		
+		assertTrue(client.getHCMBUMonitors(hcm).contains("queue1"));
+		assertTrue(client.getHCMBUMonitors(hcm).contains("queue2"));
+		assertTrue(client.getHCMMonitors(hcm).contains("queue3"));
+		
+		client.removeHCMState(hcm);
+	}
+	
 	public void testCreateRemoveExchangeTransaction() {
 		log.info("");
 		String host = "192.168.0.1";

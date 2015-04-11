@@ -41,7 +41,10 @@ import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
 import org.roqmessaging.zookeeper.Metadata;
+import org.roqmessaging.zookeeper.Metadata.BackupMonitor;
 import org.roqmessaging.zookeeper.Metadata.HCM;
+import org.roqmessaging.zookeeper.Metadata.Monitor;
+import org.roqmessaging.zookeeper.Metadata.Queue;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Poller;
 import org.zeromq.ZMQ.Socket;
@@ -592,6 +595,66 @@ public class MngtController implements Runnable, IStoppable {
 							mngtRepSocket.send(
 									BSON.encode(prop), 0);
 							break;
+						case RoQConstant.EVENT_HCM_FAILURE:
+							logger.info("FAILOVER request received");
+							if (!checkField(request, "Host")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>");
+								break;
+							}
+							Metadata.HCM hcm = new Metadata.HCM((String) request.get("Host"));
+							
+							// These monitors were on the lost HCM
+							List<String> queueBuMonitors = zk.getHCMBUMonitors(hcm);
+							List<String> queueMonitors = zk.getHCMMonitors(hcm);
+							
+							for (String queueMonitor : queueMonitors) {
+								logger.info("Lost monitor: " + queueMonitor);
+								// we ask queue factory to process to failover
+								Metadata.Queue monitorMeta = new Metadata.Queue(queueMonitor);
+								
+								// We select a new backup monitor
+								ArrayList<BackupMonitor> backups = zk.getBackUpMonitors(monitorMeta);
+								ArrayList<Metadata.HCM> HCMSToDontSelect = new ArrayList<HCM>();
+								for (BackupMonitor addr : backups) {
+									HCMSToDontSelect.add(new Metadata.HCM(addr.hcmAddress));
+								}
+								// we select the candidate which will become active
+								BackupMonitor active = backups.get(0);
+								
+								Metadata.HCM newBackup = selectBackup(HCMSToDontSelect);
+								
+								// We process the failover
+								factory.failoverOnBackupMonitor(queueMonitor);
+								factory.createBackupMonitor(newBackup);
+								
+								// update HCM state
+								zk.removeHCMMonitor(hcm, queueMonitor);
+								zk.addHCMBUMonitor(newBackup, queueMonitor);
+							}
+							
+							for (String queueBackupMonitor : queueBuMonitors) {
+								logger.info("Lost backup monitor: " + queueBackupMonitor);
+								Metadata.Queue monitorMeta = new Metadata.Queue(queueBackupMonitor);
+								
+								// We select a new backup monitor
+								ArrayList<BackupMonitor> backups = zk.getBackUpMonitors(monitorMeta);
+								ArrayList<Metadata.HCM> HCMSToDontSelect = new ArrayList<HCM>();
+								HCMSToDontSelect.add(new Metadata.HCM(zk.getMonitor(new Metadata.Queue(queueBackupMonitor)).address));
+								for (BackupMonitor addr : backups) {
+									HCMSToDontSelect.add(new Metadata.HCM(addr.hcmAddress));
+								}
+								Metadata.HCM newBackup = selectBackup(HCMSToDontSelect);
+								
+								// we ask the queue factory to create a new backupMonitor
+								// in order to maintain scaling factor
+								factory.createBackupMonitor(queueBackupMonitor);
+								
+								// update HCM state
+								zk.removeHCMBUMonitor(hcm, queueBackupMonitor);
+								zk.addHCMBUMonitor(newBackup, queueBackupMonitor);
+							}
+							
+							break;
 						default:
 							mngtRepSocket.send(
 									serializer.serialiazeConfigAnswer(RoQConstant.FAIL, "INVALID CMD Value"), 0);
@@ -722,6 +785,23 @@ public class MngtController implements Runnable, IStoppable {
 			}
 		}
 		return backupHosts;
+	}
+	
+	private Metadata.HCM selectBackup(ArrayList<Metadata.HCM> HCMSToDontSelect)
+			throws Exception {
+		List<HCM> hosts = zk.getHCMList();
+		if (hosts.size() <= 1)
+			return null;
+		int nextToPick = (int) Math.random() % hosts.size();
+		Metadata.HCM currentHost = null;
+		int hostToPick = properties.getReplicationFactor() - 1;
+		for (int i = 0; i < hosts.size() && hostToPick > 0; i++) {
+			currentHost = hosts.get(nextToPick + i); 
+			if(!HCMSToDontSelect.contains(currentHost)) { // TODO check host load
+				return currentHost;
+			}
+		}
+		return null;
 	}
 
 	/**

@@ -129,6 +129,12 @@ public interface RoQConstant {
 	public static int EVENT_MONITOR_ACTIVATED = 10;
 	
 	/**
+	 * Send to the management COntroller 
+	 * when we detect than a HCM has crashed
+	 */
+	public static int EVENT_HCM_FAILURE = 11;
+	
+	/**
 	 * Event sent from subscriber to monitor.
 	 * “31,totalreceived”
 	 */

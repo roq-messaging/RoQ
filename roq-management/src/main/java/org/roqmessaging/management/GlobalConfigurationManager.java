@@ -539,7 +539,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * Removes all reference of the this queue
 	 * @param queueName the logical queue name
 	 */
-	public void removeQueue(String queueName) {
+	public void removeQueue(String queueName) {		
 		zk.removeQueue(new Metadata.Queue(queueName));
 	}
 	

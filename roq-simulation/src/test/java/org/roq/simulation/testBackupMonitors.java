@@ -11,7 +11,7 @@ import org.roqmessaging.utils.Time;
 public class testBackupMonitors extends RoQDockerTestCase {
 	
 	@Test
-	public void testQueueWithBackupCreation() {
+	public void testQueueWithBackupFailover() {
 		try {
 			// Select host which handle the master monitor
 			ArrayList<String> hostAddresses = launcher.getHCMAddressList();
@@ -50,37 +50,37 @@ public class testBackupMonitors extends RoQDockerTestCase {
 		
 	}
 	
-	@Test
-	public void testRemoveQueueWithBackup() {
-		try {
-			// Select host which handle the master monitor
-			ArrayList<String> hostAddresses = launcher.getHCMAddressList();
-			String targetAddress = hostAddresses.get(0);
-			
-			// Launch two additional hcms
-			// in order to have enough HCM for replication
-			launcher.launchHCM();
-			launcher.launchHCM();
-			
-			Thread.sleep(8000);
-			
-			hostAddresses = launcher.getHCMAddressList();
-			// Check if we have already three monitors
-			assertEquals(3, hostAddresses.size());
-			
-			// Create a queue
-			initQueue("testQ0", targetAddress);
-			
-			Thread.sleep(10000);
-			
-			// remove a queue
-			rmQueue("testQ0");
-
-		} catch (Exception e) {
-			System.out.println("an error has occured: ");
-			e.printStackTrace();
-		}
-		
-	}
+//	@Test
+//	public void testRemoveQueueWithBackup() {
+//		try {
+//			// Select host which handle the master monitor
+//			ArrayList<String> hostAddresses = launcher.getHCMAddressList();
+//			String targetAddress = hostAddresses.get(0);
+//			
+//			// Launch two additional hcms
+//			// in order to have enough HCM for replication
+//			launcher.launchHCM();
+//			launcher.launchHCM();
+//			
+//			Thread.sleep(8000);
+//			
+//			hostAddresses = launcher.getHCMAddressList();
+//			// Check if we have already three monitors
+//			assertEquals(3, hostAddresses.size());
+//			
+//			// Create a queue
+//			initQueue("testQ0", targetAddress);
+//			
+//			Thread.sleep(10000);
+//			
+//			// remove a queue
+//			rmQueue("testQ0");
+//
+//		} catch (Exception e) {
+//			System.out.println("an error has occured: ");
+//			e.printStackTrace();
+//		}
+//		
+//	}
 
 }
