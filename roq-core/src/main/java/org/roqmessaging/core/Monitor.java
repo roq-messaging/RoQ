@@ -372,6 +372,8 @@ public class Monitor implements Runnable, IStoppable {
 					logger.info("Standby monitor has been activated");
 					this.master = true;
 					initRep.send((new Integer(RoQConstant.EVENT_MONITOR_ACTIVATED).toString() + ", ").getBytes(), 0);
+				} else {
+					initRep.send(("").getBytes(), 0);
 				}
 			}
 		}

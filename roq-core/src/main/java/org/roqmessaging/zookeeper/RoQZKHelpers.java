@@ -1,5 +1,6 @@
 package org.roqmessaging.zookeeper;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -30,16 +31,19 @@ public class RoQZKHelpers {
 	}
 	/**
 	 * Allow to create multiple znodes 
-	 * in an atomic fashion
+	 * in a transaction
 	 * @param client
+	 * @param pathsHCMBuMonitorToAdd 
+	 * @param pathHCMMonitorToAdd 
 	 * @param path
 	 */
 	public static void createQueueZNodes(CuratorFramework client, String queuePath,
 			String monitorPath, String monitorPL, String statMonitorPath,
 			String statMonitorPL, String hcmPath, String hcmPL, String scalingPath, String backupMonitorsPath,
-			List<Metadata.BackupMonitor> backupMonitors) {
+			List<Metadata.BackupMonitor> backupMonitors, String pathHCMMonitorToAdd, ArrayList<String> pathsHCMBuMonitorToAdd) {
 		try {
 			CuratorTransactionBridge transaction = client.inTransaction().create().forPath(queuePath)
+				.and().create().forPath(pathHCMMonitorToAdd)
 				.and().create().forPath(monitorPath, monitorPL.getBytes())
 				.and().create().forPath(statMonitorPath, statMonitorPL.getBytes())
 				.and().create().forPath(hcmPath, hcmPL.getBytes())
@@ -48,6 +52,9 @@ public class RoQZKHelpers {
 			for (int i = 0; i < backupMonitors.size(); i++) {
 				transaction.and().create().forPath(makePath(backupMonitorsPath, backupMonitors.get(i).zkNodeString()), 
 						(backupMonitors.get(i).getData()).getBytes());
+			}
+			for (String pathBUToAdd : pathsHCMBuMonitorToAdd) {
+				transaction.and().create().forPath(pathBUToAdd);
 			}
 			transaction.and().commit();
 		} catch (Exception e) {

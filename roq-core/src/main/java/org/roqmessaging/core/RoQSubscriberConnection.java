@@ -14,6 +14,9 @@
  */
 package org.roqmessaging.core;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.roqmessaging.client.IRoQSubscriber;
 import org.roqmessaging.client.IRoQSubscriberConnection;
 
@@ -30,7 +33,7 @@ public class RoQSubscriberConnection implements IRoQSubscriberConnection {
 	private SubscriberConnectionManager connectionManager = null;
 	// The key
 	private String key = null;
-	private String monitorHost = null, monitorStat=null;
+	private List<String> monitorHost = new ArrayList<String>(), monitorStat=new ArrayList<String>();
 
 	/**
 	 * @param monitorHost
@@ -42,9 +45,11 @@ public class RoQSubscriberConnection implements IRoQSubscriberConnection {
 	 * @param key
 	 *            the subscriber keyr to filter
 	 */
-	public RoQSubscriberConnection(String monitorHost, String monitorStat, String key) {
-		this.monitorHost = monitorHost;
-		this.monitorStat = monitorStat;
+	public RoQSubscriberConnection(List<String> monitorHosts, String key) {
+		for (int i = 0; i < monitorHosts.size(); i+=2) {
+			this.monitorHost.add(monitorHosts.get(i));
+			this.monitorStat.add(monitorHosts.get(i+1));
+		}
 		this.key = key;
 	}
 

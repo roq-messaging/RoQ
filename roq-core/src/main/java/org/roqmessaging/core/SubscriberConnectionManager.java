@@ -16,6 +16,8 @@ package org.roqmessaging.core;
 
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -36,15 +38,16 @@ public class SubscriberConnectionManager implements Runnable {
 	private Logger logger = Logger.getLogger(SubscriberConnectionManager.class);
 
 	private ZMQ.Context context;
-	private String s_monitorStat;
+	private HashMap<String, String> s_monitorsStat;
+	private String activeMonitorStat;
 	private ZMQ.Poller items;
 	private byte[] subkey;
 
-	private ZMQ.Socket initReq;
+	private HashMap<String, ZMQ.Socket> initReqSockets = new HashMap<String, ZMQ.Socket>();
 
 	private ArrayList<String> knownHosts;
 
-	private ZMQ.Socket monitorSub;
+	private HashMap<String, ZMQ.Socket> monitorsSub;
 	private ZMQ.Socket exchSub;
 
 	private ZMQ.Socket tstmpReq;
@@ -70,45 +73,47 @@ public class SubscriberConnectionManager implements Runnable {
 	 * @param ID the subscriber ID
 	 * @param tstmp true if we use a timestamp server
 	 */
-	public SubscriberConnectionManager(String monitor, String monitorStat, String subKey,  boolean tstmp) {
+	public SubscriberConnectionManager(List<String> monitors, List<String> monitorStat, String subKey,  boolean tstmp) {
 		this.context = ZMQ.context(1);
-		this.s_monitorStat = monitorStat;
+		for (int i = 0; i < monitors.size(); i++) {
+			this.s_monitorsStat.put(monitors.get(i), monitorStat.get(i));
+		}
+		activeMonitorStat = monitorStat.get(0);
 		this.subkey = subKey.getBytes();
 		this.subsriberID = System.currentTimeMillis()+subKey;
 
-		//as the monitor is and address as tcp://ip:base port
-		int basePort = extractBasePort(monitor);
-		String portOff = monitor.substring(0, monitor.length()-"xxxx".length());
-		
-		this.monitorSub = context.socket(ZMQ.SUB);
-		monitorSub.connect(portOff+(basePort+3));
-		monitorSub.subscribe("".getBytes());
-
-		this.initReq = this.context.socket(ZMQ.REQ);
-		this.initReq.connect(portOff+(basePort+1));
-
+		for (String monitor : monitors) {
+			//as the monitor is and address as tcp://ip:base port
+			int basePort = extractBasePort(monitor);
+			String portOff = monitor.substring(0, monitor.length()-"xxxx".length());
+			
+			this.monitorsSub.put(monitor, context.socket(ZMQ.SUB));
+			this.monitorsSub.get(monitor).connect(portOff+(basePort+3));
+			this.monitorsSub.get(monitor).subscribe("".getBytes());
+	
+			this.initReqSockets.put(monitor, this.context.socket(ZMQ.REQ));
+			this.initReqSockets.get(monitor).connect(portOff+(basePort+1));
+			
+			if (tstmp) {
+				this.tstmpReq = context.socket(ZMQ.REQ);
+				this.tstmpReq.connect(portOff + ":5900");
+			}
+		}
 		this.received = 0;
 		this.totalReceived = 0;
 		this.minute = 0;
 		this.latency = 0;
 		this.latenced = 0;
-
-		if (tstmp) {
-			this.tstmpReq = context.socket(ZMQ.REQ);
-			this.tstmpReq.connect(portOff + ":5900");
-		}
 	}
 
 	class Stats extends TimerTask {
 		private ZMQ.Socket statsPub;
 
-		public Stats() {
-			this.statsPub = context.socket(ZMQ.PUB);
-			statsPub.connect(s_monitorStat);
-			logger.debug("Subscriber Connecting stat monitor on "+ s_monitorStat);
-		}
-
 		public void run() {
+			this.statsPub = context.socket(ZMQ.PUB);
+			statsPub.connect(activeMonitorStat);
+			logger.debug("Subscriber Connecting stat monitor on "+ activeMonitorStat);
+			
 			totalReceived += received;
 
 			long meanLat;
@@ -126,6 +131,7 @@ public class SubscriberConnectionManager implements Runnable {
 			received = 0;
 			latency = 0;
 			latenced = 0;
+			statsPub.close();
 		}
 	}
 
@@ -138,22 +144,25 @@ public class SubscriberConnectionManager implements Runnable {
 	 */
 	private int init() {
 		logger.info("Init sequence");
-		initReq.send((RoQConstant.CHANNEL_INIT_SUBSCRIBER + ",Hello").getBytes(), 0);
-		String response = new String(initReq.recv(0));
-		if (!response.equals("")) {
-			String[] brokerList = response.split(",");
-			this.exchSub = context.socket(ZMQ.SUB);
-			this.exchSub.setRcvHWM(10000000);
-			logger.info("Connnecting with RcvHWM: "+this.exchSub.getRcvHWM());
-			this.exchSub.subscribe(this.subkey);
-			for (int i = 0; i < brokerList.length; i++) {
-				connectToBroker(brokerList[i]);
+		int result = 1;
+		for (String initReqKey : initReqSockets.keySet()) {
+			initReqSockets.get(initReqKey).send((RoQConstant.CHANNEL_INIT_SUBSCRIBER + ",Hello").getBytes(), 0);
+			String response = new String(initReqSockets.get(initReqKey).recv(0));
+			if (!response.equals("")) {
+				String[] brokerList = response.split(",");
+				this.exchSub = context.socket(ZMQ.SUB);
+				this.exchSub.setRcvHWM(10000000);
+				logger.info("Connnecting with RcvHWM: "+this.exchSub.getRcvHWM());
+				this.exchSub.subscribe(this.subkey);
+				for (int i = 0; i < brokerList.length; i++) {
+					connectToBroker(brokerList[i]);
+				}
+				this.activeMonitorStat = s_monitorsStat.get(initReqKey);
+				result = 0;
+				break;
 			}
-			return 0;
-		} else {
-			logger.info("No exchange available");
-			return 1;
 		}
+		return result;
 	}
 
 	private void connectToBroker(String broker) {
@@ -215,10 +224,17 @@ public class SubscriberConnectionManager implements Runnable {
 			}
 			logger.info("Retrying connection...");
 		}
-
-		this.items = new ZMQ.Poller(2);
-		this.items.register(monitorSub);
+		
+		// TODO vary in fuction of replication factor, for the moment 3
+		this.items = new ZMQ.Poller(4);
 		this.items.register(exchSub);
+		HashMap<Integer, ZMQ.Socket> HostPolVal = new HashMap<Integer, ZMQ.Socket>();
+		int pollval = 1;
+		for (ZMQ.Socket monitorSub: monitorsSub.values()) {
+			pollval = this.items.register(monitorSub);
+			HostPolVal.put(pollval, monitorSub);
+		}
+		
 
 		Timer timer = new Timer();
 		timer.schedule(new Stats(), 0, 60000);
@@ -227,19 +243,7 @@ public class SubscriberConnectionManager implements Runnable {
 
 		while (running) {
 			items.poll(10);
-			if (items.pollin(0)) { // Info from Monitor
-
-				String info[] = new String(monitorSub.recv(0)).split(",");
-				int infoCode = Integer.parseInt(info[0]);
-
-				if (infoCode == RoQConstant.REQUEST_UPDATE_EXCHANGE_LIST && !info[1].equals("")) {
-					// new Exchange  available message
-					connectToBroker(info[1]);
-					
-				}
-			}
-
-			if (items.pollin(1)) {//From Exchange
+			if (items.pollin(0)) {//From Exchange
 				byte[] request= null;
 				//Get the key
 				exchSub.recv(0);
@@ -265,6 +269,20 @@ public class SubscriberConnectionManager implements Runnable {
 				this.subscriber.onEvent(request!=null?request:new byte[]{});
 				received++;
 			}
+			else {
+				for (int i = 1; i < 4; i++) {
+					if (items.pollin(i)) { // Info from Monitor
+						String info[] = new String(HostPolVal.get(i).recv(0)).split(",");
+						int infoCode = Integer.parseInt(info[0]);
+		
+						if (infoCode == RoQConstant.REQUEST_UPDATE_EXCHANGE_LIST && !info[1].equals("")) {
+							// new Exchange  available message
+							connectToBroker(info[1]);
+							
+						}
+					}
+				}
+			}
 		}
 		this.logger.debug("Closing subscriber sockets");
 		timer.cancel();
@@ -272,8 +290,10 @@ public class SubscriberConnectionManager implements Runnable {
 		knownHosts.clear();
 		this.exchSub.setLinger(0);
 		this.exchSub.close();
-		this.initReq.setLinger(0);
-		this.initReq.close();
+		for (ZMQ.Socket initReq : initReqSockets.values()) {
+			initReq.setLinger(0);
+			initReq.close();
+		}
 		logger.info("Closed.");
 	}
 	

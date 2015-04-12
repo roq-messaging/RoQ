@@ -23,17 +23,22 @@ public class testBackupMonitors extends RoQDockerTestCase {
 			launcher.launchHCM();
 			launcher.launchHCM();
 			
+			hostAddresses = launcher.getHCMAddressList();
+			String targetAddress2 = hostAddresses.get(2);
+			
 			Thread.sleep(8000);
 			
-			hostAddresses = launcher.getHCMAddressList();
 			// Check if we have already three monitors
 			assertEquals(3, hostAddresses.size());
 			
-			// Create a queue
+			// Create a queue will be use to test monitor failover
 			initQueue("testQ0", targetAddress);
+			// Create a queue will be use to test standby monitor replacement
+			initQueue("testQ1", targetAddress2);
 			
 			Thread.sleep(4000);
-			
+			launcher.launchHCM(); // one to test if the RF is maintained
+			Thread.sleep(10000);
 			// Kill the container which owns the Master
 			launcher.stopHCMByID(targetID);
 			System.out.println(Time.currentTimeSecs()%100);

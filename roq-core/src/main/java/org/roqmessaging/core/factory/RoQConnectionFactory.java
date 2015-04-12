@@ -15,6 +15,8 @@
 package org.roqmessaging.core.factory;
 
 import java.net.ConnectException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQConnection;
@@ -78,13 +80,13 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	 */
 	public IRoQConnection createRoQConnection(String qName) 
 			throws IllegalStateException, ConnectException {
-		String monitorHost = translateToMonitorHost(qName);
-		if(monitorHost.isEmpty()){
+		List<String> monitorHosts = translateToMonitorHostsList(qName);
+		if(monitorHosts.isEmpty()){
 			//TODO do we create a new queue ?
 			throw  new IllegalStateException("The queue creation has failed @ the global configuration");
 		}
-		logger.info("Creating a connection factory for "+qName+ " @ "+ monitorHost);
-		return new RoQPublisherConnection(monitorHost.split(",")[0]);
+		logger.info("Creating a connection factory for "+qName);
+		return new RoQPublisherConnection(monitorHosts);
 	}
 	
 	/**
@@ -93,14 +95,13 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	 */
 	public IRoQSubscriberConnection createRoQSubscriberConnection(String qName, String key) 
 			throws IllegalStateException, ConnectException {
-		String monitorConfig = translateToMonitorHost(qName);
-		if(monitorConfig.isEmpty()){
+		List<String> monitorHosts = translateToMonitorHostsList(qName);
+		if(monitorHosts.isEmpty()){
 			//TODO do we create a new queue ?
 			throw  new IllegalStateException("The queue Name is not registred @ the global configuration");
 		}
-		logger.info("Creating a subscriber connection factory for "+qName+ " @ "+ monitorConfig);
-		String[] config = monitorConfig.split(",");
-		return new RoQSubscriberConnection(config[0],config[1], key);
+		logger.info("Creating a subscriber connection factory for "+qName);
+		return new RoQSubscriberConnection(monitorHosts, key);
 	}
 	
 	/**
@@ -108,16 +109,21 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	 * @return the monitor host address to contact +"," + the stat monitor address
 	 * @throws ConnectException 
 	 */
-	public String translateToMonitorHost (String qName) 
+	public List<String> translateToMonitorHostsList (String qName) 
 			throws ConnectException {
 		logger.debug("Asking the the global configuration Manager to translate the qName in a monitor host ...");
 		//1.  Get the location of the monitor according to the logical name
 		//We get the location of the corresponding host manager
-		byte[] request = (Integer.toString(RoQConstant.CONFIG_GET_HOST_BY_QNAME)+","+qName).getBytes();
+		byte[] request = (Integer.toString(RoQConstant.CONFIG_GET_HOSTS_LIST_BY_QNAME)+","+qName).getBytes();
 		byte[] response = gcmConnection.sendRequest(request, 5000);
-		String monitorHost = new String(response);
-		logger.info("Creating a connection factory for "+qName+ " @ "+ monitorHost);
-		return monitorHost;
+		List<String> monitorHosts = new ArrayList<String>();
+		if (response == null)
+			return monitorHosts;
+		for (String hostElement : new String(response).split(",")) {
+			monitorHosts.add(hostElement);
+		}
+		logger.info("Creating a connection factory for "+qName+ " @ "+ monitorHosts.get(0) +  " " + monitorHosts.get(1));
+		return monitorHosts;
 	}
 	
 	public void close() {

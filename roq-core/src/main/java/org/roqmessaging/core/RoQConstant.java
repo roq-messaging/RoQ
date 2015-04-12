@@ -277,6 +277,12 @@ public interface RoQConstant {
 	 */
 	public static int FAIL = 1101;
 	
+	/**
+	 * Global configuration request to get the list 
+	 * of monitors for a given queue
+	 */
+	public static int CONFIG_GET_HOSTS_LIST_BY_QNAME = 1102;
+	
 	/*Operations for configuration management*/
 	
 	/**

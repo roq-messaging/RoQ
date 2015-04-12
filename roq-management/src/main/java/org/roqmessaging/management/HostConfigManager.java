@@ -239,7 +239,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 						if (monitorAddress != null) {
 							logger.info("Successfully created standby monitor for " + qName + "@" + monitorAddress);
 							this.clientReqSocket.send(
-									(Integer.toString(RoQConstant.CONFIG_REQUEST_OK) + "," + monitorAddress)
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_OK) + "," + monitorAddress + "," + serverState.getSTBYStat(qName))
 											.getBytes(), 0);
 						} else {
 							logger.error("Failed to create the Standby monitor");

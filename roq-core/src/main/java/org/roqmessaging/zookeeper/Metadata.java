@@ -33,11 +33,13 @@ public class Metadata {
 	public static class BackupMonitor {
 		public String hcmAddress;
 		public String monitorAddress;
+		public String statMonitorAddress;
 		
 		public BackupMonitor(String state) {
 			String[] elem = state.split(",");
 			hcmAddress = elem[0];
 			monitorAddress = elem[1];
+			statMonitorAddress = elem[2];
 		}
 		
 		public String zkNodeString() {
@@ -45,7 +47,7 @@ public class Metadata {
 		}
 		
 		public String getData() {
-			return hcmAddress + "," + monitorAddress;
+			return hcmAddress + "," + monitorAddress + "," + statMonitorAddress;
 		}
 		
 		@Override
@@ -63,7 +65,12 @@ public class Metadata {
 			} else if (monitorAddress == null) {
 				if (other.monitorAddress != null)
 					return false;
-			} else if (!(monitorAddress.equals(other.monitorAddress) && hcmAddress.equals(other.hcmAddress)))
+			} else if (statMonitorAddress == null) {
+				if (other.statMonitorAddress != null)
+					return false;
+			} else if (!(monitorAddress.equals(other.monitorAddress) 
+					&& hcmAddress.equals(other.hcmAddress) 
+					&& statMonitorAddress.equals(other.statMonitorAddress)))
 				return false;
 			return true;
 		}

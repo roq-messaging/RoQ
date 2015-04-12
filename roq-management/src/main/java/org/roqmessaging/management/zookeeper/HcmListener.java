@@ -40,12 +40,6 @@ public class HcmListener implements ServiceCacheListener {
 		else 
 			logger.info("hcm cache state changed, perform no action: NOT LEADER");
 	}
-
-	private void closeSocketConnection() {
-		this.logger.debug("Closing factory socket");
-		this.requestSocket.setLinger(0);
-		this.requestSocket.close();
-	}
 	
 	@Override
 	public void cacheChanged() {

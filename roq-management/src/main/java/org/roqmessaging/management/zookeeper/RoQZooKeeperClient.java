@@ -49,6 +49,10 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		cfg = config;	
 	}
 	
+	/**
+	 * Called by The GCM when it shutdown
+	 * @throws IOException
+	 */
 	public void closeGCM() throws IOException {
 		if (cache != null)
 			cache.close();
@@ -56,6 +60,10 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		super.close();
 	}
 	
+	/**
+	 * Close only the hcm discovery service
+	 * @throws IOException
+	 */
 	public void closeServiceDiscovery() throws IOException {
 		if (serviceDiscovery != null)
 			serviceDiscovery.close();
@@ -76,10 +84,19 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		}
 	}
 	
+	/**
+	 * Start the hcm service discovery
+	 * That will create a cache that contain the list of hcms 
+	 * the cache is handled by a listener when a modification occurs
+	 * A modification could indicate a new hcm, a removed hcm, or a crashed hcm
+	 * @throws Exception
+	 */
 	public void startServiceDiscovery() throws Exception {
 		String path = RoQZKHelpers.makePath(cfg.znode_hcm);
-		JsonInstanceSerializer<HostDetails> serializer = new JsonInstanceSerializer<HostDetails>(HostDetails.class);
-		serviceDiscovery = ServiceDiscoveryBuilder.builder(HostDetails.class).client(client).basePath(path).serializer(serializer).build();
+		JsonInstanceSerializer<HostDetails> serializer = 
+				new JsonInstanceSerializer<HostDetails>(HostDetails.class);
+		serviceDiscovery = ServiceDiscoveryBuilder.builder(HostDetails.class)
+				.client(client).basePath(path).serializer(serializer).build();
 		serviceDiscovery.start();
 		cache = serviceDiscovery.serviceCacheBuilder().name("HCM").build();
 		cache.addListener(new HcmListener(this));
@@ -210,13 +227,19 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		instance = ServiceInstance.<HostDetails>builder()
 				.name("HCM").id(hcm.zkNodeString()).payload(new HostDetails(hcm.address)).build();
 		String path = RoQZKHelpers.makePath(cfg.znode_hcm);
-		JsonInstanceSerializer<HostDetails> serializer = new JsonInstanceSerializer<HostDetails>(HostDetails.class);
+		JsonInstanceSerializer<HostDetails> serializer = 
+				new JsonInstanceSerializer<HostDetails>(HostDetails.class);
 		serviceDiscovery = ServiceDiscoveryBuilder.builder(HostDetails.class)
 				.client(client).basePath(path).serializer(serializer).thisInstance(instance).build();
 		addHCMState(hcm);
 		serviceDiscovery.start();
 	}
 	
+	/**
+	 * create the parent nodes for a gcm
+	 * these nodes contain the state of the GCM
+	 * @param hcm
+	 */
 	public void addHCMState(HCM hcm) {
 		log.info("" + hcm.address);
 		String path = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString());
@@ -227,46 +250,88 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		RoQZKHelpers.createZNode(client, path);
 	}
 	
+	/**
+	 * Add a Monitor in the hcmState
+	 * @param hcm
+	 * @param queueName
+	 */
 	public void addHCMMonitor(HCM hcm, String queueName) {
 		log.info("" + hcm.address);
-		String path = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString(), "masterMonitors", queueName);
+		String path = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString(), 
+				"masterMonitors", queueName);
 		RoQZKHelpers.createZNode(client, path);
 	}
 
+	/**
+	 * Add a backup monitor in the hcmState
+	 * @param hcm
+	 * @param queueName
+	 */
 	public void addHCMBUMonitor(HCM hcm, String queueName) {
 		log.info("" + hcm.address);
-		String path = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString(), "backupMonitors", queueName);
+		String path = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString(), 
+				"backupMonitors", queueName);
 		log.info("" + path);
 		RoQZKHelpers.createZNode(client, path);		
 	}
 	
+	/**
+	 * Remove a Monitor in the hcmState
+	 * @param hcm
+	 * @param queueName
+	 */
 	public void removeHCMMonitor(HCM hcm, String queueName) {
 		log.info("" + hcm.address);
-		String path = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString(), "masterMonitors", queueName);
+		String path = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString(), 
+				"masterMonitors", queueName);
 		RoQZKHelpers.deleteZNode(client, path);
 	}
 
+	/**
+	 * Remove a backup monitor in the hcmState
+	 * @param hcm
+	 * @param queueName
+	 */
 	public void removeHCMBUMonitor(HCM hcm, String queueName) {
 		log.info("" + hcm.address);
-		String path = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString(), "backupMonitors", queueName);
+		String path = RoQZKHelpers.makePath(cfg.znode_hcm_state, 
+				hcm.zkNodeString(), "backupMonitors", queueName);
 		RoQZKHelpers.deleteZNode(client, path);		
 	}
 	
+	/**
+	 * Get the list of monitors handled by an HCM
+	 * @param hcm
+	 * @return
+	 */
 	public List<String> getHCMMonitors(HCM hcm) {
 		log.info("" + hcm.address);
-		String path = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString(), "masterMonitors");
+		String path = RoQZKHelpers.makePath(cfg.znode_hcm_state, 
+				hcm.zkNodeString(), "masterMonitors");
 		return RoQZKHelpers.getChildren(client, path);
 	}
 
+	/**
+	 * Get the list of backup monitor handled by an HCM
+	 * @param hcm
+	 * @return
+	 */
 	public List<String> getHCMBUMonitors(HCM hcm) {
 		log.info("" + hcm.address);
-		String path = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString(), "backupMonitors");
+		String path = RoQZKHelpers.makePath(cfg.znode_hcm_state, 
+				hcm.zkNodeString(), "backupMonitors");
 		return RoQZKHelpers.getChildren(client, path);	
 	}
 	
+	/**
+	 * Remove a HCMState from Zookeeper
+	 * Called when the HCM is lost or stopped
+	 * @param hcm
+	 */
 	public void removeHCMState(HCM hcm) {
 		log.info("" + hcm.address);
-		RoQZKHelpers.deleteZNodeAndChildren(client, RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString()));
+		RoQZKHelpers.deleteZNodeAndChildren(client, 
+				RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString()));
 	}
 	
 	/**
@@ -376,6 +441,14 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		RoQZKHelpers.deleteZNode(client, path);
 	}
 	
+	/**
+	 * Add a queue in ZK and the state for that queue
+	 * @param queue
+	 * @param hcm
+	 * @param monitor
+	 * @param statMonitor
+	 * @param monitorBU
+	 */
 	public void createQueue(Metadata.Queue queue, Metadata.HCM hcm, 
 			Metadata.Monitor monitor, Metadata.StatMonitor statMonitor, 
 			List<Metadata.BackupMonitor> monitorBU) {
@@ -388,15 +461,19 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		String scalingPath = RoQZKHelpers.makePath(queuePath, "scaling");
 		String backupMonitorsPath = RoQZKHelpers.makePath(queuePath, "monitorBU");
 		
-		addHCMMonitor(hcm, queue.name);
+		String pathHCMMonitorToAdd = RoQZKHelpers.makePath(cfg.znode_hcm_state,
+				hcm.zkNodeString(), "masterMonitors", queue.name);
+		
+		ArrayList<String> pathsHCMBuMonitorToAdd = new ArrayList<String>();
 		for (BackupMonitor backup : monitorBU) {
-			addHCMBUMonitor(new HCM(backup.hcmAddress), queue.name);
+			pathsHCMBuMonitorToAdd.add(RoQZKHelpers.makePath(cfg.znode_hcm_state, 
+					new HCM(backup.hcmAddress).zkNodeString(), "backupMonitors", queue.name));
 		}
 		// Add queue children nodes inside a single transaction
 		RoQZKHelpers.createQueueZNodes(client, queuePath, monitorPath, 
 				monitor.address, statMonitorPath, statMonitor.address, 
 				hcmPath, hcm.address, scalingPath, 
-				backupMonitorsPath, monitorBU);
+				backupMonitorsPath, monitorBU, pathHCMMonitorToAdd, pathsHCMBuMonitorToAdd);
 	}
 	
 	/**
@@ -409,8 +486,10 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	public void replaceMonitor(Queue queue, HCM hcm, Monitor monitor, StatMonitor statMonitor) {
 		String queuePath = getZKPath(queue);
 		// Modifications to bring to HCM State
-		String HCMStateAdd = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString(), "masterMonitors", queue.name);
-		String HCMStateRemove = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString(), "backupMonitors", queue.name);
+		String HCMStateAdd = RoQZKHelpers.makePath(cfg.znode_hcm_state, 
+				hcm.zkNodeString(), "masterMonitors", queue.name);
+		String HCMStateRemove = RoQZKHelpers.makePath(cfg.znode_hcm_state, 
+				hcm.zkNodeString(), "backupMonitors", queue.name);
 		
 		// Modifications to bring to the queue
 		String pathQBUMonitorToRemove = RoQZKHelpers.makePath(queuePath, "monitorBU", hcm.address);
@@ -433,10 +512,11 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	public void addBackupMonitor(Queue queue, HCM hcm, BackupMonitor newBUMonitor) {
 		String queuePath = getZKPath(queue);
 		// Modifications to bring to HCM State
-		String HCMStateAdd = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString(), "backupMonitors", queue.name);
+		String HCMStateAdd = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcm.zkNodeString(), 
+				"backupMonitors", queue.name);
 		
 		// Modifications to bring to the queue
-		String backupMonitorsPath = RoQZKHelpers.makePath(queuePath, "monitorBU");
+		String backupMonitorsPath = RoQZKHelpers.makePath(queuePath, "monitorBU", newBUMonitor.hcmAddress);
 		
 		// process the request inside a transaction
 		RoQZKHelpers.addBackupMonitorZNodes(client, HCMStateAdd, backupMonitorsPath, newBUMonitor);		
@@ -451,15 +531,18 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	public void replaceBackupMonitor(Queue queue, HCM hcmToRemove, BackupMonitor newBUMonitor) {
 		String queuePath = getZKPath(queue);
 		// Modifications to bring to HCM State
-		String HCMStateAdd = RoQZKHelpers.makePath(cfg.znode_hcm_state, new HCM(newBUMonitor.hcmAddress).zkNodeString(), "backupMonitors", queue.name);
-		String HCMStateRemove = RoQZKHelpers.makePath(cfg.znode_hcm_state, hcmToRemove.zkNodeString(), "backupMonitors", queue.name);
+		String HCMStateAdd = RoQZKHelpers.makePath(cfg.znode_hcm_state, 
+				new HCM(newBUMonitor.hcmAddress).zkNodeString(), "backupMonitors", queue.name);
+		String HCMStateRemove = RoQZKHelpers.makePath(cfg.znode_hcm_state, 
+				hcmToRemove.zkNodeString(), "backupMonitors", queue.name);
 		
 		// Modifications to bring to the queue
 		String pathQBUMonitorToRemove = RoQZKHelpers.makePath(queuePath, "monitorBU", hcmToRemove.address);
-		String backupMonitorsPath = RoQZKHelpers.makePath(queuePath, "monitorBU");
+		String backupMonitorsPath = RoQZKHelpers.makePath(queuePath, "monitorBU", newBUMonitor.hcmAddress);
 		
 		// process the request inside a transaction
-		RoQZKHelpers.replaceBackupMonitorZNodes(client, HCMStateAdd, HCMStateRemove, pathQBUMonitorToRemove, backupMonitorsPath, newBUMonitor);
+		RoQZKHelpers.replaceBackupMonitorZNodes(client, HCMStateAdd, HCMStateRemove, 
+				pathQBUMonitorToRemove, backupMonitorsPath, newBUMonitor);
 	}
 	
 	public void removeQueue(Metadata.Queue queue) {
@@ -615,7 +698,8 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 	}
 
 	public ArrayList<Metadata.Exchange> getExchanges(Queue queue) {
-		List<String> addresses = RoQZKHelpers.getChildren(client,  RoQZKHelpers.makePath(getZKPath(queue), "exchanges"));
+		List<String> addresses = RoQZKHelpers.getChildren(client,  
+				RoQZKHelpers.makePath(getZKPath(queue), "exchanges"));
 		ArrayList<Metadata.Exchange> exchanges = new ArrayList<Metadata.Exchange>();
 		for (String address : addresses) {
 			exchanges.add(new Metadata.Exchange(address));
@@ -625,10 +709,12 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 
 	public ArrayList<Metadata.BackupMonitor> getBackUpMonitors(Queue queue) {
 		log.info("");
-		List<String> addresses = RoQZKHelpers.getChildren(client, RoQZKHelpers.makePath(getZKPath(queue), "monitorBU"));
+		List<String> addresses = RoQZKHelpers.getChildren(client, 
+				RoQZKHelpers.makePath(getZKPath(queue), "monitorBU"));
 		ArrayList<Metadata.BackupMonitor> monitors = new ArrayList<Metadata.BackupMonitor>();
 		for (String address : addresses) {
-			monitors.add(new Metadata.BackupMonitor(RoQZKHelpers.getDataString(client, RoQZKHelpers.makePath(getZKPath(queue), "monitorBU", address))));
+			monitors.add(new Metadata.BackupMonitor(RoQZKHelpers.getDataString(client,
+					RoQZKHelpers.makePath(getZKPath(queue), "monitorBU", address))));
 		}
 		return monitors;
 	}	

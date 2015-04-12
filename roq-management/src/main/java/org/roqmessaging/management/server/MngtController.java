@@ -605,7 +605,10 @@ public class MngtController implements Runnable, IStoppable {
 							// These monitors were on the lost HCM
 							List<String> queueBuMonitors = zk.getHCMBUMonitors(hcm);
 							List<String> queueMonitors = zk.getHCMMonitors(hcm);
-							
+							// we refresh the Q factory topology
+							factory.refreshTopology();
+							// We recover the lost active monitors
+							// by doing a failover on a backup monitor
 							if(queueMonitors != null) {
 								for (String queueMonitor : queueMonitors) {
 									logger.info("Lost monitor: " + queueMonitor);
@@ -615,7 +618,7 @@ public class MngtController implements Runnable, IStoppable {
 									// We select a new backup monitor
 									ArrayList<BackupMonitor> backups = zk.getBackUpMonitors(monitorMeta);
 									ArrayList<Metadata.HCM> HCMSToDontSelect = new ArrayList<HCM>();
-									HCMSToDontSelect.add(new Metadata.HCM(zk.getMonitor(new Metadata.Queue(queueMonitor)).address));
+									HCMSToDontSelect.add(new Metadata.HCM(zk.getHCM(new Metadata.Queue(queueMonitor)).address));
 									for (BackupMonitor addr : backups) {
 										HCMSToDontSelect.add(new Metadata.HCM(addr.hcmAddress));
 									}
@@ -636,6 +639,7 @@ public class MngtController implements Runnable, IStoppable {
 							} else {
 								logger.info("the lost host had no Active monitor");
 							}
+							// We replace the lost backup monitor
 							if(queueBuMonitors != null) {
 								for (String queueBackupMonitor : queueBuMonitors) {
 									logger.info("Lost backup monitor: " + queueBackupMonitor);
@@ -644,7 +648,7 @@ public class MngtController implements Runnable, IStoppable {
 									// We select a new backup monitor
 									ArrayList<BackupMonitor> backups = zk.getBackUpMonitors(monitorMeta);
 									ArrayList<Metadata.HCM> HCMSToDontSelect = new ArrayList<HCM>();
-									HCMSToDontSelect.add(new Metadata.HCM(zk.getMonitor(new Metadata.Queue(queueBackupMonitor)).address));
+									HCMSToDontSelect.add(new Metadata.HCM(zk.getHCM(new Metadata.Queue(queueBackupMonitor)).address));
 									for (BackupMonitor addr : backups) {
 										HCMSToDontSelect.add(new Metadata.HCM(addr.hcmAddress));
 									}
@@ -739,7 +743,7 @@ public class MngtController implements Runnable, IStoppable {
 	/**
 	 * @param socket
 	 *            the socket to check
-	 * @return true if a mutli part is recieved.
+	 * @return true if a multi part is received.
 	 */
 	private boolean isMultiPart(Socket socket) {
 		boolean isMulti = false;
@@ -750,6 +754,12 @@ public class MngtController implements Runnable, IStoppable {
 		return isMulti;
 	}
 	
+	/**
+	 * Extract the host that must handle the active monitor
+	 * of the queue creation transaction
+	 * @param transaction
+	 * @return the target host for active master
+	 */
 	private String transactionExtractMasterHost(String transaction) {
 		if (transaction == null)
 			return null;
@@ -757,6 +767,11 @@ public class MngtController implements Runnable, IStoppable {
 		return servers[0];
 	}
 	
+	/**
+	 * Extract the list of the standby monitors for that transaction
+	 * @param transaction
+	 * @return the list of targeted hosts for standby monitors
+	 */
 	private ArrayList<String> transactionExtractSTBYHosts(String transaction) {
 		ArrayList<String> hostsList = new ArrayList<String>();
 		if (transaction == null)
@@ -793,6 +808,13 @@ public class MngtController implements Runnable, IStoppable {
 		return backupHosts;
 	}
 	
+	/**
+	 * Select a backup by excluding them that already hosting
+	 * a backup or an active monitor
+	 * @param HCMSToDontSelect the HCM that already handle a backup or an active monitor
+	 * @return HCM on which we can do a backup
+	 * @throws Exception
+	 */
 	private Metadata.HCM selectBackup(ArrayList<Metadata.HCM> HCMSToDontSelect)
 			throws Exception {
 		List<HCM> hosts = zk.getHCMList();

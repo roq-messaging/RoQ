@@ -30,7 +30,7 @@ import org.zeromq.ZMQ;
  * Description: Responsible of the logical queue Life cycle management. Binds
  * config server on port 5000 and config server on 5100
  * 
- * @author sskhiri
+ * @author sskhiri, bvanmelle
  */
 public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	// ZMQ elements
@@ -124,7 +124,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 							// return -7; // Failure at the HCM
 						} else {
 							monitorsBUString += ",";
-							monitorsBUString += buHost + "," + resultHost2[1];
+							monitorsBUString += buHost + "," + resultHost2[1] + "," + resultHost2[2];
 						}
 					}
 				}
@@ -154,6 +154,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		}
 	}
 
+	@Override
 	/**
 	 * @param queueName the logical queue
 	 * @return true if the check is OK
@@ -363,6 +364,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		return true;
 	}
 	
+	@Override
 	/**
 	 * Reload cache from the global configuration server
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#refreshTopology()
@@ -372,7 +374,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 		this.initialized = true;
 	}
 
-
+	@Override
 	/**
 	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#clean()
 	 */
@@ -426,13 +428,14 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	}
 	
 	@Override
+	/**
+	 * Creates a backup monitor
+	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#createBackupMonitor(String queue, String hcmAddress, String hcmRemoved)
+	 */
 	public boolean createBackupMonitor(String queue, String hcmAddress, String hcmRemoved) {
 		logger.info("Create a backup on: " + hcmAddress);
 		try {
 			this.lockCreateQ.lock();
-			if(!hostExists(hcmAddress)) {
-				logger.info("HCM: " + hcmAddress + " has been removed");
-			}
 			ZMQ.Socket hostSocket = this.configurationState.getHostManagerMap().get(hcmAddress);
 			hostSocket.send((Integer.toString(RoQConstant.CONFIG_CREATE_STBY_MONITOR) + "," + queue).getBytes(), 0);
 			byte[] response = hostSocket.recv(0);
@@ -449,7 +452,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 					if (hcmRemoved != null) {
 						globalConfigReq.send(
 								(Integer.toString(RoQConstant.CONFIG_REPLACE_QUEUE_BACKUP_MONITOR) + 
-										"," + queue + "," + hcmAddress + "," + resultHost[1] + "," + hcmRemoved)
+										"," + queue + "," + hcmAddress + "," + resultHost[1] + "," + resultHost[2] + "," + hcmRemoved)
 										.getBytes(), 0);
 						String GCMresult = new String(globalConfigReq.recv(0));
 						if (Integer.parseInt(GCMresult) != RoQConstant.OK) {
@@ -461,7 +464,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 					} else {
 						globalConfigReq.send(
 								(Integer.toString(RoQConstant.CONFIG_ADD_QUEUE_BACKUP_MONITOR) + 
-										"," + queue + "," + hcmAddress + "," + resultHost[1]).getBytes(), 0);
+										"," + queue + "," + hcmAddress + "," + resultHost[1] + "," + resultHost[2]).getBytes(), 0);
 						String GCMresult = new String(globalConfigReq.recv(0));
 						if (Integer.parseInt(GCMresult) != RoQConstant.OK) {
 							logger.error("The metadata update failed");
@@ -481,12 +484,14 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 	}
 
 	@Override
+	/**
+	 * activate a standby monitor
+	 * @see org.roqmessaging.clientlib.factory.IRoQLogicalQueueFactory#failoverOnBackupMonitor(String queue, String hcmAddress)
+	 */
 	public boolean failoverOnBackupMonitor(String queue, String hcmAddress) {
 		logger.info("failover on: " + hcmAddress);
 		try {
 			this.lockCreateQ.lock();
-			if (!this.initialized)
-				this.refreshTopology();
 			// The name does not exist yet
 			//2. Sends the create event to the hostConfig manager thread
 			ZMQ.Socket hostSocket = this.configurationState.getHostManagerMap().get(hcmAddress);

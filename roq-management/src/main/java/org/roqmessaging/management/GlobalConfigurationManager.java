@@ -39,6 +39,7 @@ import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.MngtController;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
 import org.roqmessaging.zookeeper.Metadata;
+import org.roqmessaging.zookeeper.Metadata.BackupMonitor;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Poller;
 
@@ -49,7 +50,7 @@ import org.zeromq.ZMQ.Poller;
  * Notice that the configuration is maintain through a state DAO, this object is ready to be shared on data grid. 
  * This state is persisted at the configuration manager level.
  * 
- * @author sskhiri
+ * @author sskhiri, bvanmelle
  */
 public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private volatile boolean running;
@@ -400,16 +401,18 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		
 		case RoQConstant.CONFIG_REPLACE_QUEUE_BACKUP_MONITOR:
 			logger.debug("Recieveing replace STBY MONITOR request from a client");
-			if (info.length == 5) {
+			if (info.length == 6) {
 				logger.info("The request format is valid we 2 part:  "+ info[1] + " "+ info[2] + " "+ info[3]+ " "+ info[4]);
 				String queueName = info[1];
 				String hcmAddress = info[2];
 				String monitorAddress = info[3];
-				String hcmToRemoveAddress = info[4];
+				String monitorStatAddress = info[4];
+				String hcmToRemoveAddress = info[5];
+				
 				
 				Metadata.Queue queue = new Metadata.Queue(queueName);
 				Metadata.HCM hcmToRemove = new Metadata.HCM(hcmToRemoveAddress);
-				Metadata.BackupMonitor newBUMonitor = new Metadata.BackupMonitor(hcmAddress + "," + monitorAddress);
+				Metadata.BackupMonitor newBUMonitor = new Metadata.BackupMonitor(hcmAddress + "," + monitorAddress + "," + monitorStatAddress);
 				
 				zk.replaceBackupMonitor(queue, hcmToRemove, newBUMonitor);
 				
@@ -423,15 +426,16 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			
 		case RoQConstant.CONFIG_ADD_QUEUE_BACKUP_MONITOR:
 			logger.debug("Recieveing Add STBY Monitor request from a client");
-			if (info.length == 4) {
-				logger.info("The request format is valid we 2 part:  "+ info[1] + " "+ info[2]+ " "+ info[3]);
+			if (info.length == 5) {
+				logger.info("The request format is valid we 2 part:  "+ info[1] + " "+ info[2]+ " "+ info[3] + " " + info[4]);
 				String queueName = info[1];
 				String hcmAddress = info[2];
 				String monitorAddress = info[3];
+				String monitorStatAddress = info[4];
 				
 				Metadata.Queue queue = new Metadata.Queue(queueName);
 				Metadata.HCM hcm = new Metadata.HCM(hcmAddress);
-				Metadata.BackupMonitor newBUMonitor = new Metadata.BackupMonitor(hcmAddress + "," + monitorAddress);
+				Metadata.BackupMonitor newBUMonitor = new Metadata.BackupMonitor(hcmAddress + "," + monitorAddress + "," + monitorStatAddress);
 				
 				zk.addBackupMonitor(queue, hcm, newBUMonitor);
 				
@@ -488,13 +492,15 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				String hcmAddress = info[4];
 				ArrayList<String> monitorsBU = new ArrayList<String>();
 				ArrayList<String> monitorsBUHost = new ArrayList<String>();
+				ArrayList<String> monitorsBUStat = new ArrayList<String>();
 				
-				for (int i = 5; i < info.length; i+=2) {
+				for (int i = 5; i < info.length; i+=3) {
 					monitorsBUHost.add(info[i]);
 					monitorsBU.add(info[i+1]);
+					monitorsBUStat.add(info[i+2]);
 				}
 				// register the queue
-				addQueue(queueName, monitorAddress, statMonitorAddress, hcmAddress, monitorsBU, monitorsBUHost);
+				addQueue(queueName, monitorAddress, statMonitorAddress, hcmAddress, monitorsBU, monitorsBUHost, monitorsBUStat);
 				this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_REQUEST_OK).getBytes(), 0);
 			}else{
 					logger.error("The create queue request sent does not contain 3 part: ID, quName, Monitor host");
@@ -551,6 +557,32 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			}
 			break;
 			
+		case RoQConstant.CONFIG_GET_HOSTS_LIST_BY_QNAME:
+			logger.debug("Recieveing GET HOST request from a client ");
+			if (info.length == 2) {
+				String queueName = info[1];
+				
+				logger.debug("The request format is valid - Asking for translating  "+ queueName);
+				
+				ArrayList<String> fields = getHostsListByQueueName(queueName);
+				if (fields == null) {
+					logger.warn(" No logical queue as:"+queueName);
+					clientReqSocket.send("".getBytes(), 0);
+				} else {
+					String monitor = fields.get(0);
+					String statMonitor = fields.get(1);
+					
+					String reply = monitor + "," + statMonitor;
+					for (int i = 2; i < fields.size(); i+=2) {
+						reply += "," + fields.get(i) + "," + fields.get(i+1);
+					}
+					
+					logger.debug("Answering back:" + reply);
+					this.clientReqSocket.send(reply.getBytes(), 0);
+				}
+			}
+			break;
+			
 			//Get the monitor and the statistic monitor forwarder  by the QName BUT In BSON for non java processes
 		case RoQConstant.BSON_CONFIG_GET_HOST_BY_QNAME:
 			logger.debug("Recieveing GET HOST by QNAME in BSON request from a client ");
@@ -585,7 +617,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * @param statMonitorAddress address of the queue's StatisticMonitor in the format "tcp://x.y.z:port"
 	 * @param hcmAddress ip address of the host that handles the queue 
 	 */
-	public void addQueue(String queueName, String monitorAddress, String statMonitorAddress, String hcmAddress, List<String> monitorsBU,  List<String> monitorsBUHost) {
+	public void addQueue(String queueName, String monitorAddress, String statMonitorAddress, 
+			String hcmAddress, List<String> monitorsBU,  List<String> monitorsBUHost, List<String> monitorsBUStat) {
 		Metadata.Queue queue = new Metadata.Queue(queueName);
 		Metadata.Monitor monitor = new Metadata.Monitor(monitorAddress);
 		Metadata.StatMonitor statMonitor = new Metadata.StatMonitor(statMonitorAddress);
@@ -593,7 +626,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		ArrayList<Metadata.BackupMonitor> monitorsBUMeta = new ArrayList<Metadata.BackupMonitor>();
 		
 		for (int i =0; i < monitorsBU.size(); i++) {
-			monitorsBUMeta.add(new Metadata.BackupMonitor(monitorsBUHost.get(i) + "," + monitorsBU.get(i)));
+			monitorsBUMeta.add(new Metadata.BackupMonitor(monitorsBUHost.get(i) + "," + monitorsBU.get(i) + "," + monitorsBUStat.get(i)));
 		}
 		
 		zk.createQueue(queue, hcm, monitor, statMonitor, monitorsBUMeta);
@@ -764,7 +797,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * does not return a host, but rather monitor and stat monitor addresses.
 	 * 
 	 * @param queueName name of the logical queue
-	 * @return monitor address (base port) and stat monitor address (base port),
+	 * @return active monitor address (base port) and stat monitor address (base port),
 	 * 		or null of they don't exist.
 	 */
 	private String[] getHostByQueueName(String queueName) {
@@ -776,6 +809,33 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			return null;
 		}
 		String[] returnValue = {monitor.address, statMonitor.address};
+		return returnValue;
+	}
+	
+	/**
+	 * The same as the previous, but include the Standby monitors
+	 * @param queueName
+	 * @return list of monitors (active + standby)
+	 */
+	private ArrayList<String> getHostsListByQueueName(String queueName) {
+		Metadata.Queue queue = new Metadata.Queue(queueName);
+		Metadata.Monitor monitor = zk.getMonitor(queue);
+		Metadata.StatMonitor statMonitor = zk.getStatMonitor(queue);
+		
+		ArrayList<String> returnValue = new ArrayList<String>();
+		returnValue.add(monitor.address);
+		returnValue.add(statMonitor.address);
+		
+		ArrayList<BackupMonitor> buMonitors = zk.getBackUpMonitors(queue);
+		
+		if ((monitor == null) || (statMonitor == null)) {
+			return null;
+		}
+		for (BackupMonitor backup : buMonitors) {
+			returnValue.add(backup.monitorAddress);
+			returnValue.add(backup.statMonitorAddress);
+		}
+		
 		return returnValue;
 	}
 

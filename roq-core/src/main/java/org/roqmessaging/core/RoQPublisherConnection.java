@@ -14,6 +14,9 @@
  */
 package org.roqmessaging.core;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQPublisher;
@@ -31,15 +34,17 @@ public class RoQPublisherConnection implements IRoQConnection {
 	//Logger
 	private Logger logger = Logger.getLogger(RoQPublisherConnection.class);
 	//The monitor responsible for redirecting the client
-	private String monitor = null;
+	private List<String> monitor = new ArrayList<String>();
 	
 
 
 	/**
 	 * @param monitorHost the monitor queue to connect. Only the ip address.
 	 */
-	public RoQPublisherConnection(String monitorHost) {
-		this.monitor=monitorHost;
+	public RoQPublisherConnection(List<String> monitorHosts) {
+		for (int i = 0; i < monitorHosts.size(); i+=2) {
+			this.monitor.add(monitorHosts.get(i));
+		}
 	}
 
 	/** 
