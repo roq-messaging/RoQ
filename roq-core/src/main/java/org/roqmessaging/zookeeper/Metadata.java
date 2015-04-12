@@ -41,7 +41,7 @@ public class Metadata {
 		}
 		
 		public String zkNodeString() {
-			return monitorAddress.replace("/", "").replace(":", "");
+			return hcmAddress.replace("/", "").replace(":", "");
 		}
 		
 		public String getData() {

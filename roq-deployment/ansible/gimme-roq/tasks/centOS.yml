@@ -1,7 +1,6 @@
 # The script only supports 64bit architectures
-- name: JAVA_HOME Path for this OS
-  set_fact:
-    java_home: /usr/lib/jvm/jre-1.7.0-openjdk.x86_64
+- name: Set JAVA_HOME environment variable
+  lineinfile: dest='/etc/profile' regexp='^#?\s*export JAVA_HOME=(.*)$' line='export JAVA_HOME=/usr/lib/jvm/jre-1.7.0-openjdk.x86_64' state=present
 
 - name: Add zmq repository
   copy: src=home:fengshuo:zeromq.repo dest=/etc/yum.repos.d/ mode=554

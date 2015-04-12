@@ -113,7 +113,7 @@ public class HostProcessFactory {
 		String ip = RoQUtils.getInstance().getLocalIP();
 		try {
 			if (monitorAddress == null || monitorStatAddress == null) {
-				logger.error("The monitor or the monitor stat server is null", new IllegalStateException());
+				logger.error("The monitor or the monitor stat server " + monitorStatAddress + " " + monitorAddress, new IllegalStateException());
 				return false;
 			}
 			// Check if the Exchange already exists (idempotent exchange creation process)
@@ -289,7 +289,7 @@ public class HostProcessFactory {
 
 			//4. Add the configuration information
 			logger.debug("Storing scaling process information");
-			serverState.putScalingProcess(qName, basePort+1);
+			serverState.putScalingProcess(qName, "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + basePort);
 		}else{
 			return false;
 		}

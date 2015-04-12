@@ -21,7 +21,7 @@ public class HcmState {
 	private HashMap<String, HashMap<String, String>> qExchangeMap = null;
 	//[qName, Scaling process shutdown port (on the same machine as host)] 
 	//TODO starting the process, register it and deleting it when stoping
-	private HashMap<String, Integer> qScalingProcessAddr = null;
+	private HashMap<String, String> qScalingProcessAddr = null;
 	
 	/**
 	 * Class constructor to init the map
@@ -33,7 +33,7 @@ public class HcmState {
 		this.qMonitorStatMap = new HashMap<String, String>();
 		this.qSTBYMonitorMap = new HashMap<String, String>();
 		this.qSTBYMonitorStatMap = new HashMap<String, String>();
-		this.qScalingProcessAddr = new HashMap<String, Integer>();
+		this.qScalingProcessAddr = new HashMap<String, String>();
 	}
 	
 	public int getPortMultiplicator() {
@@ -97,7 +97,7 @@ public class HcmState {
 		this.qSTBYMonitorStatMap.put(qName, StateMonitorAddress);
 	}
 	
-	public void putScalingProcess(String qName, int scalingProcessAddress) {
+	public void putScalingProcess(String qName, String scalingProcessAddress) {
 		this.qScalingProcessAddr.put(qName, scalingProcessAddress);
 	}
 	
@@ -128,7 +128,7 @@ public class HcmState {
 		return this.qSTBYMonitorStatMap.get(qName);
 	}
 	
-	public Integer getScalingProcess(String qName) {
+	public String getScalingProcess(String qName) {
 		return this.qScalingProcessAddr.get(qName);
 	}	
 	

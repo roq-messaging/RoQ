@@ -225,11 +225,11 @@ public class HostConfigManager implements Runnable, IStoppable {
 					}
 					break;
 				case RoQConstant.CONFIG_CREATE_STBY_MONITOR:
-					logger.debug("Recieveing create Q request from a client ");
+					logger.debug("Recieveing create STBY Monitor request");
 					if (info.length == 2) {
 						String qName = info[1];
 						logger.debug("The request format is valid with 2 parts, Standby monitor to create:  " + qName);
-						String monitorAddress = serverState.getMonitor(qName);
+						String monitorAddress = serverState.getSTBYMonitor(qName);
 						if (monitorAddress == null) {
 							// 1. Start the monitor
 							monitorAddress = processFactory.startNewMonitorProcess(qName, false);
@@ -254,7 +254,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 					}
 					break;
 				case RoQConstant.CONFIG_REMOVE_STBY_MONITOR:
-					logger.debug("Recieveing remove Q request from a client ");
+					logger.debug("Recieveing remove STBY monitor request from a client ");
 					if (info.length == 2) {
 						String qName = info[1];
 						processFactory.removingSTBYMonitor(qName);
@@ -272,71 +272,55 @@ public class HostConfigManager implements Runnable, IStoppable {
 						String qName = info[1];
 						logger.debug("The request format is valid with 2 parts, Standby monitor to start:  " + qName);
 						String monitorAddress = serverState.getSTBYMonitor(qName);
-						hbMonitor.switchMonitorToMaster(monitorAddress);
+						
 						boolean monitorStarted = false;
 						boolean exchange = false;
 						boolean scalingProcess = false;
 						// Send a request to the monitor to ask for its startup
 						if (monitorAddress != null) {
 							String[] splitAddress = monitorAddress.split(":");
-							int frontPort = new Integer((splitAddress[splitAddress.length - 1]));
-							monitorAddress = splitAddress[0] + ":" + frontPort+1; // Monitor request address
-							
-							// TODO start a scaling process
-							
+							String frontPort = splitAddress[splitAddress.length - 1];
 							// We create a port only for that request toward the monitor
 							ZMQ.Socket monitorREQ = context.socket(ZMQ.REQ);
-							monitorREQ.setLinger(0);
-							monitorREQ.bind(monitorAddress);
+							monitorREQ.connect("tcp://"+RoQUtils.getInstance().getLocalIP()+":"+(Integer.parseInt(frontPort) + 1));
 							monitorREQ.setReceiveTimeOut(5000);
 							monitorREQ.send((RoQConstant.EVENT_MONITOR_FAILOVER + ", ").getBytes(), 0);
 							byte[] result = monitorREQ.recv(0);
-							
 							//Check the result
-							if (result != null && new String(result).split(",")[0].equals(RoQConstant.EVENT_MONITOR_ACTIVATED))
+							if (result != null && new Integer(new String(result).split(",")[0]) == RoQConstant.EVENT_MONITOR_ACTIVATED) {
+								// switch the monitor from standby to active in HCM state
+								hbMonitor.switchMonitorToMaster(frontPort);
+								serverState.switchToMaster(qName);
 								monitorStarted = true;
+							} else {
+								logger.info("Stby monitor has not answered");
+							}
 							monitorREQ.setLinger(0);
 							monitorREQ.close(); // We close the socket							
 						} else if (serverState.getMonitor(qName) != null) { // check if it was not already created
 							monitorStarted = true;
 						}
+						if (serverState.scalingProcessExists(qName)) {
+							scalingProcess = true;
+						} else if (monitorStarted) {
+							scalingProcess = processFactory.startNewScalingProcess(qName);
+						}
 						// Run a new exchange in a indempotent way to avoid request duplication issues
 						if (serverState.ExchangeExists(qName, "INIT_EXCHANGE_11111")) {
 							exchange = true;
-						} else {
+						} else if (monitorStarted) {
 							exchange = processFactory.startNewExchangeProcess(qName, "INIT_EXCHANGE_11111", false);
-						}
-						if (serverState.scalingProcessExists(qName)) {
-							scalingProcess = true;
-						} else {
-							scalingProcess = processFactory.startNewScalingProcess(qName);
 						}
 						// if OK send OK
 						if (monitorAddress != null && monitorStarted && exchange && scalingProcess) {
-							serverState.switchToMaster(qName);
 							logger.info("Successfully started standby monitor for " + qName + "@" + monitorAddress);
 							this.clientReqSocket.send(
-									(Integer.toString(RoQConstant.CONFIG_REQUEST_OK) + "," + monitorAddress)
-											.getBytes(), 0);
-						} else if (!monitorStarted) {
-							logger.error("The standby monitor has not been started, it doesnt answer correctly");
-							this.clientReqSocket.send(
-									(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + "," + monitorAddress)
-											.getBytes(), 0);
-						} else if (!exchange) {
-							logger.error("The standby monitor has not been totally started, exchange creation failed");
-							this.clientReqSocket.send(
-									(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + "," + monitorAddress)
-											.getBytes(), 0);
-						} else if (!scalingProcess) {
-							logger.error("The standby monitor has not been totally started, scaling process");
-							this.clientReqSocket.send(
-									(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + "," + monitorAddress)
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_OK) + "," + monitorAddress + "," + serverState.getStat(qName))
 											.getBytes(), 0);
 						} else {
-							logger.error("The standby monitor has not been started, it was not found on the machine");
+							logger.error("The standby monitor has not been started");
 							this.clientReqSocket.send(
-									(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + "," + monitorAddress)
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + ", ")
 											.getBytes(), 0);
 						}
 					} else {
@@ -468,14 +452,6 @@ public class HostConfigManager implements Runnable, IStoppable {
 		String hcmAddress = (!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()));
 		// Register the ephemeral node on ZK
 		zkClient.registerHCM(new Metadata.HCM(hcmAddress));
-		// Send the notification to the GCM, the GCM will register a watcher on the ephemeral node
-//		byte[] info = gcmConnection.sendRequest((new Integer(RoQConstant.CONFIG_ADD_HOST).toString()+"," + hcmAddress).getBytes(), 5000);
-//		String result[] = (new String(info)).split(",");
-//		int infoCode = Integer.parseInt(result[0]);
-//		logger.debug("Start analysing info code = "+ infoCode);
-//		if(infoCode != RoQConstant.OK){
-//			throw new IllegalStateException("The global config manager cannot register us ..");
-//		}
 		logger.info("Registration process sucessfull");
 	}
 

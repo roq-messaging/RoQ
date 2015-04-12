@@ -100,7 +100,7 @@ public class RoQQueueManager implements IRoQQueueManagement {
 		if ((Integer)result.get("RESULT") ==  RoQConstant.FAIL) {
 			logger.error("The queue creation for  " + queueName
 					+ " failed. Reason: " + ((String) result.get("COMMENT")));
-			throw  new IllegalStateException("The queue removal process failed @ Management Controller");
+			throw  new IllegalStateException("The queue creation process failed @ Management Controller");
 		} else if ((Integer)result.get("RESULT") == RoQConstant.EXCHANGE_LOST){
 			logger.error("The queue creation for  " + queueName
 					+ " failed. Reason: " + "the leader has changed");

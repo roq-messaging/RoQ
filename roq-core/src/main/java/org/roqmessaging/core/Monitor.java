@@ -359,23 +359,19 @@ public class Monitor implements Runnable, IStoppable {
 		logger.info("Monitor started isMaster: " + master);
 		long lastPublish = System.currentTimeMillis();
 		lastHb = Time.currentTimeMillis() - hbPeriod;
-
-		
 		
 		// The Monitor active/backup mechanism
 		// Remark: Once master we never becomes backup again
 		while (this.active && !this.master) {
 			HCMHeartbeat();
-			items.poll(500);
-			if (items.pollin(0)) { // Info from Exchange
-				items.poll(100);
-				if (items.pollin(1)) {
-					String info[] = new String(brokerSub.recv(0)).split(",");
-					// Check if the message indicates hat the monitor becomes the master
-					if (info[0].equals(RoQConstant.EVENT_MONITOR_FAILOVER)) {
-						this.master = true;
-						initRep.send((RoQConstant.EVENT_MONITOR_ACTIVATED + ", ").getBytes(), 0);
-					}
+			items.poll(200);
+			if (items.pollin(1)) {
+				String info[] = new String(initRep.recv(0)).split(",");
+				// Check if the message indicates that the monitor becomes the master
+				if (Integer.parseInt(info[0]) == RoQConstant.EVENT_MONITOR_FAILOVER) {
+					logger.info("Standby monitor has been activated");
+					this.master = true;
+					initRep.send((new Integer(RoQConstant.EVENT_MONITOR_ACTIVATED).toString() + ", ").getBytes(), 0);
 				}
 			}
 		}

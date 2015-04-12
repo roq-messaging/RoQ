@@ -12,6 +12,8 @@ You want to just get a try of ROQ ? Go to the 'demonstration' section, you will 
 Do you want to contribute to ROQ ? Let's go to the 'local deployment' section in order to deploy ROQ on you machine in order to debug etc.
 Get reday for the production ? Go to the 'production' section, we provide you an automatic deployment script which allows to deploy ROQ on Amazon (we plan to support other environments, stay tunned).
 
+/!\ Some scripts recquire advanced rights, if you can, run these scripts in sudo.
+
 Demonstration
 -------------
 

@@ -80,4 +80,22 @@ public interface IRoQLogicalQueueFactory {
 	 */
 	public void clean();
 
+	/**
+	 * This method create a backup monitor for a given queue, and regiter 
+	 * meta data in GCM
+	 * on a given host
+	 * @param queueName
+	 * @param queueBackupMonitor
+	 * @param the hcm lost, null if it is just a backup monitor creation
+	 */
+	public boolean createBackupMonitor(String queue, String queueBackupMonitor, String hcmLost);
+
+	/**
+	 * This method active a backup monitor on a given host & update the meta data
+	 * in the GCM
+	 * @param queueMonitor
+	 * @param active
+	 */
+	public boolean failoverOnBackupMonitor(String queue, String hcmAddress);
+
 }

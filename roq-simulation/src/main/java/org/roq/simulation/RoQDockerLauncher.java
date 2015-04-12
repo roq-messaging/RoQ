@@ -70,7 +70,6 @@ public class RoQDockerLauncher {
 		configGCM = ContainerConfig.builder()
 			    .image("ubuntu:roqdemo")
 			    .attachStderr(true).attachStdout(true)
-			    //.cmd("sh", "-c", "while :; do sleep 1; done")
 			    .cmd(	"java",
 			            "-Djava.library.path=/usr/local/lib",
 			            "-cp",
@@ -104,6 +103,7 @@ public class RoQDockerLauncher {
 		logger.info("Launch three containers: ZK GCM HCM");
 		launchZK();
 		launchGCM();
+		Thread.sleep(10000);
 		launchHCM();
 	}
 	

@@ -73,13 +73,14 @@ public class HcmListener implements ServiceCacheListener {
 								byte[] responseBytes = requestSocket.recv(0);
 								BSONObject result = BSON.decode(responseBytes);
 								if ((Integer)result.get("RESULT") ==  RoQConstant.FAIL) {
-									logger.error("Failed to failover on another monitor");
+									logger.error("Failed to failover on another host");
 								}
-								roQZooKeeperClient.removeHcmRemoveTransaction(hcm);
 							} else {
 								logger.info("hcm removed explicitely: " + hcm.address);
 								roQZooKeeperClient.removeHcmRemoveTransaction(hcm);
 							}
+							roQZooKeeperClient.removeHCMState(hcm);
+							logger.info("hcm state recover is finish");
 						}
 					}
 				}

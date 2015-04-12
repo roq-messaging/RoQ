@@ -1,13 +1,10 @@
-- name: JAVA_HOME Path for this OS in x86_64
-  set_fact:
-    java_home: /usr/lib/jvm/java-7-openjdk-i386
+- name: Set JAVA_HOME environment variable
+  lineinfile: dest='/etc/profile' regexp='^#?\s*export JAVA_HOME=(.*)$' line='export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64' state=present
   when: ansible_architecture == "x86_64"
 
-- name: JAVA_HOME Path for this OS in i386
-  set_fact:
-    java_home: /usr/lib/jvm/java-7-openjdk-i386
+- name: Set JAVA_HOME environment variable
+  lineinfile: dest='/etc/profile' regexp='^#?\s*export JAVA_HOME=(.*)$' line='export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-i386' state=present
   when: ansible_architecture == "i386"
-
 
 - name: Add and Update ZMQ repository
   apt_repository: repo='ppa:chris-lea/zeromq' update_cache=yes state=present

@@ -95,6 +95,7 @@ public class ScalingProcess extends KPISubscriber {
 	public ScalingProcess(String zk_address, int gcm_interfacePort, int gcm_adminPort, String qName, int listnerPort, String localStatePath, long hbPeriod) {
 		super(zk_address, gcm_interfacePort, qName);
 		try {
+			Thread.sleep(6000); // wait for queue creation process termination
 			this.qName = qName;
 			this.listnerPort = listnerPort;
 			this.serializer = new RoQBSONSerializer();
@@ -102,7 +103,7 @@ public class ScalingProcess extends KPISubscriber {
 			this.hbPeriod = hbPeriod;
 			// ZMQ init
 			this.context = ZMQ.context(1);
-			gcmGlobalConnection = new RoQGCMConnection(zkClient, 50, 4000);
+			gcmGlobalConnection = new RoQGCMConnection(zkClient, 50, 8000);
 		} catch (Exception e) {
 			logger.error("Error while creating Monitor, ABORDED", e);
 			return;

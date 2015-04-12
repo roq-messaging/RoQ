@@ -234,11 +234,37 @@ public interface RoQConstant {
 	
 	public static int CONFIG_START_QUEUE = 1013;
 	
+	/**
+	 * HCM request, create a STBY monitor on the host
+	 */
 	public static int CONFIG_CREATE_STBY_MONITOR = 1014;
 	
+	/**
+	 * HCM request, start a STBY monitor on the host
+	 */
 	public static int CONFIG_START_STBY_MONITOR = 1015;
 	
+	/**
+	 * HCM request, remove a STBY monitor on the host
+	 */
 	public static int CONFIG_REMOVE_STBY_MONITOR = 1016;
+	
+	/**
+	 * GCM request, rto replace the backup monitor by another in 
+	 * the metadata
+	 */
+	public static int CONFIG_REPLACE_QUEUE_BACKUP_MONITOR = 1017;
+	
+	/**
+	 * GCM request, to set a backup monitor as the new active monitor
+	 * in the queue metadata
+	 */
+	public static int CONFIG_REPLACE_QUEUE_MONITOR = 1018;		
+	
+	/**
+	 * GCM request to add a backup monitor in the meta data of the queue
+	 */
+	public static int CONFIG_ADD_QUEUE_BACKUP_MONITOR = 1019;		
 	
 	
 	/**

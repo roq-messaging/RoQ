@@ -113,6 +113,7 @@ public class ProcessMonitor implements Runnable {
 	 * @param id
 	 */
 	public void switchMonitorToMaster(String id) {
+		logger.info("activating process " + id);
 		processes.get(id).keys.put("isMaster", new Boolean(true).toString());
 	}
 

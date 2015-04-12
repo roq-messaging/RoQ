@@ -14,7 +14,5 @@
 - name: Configure and Install ZMQ V2.1.3
   shell: "cd {{jzmq_path}}; {{item}}"
   with_items: ['./autogen.sh', './configure', 'make', 'sudo make install', 'mvn install']
-  environment:
-       JAVA_HOME: "{{java_home}}"
   tags:
     - full-install

@@ -398,13 +398,78 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			}
 			break;
 		
+		case RoQConstant.CONFIG_REPLACE_QUEUE_BACKUP_MONITOR:
+			logger.debug("Recieveing replace STBY MONITOR request from a client");
+			if (info.length == 5) {
+				logger.info("The request format is valid we 2 part:  "+ info[1] + " "+ info[2] + " "+ info[3]+ " "+ info[4]);
+				String queueName = info[1];
+				String hcmAddress = info[2];
+				String monitorAddress = info[3];
+				String hcmToRemoveAddress = info[4];
+				
+				Metadata.Queue queue = new Metadata.Queue(queueName);
+				Metadata.HCM hcmToRemove = new Metadata.HCM(hcmToRemoveAddress);
+				Metadata.BackupMonitor newBUMonitor = new Metadata.BackupMonitor(hcmAddress + "," + monitorAddress);
+				
+				zk.replaceBackupMonitor(queue, hcmToRemove, newBUMonitor);
+				
+				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+			}else{
+					logger.error("The  request sent does not contain 5 part: ID, " +
+							"quName, hcmAddress, monitorAddress, oldBuHcmAddress");
+					this.clientReqSocket.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
+				}
+			break;
+			
+		case RoQConstant.CONFIG_ADD_QUEUE_BACKUP_MONITOR:
+			logger.debug("Recieveing Add STBY Monitor request from a client");
+			if (info.length == 4) {
+				logger.info("The request format is valid we 2 part:  "+ info[1] + " "+ info[2]+ " "+ info[3]);
+				String queueName = info[1];
+				String hcmAddress = info[2];
+				String monitorAddress = info[3];
+				
+				Metadata.Queue queue = new Metadata.Queue(queueName);
+				Metadata.HCM hcm = new Metadata.HCM(hcmAddress);
+				Metadata.BackupMonitor newBUMonitor = new Metadata.BackupMonitor(hcmAddress + "," + monitorAddress);
+				
+				zk.addBackupMonitor(queue, hcm, newBUMonitor);
+				
+				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+			}else{
+					logger.error("The request sent does not contain 4 part: ID, quName, hcmAddress, monitorAddress");
+					this.clientReqSocket.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
+				}
+			break;
+		
+		case RoQConstant.CONFIG_REPLACE_QUEUE_MONITOR:
+			logger.info("Recieveing replace MONITOR request from a client");
+			if (info.length == 5) {
+				logger.info("The request format is valid we 2 part:  "+ info[1]+ " "+ info[2]+ " "+ info[3] + " " + info[4]);
+				String queueName = info[1];
+				String hcmAddress = info[2];
+				String monitorAddress = info[3];
+				String statMonitorAddress = info[4];
+				
+				Metadata.Queue queue = new Metadata.Queue(queueName);
+				Metadata.Monitor monitor = new Metadata.Monitor(monitorAddress);
+				Metadata.StatMonitor statMonitor = new Metadata.StatMonitor(statMonitorAddress);
+				Metadata.HCM hcm = new Metadata.HCM(hcmAddress);
+				
+				zk.replaceMonitor(queue, hcm, monitor, statMonitor);
+				
+				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+			}else{
+					logger.error("The request sent does not contain 5 part: ID, quName, hcm address," +
+							" monitorAddress, statMonitor adress");
+					this.clientReqSocket.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
+				}
+			break;
+		
 		case RoQConstant.CONFIG_REMOVE_QUEUE:
 			logger.debug("Recieveing remove Q request from a client ");
 			if (info.length == 2) {
-				logger.debug("The request format is valid we 2 part:  "+ info[1]);
-
-				String queueName = info[1];
-				removeQueue(queueName);
+				zk.removeQueue(new Metadata.Queue(info[1]));
 				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
 			}else{
 					logger.error("The remove queue request sent does not contain 2 part: ID, quName");
@@ -415,7 +480,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		case RoQConstant.CONFIG_CREATE_QUEUE:
 			logger.debug("Recieveing create Q request from a client ");
 			if (info.length >3) {
-				logger.debug("The request format is valid we 4 part:  "+ info[1] +" "+ info[2]+ " "+ info[3]+ " "+ info[4]);
+				logger.info("The request format is valid we 4 part:  "+ info[1] +" "+ info[2]+ " "+ info[3]+ " "+ info[4]);
 				
 				String queueName = info[1];
 				String monitorAddress = info[2];
