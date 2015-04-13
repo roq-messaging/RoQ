@@ -248,7 +248,8 @@ public class Monitor implements Runnable, IStoppable {
 				}
 			}
 			logger.info("Added new host: " + address+": "+ frontPort+"->"+ backPort);
-			zkClient.addXchangeInQueueExchanges(qName, address + ":" + new Integer(backPort + 3));
+			int port = new Integer(backPort) + 3;
+			zkClient.addXchangeInQueueExchanges(qName, address + ":" + port);
 			knownHosts.add(new ExchangeState(address,frontPort, backPort ));
 			return 1;
 		}else{
@@ -455,7 +456,7 @@ public class Monitor implements Runnable, IStoppable {
 							if (info.length == 4) {
 								if (logHost(info[1], info[2], info[3]) == 1) {
 									listenersPub.send((new Integer(RoQConstant.REQUEST_UPDATE_EXCHANGE_LIST).toString()
-											+ "," + info[1]+":"+ info[2]).getBytes(), 0);
+											+ "," + info[1]+":"+ info[3]).getBytes(), 0);
 								}
 							} else
 								logger.error("The message recieved from the exchange heart beat"
@@ -541,36 +542,41 @@ public class Monitor implements Runnable, IStoppable {
 	private void RecoverKnownHostList() {
 		List<String> exchangesList = zkClient.getXchangesListInQueueExchanges(this.qName);
 		ZMQ.Socket exchangeReqSocket;
-		for (String exchangeRepAddress : exchangesList) {
-			// open a socket to ask the exchange
-			logger.info(exchangeRepAddress);
-			exchangeReqSocket = context.socket(ZMQ.REQ);
-			exchangeReqSocket.connect("tcp://" + exchangeRepAddress);
-			exchangeReqSocket.setReceiveTimeOut(3000); // max three seconds to respond
-			exchangeReqSocket.send((RoQConstant.EVENT_MONITOR_CHANGED + "," + 
-					"tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + this.basePort + "," +
-					"tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + this.statPort
-					).getBytes(), 0);
-			byte[] response = exchangeReqSocket.recv(0);
-			// The exchange is alive
-			if (response != null) {
-				String[] infos = new String(response).split(",");
-				String address = infos[0];
-				String front = infos[1];
-				String back = infos[2];				
-				knownHosts.add(new ExchangeState(address, front, back));
-			} else { // The exchange is considered as dead
-				// extract the exchange address
-				String [] splitAddress = exchangeRepAddress.split(":");
-				int portLength = splitAddress[splitAddress.length - 1].length() + 1;
-				String addressToRemove = (String) exchangeRepAddress.subSequence(0, exchangeRepAddress.length() - portLength);
-				// Send to producers the exchange lost notification
-				producersPub.send((new Integer(RoQConstant.EXCHANGE_LOST).toString() + 
-						"," + addressToRemove).getBytes(), 0);
-				zkClient.deleteXchangeInQueueExchanges(this.qName, exchangeRepAddress);
-				// TODO maybe send a shutdown message in best effort
+		if (exchangesList != null) {
+			for (String exchangeRepAddress : exchangesList) {
+				logger.info("list element: " + exchangeRepAddress);
+				// open a socket to ask the exchange
+				logger.info(exchangeRepAddress);
+				exchangeReqSocket = context.socket(ZMQ.REQ);
+				exchangeReqSocket.connect("tcp://" + exchangeRepAddress);
+				exchangeReqSocket.setReceiveTimeOut(3000); // max three seconds to respond
+				exchangeReqSocket.send((RoQConstant.EVENT_MONITOR_CHANGED + "," + 
+						"tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + this.basePort + "," +
+						"tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + this.statPort
+						).getBytes(), 0);
+				byte[] response = exchangeReqSocket.recv(0);
+				// The exchange is alive
+				if (response != null) {
+					String[] infos = new String(response).split(",");
+					String address = infos[0];
+					String front = infos[1];
+					String back = infos[2];				
+					knownHosts.add(new ExchangeState(address, front, back));
+				} else { // The exchange is considered as dead
+					// extract the exchange address
+					String [] splitAddress = exchangeRepAddress.split(":");
+					int portLength = splitAddress[splitAddress.length - 1].length() + 1;
+					String addressToRemove = (String) exchangeRepAddress.subSequence(0, exchangeRepAddress.length() - portLength);
+					logger.info("An exchange had been lost: " + addressToRemove);
+					// Send to producers the exchange lost notification
+					int port = new Integer(splitAddress[splitAddress.length - 1]) - 4;
+					producersPub.send((new Integer(RoQConstant.EXCHANGE_LOST).toString() + 
+							"," + addressToRemove + ":" + port).getBytes(), 0);
+					zkClient.deleteXchangeInQueueExchanges(this.qName, exchangeRepAddress);
+					// TODO maybe send a shutdown message in best effort
+				}
+				exchangeReqSocket.close();
 			}
-			exchangeReqSocket.close();
 		}
 		listenersPub.send(("2," + bcastExchg()).getBytes(), 0);
 	}

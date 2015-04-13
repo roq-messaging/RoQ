@@ -275,8 +275,8 @@ public class SubscriberConnectionManager implements Runnable {
 				this.subscriber.onEvent(request!=null?request:new byte[]{});
 				received++;
 			}
-			else {
-				for (int i = 1; i < 4; i++) {
+			else { // from one monitor
+				for (int i = 1; i < (1 + replicationFactor); i++) {
 					if (items.pollin(i)) { // Info from Monitor
 						String info[] = new String(HostPolVal.get(i).recv(0)).split(",");
 						int infoCode = Integer.parseInt(info[0]);

@@ -188,7 +188,7 @@ public class PublisherConnectionManager implements Runnable {
 		logger.info("Producer online");
 		while (running) {
 			items.poll(100);
-			for (int i = 0; i < 3; i++) {
+			for (int i = 0; i < replicationFactor; i++) {
 				if (items.pollin(i)) { // Info from Monitor i
 					String info[] = new String(HostPolVal.get(i).recv(0)).split(",");
 					int infoCode = Integer.parseInt(info[0]);
@@ -203,6 +203,7 @@ public class PublisherConnectionManager implements Runnable {
 						break;
 					case RoQConstant.EXCHANGE_LOST:
 						// Panic
+						logger.info(s_currentExchange + " " + info[1]);
 						if (info[1].equals(s_currentExchange)) {
 							logger.warn("Panic, my exchange is lost! " + info[1]);
 							closeConnection();

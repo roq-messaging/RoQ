@@ -20,6 +20,8 @@ import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.roq.simulation.RoQDockerLauncher;
+import org.roqmessaging.client.IRoQConnection;
+import org.roqmessaging.client.IRoQPublisher;
 import org.roqmessaging.client.IRoQQueueManagement;
 import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.core.factory.RoQQueueManager;
@@ -92,6 +94,43 @@ public class RoQDockerTestCase {
 	public static boolean queueExists(String qName) 
 			throws IllegalStateException, ConnectException {
 		return queueManager.queueExists(qName);
+	}
+	
+	/**
+	 * A thread which send one message every 500ms
+	 * @author benjamin
+	 *
+	 */
+	protected class MessageSender implements Runnable {
+		private IRoQConnection connection;
+		private IRoQPublisher publisher;
+		private int nbMessages;
+		
+		public MessageSender(IRoQConnection connection, int nbMessages) {
+			super();
+			this.connection = connection;
+			this.nbMessages = nbMessages;
+			connection.open();
+			// Creating the publisher and sending message
+			publisher = connection.createPublisher();
+		}
+		
+		@Override
+		public void run() {
+			connection.blockTillReady(10000);
+
+			// 5 Sending the message
+			logger.info("Sending MESSAGES ...");
+			for (int i = 0; i < nbMessages; i++) {
+				try {
+					Thread.sleep(500); // wait 500 ms between each messages
+				} catch (InterruptedException e) { e.printStackTrace();	}
+				
+				publisher.sendMessage("key".getBytes(), ("hello" + i).getBytes());
+			}
+			
+		}
+		
 	}
 	
 	/**
