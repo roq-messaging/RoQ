@@ -86,14 +86,14 @@ public class SubscriberConnectionManager implements Runnable {
 			//as the monitor is and address as tcp://ip:base port
 			int basePort = extractBasePort(monitor);
 			String portOff = monitor.substring(0, monitor.length()-"xxxx".length());
-			
+			logger.info(monitor);
 			this.monitorsSub.put(monitor, context.socket(ZMQ.SUB));
 			this.monitorsSub.get(monitor).connect(portOff+(basePort+3));
 			this.monitorsSub.get(monitor).subscribe("".getBytes());
 	
 			this.initReqSockets.put(monitor, this.context.socket(ZMQ.REQ));
 			this.initReqSockets.get(monitor).connect(portOff+(basePort+1));
-			this.initReqSockets.get(monitor).setReceiveTimeOut(3000);
+			this.initReqSockets.get(monitor).setReceiveTimeOut(6000);
 			
 			if (tstmp) {
 				this.tstmpReq = context.socket(ZMQ.REQ);

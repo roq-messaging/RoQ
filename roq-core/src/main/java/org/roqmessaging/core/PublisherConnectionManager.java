@@ -55,6 +55,7 @@ public class PublisherConnectionManager implements Runnable {
 	 */
 	public PublisherConnectionManager(List<String> monitors, boolean tstmp) {
 		this.context = ZMQ.context(1);
+		this.s_ID = UUID.randomUUID().toString();
 		for (String monitor : monitors) {
 			this.monitorsSub.put(monitor, context.socket(ZMQ.SUB));
 			//As we received the base port we need to increment the base port to get the sub
@@ -62,11 +63,12 @@ public class PublisherConnectionManager implements Runnable {
 			int basePort = extractBasePort(monitor);
 			String portOff = monitor.substring(0, monitor.length()-"xxxx".length());
 			this.monitorsSub.get(monitor).connect(portOff+(basePort+2));
-			this.s_ID = UUID.randomUUID().toString();
 			this.monitorsSub.get(monitor).subscribe("".getBytes());
+			
 			this.initReqSockets.put(monitor, context.socket(ZMQ.REQ));
 			this.initReqSockets.get(monitor).connect(portOff+(basePort+1));
-			this.initReqSockets.get(monitor).setReceiveTimeOut(3000);
+			this.initReqSockets.get(monitor).setReceiveTimeOut(6000);
+			
 			//Init the config state
 			this.configState = new PublisherConfigState();
 			this.configState.setMonitor(monitor);

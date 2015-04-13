@@ -89,7 +89,6 @@ public class RoQZKHelpers {
 				.and().delete().forPath(hcmPath)
 				.and().create().forPath(hcmPath, hcmAddress.getBytes())
 				.and().delete().forPath(statMonitorPath)
-				.and().delete().forPath(scalingPath)
 				.and().create().forPath(statMonitorPath, statMonitor.address.getBytes())
 				.and().delete().forPath(monitorPath)
 				.and().create().forPath(monitorPath, monitor.address.getBytes())

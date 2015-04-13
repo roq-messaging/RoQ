@@ -6,6 +6,12 @@ import java.util.ArrayList;
 
 import org.junit.Test;
 import org.roq.simulation.test.RoQDockerTestCase;
+import org.roqmessaging.client.IRoQConnection;
+import org.roqmessaging.client.IRoQPublisher;
+import org.roqmessaging.client.IRoQSubscriber;
+import org.roqmessaging.client.IRoQSubscriberConnection;
+import org.roqmessaging.clientlib.factory.IRoQConnectionFactory;
+import org.roqmessaging.core.factory.RoQConnectionFactory;
 import org.roqmessaging.utils.Time;
 
 public class testBackupMonitors extends RoQDockerTestCase {
@@ -45,9 +51,6 @@ public class testBackupMonitors extends RoQDockerTestCase {
 			// Wait for recovery
 			Thread.sleep(60000);
 			
-			rmQueue("testQ0");
-			rmQueue("testQ1");
-			
 			// now we establish a connection with the monitor
 			// in order to verify the failover mechanism
 			System.out.println(Time.currentTimeSecs()%100);
@@ -55,6 +58,52 @@ public class testBackupMonitors extends RoQDockerTestCase {
 			System.out.println("an error has occured: ");
 			e.printStackTrace();
 		}
+		
+		
+		// 3. Create a subscriber
+		IRoQConnectionFactory factory;
+		try {
+			factory = new RoQConnectionFactory(launcher.getZkConnectionString());
+		
+			// add a subscriber
+			IRoQSubscriberConnection subConnection = factory.createRoQSubscriberConnection("testQ0", "key");
+			// Open the connection to the logical queue
+			subConnection.open();
+			// Register a message listener
+			IRoQSubscriber subs = new IRoQSubscriber() {
+				public void onEvent(byte[] msg) {
+					String content = new String(msg, 0, msg.length);
+					logger.info(content);
+					assert content.startsWith("hello");
+				}
+			};
+			subConnection.setMessageSubscriber(subs);
+			
+			IRoQConnection connection = factory.createRoQConnection("testQ0");
+			connection.open();
+			// Creating the publisher and sending message
+			IRoQPublisher publisher = connection.createPublisher();
+			// Wait for the connection is established before sending the first
+			// message
+			connection.blockTillReady(10000);
+
+			// 5 Sending the message
+			logger.info("Sending MESSAGES ...");
+			for (int i = 0; i < 500; i++) {
+				publisher.sendMessage("key".getBytes(), ("hello" + i).getBytes());
+			}
+			
+			Thread.sleep(10000);
+			
+			connection.close();
+			subConnection.close();
+			
+			rmQueue("testQ0");
+			rmQueue("testQ1");
+			
+		} catch (Exception e) {
+			assertEquals(false, true);
+		}		
 		
 	}
 	

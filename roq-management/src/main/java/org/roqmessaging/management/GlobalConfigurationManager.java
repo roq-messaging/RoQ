@@ -214,6 +214,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 						processStandardRequest(content);
 					} catch (Exception e) {
 						logger.warn("A failure has occured, cause ZK discovery service" + e);
+						e.printStackTrace();
 					}
 				}else{
 					processBSONRequest(encoded);
@@ -824,14 +825,15 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		Metadata.StatMonitor statMonitor = zk.getStatMonitor(queue);
 		
 		ArrayList<String> returnValue = new ArrayList<String>();
+		if (monitor == null || statMonitor == null) {
+			return null;
+		}
+		
 		returnValue.add(monitor.address);
 		returnValue.add(statMonitor.address);
 		
 		ArrayList<BackupMonitor> buMonitors = zk.getBackUpMonitors(queue);
 		
-		if ((monitor == null) || (statMonitor == null)) {
-			return null;
-		}
 		for (BackupMonitor backup : buMonitors) {
 			returnValue.add(backup.monitorAddress);
 			returnValue.add(backup.statMonitorAddress);
@@ -843,5 +845,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	public int getInterfacePort() {
 		return properties.ports.get("GlobalConfigurationManager.interface");
 	}
-
+	
+	public String getZkAddress() {
+		return this.properties.zkConfig.servers;
+	}
+	
 }

@@ -63,6 +63,7 @@ public class TestClientAPI {
 	@Test
 	public void test() {
 		try {
+			// TODO CANNOT WORK, NEED A ZK SERVER...
 			// 1. Create Q
 			 this.factory.createQueue("queue1", RoQUtils.getInstance().getLocalIP().toString(), new ArrayList<String>(), false);
 			// 2. Create subscriber

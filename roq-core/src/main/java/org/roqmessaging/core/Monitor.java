@@ -389,13 +389,14 @@ public class Monitor implements Runnable, IStoppable {
 					logger.info("Standby monitor has been activated");
 					this.master = true;
 					reportTimer.schedule(this.monitorStat, 0, period);
+					// Recover exchange connections
+					initRep.send((new Integer(RoQConstant.EVENT_MONITOR_ACTIVATED).toString() + ", ").getBytes(), 0);
 					try {
 						Thread.sleep(5000); // wait for monitorStat startup
 					} catch (InterruptedException e) {e.printStackTrace();} 
-					// Recover exchange connections
 					RecoverKnownHostList();
-					initRep.send((new Integer(RoQConstant.EVENT_MONITOR_ACTIVATED).toString() + ", ").getBytes(), 0);
 				} else {
+					logger.info("received pub/sub request");
 					initRep.send(("").getBytes(), 0);
 				}
 			}
@@ -481,7 +482,7 @@ public class Monitor implements Runnable, IStoppable {
 			}
 
 			if (items.pollin(1)) { // Init socket
-				logger.debug("Received init request from either producer or listner");
+				logger.info("Received init request from either producer or listner");
 				String info[] = new String(initRep.recv(0)).split(",");
 				infoCode = Integer.parseInt(info[0]);
 				if (!this.shuttingDown) {
@@ -542,8 +543,9 @@ public class Monitor implements Runnable, IStoppable {
 		ZMQ.Socket exchangeReqSocket;
 		for (String exchangeRepAddress : exchangesList) {
 			// open a socket to ask the exchange
+			logger.info(exchangeRepAddress);
 			exchangeReqSocket = context.socket(ZMQ.REQ);
-			exchangeReqSocket.connect(exchangeRepAddress);
+			exchangeReqSocket.connect("tcp://" + exchangeRepAddress);
 			exchangeReqSocket.setReceiveTimeOut(3000); // max three seconds to respond
 			exchangeReqSocket.send((RoQConstant.EVENT_MONITOR_CHANGED + "," + 
 					"tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + this.basePort + "," +

@@ -60,8 +60,8 @@ public class Test117a extends RoQTestCase {
 		// With a rate of 15000 msg/sec of 10 byte we can reach the limit
 		// 3. Start the test
 		Timer timerLoad = new Timer("Loader Publisher");
-		SenderLoader loader1 = new SenderLoader(15000, 10, RoQUtils.getInstance().getLocalIP(), qName);
-		SenderLoader loader2 = new SenderLoader(15000, 10, RoQUtils.getInstance().getLocalIP(), qName);
+		SenderLoader loader1 = new SenderLoader(15000, 10, launcher.getZkServerAddress(), qName);
+		SenderLoader loader2 = new SenderLoader(15000, 10, launcher.getZkServerAddress(), qName);
 		logger.info("TEST 117-------------------------------------Start Test--------------------------");
 		timerLoad.schedule(loader1, 50, 1000);
 		timerLoad.schedule(loader2, 50, 1000);
@@ -73,7 +73,7 @@ public class Test117a extends RoQTestCase {
 		Thread.sleep(30000);
 		// Start a producer
 		logger.info("TEST 117-------------------------------------Starting The producer----------------------------");
-		SenderLoader loader3 = new SenderLoader(100, 5, RoQUtils.getInstance().getLocalIP(), qName);
+		SenderLoader loader3 = new SenderLoader(100, 5,launcher.getZkServerAddress(), qName);
 		// Schedule it, the run will be called soon
 		timerLoad.schedule(loader3, 50, 1000);
 		Thread.sleep(30000);
@@ -91,7 +91,7 @@ public class Test117a extends RoQTestCase {
  * Create a subscriber to this queue
  */
 private void createSubscriber(String qName) {
-	IRoQConnectionFactory conFactory = new RoQConnectionFactory(RoQUtils.getInstance().getLocalIP());
+	IRoQConnectionFactory conFactory = new RoQConnectionFactory(launcher.getZkServerAddress());
 	try {
 		subscriberConnection = conFactory.createRoQSubscriberConnection(qName, "test");
 	

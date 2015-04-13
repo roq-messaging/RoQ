@@ -497,7 +497,7 @@ public class LogicalQFactory implements IRoQLogicalQueueFactory {
 			ZMQ.Socket hostSocket = this.configurationState.getHostManagerMap().get(hcmAddress);
 			hostSocket.send((Integer.toString(RoQConstant.CONFIG_START_STBY_MONITOR) + "," + queue).getBytes(), 0);
 			byte[] result = hostSocket.recv(0);
-				if (result != null) {
+			if (result != null) {
 				String[] resultHost = new String(result).split(",");
 				if (Integer.parseInt(resultHost[0]) != RoQConstant.CONFIG_REQUEST_OK) {
 					logger.error("The STBY monitor startup for  " + queue
