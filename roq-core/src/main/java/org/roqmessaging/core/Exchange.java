@@ -25,6 +25,7 @@ import org.roqmessaging.core.data.StatDataState;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.timer.ExchangeStatTimer;
 import org.roqmessaging.core.timer.Heartbeat;
+import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.state.ProducerState;
 import org.roqmessaging.utils.LocalState;
 import org.roqmessaging.utils.Time;
@@ -49,6 +50,7 @@ public class Exchange implements Runnable, IStoppable {
 	private ZMQ.Socket backendPub;
 	private ZMQ.Socket monitorPub;
 	private ZMQ.Socket pubInfoRep;
+	private ZMQ.Socket monitorInfoRep;
 	private String s_frontend;
 	private String s_backend;
 	private String s_monitor;
@@ -111,6 +113,10 @@ public class Exchange implements Runnable, IStoppable {
 			//The channel on which the publisher will notifies their deconnection
 			this.pubInfoRep =  context.socket(ZMQ.REP);
 			this.pubInfoRep.bind("tcp://*:" +(backend+2));
+			
+			//The channel on which the monitor will notifies active change
+			this.monitorInfoRep =  context.socket(ZMQ.REP);
+			this.monitorInfoRep.bind("tcp://*:" +(backend+3));
 			
 			this.monitorPub.connect(s_monitor);
 			this.frontEnd=frontend;
@@ -193,6 +199,7 @@ public class Exchange implements Runnable, IStoppable {
 		ZMQ.Poller poller = new ZMQ.Poller(2);
 		poller.register(this.frontendSub);
 		poller.register(this.pubInfoRep);
+		poller.register(this.monitorInfoRep);
 		while (this.active) {
 			// Write Heartbeat
 			if ((Time.currentTimeMillis() - lastHb) >= hbPeriod) {
@@ -215,11 +222,10 @@ public class Exchange implements Runnable, IStoppable {
 					 *  ** Message multi part construction ** 1: routing key 2:
 					 * producer ID 3: payload
 					 */
-
 					message = frontendSub.recv(0);
 					part++;
 					if (part == 2) {
-						prodID= new String(message);
+						prodID = bytesToStringUTFCustom(message);
 					}
 					if (part == 3) {
 						logPayload(message.length, prodID);
@@ -227,26 +233,55 @@ public class Exchange implements Runnable, IStoppable {
 					backendPub.send(message, frontendSub.hasReceiveMore() ? ZMQ.SNDMORE : 0);
 				} while (this.frontendSub.hasReceiveMore() && this.active);
 				this.statistic.processed++;
-			}else{
-				if(poller.pollin(1)){
-					//A publisher sends a deconnexion event
-					byte[] info = pubInfoRep.recv(0);
-					String mInfo = new String(info);
-					String[] arrayInfo = mInfo.split(","); //CODE, ID
-					logger.info("Unregistering: " + arrayInfo[1]);
-					if(knownProd.remove(arrayInfo[1])!=null){
-						logger.info("Successfully removed publisher "+arrayInfo[1] +" remains "+ knownProd.size() + " publishers.");
-						this.pubInfoRep.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
-					}else{
-						logger.warn("The publisher "+ arrayInfo[1]+"  is not known");
-						this.pubInfoRep.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
-					}
+			} else if(poller.pollin(1)) {
+				//A publisher sends a deconnexion event
+				byte[] info = pubInfoRep.recv(0);
+				String mInfo = new String(info);
+				String[] arrayInfo = mInfo.split(","); //CODE, ID
+				logger.info("Unregistering: " + arrayInfo[1]);
+				if(knownProd.remove(arrayInfo[1])!=null){
+					logger.info("Successfully removed publisher "+arrayInfo[1] +" remains "+ knownProd.size() + " publishers.");
+					this.pubInfoRep.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+				}else{
+					logger.warn("The publisher "+ arrayInfo[1]+"  is not known");
+					this.pubInfoRep.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
+				}
+			} else if (poller.pollin(2)) { // Received a message from the monitor
+				byte[] info = monitorInfoRep.recv(0);
+				String mInfo = new String(info);
+				String[] arrayInfo = mInfo.split(","); //CODE, MONITOR_ADDR, STAT_ADDR
+				if (new Integer(arrayInfo[0]) == RoQConstant.EVENT_MONITOR_CHANGED) {
+					logger.info("Receiveing monitor changement event: " + arrayInfo[0] + 
+							" mon: " + arrayInfo[1] + " stat: " + arrayInfo[2]);
+					// Stop the current timers, they use old addresses
+					exchStatTimer.shutDown();
+					heartBeatTimer.shutDown();
+					timer.purge();
+					timer.cancel();
+					
+					// set the new addresses
+					this.statistic.setStatHost(arrayInfo[2]);
+					this.s_monitor = arrayInfo[1];
+					
+					// restart the timer with the new parameters
+					timer = new Timer();
+					heartBeatTimer = new Heartbeat(this.s_monitor, this.frontEnd, this.backEnd );
+					timer.schedule(heartBeatTimer, 5, 2000);
+					exchStatTimer = new ExchangeStatTimer(this, this.statistic);
+					timer.schedule(exchStatTimer, 100, 60000);
+					
+					monitorInfoRep.send((
+							RoQUtils.getInstance().getLocalIP() + "," +
+							this.frontEnd + "," +
+							this.backEnd
+						).getBytes(), 0);
+					logger.info("the exchange has failover on the new active monitior");
 				}
 			}
 		}
 		try {
 			// 0 indicates that the process has been shutdown by the user & have not timed out
-			localState.put("HB", 0);
+			localState.put("HB", new Long(0));
 		} catch (IOException e) {
 			logger.error("Failed to stop properly the process, it will be restarted...");
 			e.printStackTrace();
@@ -264,15 +299,15 @@ public class Exchange implements Runnable, IStoppable {
 	 *  @param bytes the encoded byte array
 	 * @return the decoded string
 	 */
-//	public String bytesToStringUTFCustom(byte[] bytes) {
-//		char[] buffer = new char[bytes.length >> 1];
-//		for (int i = 0; i < buffer.length; i++) {
-//			int bpos = i << 1;
-//			char c = (char) (((bytes[bpos] & 0x00FF) << 8) + (bytes[bpos + 1] & 0x00FF));
-//			buffer[i] = c;
-//		}
-//		return new String(buffer);
-//	}
+	public String bytesToStringUTFCustom(byte[] bytes) {
+		char[] buffer = new char[bytes.length >> 1];
+		for (int i = 0; i < buffer.length; i++) {
+			int bpos = i << 1;
+			char c = (char) (((bytes[bpos] & 0x00FF) << 8) + (bytes[bpos + 1] & 0x00FF));
+			buffer[i] = c;
+		}
+		return new String(buffer);
+	}
 
 
 	/**
@@ -283,7 +318,8 @@ public class Exchange implements Runnable, IStoppable {
 		frontendSub.close();
 		backendPub.close();
 		monitorPub.close();
-
+		monitorInfoRep.close();
+		pubInfoRep.close();
 	}
 
 	/**

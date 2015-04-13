@@ -206,7 +206,7 @@ public class TestLogicalQueue {
 				public void onEvent(byte[] msg) {
 					String content = new String(msg, 0, msg.length);
 					assert content.equals("hello");
-					logger.info("In message lIstener recieveing :" + content + " on Key :"+ key);
+					System.out.println("In message lIstener recieveing :" + content + " on Key :"+ key);
 				}
 			};
 			subConnection.setMessageSubscriber(subs);

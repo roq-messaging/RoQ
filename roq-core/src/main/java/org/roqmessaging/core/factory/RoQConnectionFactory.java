@@ -122,6 +122,7 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 		for (String hostElement : new String(response).split(",")) {
 			monitorHosts.add(hostElement);
 		}
+		logger.info(new String(response));
 		logger.info("Creating a connection factory for "+qName+ " @ "+ monitorHosts.get(0) +  " " + monitorHosts.get(1));
 		return monitorHosts;
 	}

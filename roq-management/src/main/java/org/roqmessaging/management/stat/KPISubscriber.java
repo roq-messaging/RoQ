@@ -138,7 +138,7 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 				
 				// Allows to continually receive the rules
 				// from the statMonitor, even after a failover
-				if (Time.currentTimeMillis() - lastSubscribe > 10000) {
+				if (Time.currentTimeMillis() - lastSubscribe > 30000) {
 					try {
 						addSubscriberToGCM();
 					} catch (ConnectException e) {

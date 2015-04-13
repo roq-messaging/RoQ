@@ -292,7 +292,7 @@ public class ScalingProcess extends KPISubscriber {
 		}
 		try {
 			// 0 indicates that the process has been shutdown by the user & have not timed out
-			localState.put("HB", 0);
+			localState.put("HB", new Long(0));
 		} catch (IOException e) {
 			logger.error("Failed to stop properly the process, it will be restarted...");
 			e.printStackTrace();

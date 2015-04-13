@@ -135,6 +135,12 @@ public interface RoQConstant {
 	public static int EVENT_HCM_FAILURE = 11;
 	
 	/**
+	 * Send to the Exchange that the monitor 
+	 * has changed
+	 */
+	public static int EVENT_MONITOR_CHANGED = 11;
+	
+	/**
 	 * Event sent from subscriber to monitor.
 	 * “31,totalreceived”
 	 */

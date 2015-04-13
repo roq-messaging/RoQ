@@ -133,6 +133,11 @@ public class Metadata {
 		public Exchange(String address) {
 			this.address = address;
 		}
+		
+		public String zkNodeString() {
+			return address.replace("/", "").replace(":", "");
+		}
+		
 		@Override
 		public boolean equals(Object obj) {
 			if (this == obj)

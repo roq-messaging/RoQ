@@ -28,7 +28,7 @@ public class PublisherConnectionManager implements Runnable {
 	private HashMap<String, ZMQ.Socket> monitorsSub = new HashMap<String, ZMQ.Socket>();
 	private String s_currentExchange;
 
-	private ZMQ.Socket initReq;
+	private HashMap<String, ZMQ.Socket> initReqSockets = new HashMap<String, ZMQ.Socket>();
 	private ZMQ.Socket tstmpReq;
 
 	// Mesage to send
@@ -64,9 +64,9 @@ public class PublisherConnectionManager implements Runnable {
 			this.monitorsSub.get(monitor).connect(portOff+(basePort+2));
 			this.s_ID = UUID.randomUUID().toString();
 			this.monitorsSub.get(monitor).subscribe("".getBytes());
-			this.initReq = context.socket(ZMQ.REQ);
-			this.initReq.connect(portOff+(basePort+1));
-			
+			this.initReqSockets.put(monitor, context.socket(ZMQ.REQ));
+			this.initReqSockets.get(monitor).connect(portOff+(basePort+1));
+			this.initReqSockets.get(monitor).setReceiveTimeOut(3000);
 			//Init the config state
 			this.configState = new PublisherConfigState();
 			this.configState.setMonitor(monitor);
@@ -100,25 +100,34 @@ public class PublisherConnectionManager implements Runnable {
 	 * @param code the code that must sent to the monitor 2 for the first connection and 3 in panic mode
 	 * @return 1 if the list of exchanges received is empty, 1 otherwise
 	 */
-	private int init(int code) {
+	private int initReq(int code) {
 		logger.info("Asking for a new exchange connection to monitor  code "+ code+"...");
-		// Code must be 2(first connection) or 3(panic procedure)!
-		initReq.send((Integer.toString(code) + "," + s_ID).getBytes(), 0);
-		//The answer must be the concatenated list of exchange
-		String exchg = new String(initReq.recv(0));
-		logger.info("Recieving "+ exchg + " to connect ...");
-		if (!exchg.equals("")) {
-			try {
-				createPublisherSocket(exchg);
-			}finally{
+		int result = 1;
+		for (String initReqKey : initReqSockets.keySet()) {
+			initReqSockets.get(initReqKey).send((Integer.toString(code) + "," + s_ID).getBytes(), 0);
+			byte[] resp = initReqSockets.get(initReqKey).recv(0);
+			if(resp != null) {
+				// Code must be 2(first connection) or 3(panic procedure)!
+				
+				//The answer must be the concatenated list of exchange
+				String exchg = new String(resp);
+				logger.info("Recieving "+ exchg + " to connect ...");
+				if (!exchg.equals("")) {
+					try {
+						createPublisherSocket(exchg);
+					}finally{
+					}
+					logger.info("Connected to Exchange " + exchg);
+					this.s_currentExchange = exchg;
+					result = 0;
+					break;
+				} else {
+					logger.info("no exchange available");
+					result = 1;
+				}
 			}
-			logger.info("Connected to Exchange " + exchg);
-			this.s_currentExchange = exchg;
-			return 0;
-		} else {
-			logger.info("no exchange available");
-			return 1;
 		}
+		return result;
 	}
 	
 	/**
@@ -156,7 +165,7 @@ public class PublisherConnectionManager implements Runnable {
 	public void run() {
 		logger.debug("Starting the publisher "+this.s_ID + " Thread");
 		//0 means that the list of exchange has been received 
-		while (init(2) != 0) {
+		while (initReq(2) != 0) {
 			try {
 				logger.info("Retrying connection...");
 				Thread.sleep(2500);
@@ -196,7 +205,7 @@ public class PublisherConnectionManager implements Runnable {
 							logger.warn("Panic, my exchange is lost! " + info[1]);
 							closeConnection();
 							//Try to reconnect to new exchange - asking to monitor for reallocation
-							while (init(3) != 0) {
+							while (initReq(3) != 0) {
 								logger.warn("Exchange lost. Waiting for reallocation...");
 								try {
 									Thread.sleep(1500);
@@ -211,9 +220,12 @@ public class PublisherConnectionManager implements Runnable {
 			}
 		}
 		logger.debug("Shutting down the publisher connection");
-		for (ZMQ.Socket monitorSub : monitorsSub.values())
+		for (ZMQ.Socket monitorSub : monitorsSub.values()) {
 			monitorSub.close();
-		this.initReq.close();
+		}
+		for (ZMQ.Socket initReq : initReqSockets.values()) {
+			initReq.close();
+		}
 	}
 
 	/**

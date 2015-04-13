@@ -20,7 +20,7 @@ public class RoQZooKeeperConfig extends RoQZKSimpleConfig{
 	public String znode_scaling = "scaling";
 	// Path to transaction node for queues
 	public String znode_queue_transactions = "queueTransactions";
-	
+	// Path to the transactions to remove hcm properly
 	public String znode_hcm_remove_transactions = "hcmRMTransactions";
 	// Path to transaction node for exchanges
 	public String znode_exchange_transactions = "xchangeTransactions";

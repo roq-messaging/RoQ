@@ -38,7 +38,7 @@ public class SubscriberConnectionManager implements Runnable {
 	private Logger logger = Logger.getLogger(SubscriberConnectionManager.class);
 
 	private ZMQ.Context context;
-	private HashMap<String, String> s_monitorsStat;
+	private HashMap<String, String> s_monitorsStat = new HashMap<String, String>();
 	private String activeMonitorStat;
 	private ZMQ.Poller items;
 	private byte[] subkey;
@@ -47,7 +47,7 @@ public class SubscriberConnectionManager implements Runnable {
 
 	private ArrayList<String> knownHosts;
 
-	private HashMap<String, ZMQ.Socket> monitorsSub;
+	private HashMap<String, ZMQ.Socket> monitorsSub  = new HashMap<String, ZMQ.Socket>();
 	private ZMQ.Socket exchSub;
 
 	private ZMQ.Socket tstmpReq;
@@ -93,6 +93,7 @@ public class SubscriberConnectionManager implements Runnable {
 	
 			this.initReqSockets.put(monitor, this.context.socket(ZMQ.REQ));
 			this.initReqSockets.get(monitor).connect(portOff+(basePort+1));
+			this.initReqSockets.get(monitor).setReceiveTimeOut(3000);
 			
 			if (tstmp) {
 				this.tstmpReq = context.socket(ZMQ.REQ);
@@ -147,19 +148,22 @@ public class SubscriberConnectionManager implements Runnable {
 		int result = 1;
 		for (String initReqKey : initReqSockets.keySet()) {
 			initReqSockets.get(initReqKey).send((RoQConstant.CHANNEL_INIT_SUBSCRIBER + ",Hello").getBytes(), 0);
-			String response = new String(initReqSockets.get(initReqKey).recv(0));
-			if (!response.equals("")) {
-				String[] brokerList = response.split(",");
-				this.exchSub = context.socket(ZMQ.SUB);
-				this.exchSub.setRcvHWM(10000000);
-				logger.info("Connnecting with RcvHWM: "+this.exchSub.getRcvHWM());
-				this.exchSub.subscribe(this.subkey);
-				for (int i = 0; i < brokerList.length; i++) {
-					connectToBroker(brokerList[i]);
+			byte[] resp = initReqSockets.get(initReqKey).recv(0);
+			if(resp != null) {
+				String response = new String(resp);
+				if (!response.equals("")) {
+					String[] brokerList = response.split(",");
+					this.exchSub = context.socket(ZMQ.SUB);
+					this.exchSub.setRcvHWM(10000000);
+					logger.info("Connnecting with RcvHWM: "+this.exchSub.getRcvHWM());
+					this.exchSub.subscribe(this.subkey);
+					for (int i = 0; i < brokerList.length; i++) {
+						connectToBroker(brokerList[i]);
+					}
+					this.activeMonitorStat = s_monitorsStat.get(initReqKey);
+					result = 0;
+					break;
 				}
-				this.activeMonitorStat = s_monitorsStat.get(initReqKey);
-				result = 0;
-				break;
 			}
 		}
 		return result;

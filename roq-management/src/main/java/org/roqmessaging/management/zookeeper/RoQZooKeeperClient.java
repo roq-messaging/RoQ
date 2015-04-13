@@ -118,6 +118,8 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		RoQZKHelpers.createZNodeAndParents(client, path);
 		path = RoQZKHelpers.makePath(cfg.znode_hcm_state);
 		RoQZKHelpers.createZNodeAndParents(client, path);
+		path = RoQZKHelpers.makePath(cfg.znode_queues_exchanges);
+		RoQZKHelpers.createZNodeAndParents(client, path);
 	}
 	
 	/**
@@ -366,6 +368,8 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		return RoQZKHelpers.getDataString(client, path);
 	}
 	
+	
+	
 	/**
 	 * This method remove the transaction node when the transaction has been completed
 	 * @param queueName
@@ -389,6 +393,15 @@ public class RoQZooKeeperClient extends RoQZooKeeper {
 		}
 		
 		RoQZKHelpers.createZNode(client, path, payload);
+	}
+	
+	/**
+	 * Remove the node that keep queue's exchanges list
+	 * @param monitor
+	 */
+	public void removeQueueExchanges(Metadata.Queue queue) {
+		String path = RoQZKHelpers.makePath(cfg.znode_queues_exchanges, queue.name);
+		RoQZKHelpers.deleteZNodeAndChildren(client, path);
 	}
 	
 	/**

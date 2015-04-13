@@ -127,9 +127,9 @@ public class UnitTestManagement {
 			
 			// 2. Add queues
 			// TODO Fix this test. Addresses for monitor and stat monitor should be "tcp://ip:port".
-			this.globalConfigurationManager.addQueue("queue1", "127.0.0.1", "127.0.0.1", "127.0.0.1", new ArrayList<String>(), new ArrayList<String>());
-			this.globalConfigurationManager.addQueue("queue2", "127.0.0.2", "127.0.0.2", "127.0.0.2", new ArrayList<String>(), new ArrayList<String>());
-			this.globalConfigurationManager.addQueue("TestQueue", "227.0.0.1", "127.0.0.1", "127.0.0.1", new ArrayList<String>(), new ArrayList<String>());
+			this.globalConfigurationManager.addQueue("queue1", "127.0.0.1", "127.0.0.1", "127.0.0.1", new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>());
+			this.globalConfigurationManager.addQueue("queue2", "127.0.0.2", "127.0.0.2", "127.0.0.2", new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>());
+			this.globalConfigurationManager.addQueue("TestQueue", "227.0.0.1", "127.0.0.1", "127.0.0.1", new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>());
 
 			// 3. Wait for update
 			Thread.sleep(5000);

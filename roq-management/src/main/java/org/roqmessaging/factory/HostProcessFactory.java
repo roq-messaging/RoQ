@@ -67,7 +67,7 @@ public class HostProcessFactory {
 			shutDownSender.shutdown();
 			//3. Stopping the scaling process
 			if(serverState.scalingProcessExists(qName)){
-				shutDownSender.setAddress(portOff + serverState.getScalingProcess(qName).toString());
+				shutDownSender.setAddress(serverState.getScalingProcess(qName).toString());
 				shutDownSender.shutdown();
 			}
 			//The caller must remove the queue.
@@ -128,8 +128,8 @@ public class HostProcessFactory {
 				int number = serverState.getExchangesPortMultiplicator();
 				// 2. Assigns a front port and a back port
 				logger.debug(" This host contains already " + number + " Exchanges");
-				//x4 = Front, back, Shutdown, prod request
-				frontPort = this.properties.getExchangeFrontEndPort() + number * 4;			
+				//x5 = Front, back, Shutdown, prod request, monitor request
+				frontPort = this.properties.getExchangeFrontEndPort() + number * 5; 		
 			}
 			// 3 because there is the front, back and the shut down
 			backPort = frontPort + 1;
@@ -224,7 +224,7 @@ public class HostProcessFactory {
 			ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
 					+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),	MonitorLauncher.class.getCanonicalName(), new Integer(frontPort).toString(),
 					new Integer(statPort).toString(), qName, new Integer(this.properties.getStatPeriod()).toString(), this.properties.getLocalPath(), 
-					new Long( this.properties.getMonitorHbPeriod()).toString(), new Boolean(isMaster).toString());
+					new Long( this.properties.getMonitorHbPeriod()).toString(), new Boolean(isMaster).toString(), this.properties.getZkAddress());
 			logger.debug("Starting: " + pb.command());
 			final Process process = pb.start();
 			// Start process monitoring

@@ -474,6 +474,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			logger.debug("Recieveing remove Q request from a client ");
 			if (info.length == 2) {
 				zk.removeQueue(new Metadata.Queue(info[1]));
+				zk.removeQueueExchanges(new Metadata.Queue(info[1]));
 				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
 			}else{
 					logger.error("The remove queue request sent does not contain 2 part: ID, quName");

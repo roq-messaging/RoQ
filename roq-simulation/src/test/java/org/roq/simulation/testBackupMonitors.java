@@ -45,6 +45,9 @@ public class testBackupMonitors extends RoQDockerTestCase {
 			// Wait for recovery
 			Thread.sleep(60000);
 			
+			rmQueue("testQ0");
+			rmQueue("testQ1");
+			
 			// now we establish a connection with the monitor
 			// in order to verify the failover mechanism
 			System.out.println(Time.currentTimeSecs()%100);
