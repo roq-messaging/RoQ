@@ -39,6 +39,7 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 	private RoQZooKeeper zk;
 	private Logger logger = Logger.getLogger(RoQConnectionFactory.class);
 	private RoQGCMConnection gcmConnection;
+	private int replicationFactor;
 	
 	/**
 	 * Build  a connection Factory and takes the location of the global configuration manager as input
@@ -86,7 +87,7 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 			throw  new IllegalStateException("The queue creation has failed @ the global configuration");
 		}
 		logger.info("Creating a connection factory for "+qName);
-		return new RoQPublisherConnection(monitorHosts);
+		return new RoQPublisherConnection(replicationFactor, monitorHosts);
 	}
 	
 	/**
@@ -101,7 +102,7 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 			throw  new IllegalStateException("The queue Name is not registred @ the global configuration");
 		}
 		logger.info("Creating a subscriber connection factory for "+qName);
-		return new RoQSubscriberConnection(monitorHosts, key);
+		return new RoQSubscriberConnection(replicationFactor, monitorHosts, key);
 	}
 	
 	/**
@@ -119,8 +120,12 @@ public class RoQConnectionFactory implements IRoQConnectionFactory {
 		List<String> monitorHosts = new ArrayList<String>();
 		if (response == null)
 			return monitorHosts;
-		for (String hostElement : new String(response).split(",")) {
-			monitorHosts.add(hostElement);
+		// response: replicationFactor, monitor1, statmonitor1, backupmonitor1, statbackupmonitor1, ...
+		String[] infos = new String(response).split(",");
+		this.replicationFactor = new Integer(infos[0]);
+		
+		for (int i =1; i < infos.length; i++) {
+			monitorHosts.add(infos[i]);
 		}
 		logger.info(new String(response));
 		logger.info("Creating a connection factory for "+qName+ " @ "+ monitorHosts.get(0) +  " " + monitorHosts.get(1));

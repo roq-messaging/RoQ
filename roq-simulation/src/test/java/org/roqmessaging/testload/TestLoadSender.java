@@ -96,7 +96,6 @@ public class TestLoadSender extends RoQTestCase {
 			};
 			subscriberConnection.setMessageSubscriber(subs);
 		} catch (ConnectException | IllegalStateException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

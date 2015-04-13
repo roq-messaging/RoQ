@@ -40,7 +40,8 @@ public class PublisherConnectionManager implements Runnable {
 	//define whether we relocate
 	private volatile boolean relocating = false;
 	
-
+	private int replicationFactor;
+	
 	public boolean isRelocating() {
 		return relocating;
 	}
@@ -53,7 +54,8 @@ public class PublisherConnectionManager implements Runnable {
 	 * @param monitor the monitor host address" tcp://<ip>:<port>"
 	 * @param tstmp true if using a time stamp server
 	 */
-	public PublisherConnectionManager(List<String> monitors, boolean tstmp) {
+	public PublisherConnectionManager(int replicationFactor, List<String> monitors, boolean tstmp) {
+		this.replicationFactor = replicationFactor;
 		this.context = ZMQ.context(1);
 		this.s_ID = UUID.randomUUID().toString();
 		for (String monitor : monitors) {
@@ -175,9 +177,7 @@ public class PublisherConnectionManager implements Runnable {
 				e.printStackTrace();
 			}
 		}
-		//Register in Pollin 0 position the monitor
-		// TODO size depend of the config (replication factor; 3 for the moment)
-		ZMQ.Poller items = new ZMQ.Poller(5);
+		ZMQ.Poller items = new ZMQ.Poller(2 + replicationFactor);
 		HashMap<Integer, ZMQ.Socket> HostPolVal = new HashMap<Integer, ZMQ.Socket>();
 		int pollval = 0;
 		for (ZMQ.Socket monitorSub: monitorsSub.values()) {

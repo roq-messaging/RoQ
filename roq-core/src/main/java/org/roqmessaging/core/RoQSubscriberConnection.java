@@ -34,6 +34,7 @@ public class RoQSubscriberConnection implements IRoQSubscriberConnection {
 	// The key
 	private String key = null;
 	private List<String> monitorHost = new ArrayList<String>(), monitorStat=new ArrayList<String>();
+	private int replicationFactor;
 
 	/**
 	 * @param monitorHost
@@ -45,7 +46,8 @@ public class RoQSubscriberConnection implements IRoQSubscriberConnection {
 	 * @param key
 	 *            the subscriber keyr to filter
 	 */
-	public RoQSubscriberConnection(List<String> monitorHosts, String key) {
+	public RoQSubscriberConnection(int replicationFactor, List<String> monitorHosts, String key) {
+		this.replicationFactor = replicationFactor;
 		for (int i = 0; i < monitorHosts.size(); i+=2) {
 			this.monitorHost.add(monitorHosts.get(i));
 			this.monitorStat.add(monitorHosts.get(i+1));
@@ -57,10 +59,9 @@ public class RoQSubscriberConnection implements IRoQSubscriberConnection {
 	 * @see org.roqmessaging.client.IRoQSubscriberConnection#open()
 	 */
 	public void open() {
-		this.connectionManager = new SubscriberConnectionManager(this.monitorHost, this.monitorStat, this.key, false);
+		this.connectionManager = new SubscriberConnectionManager(this.replicationFactor, this.monitorHost, this.monitorStat, this.key, false);
 		Thread mainThread = new Thread(connectionManager);
 		mainThread.start();
-
 	}
 
 	/**
@@ -72,7 +73,6 @@ public class RoQSubscriberConnection implements IRoQSubscriberConnection {
 		if (this.connectionManager == null)
 			throw new IllegalStateException("The connection is not open");
 		this.connectionManager.shutdown();
-
 	}
 
 	/**

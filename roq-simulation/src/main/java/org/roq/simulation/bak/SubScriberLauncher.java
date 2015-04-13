@@ -35,7 +35,7 @@ public class SubScriberLauncher {
 		monitors.add("tcp://localhost:5571");
 		ArrayList<String> statMonitors = new ArrayList<String>();
 		statMonitors.add("tcp://localhost:5800");
-		SubscriberConnectionManager SubClient = new SubscriberConnectionManager(monitors, statMonitors, "manche", Boolean.parseBoolean(args[1]));
+		SubscriberConnectionManager SubClient = new SubscriberConnectionManager(1, monitors, statMonitors, "manche", Boolean.parseBoolean(args[1]));
 		Thread t = new Thread(SubClient);
 		t.start();
 	}

@@ -178,7 +178,6 @@ public class BasicSetupTest {
 			Thread.sleep(1000);
 
 		} catch (ConnectException | IllegalStateException | InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -204,7 +203,6 @@ public class BasicSetupTest {
 				}
 			});
 		} catch (ConnectException | IllegalStateException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 	}

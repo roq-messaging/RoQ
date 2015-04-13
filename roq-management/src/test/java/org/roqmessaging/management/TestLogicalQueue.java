@@ -179,7 +179,6 @@ public class TestLogicalQueue {
 			Thread.sleep(500);
 			factory.close();
 		} catch (ConnectException | IllegalStateException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -212,7 +211,6 @@ public class TestLogicalQueue {
 			subConnection.setMessageSubscriber(subs);
 			factory.close();
 		} catch (ConnectException | IllegalStateException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return subs;

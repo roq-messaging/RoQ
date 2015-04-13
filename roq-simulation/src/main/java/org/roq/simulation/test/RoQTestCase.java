@@ -132,7 +132,6 @@ public class RoQTestCase {
 			// message
 			connection.blockTillReady(10000);
 		} catch (ConnectException | IllegalStateException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return publisher;
@@ -160,7 +159,6 @@ public class RoQTestCase {
 			};
 			subscriberConnection.setMessageSubscriber(subs);
 		} catch (ConnectException | IllegalStateException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

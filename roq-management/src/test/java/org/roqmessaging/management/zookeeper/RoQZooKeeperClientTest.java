@@ -60,7 +60,6 @@ public class RoQZooKeeperClientTest extends TestCase {
         	client.closeGCM();
 			zkServer.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

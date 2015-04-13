@@ -574,7 +574,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 					String monitor = fields.get(0);
 					String statMonitor = fields.get(1);
 					
-					String reply = monitor + "," + statMonitor;
+					String reply =  properties.getReplicationFactor() + "," + monitor + "," + statMonitor;
 					for (int i = 2; i < fields.size(); i+=2) {
 						reply += "," + fields.get(i) + "," + fields.get(i+1);
 					}

@@ -18,7 +18,7 @@ public class ZLoadSub {
 			monitors.add("tcp://localhost:5571");
 			ArrayList<String> statMonitors = new ArrayList<String>();
 			statMonitors.add("tcp://localhost:5800");
-			SubscriberConnectionManager tempSub = new SubscriberConnectionManager(monitors, statMonitors, "manche",  false);
+			SubscriberConnectionManager tempSub = new SubscriberConnectionManager(1, monitors, statMonitors, "manche",  false);
 			Thread t = new Thread(tempSub);
 			subThreads[i] = t;
 			subThreads[i].start();

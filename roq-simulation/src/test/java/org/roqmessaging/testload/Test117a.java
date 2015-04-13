@@ -111,7 +111,6 @@ private void createSubscriber(String qName) {
 		//Se the subscriber logic for this connection
 		subscriberConnection.setMessageSubscriber(subs);
 	} catch (ConnectException | IllegalStateException e) {
-		// TODO Auto-generated catch block
 		e.printStackTrace();
 	}
 }

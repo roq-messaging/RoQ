@@ -66,6 +66,8 @@ public class SubscriberConnectionManager implements Runnable {
 	//Ssubscriber to deliver the message
 	private IRoQSubscriber subscriber = null;
 	
+	private int replicationFactor;
+	
 	/**
 	 * @param monitor the monitor address to bind
 	 * @param monitorStat the monitor stat address to bind
@@ -73,7 +75,8 @@ public class SubscriberConnectionManager implements Runnable {
 	 * @param ID the subscriber ID
 	 * @param tstmp true if we use a timestamp server
 	 */
-	public SubscriberConnectionManager(List<String> monitors, List<String> monitorStat, String subKey,  boolean tstmp) {
+	public SubscriberConnectionManager(int replicationFactor, List<String> monitors, List<String> monitorStat, String subKey,  boolean tstmp) {
+		this.replicationFactor = replicationFactor;
 		this.context = ZMQ.context(1);
 		for (int i = 0; i < monitors.size(); i++) {
 			this.s_monitorsStat.put(monitors.get(i), monitorStat.get(i));
@@ -229,8 +232,7 @@ public class SubscriberConnectionManager implements Runnable {
 			logger.info("Retrying connection...");
 		}
 		
-		// TODO vary in fuction of replication factor, for the moment 3
-		this.items = new ZMQ.Poller(4);
+		this.items = new ZMQ.Poller(1 + replicationFactor);
 		this.items.register(exchSub);
 		HashMap<Integer, ZMQ.Socket> HostPolVal = new HashMap<Integer, ZMQ.Socket>();
 		int pollval = 1;
