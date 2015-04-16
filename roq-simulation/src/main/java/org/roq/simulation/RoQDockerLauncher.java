@@ -160,9 +160,12 @@ public class RoQDockerLauncher {
 	 */
 	public void launchZK() throws Exception {
 		logger.info("Starting ZK container");
+		final ImmutableList.Builder<String> binds = new ImmutableList.Builder<String>();
+		binds.add(System.getenv("ROQPATH") + "/roq-simulation/src/main/resources/zkConfig" + ":/opt/zookeeper/conf");
+		HostConfig.Builder hostConfig = HostConfig.builder().networkMode("bridge").binds(binds.build());
 		
 		ContainerCreation creation = client.createContainer(configZK);
-		client.startContainer(creation.id());
+		client.startContainer(creation.id(), hostConfig.build());
 		
 		ZKList.add(creation.id());
 		logger.info(creation.id());

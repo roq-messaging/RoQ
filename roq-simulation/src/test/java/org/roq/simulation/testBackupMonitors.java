@@ -156,7 +156,7 @@ public class testBackupMonitors extends RoQDockerTestCase {
 
 			// Create a publisher and send message in a thread
 			IRoQConnection connection = factory.createRoQConnection("testQ0");
-			MessageSender sender = new MessageSender(connection, 250);
+			MessageSender sender = new MessageSender(connection, 160);
 			Thread senderThread = new Thread(sender);
 			senderThread.start();
 			
