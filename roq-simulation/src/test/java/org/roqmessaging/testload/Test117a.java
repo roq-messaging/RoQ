@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.testload;
 
+import java.net.ConnectException;
 import java.util.Timer;
 
 import org.apache.log4j.Logger;
@@ -48,7 +49,7 @@ public class Test117a extends RoQTestCase {
 		// The Qname
 		String qName = "test117-Q";
 		// Init 1. create the test queue
-		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP());
+		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
 		// Init 2. let the queue start
 		Thread.sleep(2000);
 		//3. Attach a subscriber
@@ -67,7 +68,7 @@ public class Test117a extends RoQTestCase {
 		Thread.sleep(100000);
 		logger.info("TEST 117-------------------------------------Starting The exchange----------------------------");
 		// create an exchange
-		super.factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
+		super.factory.createExchange(qName, RoQUtils.getInstance().getLocalIP(), "TEST5");
 		Thread.sleep(30000);
 		// Start a producer
 		logger.info("TEST 117-------------------------------------Starting The producer----------------------------");
@@ -90,22 +91,28 @@ public class Test117a extends RoQTestCase {
  */
 private void createSubscriber(String qName) {
 	IRoQConnectionFactory conFactory = new RoQConnectionFactory(RoQUtils.getInstance().getLocalIP());
-	subscriberConnection = conFactory.createRoQSubscriberConnection(qName, "test");
-	// Open the connection to the logical queue
-	subscriberConnection.open();
-	// Register a message listener
-	IRoQSubscriber subs = new IRoQSubscriber() {
-		private int count = 0;
-		public void onEvent(byte[] msg) {
-			count++;
-			if(count>300000){
-				logger.info("Got "+300000+" message");
-				count =0;
+	try {
+		subscriberConnection = conFactory.createRoQSubscriberConnection(qName, "test");
+	
+		// Open the connection to the logical queue
+		subscriberConnection.open();
+		// Register a message listener
+		IRoQSubscriber subs = new IRoQSubscriber() {
+			private int count = 0;
+			public void onEvent(byte[] msg) {
+				count++;
+				if(count>300000){
+					logger.info("Got "+300000+" message");
+					count =0;
+				}
 			}
-		}
-	};
-	//Se the subscriber logic for this connection
-	subscriberConnection.setMessageSubscriber(subs);
+		};
+		//Se the subscriber logic for this connection
+		subscriberConnection.setMessageSubscriber(subs);
+	} catch (ConnectException | IllegalStateException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
 }
 
 }

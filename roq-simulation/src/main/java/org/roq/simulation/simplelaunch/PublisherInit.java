@@ -14,6 +14,8 @@
  */
 package org.roq.simulation.simplelaunch;
 
+import java.net.ConnectException;
+
 import org.apache.log4j.Logger;
 import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQPublisher;
@@ -52,13 +54,19 @@ public class PublisherInit implements Runnable, IStoppable {
 		this.gcmAddress = gcmAddress;
 		// Create subscriber
 		IRoQConnectionFactory connectionFactory = new RoQConnectionFactory(gcmAddress);
-		subscriberConnection = connectionFactory.createRoQSubscriberConnection(qName, "key");
-		subscriberConnection.open();
-		subscriberConnection.setMessageSubscriber(new IRoQSubscriber() {
-			public void onEvent(byte[] msg) {
-				//logger.info("On message:" + new String(msg));
-			}
-		});
+		try {
+			subscriberConnection = connectionFactory.createRoQSubscriberConnection(qName, "key");
+		
+			subscriberConnection.open();
+			subscriberConnection.setMessageSubscriber(new IRoQSubscriber() {
+				public void onEvent(byte[] msg) {
+					//logger.info("On message:" + new String(msg));
+				}
+			});
+		} catch (ConnectException | IllegalStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -99,26 +107,33 @@ public class PublisherInit implements Runnable, IStoppable {
 		// Create a publisher on the connection
 		// 1. Creating the connection
 		IRoQConnectionFactory factory = new RoQConnectionFactory(this.gcmAddress);
-		IRoQConnection connection = factory.createRoQConnection(this.qName);
-		connection.open();
-		// 2. Creating the publisher and sending message
-		IRoQPublisher publisher = connection.createPublisher();
-		// Wait for the connection is established before sending the first
-		// message
-		connection.blockTillReady(10000);
-		logger.info("Ready .. Sending");
-		// Send message while is active
-		while (this.active) {
-			publisher.sendMessage("key".getBytes(), "hello".getBytes());
-			try {
-				Thread.sleep(500);
-			} catch (Exception e) {
-				logger.error(e);
+		IRoQConnection connection;
+		try {
+			connection = factory.createRoQConnection(this.qName);
+		
+			connection.open();
+			// 2. Creating the publisher and sending message
+			IRoQPublisher publisher = connection.createPublisher();
+			// Wait for the connection is established before sending the first
+			// message
+			connection.blockTillReady(10000);
+			logger.info("Ready .. Sending");
+			// Send message while is active
+			while (this.active) {
+				publisher.sendMessage("key".getBytes(), "hello".getBytes());
+				try {
+					Thread.sleep(500);
+				} catch (Exception e) {
+					logger.error(e);
+				}
 			}
+			logger.info("Stoping publisher thread");
+			connection.close();
+			this.subscriberConnection.close();
+		} catch (ConnectException | IllegalStateException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
-		logger.info("Stoping publisher thread");
-		connection.close();
-		this.subscriberConnection.close();
 
 	}
 }

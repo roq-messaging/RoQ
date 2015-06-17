@@ -67,6 +67,7 @@ public class RoQZooKeeperClientTest extends TestCase {
 		// Make sure ZooKeeper is clean within the namespace we have
 		// defined.
 		client.clear();
+		client.initZkClusterNodes();
 	}
 	
 	public void tearDown() {
@@ -126,6 +127,34 @@ public class RoQZooKeeperClientTest extends TestCase {
 		assertFalse(client.queueExists(queue));
 	}
 	
+	public void testCreateRemoveExchangeTransaction() {
+		log.info("");
+		String host = "192.168.0.1";
+		
+		client.createExchangeTransaction("Test", host);
+		
+		assertEquals(host, client.exchangeTransactionExists("Test"));
+		
+		client.removeExchangeTransaction("Test");
+		
+		assertEquals(null, client.exchangeTransactionExists("Test"));
+		
+	}
+	
+	public void testCreateRemoveQueueTransaction() {
+		log.info("");
+		String host = "192.168.0.1";
+		
+		client.createQTransaction("TestQ", host);
+		
+		assertEquals(host, client.qTransactionExists("TestQ"));
+		
+		client.removeQTransaction("TestQ");
+		
+		assertEquals(null, client.qTransactionExists("TestQ"));
+		
+	}
+	
 	public void testGetQueueList() {
 		log.info("");
 		
@@ -149,7 +178,7 @@ public class RoQZooKeeperClientTest extends TestCase {
 		
 		// Get the list of queues from ZooKeeper.
 		List<Metadata.Queue> queues = client.getQueueList();
-		assertEquals(queues.size(), 2);
+		assertEquals(2, queues.size());
 		
 		// Check that both queues are received with the call.
 		boolean queue1Found = false;

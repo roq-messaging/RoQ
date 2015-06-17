@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.clientlib.factory;
 
+import java.net.ConnectException;
+
 import org.roqmessaging.client.IRoQConnection;
 import org.roqmessaging.client.IRoQSubscriberConnection;
 
@@ -29,9 +31,10 @@ public interface IRoQConnectionFactory {
 	 * Instantiates a connection. Notice that the connection will need to connect to an active Exchange. At startup this 
 	 * could take few seconds before beefing ready.
 	 * @param qn the name of the logical queue
+	 * @throws ConnectException 
 	 * @return a connection that can be used to send messages.
 	 */
-	public IRoQConnection createRoQConnection(String qName) throws IllegalStateException;
+	public IRoQConnection createRoQConnection(String qName) throws IllegalStateException, ConnectException;
 	
 	/**
 	 * Instantiates a connection. Notice that the connection will need to connect to an active Exchange. At startup this 
@@ -39,7 +42,13 @@ public interface IRoQConnectionFactory {
 	 * @param qName the queue logical name to bind
 	 * @param key the subscription key
 	 * @return a connection that can be used to receive  messages.
+	 * @throws ConnectException 
 	 */
-	public IRoQSubscriberConnection createRoQSubscriberConnection(String qName, String key) throws IllegalStateException;
+	public IRoQSubscriberConnection createRoQSubscriberConnection(String qName, String key) throws IllegalStateException, ConnectException;
+	
+	/**
+	 * close ZK
+	 */
+	public void close();
 
 }

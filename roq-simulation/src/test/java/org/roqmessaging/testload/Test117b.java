@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.testload;
 
+import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -62,7 +63,7 @@ public class Test117b extends RoQTestCase {
 		// The Qname
 		String qName = "test117b-Q";
 		// Init 1. create the test queue
-		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP());
+		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
 		// Init 2. let the queue start
 		Thread.sleep(2000);
 		//3. Attach 2 subscriber
@@ -86,7 +87,7 @@ public class Test117b extends RoQTestCase {
 		logger.info("TEST 117b-------------------------------------Starting The exchange----------------------------");
 		logger.info("TEST 117b: waiting for relocation...");
 		// create an exchange
-		super.factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
+		super.factory.createExchange(qName, RoQUtils.getInstance().getLocalIP(), "TEST6");
 		Thread.sleep(120000);
 		// Start a producer
 		//Close all
@@ -107,23 +108,30 @@ public class Test117b extends RoQTestCase {
  */
 private void createSubscriber(String qName) {
 	IRoQConnectionFactory conFactory = new RoQConnectionFactory(RoQUtils.getInstance().getLocalIP());
-	IRoQSubscriberConnection subscriberConnection = conFactory.createRoQSubscriberConnection(qName, "test");
-	connectionList.add(subscriberConnection);
-	// Open the connection to the logical queue
-	subscriberConnection.open();
-	// Register a message listener
-	IRoQSubscriber subs = new IRoQSubscriber() {
-		private int count = 0;
-		public void onEvent(byte[] msg) {
-			count++;
-			if(count>300000){
-				logger.info("Got "+300000+" message");
-				count =0;
+	IRoQSubscriberConnection subscriberConnection;
+	try {
+		subscriberConnection = conFactory.createRoQSubscriberConnection(qName, "test");
+	
+		connectionList.add(subscriberConnection);
+		// Open the connection to the logical queue
+		subscriberConnection.open();
+		// Register a message listener
+		IRoQSubscriber subs = new IRoQSubscriber() {
+			private int count = 0;
+			public void onEvent(byte[] msg) {
+				count++;
+				if(count>300000){
+					logger.info("Got "+300000+" message");
+					count =0;
+				}
 			}
-		}
-	};
-	//Se the subscriber logic for this connection
-	subscriberConnection.setMessageSubscriber(subs);
+		};
+		//Se the subscriber logic for this connection
+		subscriberConnection.setMessageSubscriber(subs);
+	} catch (ConnectException | IllegalStateException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
 }
 
 }

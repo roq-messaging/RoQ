@@ -14,6 +14,8 @@
  */
 package org.roq.simulation;
 
+import java.net.ConnectException;
+
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
@@ -69,7 +71,7 @@ public class TestStatMonitor {
 			Thread.sleep(3000);
 			// 1. Create a Queue
 			IRoQLogicalQueueFactory logicalQFactory = new LogicalQFactory(launcher.getConfigurationServer());
-			logicalQFactory.createQueue("queue1", RoQUtils.getInstance().getLocalIP());
+			logicalQFactory.createQueue("queue1", RoQUtils.getInstance().getLocalIP(), false);
 			
 			// Let the Process start and binding port
 			Thread.sleep(3000);
@@ -84,7 +86,7 @@ public class TestStatMonitor {
 			new Thread(kpiSubscriber).start();
 
 			// 3. Create a subscriber
-			IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getConfigurationServer());
+			IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getZkServerAddress());
 			// add a subscriber
 			IRoQSubscriberConnection subConnection = factory.createRoQSubscriberConnection("queue1", "key");
 			// Open the connection to the logical queue
@@ -135,7 +137,7 @@ public class TestStatMonitor {
 			
 			kpiSubscriber.shutDown();
 
-		} catch (InterruptedException e) {
+		} catch (InterruptedException | ConnectException | IllegalStateException e) {
 			e.printStackTrace();
 		}
 

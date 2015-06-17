@@ -27,10 +27,11 @@ public interface IRoQLogicalQueueFactory {
 	 * Creates a logical queue.
 	 * @param queueName the queue name
 	 * @param targetAddress the address to create the queue
+	 * @param recoveryMod the q must be recovered
 	 * @throws IllegalStateException if a queue already exist with this name, the name must be unique for 
 	 * the complete cluster.
 	 */
-	public boolean createQueue(String queueName, String targetAddress) throws IllegalStateException;
+	public int createQueue(String queueName, String targetAddress, boolean recoveryMod) throws IllegalStateException;
 	
 	/**
 	 * Removes a logical queue.
@@ -59,8 +60,13 @@ public interface IRoQLogicalQueueFactory {
 	 * @param targetAddress the target address in which we are going to create the exchange. 
 	 * @return true if the creation was OK
 	 */
-	public boolean createExchange(String queueName, String targetAddress);
+	public boolean createExchange(String queueName, String targetAddress, String exchangeID);
 	
+	/**
+	 * @param qName, the queue to check
+	 * @return true if the queue exists 
+	 */
+	public boolean queueAlreadyExists(String qName);
 	
 	/**
 	 * As the queue factory will keep a local cache of the topology, we enable to refresh the cache.

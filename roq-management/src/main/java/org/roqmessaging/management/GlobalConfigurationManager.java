@@ -14,6 +14,7 @@
  */
 package org.roqmessaging.management;
 
+import java.io.EOFException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +52,7 @@ import org.zeromq.ZMQ.Poller;
  */
 public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private volatile boolean running;
+	public static volatile boolean hasLead = false;
 	//ZMQ config
 	private ZMQ.Socket clientReqSocket = null;
 	private ZMQ.Context context;
@@ -124,24 +126,47 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		// Setup and start the zookeeper client
 		this.zk = new RoQZooKeeperClient(properties.zkConfig);
 		this.zk.start();
+		this.zk.startLeaderElection();
 		
 		// clear zookeeper storage if requested
 		if (properties.isFormatDB()) {
 			zk.clear();
 		}
 		
-		logger.info("Writing cloud configuration to zookeeper");
-		this.zk.setCloudConfig(serializationUtils.serialiseObject(cloudConfig));
+		// Set cloudConfig if the configuration is available
+		if (properties.hasCloudConfiguration()) {
+			logger.info("Writing cloud configuration to zookeeper");
+			this.zk.setCloudConfig(serializationUtils.serialiseObject(cloudConfig));
+		}
 		
 		// Start the shutdown thread
 		int shutDownPort = properties.ports.get("GlobalConfigurationManager.shutDown");
 		this.shutDownMonitor = new ShutDownMonitor(shutDownPort, this);
 		new Thread(this.shutDownMonitor).start();
-
-		// The Management controller - the start is in the run to take the
-		// period attribute
-		this.mngtController = new MngtController("localhost", (properties.getPeriod() + 500), this.properties, this.zk);
-		new Thread(mngtController).start();
+		
+		// Ensure that basic node are created
+		zk.initZkClusterNodes();
+		
+		try {
+			// This master wait until Curator indicates
+			// that it is the leader
+			logger.info("Waiting for leadership");
+			zk.waitUntilLeader();
+			logger.info("Leadership acquired");
+			// Set leader address in ZK
+			zk.setGCMLeader();		
+			// Set that the process got the lead
+			hasLead = true;
+			// The Management controller - the start is in the run to take the
+			// period attribute
+			this.mngtController = new MngtController("localhost", (properties.getPeriod() + 500), this.properties, this.zk);
+			new Thread(mngtController).start();
+		} catch (EOFException | InterruptedException e) {
+			logger.info("The leader election has failed, stopping the " +
+					"GCM");
+			this.mngtController.getShutDownMonitor().shutDown();
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -150,10 +175,11 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 */
 	private void startGlobalConfigTimer() {
 		int port = properties.ports.get("GlobalConfigTimer.pub");
-		mngtTimer = new Timer("Management config publisher");
 		configTimerTask = new GlobalConfigTimer(port, this);
+		mngtTimer = new Timer("Management config publisher");
 		mngtTimer.schedule(configTimerTask, 500, this.properties.getPeriod());
 	}
+
 	/**
 	 * Main run
 	 * @see java.lang.Runnable#run()
@@ -164,6 +190,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		
 		// Start the timer that periodically triggers the
 		// run() method of GlobalConfigTimer.
+		
 		startGlobalConfigTimer();
 		
 		//ZMQ init
@@ -178,10 +205,52 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				logger.debug("Receiving request..." + content);
 				
 				//check if the string contains a "," if not that means that it is a BSON encoded request
-				if(content.contains(",")){
+				if(content.contains(",")) {
 					processStandardRequest(content);
 				}else{
 					processBSONRequest(encoded);
+				}
+			}
+			// If connection with zookeeper has been lost
+			if (!hasLead) {
+				// We wait that process become the active one
+				try {
+					logger.info("connection with ZK has been lost," +
+							" waiting for leadership");
+					// Stop the timer task
+					configTimerTask.cancel();
+					mngtTimer.cancel();
+					mngtTimer.purge();
+					// Notifies that the leader has changed
+					while (!GlobalConfigurationManager.hasLead) {
+						items.poll(100);
+						if (items.pollin(0)){ //Comes from a client
+							byte[] encoded = clientReqSocket.recv(0);
+							String content = new String(encoded);
+							if(content.contains(",")){
+								clientReqSocket.send(
+										this.serialiazer.serialiazeConfigAnswer(
+											RoQConstant.EVENT_LEAD_LOST, ""),
+										0);
+							} else {
+								this.clientReqSocket.send(
+										Integer.toString(RoQConstant.EVENT_LEAD_LOST).getBytes(), 0);
+							}
+						}
+					}
+					// Wait for leadership
+					zk.waitUntilLeader();
+					logger.info("connection with ZK has been reetablished " +
+							" GCM is replaning the tasks");
+					// Set leader address
+					zk.setGCMLeader();
+					// Restart the timer task
+					startGlobalConfigTimer();
+				} catch (EOFException | InterruptedException e) {
+					logger.info("The leader election has failed, stopping the GCM");
+					// Send GCM shutdown signal
+					this.mngtController.getShutDownMonitor().shutDown();
+					this.running = false;
 				}
 			}
 		}

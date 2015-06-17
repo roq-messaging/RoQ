@@ -1,0 +1,5 @@
+[localSystem]
+localhost ansible_connection=local
+[demo]
+GCM.roq.org ansible_ssh_host=127.0.0.1
+ZK.roq.org ansible_ssh_host=172.17.0.3 ansible_ssh_user=root

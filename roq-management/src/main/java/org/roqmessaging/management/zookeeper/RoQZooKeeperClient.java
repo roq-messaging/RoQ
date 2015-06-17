@@ -1,45 +1,37 @@
 package org.roqmessaging.management.zookeeper;
 
+import java.io.EOFException;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.apache.curator.RetryPolicy;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
-import org.apache.curator.retry.RetryOneTime;
 import org.apache.log4j.Logger;
+import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.zookeeper.RoQZKHelpers;
+import org.roqmessaging.zookeeper.RoQZooKeeper;
+import org.roqmessaging.management.GlobalConfigLeaderListener;
+import org.roqmessaging.management.zookeeper.RoQZooKeeperConfig;
 
-public class RoQZooKeeperClient {
+public class RoQZooKeeperClient extends RoQZooKeeper {
 	private final Logger log = Logger.getLogger(getClass());
-	private CuratorFramework client;
 	private LeaderLatch leaderLatch;
 	private RoQZooKeeperConfig cfg;
-
+	
 	public RoQZooKeeperClient(RoQZooKeeperConfig config) {
+		super(config);
 		log.info("");
 		
-		cfg = config;
-		
-		// Start a Curator client, through which we can access ZooKeeper
-		// Note: retry policy should be made configurable
-		RetryPolicy retryPolicy = new RetryOneTime(1000);
-
-		client = CuratorFrameworkFactory.builder()
-					.connectString(cfg.servers)
-					.retryPolicy(retryPolicy)
-					.namespace(cfg.namespace)
-					.build();
-
-		// Start leader election
-		leaderLatch = new LeaderLatch(client, cfg.znode_gcm);
+		cfg = config;	
 	}
-
-	// Start the client and leader election
-	public void start() {
-		log.info("");
-		
-		client.start();
+	
+	/**
+	 * This method is used to block the process
+	 * until it becomes the leader.
+	 * @throws InterruptedException 
+	 * @throws EOFException 
+	 */
+	public void startLeaderElection() {
+		leaderLatch = new LeaderLatch(client, cfg.znode_gcm);
 		try {
 			leaderLatch.start();
 		} catch (Exception e) {
@@ -47,16 +39,41 @@ public class RoQZooKeeperClient {
 		}
 	}
 	
-	public void close() {
-		log.info("");
-		client.close();
+	/**
+	 * Create the parent znodes for the different ZK znodes.
+	 */
+	public void initZkClusterNodes() {
+		String path = RoQZKHelpers.makePath(cfg.znode_queues);
+		RoQZKHelpers.createZNodeAndParents(client, path);
+		path = RoQZKHelpers.makePath(cfg.znode_queueTransactions);
+		RoQZKHelpers.createZNodeAndParents(client, path);
+		path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions);
+		RoQZKHelpers.createZNodeAndParents(client, path);
+		path = RoQZKHelpers.makePath(cfg.znode_gcm);
+		RoQZKHelpers.createZNodeAndParents(client, path);
+		path = RoQZKHelpers.makePath(cfg.znode_hcm);
+		RoQZKHelpers.createZNodeAndParents(client, path);
 	}
+	
+	/**
+	 * This method is used to block the process
+	 * until it becomes the leader.
+	 * @throws InterruptedException 
+	 * @throws EOFException 
+	 */
+	public void waitUntilLeader() throws EOFException, InterruptedException {
+		leaderLatch.await();
+		// This listener allow to manage the case
+		// where the connection with zookeeper is lost
+		// ie: the process must stop to process messages
+		leaderLatch.addListener(new GlobalConfigLeaderListener());
+	}	
 
 	public boolean isLeader() {
 		log.info("");
 		return leaderLatch.hasLeadership();
 	}
-
+	
 	public void clear() {
 		log.info("");
 		
@@ -88,6 +105,16 @@ public class RoQZooKeeperClient {
 		log.info("");
 		RoQZKHelpers.deleteZNode(client, getZKPath(hcm));
 	}
+	
+	// Create the znode for the HCM if it does not already exist.
+	public void setGCMLeader() {
+		RoQUtils utils = RoQUtils.getInstance();
+		String path = RoQZKHelpers.makePath(cfg.znode_leaderAddress);
+		String address = utils.getLocalIP();
+		log.info("Set GCM address: " + address + " in ZK path: " + path);
+		//RoQZKHelpers.deleteZNode(client, path);
+		RoQZKHelpers.createEphemeralZNode(client, path, address.getBytes());
+	}
 
 	public List<Metadata.HCM> getHCMList() {
 		log.info("");
@@ -112,23 +139,78 @@ public class RoQZooKeeperClient {
 		return RoQZKHelpers.zNodeExists(client, getZKPath(queue));
 	}
 	
+	/**
+	 * This method create a transaction for the queue creation in ZK
+	 * @param queueName
+	 */
+	public void createQTransaction (String queueName, String host) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_queueTransactions, queueName);
+		RoQZKHelpers.createZNode(client, path, host);
+	}
+	
+	/**
+	 * This method fetch if a transaction exists for the queue
+	 * @param queueName
+	 */
+	public String qTransactionExists (String queueName) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_queueTransactions, queueName);
+		return RoQZKHelpers.getDataString(client, path);
+	}
+	
+	/**
+	 * This method remove the transaction node when the transaction has been completed
+	 * @param queueName
+	 */
+	public void removeQTransaction (String queueName) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_queueTransactions, queueName);
+		RoQZKHelpers.deleteZNode(client, path);
+	}
+	
+	/**
+	 * This method create the transaction node for an exchange creation process
+	 * @param transID
+	 */
+	public void createExchangeTransaction (String transID, String targetHost) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions, transID);
+		RoQZKHelpers.createZNode(client, path, targetHost);
+	}
+	
+	/**
+	  * This method fetch if a transaction exists for the exchange creation
+	 * @param transID
+	 */
+	public String exchangeTransactionExists (String transID) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions, transID);
+		return RoQZKHelpers.getDataString(client, path);
+	}
+	
+	/**
+	 * This method remove the transaction node when the transaction has been completed
+	 * @param transID
+	 */
+	public void removeExchangeTransaction (String transID) {
+		log.info("");
+		String path = RoQZKHelpers.makePath(cfg.znode_exchangeTransactions, transID);
+		RoQZKHelpers.deleteZNode(client, path);
+	}
+	
 	public void createQueue(Metadata.Queue queue, Metadata.HCM hcm, Metadata.Monitor monitor, Metadata.StatMonitor statMonitor) {
 		log.info("");
 		
 		String queuePath = getZKPath(queue);
-		String path;
-		
-		queuePath = getZKPath(queue);
-		RoQZKHelpers.createZNodeAndParents(client, queuePath);
-		
-		path = RoQZKHelpers.makePath(queuePath, "monitor");
-		RoQZKHelpers.createZNode(client, path, monitor.address);
-		
-		path = RoQZKHelpers.makePath(queuePath, "stat-monitor");
-		RoQZKHelpers.createZNode(client, path, statMonitor.address);
-		
-		path = RoQZKHelpers.makePath(queuePath, "hcm");
-		RoQZKHelpers.createZNode(client, path, hcm.address);
+		String monitorPath = RoQZKHelpers.makePath(queuePath, "monitor");
+		String statMonitorPath = RoQZKHelpers.makePath(queuePath, "stat-monitor");
+		String hcmPath = RoQZKHelpers.makePath(queuePath, "hcm");
+		// RoQZKHelpers.createZNodeAndParents(client, queuePath);
+		// Add queue children nodes inside a single transaction
+		RoQZKHelpers.createQueueZNodes(client, queuePath, monitorPath, 
+				monitor.address, statMonitorPath, statMonitor.address, 
+				hcmPath, hcm.address);
 	}
 	
 	public void removeQueue(Metadata.Queue queue) {

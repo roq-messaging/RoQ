@@ -36,13 +36,13 @@ public class TestHostExchangeInfo extends RoQTestCase {
 	//logger
 	private Logger logger = Logger.getLogger(this.getClass().getCanonicalName());
 
-	@Test
+		@Test
 		public void testExchangeInfo() {
 			String qName ="queueInfoXchange";
 			try {
 				Logger.getLogger(this.getClass().getName()).info("Starting main TestHostExchangeInfo  ");
 				//1. Create a queue
-				this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP());
+				this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
 				//2. Attach subscriber
 				attachSUbscriber(qName);
 				//3. Create subscriber
@@ -68,12 +68,12 @@ public class TestHostExchangeInfo extends RoQTestCase {
 				assertEquals(1, askHostExchangeInfo());
 				
 				//6. Add exchange
-				factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
+				factory.createExchange(qName, RoQUtils.getInstance().getLocalIP(), "TEST2");
 				subscriber.setXchangeToCheck(2);
 				Thread.sleep(5000);
 				assertEquals(2, askHostExchangeInfo());
 				
-				factory.createExchange(qName, RoQUtils.getInstance().getLocalIP());
+				factory.createExchange(qName, RoQUtils.getInstance().getLocalIP(), "TEST3");
 				subscriber.setXchangeToCheck(3);
 				Thread.sleep(5000);
 				assertEquals(3, askHostExchangeInfo());

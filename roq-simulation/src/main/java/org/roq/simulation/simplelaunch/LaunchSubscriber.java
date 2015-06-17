@@ -39,7 +39,7 @@ public class LaunchSubscriber {
 		
 		// Create Q
 		IRoQLogicalQueueFactory factory = new LogicalQFactory(args[0]);
-		factory.createQueue(args[1], args[0]);
+		factory.createQueue(args[1], args[0], false);
 		
 		//Create publisher and producer
 		PublisherInit init = new PublisherInit(args[1], args[0]);

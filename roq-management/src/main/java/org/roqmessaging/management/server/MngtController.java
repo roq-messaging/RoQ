@@ -128,7 +128,7 @@ public class MngtController implements Runnable, IStoppable {
 		mngtRepSocket.bind("tcp://*:"+interfacePort);
 		// init variable
 		this.serializationUtils = new RoQSerializationUtils();
-		this.factory = new LogicalQFactory(globalConfigAddress);
+		this.factory = new LogicalQFactory(globalConfigAddress, properties.gethcmTIMEOUT());
 		this.serializer = new RoQBSONSerializer();
 		// Shutdown thread configuration
 		this.shutDownMonitor = new ShutDownMonitor(shutDownPort, this);
@@ -184,6 +184,9 @@ public class MngtController implements Runnable, IStoppable {
 						// Variables
 						String qName = "?";
 						String host = "?";
+						String transID = "?";
+						boolean recoveryMod = false;
+						String hostToRecover = "";
 						AutoScalingConfig config = null;
 						Metadata.Queue queue = null;
 
@@ -199,7 +202,7 @@ public class MngtController implements Runnable, IStoppable {
 							qName = (String) request.get("QName");
 							logger.debug("Remove " + qName);
 							if (!this.factory.removeQueue(qName)) {
-								sendReply_fail("ERROR when stopping Running queue, check logs of the logical queue factory");
+								sendReply_fail("ERROR when removing the queue, check logs of the logical queue factory");
 							} else {
 								sendReply_ok("SUCCESS");
 							}
@@ -225,6 +228,25 @@ public class MngtController implements Runnable, IStoppable {
 							
 							logger.debug("Create queue name = " + qName + " on " + host + " from a start command");
 							break;
+						case RoQConstant.BSON_CONFIG_QUEUE_EXISTS:
+							logger.info("Start  Q Request ... checking whether the Queue is known ...");
+							logger.debug("Incoming request:" + request.toString());
+							// Check if queue QName exists
+							if (!checkField(request, "QName")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>");
+								break;
+							}
+							// 1. Get the name
+							qName = (String) request.get("QName");
+
+							if (!factory.queueAlreadyExists(qName)) {
+								sendReply_fail("NO");
+							} else {
+								sendReply_ok("YES");
+							}
+							
+							logger.debug("Create queue name = " + qName + " on " + host + " from a start command");
+							break;
 						case RoQConstant.BSON_CONFIG_CREATE_QUEUE:
 							logger.debug("Create Q request ...");
 							// Starting a queue
@@ -237,11 +259,40 @@ public class MngtController implements Runnable, IStoppable {
 							// 1. Get the name
 							qName = (String) request.get("QName");
 							host = (String) request.get("Host");
+							hostToRecover = zk.qTransactionExists(qName);
+							if (hostToRecover != null) {
+								// The transaction already exists, recovery mod
+								recoveryMod = true;
+								if (getHosts().contains(hostToRecover)) {
+									host = hostToRecover;
+								} else {
+									// The initial host not exists
+									// change the transaction to target the new host
+									zk.removeQTransaction(qName);
+									zk.createQTransaction(qName, host);
+									
+								}
+								logger.info("Recover process for queue " + qName + " started " +
+										"on HCM: " + hostToRecover);
+							}
+							else {
+								// We create a transaction 
+								zk.createQTransaction(qName, host);
+							}
 							// Just create queue the timer will update the
 							// management server configuration
-							if (!factory.createQueue(qName, host)) {
-								sendReply_fail("ERROR when starting  queue, check logs of the logical queue factory");
+							int returnCode = factory.createQueue(qName, host, recoveryMod);
+							if (returnCode == -1) {
+								// We remove the transaction if the queue already exists
+								zk.removeQTransaction(qName);
+								sendReply_fail("The queue already exists");
+							} else if (returnCode == -2) {
+								sendReply_fail("The HCM looks to be unavailble");
+							} else if (returnCode == -3) {
+								sendReply_fail("The Queue creation process has failed on GCM or HCM");
 							} else {
+								// Transaction completed
+								zk.removeQTransaction(qName);
 								sendReply_ok("SUCCESS");
 							}
 							logger.debug("Create queue name = " + qName + " on " + host);
@@ -256,19 +307,65 @@ public class MngtController implements Runnable, IStoppable {
 							}
 							// 1. Get the name
 							qName = (String) request.get("QName");
-							// Select a random host
-							// TODO Select the less loaded host
+							hostToRecover = zk.qTransactionExists(qName);
+							logger.info("transaction Exists? " + hostToRecover);
+							boolean hostFound = false;
 							ArrayList<String> hostsList = getHosts();
-							hostsList = getHosts();
-							host = hostsList.get((int) Math.random() % hostsList.size());
-							if (hostsList.isEmpty()) {
-								sendReply_fail("ERROR when selecting a host, check logs of the logical queue factory");
-							} else {
+							if (hostToRecover != null) {
+								// The transaction already exists, recovery mod
+								recoveryMod = true;
+								host = hostToRecover;
+								// TODO: ArrayList is not a good data structure for this kind of Operation
+								// But this operation is not performed very often
+								if (!hostsList.contains(hostToRecover)) {
+									// the host for this transaction no longer exists.
+									zk.removeQTransaction(qName);
+									if (hostsList.isEmpty()) {
+										sendReply_fail("ERROR when selecting a host, check logs of the logical queue factory");
+									} else {
+										// Select a random host
+										logger.info("Original host lost: " + hostToRecover);
+										// TODO Select the less loaded host
+										host = hostsList.get((int) Math.random() % hostsList.size());
+										// Create a transaction with the new host
+										zk.createQTransaction(qName, host);
+										hostFound = true;
+									}
+								} else {
+									hostFound = true;
+								}
+								logger.info("Recover process for queue " + qName + " started " +
+										"on HCM: " + host);
+							}
+							else {
+								// We are not in recovery mod
+								if (hostsList.isEmpty()) {
+									sendReply_fail("ERROR when selecting a host, check logs of the logical queue factory");
+								} else {
+									// Select a random host
+									// TODO Select the less loaded host
+									// We create a transaction
+									host = hostsList.get((int) Math.random() % hostsList.size());
+									zk.createQTransaction(qName, host);
+									hostFound = true;
+								}
+							}
+							// if we found a host on which put the queue
+							if (hostFound) {
 								// Just create queue the timer will update the
 								// management server configuration
-								if (!factory.createQueue(qName, host)) {
-									sendReply_fail("ERROR when starting  queue, check logs of the logical queue factory");
+								int code = factory.createQueue(qName, host, recoveryMod);
+								if (code == -1) {
+									// We remove the transaction if the queue already exists
+									zk.removeQTransaction(qName);
+									sendReply_fail("The queue already exists");
+								} else if (code == -2) {
+									sendReply_fail("The HCM looks to be unavailble");
+								} else if (code == -3) {
+									sendReply_fail("The Queue creation process has failed on GCM or HCM");
 								} else {
+									// Transaction completed
+									zk.removeQTransaction(qName);
 									sendReply_ok("SUCCESS");
 								}
 								logger.debug("Create queue name = " + qName + " on " + host);
@@ -298,15 +395,26 @@ public class MngtController implements Runnable, IStoppable {
 						case RoQConstant.BSON_CONFIG_CREATE_XCHANGE:
 							logger.debug("Create Xchange request");
 							if (!checkField(request, "QName")
-								|| !checkField(request, "Host")) {
-								sendReply_fail("ERROR: Missing field in the request: <QName>, <Host>");
+								|| !checkField(request, "Host") || !checkField(request, "TransactionID")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>, <Host>, <TransactionID>");
 								break;
 							}
 							// 1. Get the host
 							host = (String) request.get("Host");
 							qName = (String) request.get("QName");
+							// The transaction ID is created by the user and must be reused while the 
+							// exchange has not been created. The creation can fail for many reason
+							// This ID is the best way to ensure that Exchange creation is idempotent.
+							// An ID could be IPadress:randomNumber
+							transID = (String) request.get("TransactionID");
+							hostToRecover = zk.exchangeTransactionExists(transID);
+							if (hostToRecover == null) {
+								zk.createExchangeTransaction(transID, host);
+							} else {
+								host = hostToRecover;
+							}							
 							logger.debug("Create Xchange on queue " + qName + " on " + host);
-							if (!this.factory.createExchange(qName, host)) {
+							if (!this.factory.createExchange(qName, host, transID)) {
 								sendReply_fail("ERROR when creating Xchange check logs of the logical queue factory");
 							} else {
 								sendReply_ok("SUCCESS");
@@ -481,7 +589,33 @@ public class MngtController implements Runnable, IStoppable {
 					logger.error("Error when receiving message", e);
 				}
 			}
-
+			// If connection with zookeeper has been lost
+			if (!GlobalConfigurationManager.hasLead) {
+				// We wait that process become master
+				logger.info("connection with ZK has been lost, " +
+						"waiting for leadership");
+				// Stop to send update
+				this.controllerTimer.cancel();
+				this.publicationTimer.cancel();
+				this.publicationTimer.purge();
+				
+				// While we have not the lead we respond
+				// that the leader has changed
+				while (!GlobalConfigurationManager.hasLead) {
+					poller.poll(100);
+					if (poller.pollin(0)) {
+						mngtRepSocket.recv(0);
+						mngtRepSocket.send(
+								serializer.serialiazeConfigAnswer(
+									RoQConstant.EVENT_LEAD_LOST, ""),
+								0);
+					}
+				}
+				// Restart timer
+				startMngtControllerTimer();
+				logger.info("connection with ZK has been re-etablished" +
+						" MngmtController restarted");
+			}
 		}// END OF THE LOOP
 		cleanStop();
 		logger.info("Management controller stopped.");

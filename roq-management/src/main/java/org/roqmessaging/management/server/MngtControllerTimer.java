@@ -88,10 +88,12 @@ public class MngtControllerTimer extends TimerTask {
 	public boolean cancel() {
 		logger.info("Stopping the Management controller publisher");
 		try {
+			this.mngtPubSocket.setLinger(0);
 			this.mngtPubSocket.close();
 		} catch (Exception e) {
 			logger.error("Error when closing socket", e);
 		}
 		return super.cancel();
 	}
+	
 }
