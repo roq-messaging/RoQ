@@ -380,12 +380,16 @@ public class HostConfigManager implements Runnable, IStoppable {
 			}
 		}
 		stopAllRunningQueueOnHost();
-		try {
-			unregisterHostFromConfig();
-		} catch (ConnectException | IllegalStateException e) {
-			logger.warn("FAILED TO UNREGISTER HOST !");
-			e.printStackTrace();
-		}
+		// try {
+			/*
+			* we dont unregister the host in order to allow the GCM
+			* to relocate the processes from this host on the others
+			*/
+			// unregisterHostFromConfig();
+		// } catch (ConnectException | IllegalStateException e) {
+		// 	logger.warn("FAILED TO UNREGISTER HOST !");
+		// 	e.printStackTrace();
+		// }
 		logger.info("Closing the client & global config sockets.");
 		this.clientReqSocket.setLinger(0);
 		this.clientReqSocket.close();
