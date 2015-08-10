@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+cd $(dirname $0)
+
 # Kill running ROQ processes
 kill -9 `ps -ef | grep roq-management | awk '{print $2}'`
 kill -9 `ps -ef | grep roq-demonstration | awk '{print $2}'`
@@ -37,6 +39,8 @@ java -Djava.library.path=/usr/local/lib \
 		-cp ../../roq-management/target/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar \
 		org.roqmessaging.management.launcher.GlobalConfigurationLauncher \
 		~/.roq/GCM.properties > GCM.log &
+
+sleep 10
 
 echo starting HCM
 # Start HCM

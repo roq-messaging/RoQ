@@ -32,7 +32,7 @@ This procedure allows you to run ROQ on your local machine. All the ROQ componen
 
 Clone this git repository on your machine. And run the following bash script:
 ```
-RoQ/roq-deployment/demo-start-subscriber.sh
+RoQ/roq-deployment/demonstration/demo-start-subscriber.sh
 ```
 Once that the terminal shows that the subscriber is connected, open a second terminal and runs this script: 
 ```

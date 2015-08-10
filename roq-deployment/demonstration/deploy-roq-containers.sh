@@ -20,7 +20,7 @@ echo ZK.roq.org ansible_ssh_host=$(sudo docker inspect --format '{{ .NetworkSett
 		ansible_ssh_user=root >> ../ansible/testInventory
 
 # Launch the ansible playbook that update Zk address in the GCM.properties
-ansible-playbook -i ../ansible/testInventory ../ansible/gimmeROQ.yml --tags "update-gcm"
+ansible-playbook -i ../ansible/testInventory ../ansible/gimmeROQ.yml --tags "update-properties"
 
 echo Starting GCM container
 # Launch the GCM container and the GCM component inside
@@ -29,13 +29,6 @@ sudo docker run -d -v $HOME/.roq:/lib/RoQ/roq-config --name ROQGCM -p 5000:5000 
 		-cp /lib/RoQ/roq-management/target/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar \
 		org.roqmessaging.management.launcher.GlobalConfigurationLauncher \
 		/lib/RoQ/roq-config/GCM.properties
-
-# Launch the ansible playbook that update Zk address in the HCM.properties
-echo GCM.roq.org ansible_ssh_host=$(sudo docker inspect --format '{{ .NetworkSettings.IPAddress }}' ROQGCM) \
-		ansible_ssh_user=root >> ../ansible/testInventory
-
-# Launch the ansible playbook that update  GCM address in the HCM.properties
-ansible-playbook -i ../ansible/testInventory ../ansible/gimmeROQ.yml --tags "update-hcm"
 
 echo Starting HCM container
 # Launch the HCM container and the HCM component inside

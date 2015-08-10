@@ -2,7 +2,7 @@
 # VERSION        0.5
 
 FROM ubuntu:14.04
-MAINTAINER Benjamin VM <vanmelle.benjamin@gmail.com>
+MAINTAINER Benjamin VM <vanmelle.benjamin@gmail.com> # 0.9b
 
 # Get packages
 RUN apt-get install -y software-properties-common && add-apt-repository ppa:chris-lea/zeromq && apt-get update && apt-get install -y libzmq1 libzmq-dev libzmq-dbg openssh-server openjdk-7-jdk maven2 g++ libtool autoconf automake git make pkg-config wget zookeeper zookeeperd && cd /lib && git clone git://github.com/zeromq/jzmq
@@ -29,6 +29,6 @@ ENV NOTVISIBLE "in users profile"
 RUN echo "export VISIBLE=now" >> /etc/profile
 
 # Install ROQ
-RUN cd /lib && git clone git://github.com/vanmellebenjamin/RoQ && cd RoQ && git checkout QueueClient && mvn install -Dmaven.test.skip=true
+RUN cd /lib && git clone git://github.com/vanmellebenjamin/RoQ && cd RoQ && git checkout gcms-watchers && mvn install -Dmaven.test.skip=true
 
 CMD ["/usr/sbin/sshd", "-D"]

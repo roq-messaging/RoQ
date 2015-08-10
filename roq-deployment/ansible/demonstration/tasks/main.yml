@@ -2,8 +2,7 @@
   file: path=~/.roq state=directory mode=777
   delegate_to: localhost
   tags:
-    - update-gcm
-    - update-hcm
+    - update-properties
 
 - name: Selinux fedora issue fix
   shell: 'su -c "setenforce 0"; chcon -Rt svirt_sandbox_file_t ~/.roq'
@@ -16,10 +15,10 @@
   template: src=GCM.properties.j2 dest='~/.roq/GCM.properties'
   delegate_to: localhost
   tags:
-    - update-gcm
+    - update-properties
 
 - name: Overwrite HCM default config file
   template: src=HCM.properties.j2 dest='~/.roq/HCM.properties'
   delegate_to: localhost
   tags:
-    - update-hcm
+    - update-properties
