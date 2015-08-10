@@ -13,6 +13,6 @@
 
 - name: Configure and Install ZMQ V2.1.3
   shell: "cd {{jzmq_path}}; {{item}}"
-  with_items: ['./autogen.sh', './configure', 'make', 'sudo make install', 'mvn install']
+  with_items: ['./autogen.sh', './configure', 'make', 'sudo make install', 'mvn install -DskipTests -Dmaven.javadoc.skip=true']
   tags:
     - full-install

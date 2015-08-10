@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+cd $(dirname $0)
+echo `pwd`
+
 # Create inventory for Ansible
 echo [test] > ../ansible/testInventory
 echo localhost ansible_connection=local >> ../ansible/testInventory
