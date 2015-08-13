@@ -61,7 +61,6 @@ public class RoQAllLocalLauncher {
 		// and overwrite it with the connection string provided by the TestingServer class.
 		GCMPropertyDAO gcmConfig = new FileConfigurationReader().loadGCMConfiguration(configFile);
 		gcmConfig.zkConfig.servers = zkConnectString;
-		logger.info("zk: " + zkConnectString);
 		
 		CloudConfig cloudConfig = new FileConfigurationReader().loadCloudConfiguration(configFile);
 		return new GlobalConfigurationManager(gcmConfig, cloudConfig);
@@ -90,7 +89,7 @@ public class RoQAllLocalLauncher {
 		configThread.start();
 		// 2. Start the host configuration manager locally
 		logger.info("Start host config....");
-		hostConfigManager = new HostConfigManager("testHCM.properties");
+		hostConfigManager = new HostConfigManager("testHCM.properties", zkServer.getConnectString());
 		Thread hostThread = new Thread(hostConfigManager);
 		hostThread.start();
 		logger.info("Start factory config...");
@@ -104,8 +103,8 @@ public class RoQAllLocalLauncher {
 		this.hostConfigManager.getShutDownMonitor().shutDown();
 		Thread.sleep(3000);
 		this.configurationManager.getShutDownMonitor().shutDown();
+		Thread.sleep(3000);
 		this.zkServer.close();
-		Thread.sleep(6000);
 	}
 
 	/**
@@ -211,5 +210,12 @@ public class RoQAllLocalLauncher {
 	 */
 	public void setConfigFile(String configFile) {
 		this.configFile = configFile;
+	}
+	
+	/**
+	 * @return HCM instance
+	 */
+	public HostConfigManager getHCMInstance() {
+		return this.hostConfigManager;
 	}
 }

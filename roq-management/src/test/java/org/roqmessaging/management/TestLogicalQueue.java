@@ -15,6 +15,7 @@
 package org.roqmessaging.management;
 
 import java.net.ConnectException;
+import java.util.ArrayList;
 
 import org.apache.curator.test.TestingServer;
 import org.apache.log4j.Logger;
@@ -89,7 +90,7 @@ public class TestLogicalQueue {
 		}
 		logger.info("Start host config...");
 		if (hostConfigManager == null) {
-			hostConfigManager = new HostConfigManager("HCM.properties");
+			hostConfigManager = new HostConfigManager("HCM.properties", zkServer.getConnectString());
 			Thread hostThread = new Thread(hostConfigManager);
 			hostThread.start();
 		}
@@ -154,14 +155,14 @@ public class TestLogicalQueue {
 	private void testQueue(String qName) throws InterruptedException {
 		logger.info("**********Testing Q "+ qName+"***************");
 		String host = RoQUtils.getInstance().getLocalIP();
-		factory.createQueue(qName, host, false);
+		factory.createQueue(qName, host, new ArrayList<String>(), false);
 		//Wait for the queue ready
 		Thread.sleep(2000);
 		//Add a subscriber
 		createSubscriber(qName, "key", host);
 		
 		// Add a publisher
-		RoQConnectionFactory factory = new RoQConnectionFactory("localhost");
+		RoQConnectionFactory factory = new RoQConnectionFactory(zkServer.getConnectString());
 		// 1. Creating the connection
 		IRoQConnection connection;
 		try {
@@ -176,8 +177,8 @@ public class TestLogicalQueue {
 			publisher.sendMessage("key".getBytes(), "hello".getBytes());
 	
 			Thread.sleep(500);
+			factory.close();
 		} catch (ConnectException | IllegalStateException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -190,7 +191,7 @@ public class TestLogicalQueue {
 	 * @return a RoQ subscriber
 	 */
 	private IRoQSubscriber createSubscriber(String qName, final String key, String configurationServer) {
-		IRoQConnectionFactory factory = new RoQConnectionFactory(configurationServer);
+		IRoQConnectionFactory factory = new RoQConnectionFactory(zkServer.getConnectString());
 		// add a subscriber
 		IRoQSubscriberConnection subConnection = null;
 		IRoQSubscriber subs = null;
@@ -204,12 +205,12 @@ public class TestLogicalQueue {
 				public void onEvent(byte[] msg) {
 					String content = new String(msg, 0, msg.length);
 					assert content.equals("hello");
-					logger.info("In message lIstener recieveing :" + content + " on Key :"+ key);
+					System.out.println("In message lIstener recieveing :" + content + " on Key :"+ key);
 				}
 			};
 			subConnection.setMessageSubscriber(subs);
+			factory.close();
 		} catch (ConnectException | IllegalStateException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return subs;

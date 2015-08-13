@@ -63,7 +63,7 @@ public class Test117b extends RoQTestCase {
 		// The Qname
 		String qName = "test117b-Q";
 		// Init 1. create the test queue
-		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
+		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), new ArrayList<String>(), false);
 		// Init 2. let the queue start
 		Thread.sleep(2000);
 		//3. Attach 2 subscriber
@@ -73,10 +73,10 @@ public class Test117b extends RoQTestCase {
 		createSubscriber(qName);
 		// 3. Start the test
 		Timer timerLoad = new Timer("Loader Publisher");
-		SenderLoader loader1 = new SenderLoader(44000, 100, RoQUtils.getInstance().getLocalIP(), qName);
-		SenderLoader loader2 = new SenderLoader(8800, 100, RoQUtils.getInstance().getLocalIP(), qName);
-		SenderLoader loader3 = new SenderLoader(8800, 100, RoQUtils.getInstance().getLocalIP(), qName);
-		SenderLoader loader4 = new SenderLoader(8800, 100, RoQUtils.getInstance().getLocalIP(), qName);
+		SenderLoader loader1 = new SenderLoader(44000, 100, launcher.getZkServerAddress(), qName);
+		SenderLoader loader2 = new SenderLoader(8800, 100, launcher.getZkServerAddress(), qName);
+		SenderLoader loader3 = new SenderLoader(8800, 100, launcher.getZkServerAddress(), qName);
+		SenderLoader loader4 = new SenderLoader(8800, 100, launcher.getZkServerAddress(), qName);
 		logger.info("TEST 117b-------------------------------------Start Test--------------------------");
 		timerLoad.schedule(loader1, 50, 1000);
 		timerLoad.schedule(loader2, 50, 1000);
@@ -107,7 +107,7 @@ public class Test117b extends RoQTestCase {
  * Create a subscriber to this queue
  */
 private void createSubscriber(String qName) {
-	IRoQConnectionFactory conFactory = new RoQConnectionFactory(RoQUtils.getInstance().getLocalIP());
+	IRoQConnectionFactory conFactory = new RoQConnectionFactory(launcher.getZkServerAddress());
 	IRoQSubscriberConnection subscriberConnection;
 	try {
 		subscriberConnection = conFactory.createRoQSubscriberConnection(qName, "test");
@@ -126,10 +126,9 @@ private void createSubscriber(String qName) {
 				}
 			}
 		};
-		//Se the subscriber logic for this connection
+		// The subscriber logic for this connection
 		subscriberConnection.setMessageSubscriber(subs);
 	} catch (ConnectException | IllegalStateException e) {
-		// TODO Auto-generated catch block
 		e.printStackTrace();
 	}
 }

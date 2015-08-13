@@ -9,4 +9,6 @@ public class RoQZKSimpleConfig {
 	// Name of the znode used as the root for all read/writes in ZooKeeper
 	//   example: "RoQ"
 	public String namespace = "RoQ";
+	// Path to the exchanges for the monitors
+	public String znode_queues_exchanges = "queuesExchanges";
 }

@@ -117,6 +117,31 @@ public interface RoQConstant {
 	public static int EVENT_LEAD_LOST = 8;
 	
 	/**
+	 * Notifies the Monitor that it becomes
+	 * the new master
+	 */
+	public static int EVENT_MONITOR_FAILOVER = 9;
+	
+	/**
+	 * The response from the Monitor (backup) to the HCM
+	 * in order to communicate that it is now the master
+	 * (active Monitor)
+	 */
+	public static int EVENT_MONITOR_ACTIVATED = 10;
+	
+	/**
+	 * Send to the management COntroller 
+	 * when we detect than a HCM has crashed
+	 */
+	public static int EVENT_HCM_FAILURE = 11;
+	
+	/**
+	 * Send to the Exchange that the monitor 
+	 * has changed
+	 */
+	public static int EVENT_MONITOR_CHANGED = 11;
+	
+	/**
 	 * Event sent from subscriber to monitor.
 	 * “31,totalreceived”
 	 */
@@ -165,12 +190,12 @@ public interface RoQConstant {
 	/**
 	 * GLobal Configuration request to create a queue 
 	 */
-	public static int CONFIG_CREATE_QUEUE_OK = 1003;
+	public static int CONFIG_REQUEST_OK = 1003;
 	
 	/**
 	 * GLobal Configuration request to create a queue 
 	 */
-	public static int CONFIG_CREATE_QUEUE_FAIL = 1004;
+	public static int CONFIG_REQUEST_FAIL = 1004;
 
 	/**
 	 * Global configuration request to create a new host manager configuration entry
@@ -216,6 +241,38 @@ public interface RoQConstant {
 	
 	public static int CONFIG_START_QUEUE = 1013;
 	
+	/**
+	 * HCM request, create a STBY monitor on the host
+	 */
+	public static int CONFIG_CREATE_STBY_MONITOR = 1014;
+	
+	/**
+	 * HCM request, start a STBY monitor on the host
+	 */
+	public static int CONFIG_START_STBY_MONITOR = 1015;
+	
+	/**
+	 * HCM request, remove a STBY monitor on the host
+	 */
+	public static int CONFIG_REMOVE_STBY_MONITOR = 1016;
+	
+	/**
+	 * GCM request, rto replace the backup monitor by another in 
+	 * the metadata
+	 */
+	public static int CONFIG_REPLACE_QUEUE_BACKUP_MONITOR = 1017;
+	
+	/**
+	 * GCM request, to set a backup monitor as the new active monitor
+	 * in the queue metadata
+	 */
+	public static int CONFIG_REPLACE_QUEUE_MONITOR = 1018;		
+	
+	/**
+	 * GCM request to add a backup monitor in the meta data of the queue
+	 */
+	public static int CONFIG_ADD_QUEUE_BACKUP_MONITOR = 1019;		
+	
 	
 	/**
 	 * Send to shut donw a {@linkplain IStoppable} element
@@ -226,6 +283,12 @@ public interface RoQConstant {
 	 * Failing constant
 	 */
 	public static int FAIL = 1101;
+	
+	/**
+	 * Global configuration request to get the list 
+	 * of monitors for a given queue
+	 */
+	public static int CONFIG_GET_HOSTS_LIST_BY_QNAME = 1102;
 	
 	/*Operations for configuration management*/
 	
@@ -447,5 +510,4 @@ public interface RoQConstant {
 	 */
 	public static String CACHE_Q_MONITOR_STAT_MAP="queue.monitor.stat.map";
 
-	
 }

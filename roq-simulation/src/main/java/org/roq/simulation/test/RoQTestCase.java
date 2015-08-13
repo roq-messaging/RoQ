@@ -15,6 +15,7 @@
 package org.roq.simulation.test;
 
 import java.net.ConnectException;
+import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 import org.junit.After;
@@ -68,7 +69,6 @@ public class RoQTestCase {
 	 */
 	@After
 	public void tearDown() throws Exception {
-		connection.close();
 		this.logger.info("Tear Down TEST");
 		if(this.subscriberConnection!=null){
 			subscriberConnection.close();
@@ -89,7 +89,7 @@ public class RoQTestCase {
 	 */
 	public void initQueue(String qName) throws Exception {
 		//1. Create a queue
-		this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
+		this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), new ArrayList<String>(), false);
 		//Let the queue starting
 		Thread.sleep(2000);
 		//2. Subscribing and publishing a message
@@ -132,7 +132,6 @@ public class RoQTestCase {
 			// message
 			connection.blockTillReady(10000);
 		} catch (ConnectException | IllegalStateException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return publisher;
@@ -160,7 +159,6 @@ public class RoQTestCase {
 			};
 			subscriberConnection.setMessageSubscriber(subs);
 		} catch (ConnectException | IllegalStateException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

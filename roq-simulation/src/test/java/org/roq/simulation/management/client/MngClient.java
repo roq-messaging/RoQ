@@ -185,6 +185,9 @@ public class MngClient {
 			// Get the result and check
 			byte[] eStartAnswer = requestSocket.recv(0);
 			BSONObject removeAnswer = BSON.decode(eStartAnswer);
+			if ((int) removeAnswer.get("RESULT") == RoQConstant.FAIL) {
+				logger.error(removeAnswer.get("COMMENT"));
+			}
 			Assert.assertEquals(RoQConstant.OK, removeAnswer.get("RESULT"));
 			Thread.sleep(4000);
 		} catch (Exception e) {

@@ -16,6 +16,7 @@
 
 package org.roqmessaging.core;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Timer;
 
@@ -24,7 +25,10 @@ import org.roqmessaging.core.data.StatDataState;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.timer.ExchangeStatTimer;
 import org.roqmessaging.core.timer.Heartbeat;
+import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.state.ProducerState;
+import org.roqmessaging.utils.LocalState;
+import org.roqmessaging.utils.Time;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Socket;
 
@@ -46,6 +50,7 @@ public class Exchange implements Runnable, IStoppable {
 	private ZMQ.Socket backendPub;
 	private ZMQ.Socket monitorPub;
 	private ZMQ.Socket pubInfoRep;
+	private ZMQ.Socket monitorInfoRep;
 	private String s_frontend;
 	private String s_backend;
 	private String s_monitor;
@@ -55,6 +60,10 @@ public class Exchange implements Runnable, IStoppable {
 	private Timer timer = null;
 	private volatile boolean active=false;
 	private String ID = null;
+	//Local State for heartbeats
+	private LocalState localState;
+	// Minimum time between two heartbeats (in millis)
+	private long hbPeriod;
 	
 	//Shutdown thread
 	private ShutDownMonitor shutDownMonitor = null;
@@ -63,61 +72,73 @@ public class Exchange implements Runnable, IStoppable {
 	private long timeout=80;
 
 	/**
-	 * Notice that we start a shutdown request socket on frontEnd port +1
+	 * Notice that we start a shutdown request socket on frontEnd p)ort +1
 	 * @param frontend the front port
 	 * @param backend the back port
 	 * @param monitorHost the address of the monitor to bind  tcp:// monitor:monitorPort;
 	 * @param statHost tcp://monitor:statport
+	 * @param localStatePath the folder path in which the processes states will be stored (heartbeats)
+	 * @param hbPeriod the number of seconds between each heatbeat
 	 */
-	public Exchange(int frontend, int backend, String monitorHost, String statHost) {
-		knownProd = new HashMap<String, ProducerState>();
-		this.statistic = new StatDataState();
-		this.statistic.setProcessed(0);
-		this.statistic.setThroughput(0);
-		this.statistic.setStatHost(statHost);
-		this.statistic.setMax_bw( 5000); // bandwidth limit, in bytes/minute, per producer
-		this.s_frontend = "tcp://*:" + frontend;
-		this.s_backend = "tcp://*:" + backend;
-		this.s_monitor = monitorHost;
-
-		this.context = ZMQ.context(1);
-		this.frontendSub = context.socket(ZMQ.SUB);
-		this.backendPub = context.socket(ZMQ.PUB);
-		
-		this.ID = "XChange "+System.currentTimeMillis();
-		
-		// Caution, the following method as well as setSwap must be invoked before binding
-		// Use these to (double) check if the settings were correctly set  
-		// logger.info(this.backend.getHWM());
-		// logger.info(this.backend.getSwap());
-		setSocketOptions(this.backendPub);
-		setSocketOptions(this.frontendSub);
-	    
-		this.frontendSub.bind(s_frontend);
-		this.frontendSub.subscribe("".getBytes());
-
-		this.backendPub.bind(s_backend);
-		this.monitorPub = context.socket(ZMQ.PUB);
-		
-		//The channel on which the publisher will notifies their deconnection
-		this.pubInfoRep =  context.socket(ZMQ.REP);
-		this.pubInfoRep.bind("tcp://*:" +(backend+2));
-		
-		this.monitorPub.connect(s_monitor);
-		this.frontEnd=frontend;
-		this.backEnd= backend;
-		this.active = true;
-		
-		if(logger.isInfoEnabled()){
-			logger.info("BackendSub: SndHWM="+this.backendPub.getSndHWM()+" RcvHWM="+this.backendPub.getRcvHWM());
-	        logger.info("FrontendSub: SndHWM="+this.frontendSub.getSndHWM()+" RcvHWM="+this.frontendSub.getRcvHWM());
-		}
+	public Exchange(int frontend, int backend, String monitorHost, String statHost, String localStatePath, long hbPeriod) {
+		try {
+			knownProd = new HashMap<String, ProducerState>();
+			this.statistic = new StatDataState();
+			this.statistic.setProcessed(0);
+			this.statistic.setThroughput(0);
+			this.statistic.setStatHost(statHost);
+			this.statistic.setMax_bw( 5000); // bandwidth limit, in bytes/minute, per producer
+			this.s_frontend = "tcp://*:" + frontend;
+			this.s_backend = "tcp://*:" + backend;
+			this.s_monitor = monitorHost;
+			localState = new LocalState(localStatePath + "/" + frontend);
+			this.hbPeriod = hbPeriod;
+			this.context = ZMQ.context(1);
+			this.frontendSub = context.socket(ZMQ.SUB);
+			this.backendPub = context.socket(ZMQ.PUB);
 			
-		
-		//initiatlisation of the shutdown thread
-		this.shutDownMonitor = new ShutDownMonitor(backend+1, this);
-		new Thread(shutDownMonitor).start();
-		logger.debug("Started shutdown monitor on "+ (backend+1));
+			this.ID = "XChange "+System.currentTimeMillis();
+			
+			// Caution, the following method as well as setSwap must be invoked before binding
+			// Use these to (double) check if the settings were correctly set  
+			// logger.info(this.backend.getHWM());
+			// logger.info(this.backend.getSwap());
+			setSocketOptions(this.backendPub);
+			setSocketOptions(this.frontendSub);
+		    
+			this.frontendSub.bind(s_frontend);
+			this.frontendSub.subscribe("".getBytes());
+	
+			this.backendPub.bind(s_backend);
+			this.monitorPub = context.socket(ZMQ.PUB);
+			
+			//The channel on which the publisher will notifies their deconnection
+			this.pubInfoRep =  context.socket(ZMQ.REP);
+			this.pubInfoRep.bind("tcp://*:" +(backend+2));
+			
+			//The channel on which the monitor will notifies active change
+			this.monitorInfoRep =  context.socket(ZMQ.REP);
+			this.monitorInfoRep.bind("tcp://*:" +(backend+3));
+			
+			this.monitorPub.connect(s_monitor);
+			this.frontEnd=frontend;
+			this.backEnd= backend;
+			this.active = true;
+			
+			if(logger.isInfoEnabled()){
+				logger.info("BackendSub: SndHWM="+this.backendPub.getSndHWM()+" RcvHWM="+this.backendPub.getRcvHWM());
+		        logger.info("FrontendSub: SndHWM="+this.frontendSub.getSndHWM()+" RcvHWM="+this.frontendSub.getRcvHWM());
+			}
+				
+			
+			//initiatlisation of the shutdown thread
+			this.shutDownMonitor = new ShutDownMonitor(backend+1, this);
+			new Thread(shutDownMonitor).start();
+			logger.debug("Started shutdown monitor on "+ (backend+1));
+		} catch (Exception e) {
+			logger.error("Error while creating Monitor, ABORDED", e);
+			return;
+		}
 	}
 
 	private void setSocketOptions(Socket sock) {
@@ -173,12 +194,26 @@ public class Exchange implements Runnable, IStoppable {
 		//This is important that the exchange stat timer is triggered every second, since it computes throughput in byte/min.
 		timer.schedule(exchStatTimer, 100, 60000);
 		int part;
+		long current;
+		long lastHb = Time.currentTimeMillis() - hbPeriod;
 		String prodID= null;
 		//Adding the poller
 		ZMQ.Poller poller = new ZMQ.Poller(2);
 		poller.register(this.frontendSub);
 		poller.register(this.pubInfoRep);
+		poller.register(this.monitorInfoRep);
 		while (this.active) {
+			// Write Heartbeat
+			if ((Time.currentTimeMillis() - lastHb) >= hbPeriod) {
+				try {
+					current = Time.currentTimeSecs();
+					logger.info("Exch Writing hb " + frontEnd + " " + current);
+					localState.put("HB", current);
+					lastHb = Time.currentTimeMillis();
+				} catch (IOException e) {
+					logger.info("Failed to write in local db: " + e);
+				}
+			}
 			byte[] message;
 			part = 0;
 			//Set the poll time out, it returns either when someting arrive or when it time out
@@ -189,11 +224,10 @@ public class Exchange implements Runnable, IStoppable {
 					 *  ** Message multi part construction ** 1: routing key 2:
 					 * producer ID 3: payload
 					 */
-
 					message = frontendSub.recv(0);
 					part++;
 					if (part == 2) {
-						prodID=bytesToStringUTFCustom(message);
+						prodID = bytesToStringUTFCustom(message);
 					}
 					if (part == 3) {
 						logPayload(message.length, prodID);
@@ -201,21 +235,58 @@ public class Exchange implements Runnable, IStoppable {
 					backendPub.send(message, frontendSub.hasReceiveMore() ? ZMQ.SNDMORE : 0);
 				} while (this.frontendSub.hasReceiveMore() && this.active);
 				this.statistic.processed++;
-			}else{
-				if(poller.pollin(1)){
-					//A publisher sends a deconnexion event
-					byte[] info = pubInfoRep.recv(0);
-					String mInfo = new String(info);
-					String[] arrayInfo = mInfo.split(","); //CODE, ID
-					if(knownProd.remove(arrayInfo[1])!=null){
-						logger.info("Successfully removed publisher "+arrayInfo[1] +" remains "+ knownProd.size() + " publishers.");
-						this.pubInfoRep.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
-					}else{
-						logger.warn("The publisher "+ arrayInfo[1]+"  is not known");
-						this.pubInfoRep.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
-					}
+			} else if(poller.pollin(1)) {
+				//A publisher sends a deconnexion event
+				byte[] info = pubInfoRep.recv(0);
+				String mInfo = new String(info);
+				String[] arrayInfo = mInfo.split(","); //CODE, ID
+				logger.info("Unregistering: " + arrayInfo[1]);
+				if(knownProd.remove(arrayInfo[1])!=null){
+					logger.info("Successfully removed publisher "+arrayInfo[1] +" remains "+ knownProd.size() + " publishers.");
+					this.pubInfoRep.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+				}else{
+					logger.warn("The publisher "+ arrayInfo[1]+"  is not known");
+					this.pubInfoRep.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
+				}
+			} else if (poller.pollin(2)) { // Received a message from the monitor
+				byte[] info = monitorInfoRep.recv(0);
+				String mInfo = new String(info);
+				String[] arrayInfo = mInfo.split(","); //CODE, MONITOR_ADDR, STAT_ADDR
+				if (new Integer(arrayInfo[0]) == RoQConstant.EVENT_MONITOR_CHANGED) {
+					logger.info("Receiveing monitor changement event: " + arrayInfo[0] + 
+							" mon: " + arrayInfo[1] + " stat: " + arrayInfo[2]);
+					// Stop the current timers, they use old addresses
+					exchStatTimer.shutDown();
+					heartBeatTimer.shutDown();
+					timer.purge();
+					timer.cancel();
+					
+					// set the new addresses
+					this.statistic.setStatHost(arrayInfo[2]);
+					this.s_monitor = arrayInfo[1];
+					
+					// restart the timer with the new parameters
+					timer = new Timer();
+					heartBeatTimer = new Heartbeat(this.s_monitor, this.frontEnd, this.backEnd );
+					timer.schedule(heartBeatTimer, 5, 2000);
+					exchStatTimer = new ExchangeStatTimer(this, this.statistic);
+					timer.schedule(exchStatTimer, 100, 60000);
+					
+					monitorInfoRep.send((
+							RoQUtils.getInstance().getLocalIP() + "," +
+							this.frontEnd + "," +
+							this.backEnd
+						).getBytes(), 0);
+					logger.info("the exchange has failover on the new active monitior");
 				}
 			}
+		}
+		try {
+			// 0 indicates that the process has been shutdown by the user & have not timed out
+			localState.put("HB", new Long(0));
+		} catch (IOException e) {
+			logger.error("Failed to stop properly the process, it will be restarted...");
+			e.printStackTrace();
 		}
 		closeSockets();
 		exchStatTimer.shutDown();
@@ -249,7 +320,8 @@ public class Exchange implements Runnable, IStoppable {
 		frontendSub.close();
 		backendPub.close();
 		monitorPub.close();
-
+		monitorInfoRep.close();
+		pubInfoRep.close();
 	}
 
 	/**

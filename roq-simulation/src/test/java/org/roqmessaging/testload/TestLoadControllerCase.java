@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.testload;
 
+import java.util.ArrayList;
+
 import org.json.simple.parser.ParseException;
 import org.junit.Test;
 import org.roq.simulation.test.RoQTestCase;
@@ -34,7 +36,7 @@ public class TestLoadControllerCase extends RoQTestCase {
 		//The Qname
 		String qName = "performance-test";
 		//Init 1. create the test queue 
-		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
+		super.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), new ArrayList<String>(), false);
 		//Init 2. let the queue start 
 		Thread.sleep(2000);
 		//Init 3. create an exchange
@@ -47,7 +49,7 @@ public class TestLoadControllerCase extends RoQTestCase {
 		//4. Start the test
 		try {
 			desc.load(description);
-			TestLoadController controller = new TestLoadController(desc, RoQUtils.getInstance().getLocalIP(),qName );
+			TestLoadController controller = new TestLoadController(desc, launcher.getZkServerAddress(),qName );
 			controller.start(true);
 			//TODO adding a call back at the end of the test to remove the queue
 		} catch (ParseException e) {

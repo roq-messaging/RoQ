@@ -14,6 +14,8 @@
  */
 package org.roq.simulation;
 
+import java.util.ArrayList;
+
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.roq.simulation.stat.KPILogicalQSubscriber;
@@ -35,12 +37,13 @@ public class TestLogicalQStat extends RoQTestCase {
 		try {
 			Logger.getLogger(this.getClass().getName()).info("Starting main test in Test logical queue");
 			//1. Create a queue
-			this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), false);
+			this.factory.createQueue(qName, RoQUtils.getInstance().getLocalIP(), new ArrayList<String>(), false);
+			Thread.sleep(5000);
 			//2. Attach subscriber
 			attachSUbscriber(qName);
 			//3. Create subscriber
 			KPILogicalQSubscriber subscriber = new KPILogicalQSubscriber(
-					launcher.configurationServer,
+					launcher.getZkServerAddress(),
 					launcher.configurationServerInterfacePort,
 					qName);
 			subscriber.subscribe();
@@ -62,10 +65,11 @@ public class TestLogicalQStat extends RoQTestCase {
 			subscriber.setXchangeToCheck(2);
 			Thread.sleep(5000);
 			
-			
+			subscriber.shutDown();
+			Thread.sleep(2000);
 			//7. Shutdown
 			factory.removeQueue(qName);
-			subscriber.shutDown();
+			//subscriber.shutDown();
 			Thread.sleep(5000);
 			
 		} catch (Exception e) {

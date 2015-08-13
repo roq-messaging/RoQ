@@ -1,8 +1,0 @@
-Starting the local host configuration manager with 1
-Starting the  global configuration manager
-10:34:42,661  INFO [main] (HostConfigManager:<init>:98)   Host configuration manager [GCM :127.0.0.1] [Exhange FE :6000] [Monitor base port: 5500]
- [Create Queue in the same HCM VM: true] [Create Exchange in same HCM VM: false] [ Exchange Heap: 512]
-10:34:42,735  INFO [Thread-2] (HostConfigManager:registerHost:341)   Registration process started
-10:34:42,763  INFO [Thread-0] (ShutDownMonitor:run:62)   Shutdown monitor started for Host config manager 172.17.42.1
-Running Clean Up...
-10:37:50,864  INFO [Thread-1] (ShutDownMonitor:shutDown:87)   Shutting down : Host config manager 172.17.42.1

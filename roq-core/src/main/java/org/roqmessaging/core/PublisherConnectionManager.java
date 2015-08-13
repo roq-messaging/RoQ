@@ -2,6 +2,8 @@
 
 package org.roqmessaging.core;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 import org.apache.log4j.Logger;
@@ -16,16 +18,17 @@ import org.zeromq.ZMQ;
  * 
  * @author sskhiri
  * @author Nam-Luc tran
+ * @author bvanmelle
  */
 public class PublisherConnectionManager implements Runnable {
 	private Logger logger = Logger.getLogger(PublisherConnectionManager.class);
 
 	private ZMQ.Context context;
 	private String s_ID;
-	private ZMQ.Socket monitorSub;
+	private HashMap<String, ZMQ.Socket> monitorsSub = new HashMap<String, ZMQ.Socket>();
 	private String s_currentExchange;
 
-	private ZMQ.Socket initReq;
+	private HashMap<String, ZMQ.Socket> initReqSockets = new HashMap<String, ZMQ.Socket>();
 	private ZMQ.Socket tstmpReq;
 
 	// Mesage to send
@@ -37,7 +40,8 @@ public class PublisherConnectionManager implements Runnable {
 	//define whether we relocate
 	private volatile boolean relocating = false;
 	
-
+	private int replicationFactor;
+	
 	public boolean isRelocating() {
 		return relocating;
 	}
@@ -50,34 +54,39 @@ public class PublisherConnectionManager implements Runnable {
 	 * @param monitor the monitor host address" tcp://<ip>:<port>"
 	 * @param tstmp true if using a time stamp server
 	 */
-	public PublisherConnectionManager(String monitor, boolean tstmp) {
+	public PublisherConnectionManager(int replicationFactor, List<String> monitors, boolean tstmp) {
+		this.replicationFactor = replicationFactor;
 		this.context = ZMQ.context(1);
-		this.monitorSub = context.socket(ZMQ.SUB);
-		//As we received the base port we need to increment the base port to get the sub
-		//and init request port
-		int basePort = extractBasePort(monitor);
-		String portOff = monitor.substring(0, monitor.length()-"xxxx".length());
-		monitorSub.connect(portOff+(basePort+2));
 		this.s_ID = UUID.randomUUID().toString();
-		monitorSub.subscribe("".getBytes());
-		this.initReq = context.socket(ZMQ.REQ);
-		this.initReq.connect(portOff+(basePort+1));
-		
-		//Init the config state
-		this.configState = new PublisherConfigState();
-		this.configState.setMonitor(monitor);
-		this.configState.setTimeStampServer(tstmp);
-		this.configState.setPublisherID(this.s_ID);
-		logger.info("Publisher client thread " + s_ID+" Connected to monitor :tcp://" + monitor + ":"+(basePort+1));
-
-		if (tstmp) {
-			// Init of timestamp socket. Only for benchmarking purposes
-			this.tstmpReq = context.socket(ZMQ.REQ);
-			this.tstmpReq.connect("tcp://" + monitor + ":5900");
-			this.logger.debug("using time stamp server: "+ tstmp);
+		for (String monitor : monitors) {
+			this.monitorsSub.put(monitor, context.socket(ZMQ.SUB));
+			//As we received the base port we need to increment the base port to get the sub
+			//and init request port
+			int basePort = extractBasePort(monitor);
+			String portOff = monitor.substring(0, monitor.length()-"xxxx".length());
+			this.monitorsSub.get(monitor).connect(portOff+(basePort+2));
+			this.monitorsSub.get(monitor).subscribe("".getBytes());
+			
+			this.initReqSockets.put(monitor, context.socket(ZMQ.REQ));
+			this.initReqSockets.get(monitor).connect(portOff+(basePort+1));
+			this.initReqSockets.get(monitor).setReceiveTimeOut(6000);
+			
+			//Init the config state
+			this.configState = new PublisherConfigState();
+			this.configState.setMonitor(monitor);
+			this.configState.setTimeStampServer(tstmp);
+			this.configState.setPublisherID(this.s_ID);
+			logger.info("Publisher client thread " + s_ID+" Connected to monitor :tcp://" + monitor + ":"+(basePort+1));
+	
+			if (tstmp) {
+				// Init of timestamp socket. Only for benchmarking purposes
+				this.tstmpReq = context.socket(ZMQ.REQ);
+				this.tstmpReq.connect("tcp://" + monitor + ":5900");
+				this.logger.debug("using time stamp server: "+ tstmp);
+			}
+			this.running = true;
+			logger.info(" Publisher " + this.s_ID + " is running");
 		}
-		this.running = true;
-		logger.info(" Publisher " + this.s_ID + " is running");
 	}
 
 	/**
@@ -95,25 +104,34 @@ public class PublisherConnectionManager implements Runnable {
 	 * @param code the code that must sent to the monitor 2 for the first connection and 3 in panic mode
 	 * @return 1 if the list of exchanges received is empty, 1 otherwise
 	 */
-	private int init(int code) {
+	private int initReq(int code) {
 		logger.info("Asking for a new exchange connection to monitor  code "+ code+"...");
-		// Code must be 2(first connection) or 3(panic procedure)!
-		initReq.send((Integer.toString(code) + "," + s_ID).getBytes(), 0);
-		//The answer must be the concatenated list of exchange
-		String exchg = new String(initReq.recv(0));
-		logger.info("Recieving "+ exchg + " to connect ...");
-		if (!exchg.equals("")) {
-			try {
-				createPublisherSocket(exchg);
-			}finally{
+		int result = 1;
+		for (String initReqKey : initReqSockets.keySet()) {
+			initReqSockets.get(initReqKey).send((Integer.toString(code) + "," + s_ID).getBytes(), 0);
+			byte[] resp = initReqSockets.get(initReqKey).recv(0);
+			if(resp != null) {
+				// Code must be 2(first connection) or 3(panic procedure)!
+				
+				//The answer must be the concatenated list of exchange
+				String exchg = new String(resp);
+				logger.info("Recieving "+ exchg + " to connect ...");
+				if (!exchg.equals("")) {
+					try {
+						createPublisherSocket(exchg);
+					}finally{
+					}
+					logger.info("Connected to Exchange " + exchg);
+					this.s_currentExchange = exchg;
+					result = 0;
+					break;
+				} else {
+					logger.info("no exchange available");
+					result = 1;
+				}
 			}
-			logger.info("Connected to Exchange " + exchg);
-			this.s_currentExchange = exchg;
-			return 0;
-		} else {
-			logger.info("no exchange available");
-			return 1;
 		}
+		return result;
 	}
 	
 	/**
@@ -151,7 +169,7 @@ public class PublisherConnectionManager implements Runnable {
 	public void run() {
 		logger.debug("Starting the publisher "+this.s_ID + " Thread");
 		//0 means that the list of exchange has been received 
-		while (init(2) != 0) {
+		while (initReq(2) != 0) {
 			try {
 				logger.info("Retrying connection...");
 				Thread.sleep(2500);
@@ -159,47 +177,58 @@ public class PublisherConnectionManager implements Runnable {
 				e.printStackTrace();
 			}
 		}
-		//Register in Pollin 0 position the monitor
-		ZMQ.Poller items = new ZMQ.Poller(2);
-		items.register(monitorSub);
+		ZMQ.Poller items = new ZMQ.Poller(2 + replicationFactor);
+		HashMap<Integer, ZMQ.Socket> HostPolVal = new HashMap<Integer, ZMQ.Socket>();
+		int pollval = 0;
+		for (ZMQ.Socket monitorSub: monitorsSub.values()) {
+			pollval = items.register(monitorSub);
+			HostPolVal.put(pollval, monitorSub);
+		}			
 		
 		logger.info("Producer online");
 		while (running) {
 			items.poll(100);
-			if (items.pollin(0)) { // Info from Monitor
-				String info[] = new String(monitorSub.recv(0)).split(",");
-				int infoCode = Integer.parseInt(info[0]);
-
-				switch (infoCode) {
-				case RoQConstant.REQUEST_RELOCATION:
-					// Relocation notice
-					// Because the message is broadcasting to all publishers we need to filter on ID
-					if (info[1].equals(s_ID)) {
-						rellocateExchange(info[2]);
-					}
-					break;
-				case RoQConstant.EXCHANGE_LOST:
-					// Panic
-					if (info[1].equals(s_currentExchange)) {
-						logger.warn("Panic, my exchange is lost! " + info[1]);
-						closeConnection();
-						//Try to reconnect to new exchange - asking to monitor for reallocation
-						while (init(3) != 0) {
-							logger.warn("Exchange lost. Waiting for reallocation...");
-							try {
-								Thread.sleep(1500);
-							} catch (InterruptedException e) {
-								logger.error("Error when thread sleeping (re-allocation phase", e);
+			for (int i = 0; i < replicationFactor; i++) {
+				if (items.pollin(i)) { // Info from Monitor i
+					String info[] = new String(HostPolVal.get(i).recv(0)).split(",");
+					int infoCode = Integer.parseInt(info[0]);
+	
+					switch (infoCode) {
+					case RoQConstant.REQUEST_RELOCATION:
+						// Relocation notice
+						// Because the message is broadcasting to all publishers we need to filter on ID
+						if (info[1].equals(s_ID)) {
+							rellocateExchange(info[2]);
+						}
+						break;
+					case RoQConstant.EXCHANGE_LOST:
+						// Panic
+						logger.info(s_currentExchange + " " + info[1]);
+						if (info[1].equals(s_currentExchange)) {
+							logger.warn("Panic, my exchange is lost! " + info[1]);
+							closeConnection();
+							//Try to reconnect to new exchange - asking to monitor for reallocation
+							while (initReq(3) != 0) {
+								logger.warn("Exchange lost. Waiting for reallocation...");
+								try {
+									Thread.sleep(1500);
+								} catch (InterruptedException e) {
+									logger.error("Error when thread sleeping (re-allocation phase", e);
+								}
 							}
 						}
+						break;
 					}
-					break;
 				}
 			}
 		}
 		logger.debug("Shutting down the publisher connection");
-		this.monitorSub.close();
-		this.initReq.close();
+		for (ZMQ.Socket monitorSub : monitorsSub.values()) {
+			monitorSub.close();
+		}
+		for (ZMQ.Socket initReq : initReqSockets.values()) {
+			initReq.close();
+		}
 	}
 
 	/**
@@ -264,7 +293,7 @@ public class PublisherConnectionManager implements Runnable {
 	/**
 	 * @return the current configuration from which the {@linkplain PublisherClient} will connect the exchange.
 	 */
-	public PublisherConfigState getConfiguration(){
+	public PublisherConfigState getConfiguration() {
 		return this.configState;
 	}
 	

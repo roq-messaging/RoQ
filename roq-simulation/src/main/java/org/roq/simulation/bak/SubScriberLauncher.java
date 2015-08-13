@@ -14,6 +14,8 @@
  */
 package org.roq.simulation.bak;
 
+import java.util.ArrayList;
+
 import org.roqmessaging.core.SubscriberConnectionManager;
 
 /**
@@ -29,7 +31,11 @@ public class SubScriberLauncher {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		SubscriberConnectionManager SubClient = new SubscriberConnectionManager("tcp://localhost:5571", "tcp://localhost:5800", "manche", Boolean.parseBoolean(args[1]));
+		ArrayList<String> monitors = new ArrayList<String>();
+		monitors.add("tcp://localhost:5571");
+		ArrayList<String> statMonitors = new ArrayList<String>();
+		statMonitors.add("tcp://localhost:5800");
+		SubscriberConnectionManager SubClient = new SubscriberConnectionManager(1, monitors, statMonitors, "manche", Boolean.parseBoolean(args[1]));
 		Thread t = new Thread(SubClient);
 		t.start();
 	}

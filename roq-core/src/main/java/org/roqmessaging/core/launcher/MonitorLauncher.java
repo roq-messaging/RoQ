@@ -28,22 +28,27 @@ public class MonitorLauncher {
 
 	/**
 	 * Example: 5571 5800 testQ period
-	 * @param args must be the base monitor port and the stat port, default value is 
+	 * @param args must be the base monitor port and the stat port, queue name, the seconds between each statistic publication,
+	 * localState path, heartbeat period, active or backup Master
+	 * default value is 
 	 * 5571 5800 qname period
 	 *
 	 */
 	public static void main(String[] args) {
 		System.out.println("Launching Monitor process with arg "+displayArg(args));
-		if(args.length !=4){
-			System.out.println("The argument should be <int: base port> <int: stat port> <qname>");
+		if(args.length != 8){
+			System.out.println("The argument should be <int: base port> <int: stat port> <qname> <publicationPeriod> <localStateDbPath> <hbPeriod> <isMaster>");
 			return;
 		}
 		//TODO for future evolution: replacing the 3rd argument by the property file location directly
-		System.out.println("Starting Monitor on base port "+ args[0] + ", "+args[1] +", "+ args[2] +" "+ args[3]) ;
+		System.out.println("Starting Monitor on base port "+ args[0] + ", "+args[1] +", "+ args[2] +" "+ args[3] + " " + args[4] + " " + args[5] + " " + args[6] + " " + args[7]) ;
 		try {
+			String zkAddress = args[7];
 			int basePort = Integer.parseInt(args[0]);
 			int statPort = Integer.parseInt(args[1]);
-			final Monitor monitor = new Monitor(basePort, statPort,  args[2], args[3]);
+			long hbPeriod = Long.parseLong(args[5]);
+			boolean isMaster = Boolean.parseBoolean(args[6]);
+			final Monitor monitor = new Monitor(zkAddress, basePort, statPort,  args[2], args[3], args[4], hbPeriod, isMaster);
 			Thread t = new Thread(monitor);
 			t.start();
 			

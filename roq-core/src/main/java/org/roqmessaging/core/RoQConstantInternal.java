@@ -57,4 +57,19 @@ public interface RoQConstantInternal {
 	 */
 	public static String CONTEXT_KPI_Q_THROUGPUT = "context.kpi.queue.througput";
 	
+	/**
+	 * Used by the heartbeat monitor system to tag a Monitor process
+	 */
+	public static int PROCESS_MONITOR = 0;
+	
+	/**
+	 * Used by the heartbeat monitor system to tag an Exchange process
+	 */
+	public static int PROCESS_EXCHANGE = 2;
+	
+	/**
+	 * Used by the heartbeat monitor system to tag a Scaling process
+	 */
+	public static int PROCESS_SCALING = 3;
+	
 }

@@ -70,7 +70,6 @@ public class RoQDockerLauncher {
 		configGCM = ContainerConfig.builder()
 			    .image("ubuntu:roqdemo")
 			    .attachStderr(true).attachStdout(true)
-			    //.cmd("sh", "-c", "while :; do sleep 1; done")
 			    .cmd(	"java",
 			            "-Djava.library.path=/usr/local/lib",
 			            "-cp",
@@ -104,6 +103,7 @@ public class RoQDockerLauncher {
 		logger.info("Launch three containers: ZK GCM HCM");
 		launchZK();
 		launchGCM();
+		Thread.sleep(10000);
 		launchHCM();
 	}
 	
@@ -124,12 +124,7 @@ public class RoQDockerLauncher {
 				
 		// Update HCM properties
 		File configFile = new File(HCMProperties);
-				
-		// Inspect container
-		ContainerInfo info = client.inspectContainer(GCMList.get(0));
-
-		String GCMAddress = info.networkSettings().ipAddress();
-		
+						
 		Properties props = new Properties();
 	    InputStream input = null;
 	    
@@ -137,7 +132,7 @@ public class RoQDockerLauncher {
 	 
         // Try loading properties from the file (if found)
         props.load( input );
-	    props.setProperty("gcm.address", GCMAddress);
+	    props.setProperty("zk.address", getZkConnectionString());
 	    FileWriter writer = new FileWriter(configFile);
 	    props.store(writer, "host settings");
 	    writer.close();
@@ -165,9 +160,12 @@ public class RoQDockerLauncher {
 	 */
 	public void launchZK() throws Exception {
 		logger.info("Starting ZK container");
+		final ImmutableList.Builder<String> binds = new ImmutableList.Builder<String>();
+		binds.add(System.getenv("ROQPATH") + "/roq-simulation/src/main/resources/zkConfig" + ":/opt/zookeeper/conf");
+		HostConfig.Builder hostConfig = HostConfig.builder().networkMode("bridge").binds(binds.build());
 		
 		ContainerCreation creation = client.createContainer(configZK);
-		client.startContainer(creation.id());
+		client.startContainer(creation.id(), hostConfig.build());
 		
 		ZKList.add(creation.id());
 		logger.info(creation.id());
@@ -254,6 +252,32 @@ public class RoQDockerLauncher {
 		
 		// Remove the GCM from the list
 		Iterator<String> iter = GCMList.iterator();
+		while (iter.hasNext()) {
+			if (iter.next().equals(id))
+				iter.remove();
+		}
+	}
+	
+	public void stopHCMByID(String id) throws IOException, DockerException, InterruptedException {
+		logger.info("Writing HCM container log");
+		File hcmFile = new File(HCMLog);
+		FileWriter writer = new FileWriter(hcmFile, true);
+		ContainerInfo info;
+		LogStream stream;
+		info = client.inspectContainer(id);
+		stream = client.logs(info.id(), STDOUT, STDERR);
+		writer.append(stream.readFully());
+		writer.append("\n\n\n ---------------------------------- \n\n\n");
+		writer.close();
+		
+		logger.info("Stopping HCM container: " + id);
+		// Kill container
+		client.stopContainer(id, 0);
+		// Remove container
+		client.removeContainer(id);
+		
+		// Remove the HCM from the list
+		Iterator<String> iter = HCMList.iterator();
 		while (iter.hasNext()) {
 			if (iter.next().equals(id))
 				iter.remove();
@@ -431,4 +455,5 @@ public class RoQDockerLauncher {
 		}
 		return list;
 	}
+
 }

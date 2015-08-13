@@ -60,11 +60,10 @@ public class PublisherInit implements Runnable, IStoppable {
 			subscriberConnection.open();
 			subscriberConnection.setMessageSubscriber(new IRoQSubscriber() {
 				public void onEvent(byte[] msg) {
-					//logger.info("On message:" + new String(msg));
+					// logger.info("On message:" + new String(msg));
 				}
 			});
 		} catch (ConnectException | IllegalStateException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -131,7 +130,6 @@ public class PublisherInit implements Runnable, IStoppable {
 			connection.close();
 			this.subscriberConnection.close();
 		} catch (ConnectException | IllegalStateException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 

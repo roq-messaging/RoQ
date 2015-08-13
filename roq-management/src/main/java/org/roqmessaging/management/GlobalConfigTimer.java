@@ -71,6 +71,8 @@ public class GlobalConfigTimer extends TimerTask implements IStoppable {
 					serializationUtils.serialiseObject(this.configurationManager.getQueueHostLocation()), ZMQ.SNDMORE);
 			this.mngtPubSocket.send( 
 					serializationUtils.serialiseObject(this.configurationManager.getHostManagerAddresses()), 0);
+		} catch (Exception e) {
+			logger.warn("A failure has occured, cause ZK discovery service" + e);
 		} finally {
 		}
 	}

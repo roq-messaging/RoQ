@@ -15,6 +15,7 @@
 package org.roq.simulation;
 
 import java.net.ConnectException;
+import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 import org.junit.After;
@@ -41,7 +42,9 @@ import org.roqmessaging.management.stat.KPISubscriber;
 public class TestStatMonitor {
 	protected RoQAllLocalLauncher launcher = null;
 	protected 	KPISubscriber kpiSubscriber = null;
+	protected IRoQConnectionFactory factory;
 	private Logger logger = Logger.getLogger(TestStatMonitor.class);
+	
 	
 	/**
 	 * @throws java.lang.Exception
@@ -58,6 +61,7 @@ public class TestStatMonitor {
 	 */
 	@After
 	public void tearDown() throws Exception {
+		factory.close();
 		this.kpiSubscriber.shutDown();
 		this.launcher.tearDown();
 		Thread.sleep(3000);
@@ -71,14 +75,14 @@ public class TestStatMonitor {
 			Thread.sleep(3000);
 			// 1. Create a Queue
 			IRoQLogicalQueueFactory logicalQFactory = new LogicalQFactory(launcher.getConfigurationServer());
-			logicalQFactory.createQueue("queue1", RoQUtils.getInstance().getLocalIP(), false);
+			logicalQFactory.createQueue("queue1", RoQUtils.getInstance().getLocalIP(), new ArrayList<String>(), false);
 			
 			// Let the Process start and binding port
 			Thread.sleep(3000);
 			
 			// 2. Init the KPI subscriber
 			kpiSubscriber = new KPISubscriberLogger(
-					launcher.getConfigurationServer(),
+					launcher.getZkServerAddress(),
 					launcher.getConfigurationServerInterfacePort(),
 					"queue1",
 					false);
@@ -86,7 +90,7 @@ public class TestStatMonitor {
 			new Thread(kpiSubscriber).start();
 
 			// 3. Create a subscriber
-			IRoQConnectionFactory factory = new RoQConnectionFactory(launcher.getZkServerAddress());
+			factory = new RoQConnectionFactory(launcher.getZkServerAddress());
 			// add a subscriber
 			IRoQSubscriberConnection subConnection = factory.createRoQSubscriberConnection("queue1", "key");
 			// Open the connection to the logical queue

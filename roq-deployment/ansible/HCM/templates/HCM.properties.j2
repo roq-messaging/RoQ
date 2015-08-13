@@ -1,0 +1,50 @@
+#Host configuration management properties
+
+#SECTION 1 ZK SERVERS
+zk.address=
+{% for id in range(0,{{zk_count - 1}}) %}  
+	{{ hostvars["localhost"]["roqZK"]["tagged_instances"][{{id}}]["private_ip"] }}:2181
+	{%- if {{id}} < {{zk_count - 1}} %}, {% endif -%}
+{% endfor %}
+gcm.ports.base=5000
+
+#SECTION 2 IP address registration
+#Define whether need to use specific network interface to connect
+# Un comment this if you want to use
+#network.interface =vbr0
+
+#SECTION 3  Queue Creation configuration
+#Exchange base port
+exchange.base.port = 6000
+#Monitor base port
+monitor.base.port = 5500
+#Stat Monitor base port
+statmonitor.base.port = 5800
+#Max number of exchanges per host (used in auto scaling)
+exchange.max.perhost = 3
+#Define whether we create the queue on 1 VM or each element (monitor,
+#Scaling process, stat monitor) in the same VM as the Host configuration manager
+queue.hcm.vm= true
+#Define whether we must create the exchanges on the same VM
+#as the HCM or in its own process
+exchange.hcm.vm = false
+#The memory heap of the JVM used to start the Exchanges
+#This property is only used when the exchange.hcm.vm = false
+exchange.vm.heap= 512
+
+#SECTION 4 Statistic for monitor
+monitor.stat.period =60000
+#SECTION 5 Heartbeat system, time in seconds
+localstate.path = {{ roq_temp_path }}/hcmlocaldb
+monitor.timeout = 20
+monitor.maxtimetostart = 40
+#time in millis
+monitor.HBPeriod = 5000
+exchange.timeout = 20
+exchange.maxtimetostart = 40
+#time in millis
+exchange.HBPeriod = 5000
+scalingProcess.timeout = 20
+scalingProcess.maxtimetostart = 40
+#time in millis
+scalingProcess.HBPeriod = 5000

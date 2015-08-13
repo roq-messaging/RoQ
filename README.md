@@ -12,6 +12,8 @@ You want to just get a try of ROQ ? Go to the 'demonstration' section, you will 
 Do you want to contribute to ROQ ? Let's go to the 'local deployment' section in order to deploy ROQ on you machine in order to debug etc.
 Get reday for the production ? Go to the 'production' section, we provide you an automatic deployment script which allows to deploy ROQ on Amazon (we plan to support other environments, stay tunned).
 
+/!\ Some scripts recquire advanced rights, if you can, run these scripts in sudo.
+
 Demonstration
 -------------
 
@@ -30,7 +32,7 @@ This procedure allows you to run ROQ on your local machine. All the ROQ componen
 
 Clone this git repository on your machine. And run the following bash script:
 ```
-RoQ/roq-deployment/demo-start-subscriber.sh
+RoQ/roq-deployment/demonstration/demo-start-subscriber.sh
 ```
 Once that the terminal shows that the subscriber is connected, open a second terminal and runs this script: 
 ```
@@ -105,7 +107,7 @@ Ready for the deployment of your application in the cloud ? We provide an amazon
 ### Prerequisite (get these packages via yum or apt-get):
 - ansible (tested with version 1.8.4)
 
-### Configuration step
+### Configuration steps
 
 First, you must set environment variables to allow ansible to communicate with your Amazon account:
 Run the following commands in the shell:
@@ -129,10 +131,10 @@ Don't forget to set the key_path var to the value of your amazon ssh pem key (th
 You are ready to run your first ROQ cluster on amazon !
 Run the following script: 
 ```
-ansible-playbook "PATH TO ROQ"/roq-deployment/ --skip-tags "demonstration"
+./"PATH TO ROQ"/roq-deployment/amazon/startCluster.sh
 ```
 
-Note: If you run several times this script, the instances number stay fixed to the values that you set in the config file.
+Note: If you run several times this idempotent script, the instances number stay fixed to the values that you set in the config file.
 
 Your cluster is ready !
 

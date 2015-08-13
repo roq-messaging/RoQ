@@ -22,7 +22,7 @@ package org.roqmessaging.management.config.internal;
  */
 public class HostConfigDAO {
 	private String networkInterface = null;
-	private String gcmAddress = "localhost";
+	private String zkAddress = "localhost";
 	private int statMonitorBasePort = 5800;
 	private int monitorBasePort = 5500;
 	private int exchangeFrontEndPort = 6000;
@@ -31,6 +31,10 @@ public class HostConfigDAO {
 	private boolean queueInHcmVm = true;
 	private boolean exchangeInHcmVm = true;
 	private int exchangeHeap = 256;
+	private String statePath = "";
+	private int monitorTimeOut = 10000;
+	private int monitorMaxTimeToStart = 20000;
+	private long monitorHbPeriod = 1000;
 	
 	// Class which contains the ports used for the various components of the GCM.
 	public GCMPorts ports = new GCMPorts();
@@ -47,17 +51,35 @@ public class HostConfigDAO {
 	public void setNetworkInterface(String networkInterface) {
 		this.networkInterface = networkInterface;
 	}
+	public void setMonitorTimeOut(int timeout) {
+		monitorTimeOut = timeout;
+	}
+	public void setMonitorMaxTimeToStart(int timeToStart) {
+		monitorMaxTimeToStart = timeToStart;
+	}
+	public void setExchangeTimeOut(int timeout) {
+		monitorTimeOut = timeout;
+	}
+	public void setExchangeMaxTimeToStart(int timeToStart) {
+		monitorMaxTimeToStart = timeToStart;
+	}
+	public void setScalingProcessTimeOut(int timeout) {
+		monitorTimeOut = timeout;
+	}
+	public void setScalingProcessMaxTimeToStart(int timeToStart) {
+		monitorMaxTimeToStart = timeToStart;
+	}
 	/**
 	 * @return the gcmAddress
 	 */
-	public String getGcmAddress() {
-		return gcmAddress;
+	public String getZkAddress() {
+		return zkAddress;
 	}
 	/**
 	 * @param gcmAddress the gcmAddress to set
 	 */
-	public void setGcmAddress(String gcmAddress) {
-		this.gcmAddress = gcmAddress;
+	public void setZkAddress(String zkAddress) {
+		this.zkAddress = zkAddress;
 	}
 	/**
 	 * @return the statMonitorBasePort
@@ -101,7 +123,7 @@ public class HostConfigDAO {
 	 */
 	@Override
 	public String toString() {
-		return "Host configuration manager [GCM :"+gcmAddress +"] [Exhange FE :" +exchangeFrontEndPort+"] [Monitor base port: "+ monitorBasePort+"]\n" +
+		return "Host configuration manager [Zk :"+zkAddress +"] [Exhange FE :" +exchangeFrontEndPort+"] [Monitor base port: "+ monitorBasePort+"]\n" +
 				" [Create Queue in the same HCM VM: "+ queueInHcmVm+"] [Create Exchange in same HCM VM: "+ exchangeInHcmVm+"] [ Exchange Heap: "+ exchangeHeap+"]";
 	}
 	/**
@@ -109,6 +131,12 @@ public class HostConfigDAO {
 	 */
 	public int getStatPeriod() {
 		return statPeriod;
+	}
+	/**
+	 * @return the localstatePath
+	 */
+	public String getLocalPath() {
+		return statePath;
 	}
 	/**
 	 * @param statPeriod the statPeriod to set
@@ -165,5 +193,46 @@ public class HostConfigDAO {
 		this.exchangeHeap = exchangeHeap;
 	}
 	
+	/**
+	 * @param the path for localstateDB
+	 */
+	public void setLocalStatePath(String localPath) {
+		this.statePath = localPath;
+	}
+	public int getMonitorTimeOut() {
+		return monitorTimeOut;
+	}
+	public int getMonitorMaxTimeToStart() {
+		return monitorMaxTimeToStart;
+	}
+	public long getMonitorHbPeriod() {
+		return monitorHbPeriod;
+	}
+	public void setMonitorHbPeriod(long period) {
+		monitorHbPeriod = period;
+	}
+	public int getExchangeTimeOut() {
+		return monitorTimeOut;
+	}
+	public int getExchangeMaxTimeToStart() {
+		return monitorMaxTimeToStart;
+	}
+	public long getExchangeHbPeriod() {
+		return monitorHbPeriod;
+	}
+	public void setExchangeHbPeriod(long period) {
+		monitorHbPeriod = period;
+	}public int getScalingProcessTimeOut() {
+		return monitorTimeOut;
+	}
+	public int getScalingProcessMaxTimeToStart() {
+		return monitorMaxTimeToStart;
+	}
+	public long getScalingProcessHbPeriod() {
+		return monitorHbPeriod;
+	}
+	public void setScalingProcessHbPeriod(long period) {
+		monitorHbPeriod = period;
+	}
 
 }

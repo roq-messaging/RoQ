@@ -30,15 +30,15 @@ public class KPILogicalQSubscriber extends KPISubscriber {
 	private int producerToCheck =0;
 
 	/**
-	 * @param gcm_address
-	 *            the IP address of the global configuration manager
+	 * @param zkConnectionString
+	 *            the Zookeeper connection string
 	 * @param gcm_interfacePort
 	 *            the port used by the global configuration manager
 	 *            to provide an interface to the topology
 	 * @param qName the logical queue name
 	 */
-	public KPILogicalQSubscriber(String gcm_address, int gcm_interfacePort, String qName) {
-		super(gcm_address, gcm_interfacePort, qName);
+	public KPILogicalQSubscriber(String zkConnectionString, int gcm_interfacePort, String qName) {
+		super(zkConnectionString, gcm_interfacePort, qName);
 	}
 
 	/**

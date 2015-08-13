@@ -1,0 +1,73 @@
+#!/bin/sh
+
+# Get lsb functions
+. /lib/lsb/init-functions
+
+ROQ={{ roq_path }}
+HCM_PIDFILE=/var/run/roqHCM.pid
+HCM_LOGFILE=/var/log/roqHCM.log
+HCM_CONFIG={{ roq_temp_path }}/HCM.properties
+
+# Check roq is present
+if [ ! -x $ROQ ]; then
+	log_failure_msg "$ROQ not present"
+	exit 1
+fi
+
+fail_unless_root() {
+	if [ "$(id -u)" != '0' ]; then
+		log_failure_msg "ROQ HCM must be run as root"
+		exit 1
+	fi
+}
+
+fail_unless_root
+
+case "$1" in
+	start)
+		java -Djava.library.path=/usr/local/lib -cp \
+		$ROQ/roq-management/target/roq-management-1.0-SNAPSHOT-jar-with-dependencies.jar \
+		org.roqmessaging.management.launcher.HostConfigManagerLauncher $HCM_CONFIG > $HCM_LOGFILE 2>&1 &
+
+		PID=$!
+
+		log_begin_msg "HCM Started [$PID]"
+
+		echo $PID > $HCM_PIDFILE
+		;;
+
+	stop)
+		if [ -f $HCM_PIDFILE ]; then
+	        PID=`cat $HCM_PIDFILE`
+	        if [ -z "`ps axf | grep ${PID} | grep -v grep`" ]; then
+	            log_begin_msg "Not running (process dead but pidfile exists)"
+	            exit 1
+	        else
+	            PID=`cat $HCM_PIDFILE`
+	            log_begin_msg "Stopping ROQ HCM"
+	            start-stop-daemon --stop --pidfile "$HCM_PIDFILE"
+	            log_begin_msg "Stopped [$PID]"
+	            log_end_msg $?
+	            exit 0
+	        fi
+	    else
+	        log_begin_msg "Not running (pid not found)"
+	        exit 3
+	    fi
+		;;
+
+	status)
+		status_of_proc -p "$HCM_PIDFILE" "HCM" HCM
+		;;
+	restart)
+		$0 stop
+		sleep 10
+		$0 start
+		;;
+	*)
+		echo "Usage: $0 {start|stop|status|restart}"
+		exit 1
+		;;
+esac
+
+exit 0

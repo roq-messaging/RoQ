@@ -63,8 +63,8 @@ public class PublisherClient implements IRoQPublisher {
 			//2. If OK send the message
 			result &= pubSocket.send(key, ZMQ.SNDMORE);
 			result &= pubSocket.send(RoQSerializationUtils.stringToBytesUTFCustom(configState.getPublisherID()), ZMQ.SNDMORE);
-//			pubSocket.send(configState.getPublisherID().getBytes(), ZMQ.SNDMORE);
-			
+			// pubSocket.send(configState.getPublisherID().getBytes(), ZMQ.SNDMORE);
+						
 			if (this.timeStp) {
 				result &= pubSocket.send(msg, ZMQ.SNDMORE);
 				result &= pubSocket.send(getTimestamp(), 0);

@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.scaling.launcher;
 
+import java.net.ConnectException;
+
 import org.roqmessaging.scaling.ScalingProcess;
 
 /**
@@ -32,6 +34,8 @@ public class ScalingProcessLauncher {
 	 * 3. The GCM admin port (MngtController, port 5003 by default) <br>
 	 * 4. The qName <br>
 	 * 5. The port on which the process will subscribe to queue configuration update<br>
+	 * 6. localStatePath the folder path in which the processes states will be stored (heartbeats)<br>
+	 * 7. hbPeriod the number of seconds between each heatbeat<br>
 	 * 
 	 * example: "127.0.0.1 queueTest 5802 
 	 * 
@@ -49,24 +53,28 @@ public class ScalingProcessLauncher {
 	 */
 	public static void main(String[] args) throws InterruptedException {
 		System.out.println("Launching Scaling process with arg "+displayArg(args));
-		if (args.length != 5) {
-			System.out
-					.println("The arguments should be <GCM IP address> <GCM interface port> <GCM admin port> <Queue Name> <Listener port>  ");
+		if (args.length != 7) {
+			System.out.println("The arguments should be <zk IP address> <GCM interface port> <GCM admin port> <Queue Name> <Listener port> <localStatePath>" +
+					" <heartbeat period>");
 			return;
 		}
 		
 		try {
-			String gcm_address = args[0];
+			String zk_address = args[0];
 			int gcm_interfacePort = Integer.parseInt(args[1]);
 			int gcm_adminPort = Integer.parseInt(args[2]);
 			String qName = args[3];
 			int listenerPort = Integer.parseInt(args[4]);
-			
+			long hbPeriod = Long.parseLong(args[6]);
 			System.out.println("Starting Scaling process for queue " + qName + ", using listener port " + listenerPort);
 			
 			// Instanciate the exchange
-			final ScalingProcess scalingProcess = new ScalingProcess(gcm_address, gcm_interfacePort, gcm_adminPort, qName, listenerPort);
-			scalingProcess.subscribe();
+			final ScalingProcess scalingProcess = new ScalingProcess(zk_address, gcm_interfacePort, gcm_adminPort, qName, listenerPort, args[5], hbPeriod);
+			try {
+				scalingProcess.subscribe();
+			} catch (IllegalStateException | ConnectException e) {
+				e.printStackTrace();
+			}
 			// Launch the thread
 			Thread t = new Thread(scalingProcess);
 			t.start();
@@ -87,8 +95,5 @@ public class ScalingProcessLauncher {
 		}
 		return result;
 	}
-
-
-
 
 }

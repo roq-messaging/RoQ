@@ -39,8 +39,10 @@ import org.roqmessaging.management.config.scaling.XchangeScalingRule;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.state.QueueManagementState;
-import org.roqmessaging.management.zookeeper.Metadata;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
+import org.roqmessaging.zookeeper.Metadata;
+import org.roqmessaging.zookeeper.Metadata.BackupMonitor;
+import org.roqmessaging.zookeeper.Metadata.HCM;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Poller;
 import org.zeromq.ZMQ.Socket;
@@ -187,8 +189,10 @@ public class MngtController implements Runnable, IStoppable {
 						String transID = "?";
 						boolean recoveryMod = false;
 						String hostToRecover = "";
+						String transaction = "";
 						AutoScalingConfig config = null;
 						Metadata.Queue queue = null;
+						ArrayList<String> backupHost = new ArrayList<String>();
 
 						// 2. Getting the command ID
 						switch ((Integer) request.get("CMD")) {
@@ -259,17 +263,20 @@ public class MngtController implements Runnable, IStoppable {
 							// 1. Get the name
 							qName = (String) request.get("QName");
 							host = (String) request.get("Host");
-							hostToRecover = zk.qTransactionExists(qName);
+							transaction = zk.qTransactionExists(qName);
+							hostToRecover = transactionExtractMasterHost(transaction);
 							if (hostToRecover != null) {
 								// The transaction already exists, recovery mod
 								recoveryMod = true;
 								if (getHosts().contains(hostToRecover)) {
 									host = hostToRecover;
+									backupHost = transactionExtractSTBYHosts(transaction);
 								} else {
 									// The initial host not exists
 									// change the transaction to target the new host
 									zk.removeQTransaction(qName);
-									zk.createQTransaction(qName, host);
+									backupHost = pickBackupHosts(host);
+									zk.createQTransaction(qName, host, backupHost);
 									
 								}
 								logger.info("Recover process for queue " + qName + " started " +
@@ -277,11 +284,12 @@ public class MngtController implements Runnable, IStoppable {
 							}
 							else {
 								// We create a transaction 
-								zk.createQTransaction(qName, host);
+								backupHost = pickBackupHosts(host);
+								zk.createQTransaction(qName, host, backupHost);
 							}
 							// Just create queue the timer will update the
 							// management server configuration
-							int returnCode = factory.createQueue(qName, host, recoveryMod);
+							int returnCode = factory.createQueue(qName, host, backupHost, recoveryMod);
 							if (returnCode == -1) {
 								// We remove the transaction if the queue already exists
 								zk.removeQTransaction(qName);
@@ -290,8 +298,7 @@ public class MngtController implements Runnable, IStoppable {
 								sendReply_fail("The HCM looks to be unavailble");
 							} else if (returnCode == -3) {
 								sendReply_fail("The Queue creation process has failed on GCM or HCM");
-							} else {
-								// Transaction completed
+							} else {								
 								zk.removeQTransaction(qName);
 								sendReply_ok("SUCCESS");
 							}
@@ -307,7 +314,8 @@ public class MngtController implements Runnable, IStoppable {
 							}
 							// 1. Get the name
 							qName = (String) request.get("QName");
-							hostToRecover = zk.qTransactionExists(qName);
+							transaction = zk.qTransactionExists(qName);
+							hostToRecover = transactionExtractMasterHost(transaction);
 							logger.info("transaction Exists? " + hostToRecover);
 							boolean hostFound = false;
 							ArrayList<String> hostsList = getHosts();
@@ -327,11 +335,12 @@ public class MngtController implements Runnable, IStoppable {
 										logger.info("Original host lost: " + hostToRecover);
 										// TODO Select the less loaded host
 										host = hostsList.get((int) Math.random() % hostsList.size());
-										// Create a transaction with the new host
-										zk.createQTransaction(qName, host);
+										backupHost = pickBackupHosts(host);
+										zk.createQTransaction(qName, host, backupHost);
 										hostFound = true;
 									}
 								} else {
+									backupHost = transactionExtractSTBYHosts(transaction);
 									hostFound = true;
 								}
 								logger.info("Recover process for queue " + qName + " started " +
@@ -346,7 +355,8 @@ public class MngtController implements Runnable, IStoppable {
 									// TODO Select the less loaded host
 									// We create a transaction
 									host = hostsList.get((int) Math.random() % hostsList.size());
-									zk.createQTransaction(qName, host);
+									backupHost = pickBackupHosts(host);
+									zk.createQTransaction(qName, host, backupHost);
 									hostFound = true;
 								}
 							}
@@ -354,7 +364,7 @@ public class MngtController implements Runnable, IStoppable {
 							if (hostFound) {
 								// Just create queue the timer will update the
 								// management server configuration
-								int code = factory.createQueue(qName, host, recoveryMod);
+								int code = factory.createQueue(qName, host, backupHost, recoveryMod);
 								if (code == -1) {
 									// We remove the transaction if the queue already exists
 									zk.removeQTransaction(qName);
@@ -476,6 +486,11 @@ public class MngtController implements Runnable, IStoppable {
 								String addressCallBack = (String) request.get("Address");
 								logger.debug("REGISTER autoscaling configuration update  for " + qName
 										+ " on call back " + addressCallBack);
+								// Remove the old socket if it exists, allow to deal with failover
+								ZMQ.Socket oldPush = this.scalingConfigListener.get(qName);
+								if (oldPush != null) {
+									oldPush.close();
+								}
 								// 2. Register the address
 								// 2.1 Create a push socket To check if the bind can be done at the pull side
 								ZMQ.Socket push = context.socket(ZMQ.PUSH);
@@ -579,6 +594,77 @@ public class MngtController implements Runnable, IStoppable {
 							mngtRepSocket.send(
 									BSON.encode(prop), 0);
 							break;
+						case RoQConstant.EVENT_HCM_FAILURE:
+							logger.info("FAILOVER request received");
+							if (!checkField(request, "Host")) {
+								sendReply_fail("ERROR: Missing field in the request: <QName>");
+								break;
+							}
+							Metadata.HCM hcm = new Metadata.HCM((String) request.get("Host"));
+							
+							// These monitors were on the lost HCM
+							List<String> queueBuMonitors = zk.getHCMBUMonitors(hcm);
+							List<String> queueMonitors = zk.getHCMMonitors(hcm);
+							// we refresh the Q factory topology
+							factory.refreshTopology();
+							// We recover the lost active monitors
+							// by doing a failover on a backup monitor
+							if(queueMonitors != null) {
+								for (String queueMonitor : queueMonitors) {
+									logger.info("Lost monitor: " + queueMonitor);
+									// we ask queue factory to process to failover
+									Metadata.Queue monitorMeta = new Metadata.Queue(queueMonitor);
+									
+									// We select a new backup monitor
+									ArrayList<BackupMonitor> backups = zk.getBackUpMonitors(monitorMeta);
+									ArrayList<Metadata.HCM> HCMSToDontSelect = new ArrayList<HCM>();
+									HCMSToDontSelect.add(new Metadata.HCM(zk.getHCM(new Metadata.Queue(queueMonitor)).address));
+									for (BackupMonitor addr : backups) {
+										HCMSToDontSelect.add(new Metadata.HCM(addr.hcmAddress));
+									}
+									// we select the candidate which will become active
+									BackupMonitor active = backups.get(0);
+									
+									Metadata.HCM newBackup = selectBackup(HCMSToDontSelect);
+									
+									// We active a standby monitor
+									if (active != null) {
+										factory.failoverOnBackupMonitor(queueMonitor, active.hcmAddress);
+									}
+									// Create a new backup to maintain replication factor
+									if (newBackup != null) {
+										factory.createBackupMonitor(queueMonitor, newBackup.address, null);
+									}
+								}
+							} else {
+								logger.info("the lost host had no Active monitor");
+							}
+							// We replace the lost backup monitor
+							if(queueBuMonitors != null) {
+								for (String queueBackupMonitor : queueBuMonitors) {
+									logger.info("Lost backup monitor: " + queueBackupMonitor);
+									Metadata.Queue monitorMeta = new Metadata.Queue(queueBackupMonitor);
+									
+									// We select a new backup monitor
+									ArrayList<BackupMonitor> backups = zk.getBackUpMonitors(monitorMeta);
+									ArrayList<Metadata.HCM> HCMSToDontSelect = new ArrayList<HCM>();
+									HCMSToDontSelect.add(new Metadata.HCM(zk.getHCM(new Metadata.Queue(queueBackupMonitor)).address));
+									for (BackupMonitor addr : backups) {
+										HCMSToDontSelect.add(new Metadata.HCM(addr.hcmAddress));
+									}
+									Metadata.HCM newBackup = selectBackup(HCMSToDontSelect);
+									
+									// we ask the queue factory to create a new backupMonitor
+									// in order to maintain scaling factor
+									if (newBackup != null) {
+										factory.createBackupMonitor(queueBackupMonitor, newBackup.address, hcm.address);
+									}									
+								}
+							} else {
+								logger.info("the lost host had no STBY monitor");
+							}
+							sendReply_ok("The recovery process is finish ");
+							break;
 						default:
 							mngtRepSocket.send(
 									serializer.serialiazeConfigAnswer(RoQConstant.FAIL, "INVALID CMD Value"), 0);
@@ -657,7 +743,7 @@ public class MngtController implements Runnable, IStoppable {
 	/**
 	 * @param socket
 	 *            the socket to check
-	 * @return true if a mutli part is recieved.
+	 * @return true if a multi part is received.
 	 */
 	private boolean isMultiPart(Socket socket) {
 		boolean isMulti = false;
@@ -666,6 +752,83 @@ public class MngtController implements Runnable, IStoppable {
 			isMulti = true;
 		}
 		return isMulti;
+	}
+	
+	/**
+	 * Extract the host that must handle the active monitor
+	 * of the queue creation transaction
+	 * @param transaction
+	 * @return the target host for active master
+	 */
+	private String transactionExtractMasterHost(String transaction) {
+		if (transaction == null)
+			return null;
+		String[] servers = transaction.split(",");
+		return servers[0];
+	}
+	
+	/**
+	 * Extract the list of the standby monitors for that transaction
+	 * @param transaction
+	 * @return the list of targeted hosts for standby monitors
+	 */
+	private ArrayList<String> transactionExtractSTBYHosts(String transaction) {
+		ArrayList<String> hostsList = new ArrayList<String>();
+		if (transaction == null)
+			return hostsList;
+		String[] servers = transaction.split(",");
+		for (int i = 1; i < servers.length; i++) {
+			hostsList.add(servers[i]);
+		}
+		return hostsList;
+	}
+	
+	/**
+	 * This method find the hosts
+	 * on which the backup of the monitor will be created
+	 * @param host
+	 * @throws Exception 
+	 */
+	private ArrayList<String> pickBackupHosts(String address) throws Exception {
+		List<HCM> hosts = zk.getHCMList();
+		Metadata.HCM host = new Metadata.HCM(address);
+		ArrayList<String> backupHosts = new ArrayList<String>();
+		if (hosts.size() <= 1)
+			return backupHosts;
+		int nextToPick = (int) Math.random() % hosts.size();
+		Metadata.HCM currentHost = null;
+		int hostToPick = properties.getReplicationFactor() - 1;
+		for (int i = 0; i < hosts.size() && hostToPick > 0; i++) {
+			currentHost = hosts.get(nextToPick + i); 
+			if(!currentHost.equals(host)) { // TODO check host load
+				backupHosts.add(currentHost.address);
+				hostToPick --;
+			}
+		}
+		return backupHosts;
+	}
+	
+	/**
+	 * Select a backup by excluding them that already hosting
+	 * a backup or an active monitor
+	 * @param HCMSToDontSelect the HCM that already handle a backup or an active monitor
+	 * @return HCM on which we can do a backup
+	 * @throws Exception
+	 */
+	private Metadata.HCM selectBackup(ArrayList<Metadata.HCM> HCMSToDontSelect)
+			throws Exception {
+		List<HCM> hosts = zk.getHCMList();
+		if (hosts.size() <= 1)
+			return null;
+		int nextToPick = (int) Math.random() % hosts.size();
+		Metadata.HCM currentHost = null;
+		for (int i = 0; i < hosts.size(); i++) {
+			currentHost = hosts.get(nextToPick + i); 
+			if(!HCMSToDontSelect.contains(currentHost)) { // TODO check host load
+				return currentHost;
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -712,7 +875,7 @@ public class MngtController implements Runnable, IStoppable {
 		return shutDownMonitor;
 	}
 	
-	public ArrayList<String> getHosts() {
+	public ArrayList<String> getHosts() throws Exception {
 		// Get the hosts
 		List<Metadata.HCM> hosts = zk.getHCMList();
 		ArrayList<String> hostAddresses = new ArrayList<String>();

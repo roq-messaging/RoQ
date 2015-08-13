@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.clientlib.factory;
 
+import java.util.ArrayList;
+
 /**
  * Interface IRoQLogicalQueueFactory
  * <p> Description: represents the Global monitor manager. As those manager are intended to be stateless, a 
@@ -31,7 +33,7 @@ public interface IRoQLogicalQueueFactory {
 	 * @throws IllegalStateException if a queue already exist with this name, the name must be unique for 
 	 * the complete cluster.
 	 */
-	public int createQueue(String queueName, String targetAddress, boolean recoveryMod) throws IllegalStateException;
+	public int createQueue(String queueName, String targetAddress, ArrayList<String> backupHosts, boolean recoveryMod) throws IllegalStateException;
 	
 	/**
 	 * Removes a logical queue.
@@ -77,5 +79,23 @@ public interface IRoQLogicalQueueFactory {
 	 * Must be called by the client to clean the local connection and local data cache.
 	 */
 	public void clean();
+
+	/**
+	 * This method create a backup monitor for a given queue, and regiter 
+	 * meta data in GCM
+	 * on a given host
+	 * @param queueName
+	 * @param queueBackupMonitor
+	 * @param the hcm lost, null if it is just a backup monitor creation
+	 */
+	public boolean createBackupMonitor(String queue, String queueBackupMonitor, String hcmLost);
+
+	/**
+	 * This method active a backup monitor on a given host & update the meta data
+	 * in the GCM
+	 * @param queueMonitor
+	 * @param active
+	 */
+	public boolean failoverOnBackupMonitor(String queue, String hcmAddress);
 
 }

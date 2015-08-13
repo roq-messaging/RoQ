@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.management.stat;
 
+import java.net.ConnectException;
+
 import junit.framework.Assert;
 import junit.framework.AssertionFailedError;
 
@@ -22,7 +24,11 @@ import org.bson.BSON;
 import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.core.RoQGCMConnection;
 import org.roqmessaging.core.interfaces.IStoppable;
+import org.roqmessaging.utils.Time;
+import org.roqmessaging.zookeeper.RoQZKSimpleConfig;
+import org.roqmessaging.zookeeper.RoQZooKeeper;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Socket;
 
@@ -40,7 +46,6 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	//KPI socket
 	protected ZMQ.Socket kpiSocket = null;
 	//The configuration server
-	protected String gcm_address = null;
 	protected int gcm_interfacePort = 0;
 	//the Qname to subscriber
 	protected String qName = null;
@@ -50,20 +55,29 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	//the logger
 	protected Logger logger = Logger.getLogger(KPISubscriber.class);
 	
+	protected RoQZooKeeper zkClient;
+	
+	private RoQGCMConnection gcmConnection;
+	
 	/**
-	 * @param gcm_address the IP address of the global configuration
+	 * @param zk_address the zookeeper connection string
 	 * @param gcm_interfacePort the port used by the GCM for the interface to the topology
 	 * @param qName the queue from which we want receive statistic. 
 	 */
-	public KPISubscriber(String gcm_address, int gcm_interfacePort, String qName) {
+	public KPISubscriber(String zk_address, int gcm_interfacePort, String qName) {
 		try {
 			// ZMQ Init
 			logger.debug("Init ZMQ context");
 			this.context = ZMQ.context(1);
 			// Copy parameters
-			this.gcm_address = gcm_address;
 			this.gcm_interfacePort = gcm_interfacePort;
 			this.qName = qName;
+			RoQZKSimpleConfig zkConf = new RoQZKSimpleConfig();
+			zkConf.servers = zk_address;
+			// ZK INIT
+			zkClient = new RoQZooKeeper(zkConf);
+			zkClient.start();
+			gcmConnection = new RoQGCMConnection(zkClient, 50, 4000);
 		} catch (Exception e) {
 			logger.error("Error while initiating the KPI statistic channel", e);
 		}
@@ -73,36 +87,14 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	 * Subscribe to the statistic stream got from the global configuration
 	 * @return true if the subscription succeed, false in the other cases.
 	 * @throws IllegalStateException if the monitor stat is not present in the cache
+	 * @throws ConnectException 
 	 */
-	public boolean subscribe() throws IllegalStateException {
+	public boolean subscribe() throws IllegalStateException, ConnectException {
 		logger.debug("Get the stat monitor address from the GCM");
-		// 1. Get the location in BSON
-		// 1.1 Create the request socket
-		ZMQ.Socket globalConfigReq = context.socket(ZMQ.REQ);
-		
-		String gcm = "tcp://" + this.gcm_address + ":" + this.gcm_interfacePort;
-		logger.debug("Sending request to GCM = "+ gcm);
-		globalConfigReq.connect(gcm);
 
-		// 1.2 Send the request
-		// Prepare the request BSON object
-		BSONObject request = new BasicBSONObject();
-		request.put("CMD", RoQConstant.BSON_CONFIG_GET_HOST_BY_QNAME);
-		request.put("QName", qName);
-		//Send 
-		globalConfigReq.send(BSON.encode(request), 0);
-		byte[] configuration = globalConfigReq.recv(0);
-		//Decode answer
-		BSONObject dConfiguration = BSON.decode(configuration);
-		//Check the error code
-		if(dConfiguration.containsField("RESULT")){
-			if((int)dConfiguration.get("RESULT") == RoQConstant.FAIL){
-				logger.warn("The subscribe request failed because of the queue configuration: "+ dConfiguration.get("COMMENT"));
-				return false;
-			}
-		}
-		String monitorStatServer = (String) dConfiguration.get(RoQConstant.BSON_STAT_MONITOR_HOST);
-		Assert.assertNotNull(monitorStatServer);
+		String monitorStatServer = addSubscriberToGCM();
+		if (monitorStatServer == null)
+			throw new IllegalStateException("monitor not found for KPI subscriber");
 		logger.debug("Got the Stat monitor address @"+ monitorStatServer);
 		
 		// 2. Register a socket to the stat monitor
@@ -113,6 +105,26 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 		logger.debug("Connected to Stat monitor " + monitorStatServer);
 		return true;
 	}
+	
+	public String addSubscriberToGCM() throws ConnectException {
+		// 1.2 Send the request
+		// Prepare the request BSON object
+		BSONObject request = new BasicBSONObject();
+		request.put("CMD", RoQConstant.BSON_CONFIG_GET_HOST_BY_QNAME);
+		request.put("QName", qName);
+		//Send 
+		byte[] configuration = gcmConnection.sendRequest(BSON.encode(request), 5000);
+		//Decode answer
+		BSONObject dConfiguration = BSON.decode(configuration);
+		//Check the error code
+		if(dConfiguration.containsField("RESULT")){
+			if((int)dConfiguration.get("RESULT") == RoQConstant.FAIL){
+				logger.warn("The subscribe request failed because of the queue configuration: "+ dConfiguration.get("COMMENT"));
+				return null;
+			}
+		}
+		return (String) dConfiguration.get(RoQConstant.BSON_STAT_MONITOR_HOST);
+	}
 
 	/**
 	 * Delegates the process stat to the client class.
@@ -120,8 +132,19 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	 */
 	public void run() {
 		ZMQ.Poller poller = new ZMQ.Poller(1);
+		Long lastSubscribe = Time.currentTimeMillis();
 		poller.register(kpiSocket);
 			while (active) {
+				
+				// Allows to continually receive the rules
+				// from the statMonitor, even after a failover
+				if (Time.currentTimeMillis() - lastSubscribe > 30000) {
+					try {
+						addSubscriberToGCM();
+					} catch (ConnectException e) {
+						e.printStackTrace();
+					}
+				}
 				poller.poll(100);
 				if (poller.pollin(0)) {
 					do {
@@ -147,6 +170,7 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	 */
 	protected boolean checkField(BSONObject request, String field) throws AssertionError {
 		if (!request.containsField(field)) {
+			logger.info("ERROR:");
 			logger.error("The " + field + "  field is not present, INVALID REQUEST");
 			logger.error("Invalid request, does not contain Host field.");
 			try {
@@ -174,10 +198,16 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	 */
 	public void shutDown() {
 		logger.info("Closing socket at the KPI subscriber side");
+		gcmConnection.active = false;
 		this.active = false;
-		
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		zkClient.close();
 	}
-
+	
 	/**
 	 * @see org.roqmessaging.core.interfaces.IStoppable#getName()
 	 */

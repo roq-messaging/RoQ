@@ -85,7 +85,6 @@ public class SenderLoader extends TimerTask implements IStoppable {
 			publisher = connection.createPublisher();
 			publisher.addTimeStamp(true);
 		} catch (ConnectException | IllegalStateException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

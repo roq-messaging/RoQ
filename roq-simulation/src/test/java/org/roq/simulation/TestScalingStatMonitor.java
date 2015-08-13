@@ -15,6 +15,7 @@
 package org.roq.simulation;
 
 import java.net.ConnectException;
+import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -56,7 +57,7 @@ public class TestScalingStatMonitor extends RoQTestCase {
 			Thread.sleep(3000);
 			// 1. Create a Queue
 			IRoQLogicalQueueFactory logicalQFactory = new LogicalQFactory(launcher.getConfigurationServer());
-			logicalQFactory.createQueue("queue1", RoQUtils.getInstance().getLocalIP(), false);
+			logicalQFactory.createQueue("queue1", RoQUtils.getInstance().getLocalIP(), new ArrayList<String>(), false);
 			
 			// 2.Let the Process start and binding port
 			Thread.sleep(3000);

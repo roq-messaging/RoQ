@@ -31,6 +31,8 @@ public class ExchangeLauncher {
 	 * 2. The back port <br>
 	 * 3. the address of the monitor to bind tcp:// monitor:monitorPort<br>
 	 * 4. The address of the stat monitor to bind tcp://monitor:statport<br>
+	 * 5. The path in which the heartbeats wil be stored <br>
+	 * 6. The number of seconds between each heartbeat <br>
 	 * 
 	 * example: 5559 5560 tcp://localhost:5571, tcp://localhost:5800
 	 * 
@@ -48,9 +50,10 @@ public class ExchangeLauncher {
 	 */
 	public static void main(String[] args) throws InterruptedException {
 		System.out.println("Launching Exchange process with arg "+displayArg(args));
-		if (args.length != 4) {
+		if (args.length != 6) {
 			System.out
-					.println("The argument should be <int front port> <int back port> < tcp:// monitor:monitorPort>  <tcp:// monitor:statport>");
+					.println("The argument should be <int front port> <int back port> < tcp:// monitor:monitorPort> " +
+							" <tcp:// monitor:statport> <localState path> <heartbeat Period>");
 			return;
 		}
 		System.out.println("Starting Exchange with monitor " + args[2] + ", stat= " + args[3]);
@@ -67,8 +70,9 @@ public class ExchangeLauncher {
 			shutDownSocket = shutDownContext.socket(ZMQ.PUB);
 			shutDownSocket.connect(args[2]);
 			shutDownSocket.setLinger(3500);
+			long hbPeriod = Long.parseLong(args[5]);
 			// Instanciate the exchange
-			final Exchange exchange = new Exchange(frontPort, backPort, args[2], args[3]);
+			final Exchange exchange = new Exchange(frontPort, backPort, args[2], args[3], args[4], hbPeriod);
 			// Launch the thread
 			Thread t = new Thread(exchange);
 			t.start();

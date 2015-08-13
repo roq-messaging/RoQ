@@ -14,7 +14,9 @@
  */
 package org.roqmessaging.core;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.locks.Lock;
@@ -24,7 +26,11 @@ import org.apache.log4j.Logger;
 import org.roqmessaging.core.interfaces.IStoppable;
 import org.roqmessaging.core.stat.StatisticMonitor;
 import org.roqmessaging.core.timer.MonitorStatTimer;
+import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.state.ExchangeState;
+import org.roqmessaging.utils.LocalState;
+import org.roqmessaging.utils.Time;
+import org.roqmessaging.zookeeper.RoQZooKeeperMonitorClient;
 import org.zeromq.ZMQ;
 
 /**
@@ -63,17 +69,40 @@ public class Monitor implements Runnable, IStoppable {
 	//The queue name
 	private String qName = "name";
 	
+	// Zookeeper client
+	private RoQZooKeeperMonitorClient zkClient;
+	
+	private volatile boolean master;
+	
+	//Local State for heartbeats
+	private LocalState localState;
+	// Minimum time between two heartbeats (in millis)
+	private long hbPeriod;
+	private long lastHb;
+	
 	private Lock lock = new ReentrantLock();
 
 	
 	/**
+	 * @param zkAddress the ZooKeeper ip addresses separated by comates
 	 * @param basePort default value must be 5571
 	 * @param statPort default port for stat socket 5800
 	 * @param qname the logical queue from which the monitor belongs to
 	 * @param period the stat period for publication
+	 * @param localStatePath the folder path in which the processes states will be stored (heartbeats)
+	 * @param hbPeriod the number of seconds between each heatbeat
+	 * @param master start the monitor as active or backup
 	 */
-	public Monitor(int basePort, int statPort, String qname, String period) {
+	public Monitor(String zkAddress, int basePort, int statPort, String qname, String period, String localStatePath, long hbPeriod, boolean master) {
 		try {
+			this.zkClient = new RoQZooKeeperMonitorClient(zkAddress);
+			zkClient.start();
+			// create the parent node that handles the queue list
+			if (master) {
+				zkClient.createQueueExchanges(qname);
+			}
+			
+			this.basePort = basePort;
 			this.statPort = statPort;
 			this.qName = qname;
 			this.period = Integer.parseInt(period);
@@ -81,9 +110,11 @@ public class Monitor implements Runnable, IStoppable {
 			hostsToRemove = new ArrayList<Integer>();
 			maxThroughput = 75000000L; // Maximum throughput per exchange, in
 										// bytes/minute
-
+			localState = new LocalState(localStatePath + "/" + basePort);
+			this.hbPeriod = hbPeriod;
+			this.master = master;
 			context = ZMQ.context(1);
-
+			
 			producersPub = context.socket(ZMQ.PUB);
 			producersPub.bind("tcp://*:" + (basePort + 2));
 			logger.debug("Binding procuder to " + "tcp://*:" + (basePort + 2));
@@ -221,6 +252,8 @@ public class Monitor implements Runnable, IStoppable {
 				}
 			}
 			logger.info("Added new host: " + address+": "+ frontPort+"->"+ backPort);
+			int port = new Integer(backPort) + 3;
+			zkClient.addXchangeInQueueExchanges(qName, address + ":" + port);
 			knownHosts.add(new ExchangeState(address,frontPort, backPort ));
 			return 1;
 		}else{
@@ -337,17 +370,44 @@ public class Monitor implements Runnable, IStoppable {
 		Timer reportTimer = new Timer();
 		reportTimer.schedule(new ReportExchanges(), 0, period+10);
 		this.monitorStat = new MonitorStatTimer(this);
-		reportTimer.schedule(this.monitorStat, 0, period);
-
+		
 		ZMQ.Poller items = new ZMQ.Poller(3);
 		items.register(brokerSub);//0
 		items.register(initRep);//1
 
-		logger.info("Monitor started");
+		logger.info("Monitor started isMaster: " + master);
 		long lastPublish = System.currentTimeMillis();
+		lastHb = Time.currentTimeMillis() - hbPeriod;
 		
+		// The Monitor active/backup mechanism
+		// Remark: Once master we never becomes backup again
+		if (this.master) {
+			reportTimer.schedule(this.monitorStat, 0, period);
+		}
+		while (this.active && !this.master) {
+			HCMHeartbeat();
+			items.poll(200);
+			if (items.pollin(1)) {
+				String info[] = new String(initRep.recv(0)).split(",");
+				// Check if the message indicates that the monitor becomes the master
+				if (Integer.parseInt(info[0]) == RoQConstant.EVENT_MONITOR_FAILOVER) {
+					logger.info("Standby monitor has been activated");
+					this.master = true;
+					reportTimer.schedule(this.monitorStat, 0, period);
+					// Recover exchange connections
+					initRep.send((new Integer(RoQConstant.EVENT_MONITOR_ACTIVATED).toString() + ", ").getBytes(), 0);
+					try {
+						Thread.sleep(5000); // wait for monitorStat startup
+					} catch (InterruptedException e) {e.printStackTrace();} 
+					RecoverKnownHostList();
+				} else {
+					logger.info("received pub/sub request");
+					initRep.send(("").getBytes(), 0);
+				}
+			}
+		}
 		//2. Start the main run of the monitor
-		while (this.active) {
+		while (this.active) {			
 			//not really clean, workaround to the fact thats sockets cannot be shared between threads
 			if (System.currentTimeMillis() - lastPublish > 10000) { 
 				listenersPub.send(("2," + bcastExchg()).getBytes(), 0);
@@ -356,7 +416,10 @@ public class Monitor implements Runnable, IStoppable {
 			}
 			while (!hostsToRemove.isEmpty() && !this.shuttingDown) {
 				try {
-					producersPub.send((new Integer(RoQConstant.EXCHANGE_LOST).toString()+"," + knownHosts.get(hostsToRemove.get(0)).getAddress()).getBytes(), 0);
+					producersPub.send((new Integer(RoQConstant.EXCHANGE_LOST).toString() + 
+							"," + knownHosts.get(hostsToRemove.get(0)).getAddress()).getBytes(), 0);
+					zkClient.deleteXchangeInQueueExchanges(qName, knownHosts.get((int) hostsToRemove.get(0)).getAddress() + 
+							":" + new Integer(knownHosts.get((int) hostsToRemove.get(0)).getBackPort() + 3));
 					knownHosts.remove((int) hostsToRemove.get(0));
 					hostsToRemove.remove(0);
 					logger.warn("Panic procedure initiated");
@@ -364,16 +427,16 @@ public class Monitor implements Runnable, IStoppable {
 				}
 			}
 			
+			HCMHeartbeat();
 			//3. According to the channel bit used, we can define what kind of info is sent
 			items.poll(100);
 			if (items.pollin(0)) { // Info from Exchange
-								String info[] = new String(brokerSub.recv(0)).split(",");
+					String info[] = new String(brokerSub.recv(0)).split(",");
 					// Check if exchanges are present: this happens when the
 					// queue is shutting down a client is asking for a
 					// connection
 					if (info.length > 1) {
 						infoCode = Integer.parseInt(info[0]);
-						logger.trace("Recieving message from Exhange:" + infoCode + " info array " + info.length);
 						switch (infoCode) {
 						case RoQConstant.DEBUG:
 							// Broker debug code
@@ -397,7 +460,7 @@ public class Monitor implements Runnable, IStoppable {
 							if (info.length == 4) {
 								if (logHost(info[1], info[2], info[3]) == 1) {
 									listenersPub.send((new Integer(RoQConstant.REQUEST_UPDATE_EXCHANGE_LIST).toString()
-											+ "," + info[1]+":"+ info[2]).getBytes(), 0);
+											+ "," + info[1]+":"+ info[3]).getBytes(), 0);
 								}
 							} else
 								logger.error("The message recieved from the exchange heart beat"
@@ -424,7 +487,7 @@ public class Monitor implements Runnable, IStoppable {
 			}
 
 			if (items.pollin(1)) { // Init socket
-				logger.debug("Received init request from either producer or listner");
+				logger.info("Received init request from either producer or listner");
 				String info[] = new String(initRep.recv(0)).split(",");
 				infoCode = Integer.parseInt(info[0]);
 				if (!this.shuttingDown) {
@@ -459,11 +522,67 @@ public class Monitor implements Runnable, IStoppable {
 			}
 		}
 		// Exit running
+		try {
+			// 0 indicates that the process has been shutdown by the user & have not timed out
+			localState.put("HB", new Long(0));
+		} catch (IOException e) {
+			logger.error("Failed to stop properly the process, it will be restarted...");
+			e.printStackTrace();
+		}
 		this.monitorStat.shutTdown();
 		this.knownHosts.clear();
 		reportTimer.cancel();
 		closeSocket();
 		logger.info("Monitor  "+ this.basePort+" Stopped");
+	}
+
+	/**
+	 * This method get the list of exchanges in ZK
+	 * check if they are alive and make a new knownhosts list
+	 * in addition it sends message to the pub/sub to allow them
+	 * to connect to an alive exchange and it contact the exchanges 
+	 * to force them to contact this monitor
+	 */
+	private void RecoverKnownHostList() {
+		List<String> exchangesList = zkClient.getXchangesListInQueueExchanges(this.qName);
+		ZMQ.Socket exchangeReqSocket;
+		if (exchangesList != null) {
+			for (String exchangeRepAddress : exchangesList) {
+				logger.info("list element: " + exchangeRepAddress);
+				// open a socket to ask the exchange
+				logger.info(exchangeRepAddress);
+				exchangeReqSocket = context.socket(ZMQ.REQ);
+				exchangeReqSocket.connect("tcp://" + exchangeRepAddress);
+				exchangeReqSocket.setReceiveTimeOut(3000); // max three seconds to respond
+				exchangeReqSocket.send((RoQConstant.EVENT_MONITOR_CHANGED + "," + 
+						"tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + this.basePort + "," +
+						"tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + this.statPort
+						).getBytes(), 0);
+				byte[] response = exchangeReqSocket.recv(0);
+				// The exchange is alive
+				if (response != null) {
+					String[] infos = new String(response).split(",");
+					String address = infos[0];
+					String front = infos[1];
+					String back = infos[2];				
+					knownHosts.add(new ExchangeState(address, front, back));
+				} else { // The exchange is considered as dead
+					// extract the exchange address
+					String [] splitAddress = exchangeRepAddress.split(":");
+					int portLength = splitAddress[splitAddress.length - 1].length() + 1;
+					String addressToRemove = (String) exchangeRepAddress.subSequence(0, exchangeRepAddress.length() - portLength);
+					logger.info("An exchange had been lost: " + addressToRemove);
+					// Send to producers the exchange lost notification
+					int port = new Integer(splitAddress[splitAddress.length - 1]) - 4;
+					producersPub.send((new Integer(RoQConstant.EXCHANGE_LOST).toString() + 
+							"," + addressToRemove + ":" + port).getBytes(), 0);
+					zkClient.deleteXchangeInQueueExchanges(this.qName, exchangeRepAddress);
+					// TODO maybe send a shutdown message in best effort
+				}
+				exchangeReqSocket.close();
+			}
+		}
+		listenersPub.send(("2," + bcastExchg()).getBytes(), 0);
 	}
 
 	/**
@@ -476,8 +595,25 @@ public class Monitor implements Runnable, IStoppable {
 		initRep.close();
 		listenersPub.close();
 		heartBeat.close();
+		zkClient.close();
 	}
-
+	
+	/**
+	 * Write the heartbeat in the system
+	 */
+	private void HCMHeartbeat() {
+		// Write Heartbeat
+		if ((Time.currentTimeMillis() - lastHb) >= hbPeriod) {
+			try {
+				long current = Time.currentTimeSecs();
+				logger.info("Writing hb " + basePort + " " + current);
+				localState.put("HB", current);
+				lastHb = Time.currentTimeMillis();
+			} catch (IOException e) {
+				logger.info("Failed to write in local db: " + e);
+			}
+		}
+	}
 
 	/**
 	 * Class ReportExchanges

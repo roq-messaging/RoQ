@@ -15,32 +15,26 @@
 package org.roqmessaging.management;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.net.ConnectException;
+import java.util.Set;
 
 import junit.framework.Assert;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.log4j.Logger;
-import org.roqmessaging.core.Exchange;
-import org.roqmessaging.core.Monitor;
 import org.roqmessaging.core.RoQConstant;
+import org.roqmessaging.core.RoQGCMConnection;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.interfaces.IStoppable;
-import org.roqmessaging.core.launcher.ExchangeLauncher;
-import org.roqmessaging.core.launcher.MonitorLauncher;
-import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.core.utils.RoQUtils;
+import org.roqmessaging.factory.HostProcessFactory;
 import org.roqmessaging.management.config.internal.FileConfigurationReader;
 import org.roqmessaging.management.config.internal.HostConfigDAO;
-import org.roqmessaging.management.launcher.hook.ShutDownSender;
-import org.roqmessaging.scaling.ScalingProcess;
-import org.roqmessaging.scaling.launcher.ScalingProcessLauncher;
+import org.roqmessaging.management.monitor.ProcessMonitor;
+import org.roqmessaging.management.server.state.HcmState;
+import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
+import org.roqmessaging.management.zookeeper.RoQZooKeeperConfig;
+import org.roqmessaging.zookeeper.Metadata;
 import org.zeromq.ZMQ;
 
 /**
@@ -56,7 +50,6 @@ import org.zeromq.ZMQ;
 public class HostConfigManager implements Runnable, IStoppable {
 	// ZMQ config
 	private ZMQ.Socket clientReqSocket = null;
-	private ZMQ.Socket globalConfigSocket =null;
 	private ZMQ.Context context;
 	// Logger
 	private Logger logger = Logger.getLogger(HostConfigManager.class);
@@ -65,25 +58,54 @@ public class HostConfigManager implements Runnable, IStoppable {
 	// The host configuration manager properties
 	private HostConfigDAO properties = null;
 	// Local configuration maintained by the host manager
-	// [qName, the monitor]
-	private HashMap<String, String> qMonitorMap = null;
-	// [qName, monitor stat server address]
-	private HashMap<String, String> qMonitorStatMap = null;
-	// [qName, list of Xchanges]
-	private HashMap<String, HashMap<String, String>> qExchangeMap = null;
-	//[qName, Scaling process shutdown port (on the same machine as host)] 
-	//TODO starting the process, register it and deleting it when stoping
-	private HashMap<String, Integer> qScalingProcessAddr = null;
+	
+	// the hbMonitors Thread
+	private ProcessMonitor hbMonitor;
+	
+	// Contains server state information
+	private HcmState serverState;
+	
+	// processFactory
+	private HostProcessFactory processFactory;
+	
+	private RoQZooKeeperClient zkClient;
+	
 	//The shutdown monitor
 	private ShutDownMonitor shutDownMonitor = null;
-	//The lock to avoid any race condition
-	private Lock lockRemoveQ = new ReentrantLock();
 	//Network & IP address Configuration
 	private boolean useNif = false;
+	
+	private RoQGCMConnection gcmConnection;
+	
 
 	/**
 	 * Constructor
 	 * @param propertyFile the location of the property file
+	 * @throws IOException 
+	 */
+	public HostConfigManager(String propertyFile, String zkAddresses) {
+		try {
+			// Global init
+			FileConfigurationReader reader = new FileConfigurationReader();
+			this.properties = reader.loadHCMConfiguration(propertyFile);
+			if(this.properties.getNetworkInterface()==null)
+				useNif=false;
+			else {
+				useNif=true;
+			}
+			this.properties.setZkAddress(zkAddresses);
+			logger.info(this.properties.toString());
+			initialize();
+		} catch (ConfigurationException e) {
+			logger.error("Error while reading configuration in " + propertyFile, e);
+		}
+			
+	}
+	
+	/**
+	 * Constructor used for test purpose
+	 * @param propertyFile the location of the property file
+	 * @throws IOException 
 	 */
 	public HostConfigManager(String propertyFile) {
 		try {
@@ -96,23 +118,41 @@ public class HostConfigManager implements Runnable, IStoppable {
 				useNif=true;
 			}
 			logger.info(this.properties.toString());
+			initialize();
+		} catch (ConfigurationException e) {
+			logger.error("Error while reading configuration in " + propertyFile, e);
+		}
+			
+	}
+		
+		
+	public void initialize() {
+		try {
+			RoQZooKeeperConfig zkConf = new RoQZooKeeperConfig();
+			zkConf.servers = this.properties.getZkAddress();
+			// ZK INIT
+			zkClient = new RoQZooKeeperClient(zkConf);
+			zkClient.start();
+			
+			gcmConnection = new RoQGCMConnection(zkClient, 50, 4000);
 			// ZMQ Init
 			this.context = ZMQ.context(1);
 			this.clientReqSocket = context.socket(ZMQ.REP);
 			this.clientReqSocket.setLinger(0);
 			this.clientReqSocket.bind("tcp://*:5100");
-			this.globalConfigSocket = context.socket(ZMQ.REQ);
-			this.globalConfigSocket.connect("tcp://" + this.properties.getGcmAddress() + ":5000");
-			// Init the map
-			this.qExchangeMap = new HashMap<String, HashMap<String, String>>();
-			this.qMonitorMap = new HashMap<String, String>();
-			this.qMonitorStatMap = new HashMap<String, String>();
-			this.qScalingProcessAddr = new HashMap<String, Integer>();
+			// Init ServerState
+			this.serverState = new HcmState();
+			// Init process Factory
+			this.processFactory = new HostProcessFactory(serverState, properties);
 			// Init the shutdown monitor
 			this.shutDownMonitor = new ShutDownMonitor(5101, this);
+			hbMonitor = new ProcessMonitor(properties.getLocalPath(), 
+						properties, this.processFactory);
+			this.processFactory.setProcessMonitor(hbMonitor);
+			new Thread(hbMonitor).start();
 			new Thread(this.shutDownMonitor).start();
-		} catch (ConfigurationException e) {
-			logger.error("Error while reading configuration in " + propertyFile, e);
+		}  catch (IOException e) {
+			logger.error("Error while reading localstateDB", e);
 		}
 	}
 	
@@ -122,7 +162,12 @@ public class HostConfigManager implements Runnable, IStoppable {
 	public void run() {
 		this.running = true;
 		//1. Register to the global configuration
-		registerHost();
+		try {
+			registerHost();
+		} catch (Exception e1) {
+			logger.warn("FAILED TO REGISTER HOST !");
+			e1.printStackTrace();
+		}
 		// ZMQ init
 		ZMQ.Poller items = new ZMQ.Poller(1);
 		items.register(this.clientReqSocket);
@@ -144,68 +189,170 @@ public class HostConfigManager implements Runnable, IStoppable {
 					if (info.length == 2) {
 						String qName = info[1];
 						logger.debug("The request format is valid with 2 parts, Q to create:  " + qName);
-						String monitorAddress = qMonitorMap.get(qName);
+						String monitorAddress = serverState.getMonitor(qName);
 						if (monitorAddress == null) {
 							// 1. Start the monitor
-							monitorAddress = startNewMonitorProcess(qName);
+							monitorAddress = processFactory.startNewMonitorProcess(qName, true);
 						}
 						// 2. Start the exchange
 						// 2.1. Getting the monitor stat address
 						// 2.2. Start the exchange
-						boolean xChangeOK =  qExchangeMap.get(qName) != null;
+						boolean xChangeOK =  serverState.getExchanges(qName) != null;
 						
 						// The 00000000000000000 value is the id of the first Exchange process
 						if (!xChangeOK)
-							xChangeOK = startNewExchangeProcess(qName, this.qMonitorMap.get(qName),
-									this.qMonitorStatMap.get(qName), "00000000000000000"); 
+							xChangeOK = processFactory.startNewExchangeProcess(qName, "INITIAL_EXCHANGE_000", false); 
 						//2.3. Start the scaling process
-						boolean scalingOK = qScalingProcessAddr.get(qName) != null;
+						boolean scalingOK = serverState.getScalingProcess(qName) != null;
 						if (!scalingOK)
-							scalingOK = startNewScalingProcess(qName);
+							scalingOK = processFactory.startNewScalingProcess(qName);
 						// if OK send OK
 						if (monitorAddress != null & xChangeOK && scalingOK) {
 							logger.info("Successfully created new Q for " + qName + "@" + monitorAddress);
 							this.clientReqSocket.send(
-									(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK) + "," + monitorAddress + "," + qMonitorStatMap.get(qName))
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_OK) + "," + monitorAddress + "," + serverState.getStat(qName))
 											.getBytes(), 0);
 						} else {
 							logger.error("The create queue request has failed at the monitor host,check log (when starting launching scripts");
 							this.clientReqSocket.send(
-									(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) + "," + monitorAddress)
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + "," + monitorAddress)
 											.getBytes(), 0);
 						}
 					} else {
-						logger.error("The create queue request sent does not contain 3 part: ID, quName, Monitor host");
+						logger.error("The create queue request sent does not contain 2 part: ID, quName");
 						this.clientReqSocket.send(
-								(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) + ", ").getBytes(), 0);
+								(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + ", ").getBytes(), 0);
 					}
 					break;
-
-				case RoQConstant.CONFIG_REMOVE_QUEUE:
-					logger.debug("Recieveing remove Q request from a client ");
+				case RoQConstant.CONFIG_CREATE_STBY_MONITOR:
+					logger.debug("Recieveing create STBY Monitor request");
 					if (info.length == 2) {
 						String qName = info[1];
-						removingQueue(qName);
+						logger.debug("The request format is valid with 2 parts, Standby monitor to create:  " + qName);
+						String monitorAddress = serverState.getSTBYMonitor(qName);
+						if (monitorAddress == null) {
+							// 1. Start the monitor
+							monitorAddress = processFactory.startNewMonitorProcess(qName, false);
+						}
+
+						// if OK send OK
+						if (monitorAddress != null) {
+							logger.info("Successfully created standby monitor for " + qName + "@" + monitorAddress);
+							this.clientReqSocket.send(
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_OK) + "," + monitorAddress + "," + serverState.getSTBYStat(qName))
+											.getBytes(), 0);
+						} else {
+							logger.error("Failed to create the Standby monitor");
+							this.clientReqSocket.send(
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + "," + monitorAddress)
+											.getBytes(), 0);
+						}
+					} else {
+						logger.error("The create STBY monitor request sent does not contain 2 part: ID, quName");
+						this.clientReqSocket.send(
+								(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + ", ").getBytes(), 0);
+					}
+					break;
+				case RoQConstant.CONFIG_REMOVE_STBY_MONITOR:
+					logger.debug("Recieveing remove STBY monitor request from a client ");
+					if (info.length == 2) {
+						String qName = info[1];
+						processFactory.removingSTBYMonitor(qName);
 						// Removing Q information
-						this.qExchangeMap.remove(qName);
-						this.qMonitorMap.remove(qName);
-						this.qMonitorStatMap.remove(qName);
-						this.qScalingProcessAddr.remove(qName);
+						serverState.removeSTBYMonitor(qName);
 						this.clientReqSocket.send((Integer.toString(RoQConstant.OK) + ", ").getBytes(), 0);
 					} else {
 						logger.error("The remove queue request sent does not contain 2 part: ID, quName");
 						this.clientReqSocket.send(
-								(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) + ", ").getBytes(), 0);
+								(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + ", ").getBytes(), 0);
 					}
 					break;
-
+				case RoQConstant.CONFIG_START_STBY_MONITOR:
+					if (info.length == 2) {
+						String qName = info[1];
+						logger.debug("The request format is valid with 2 parts, Standby monitor to start:  " + qName);
+						String monitorAddress = serverState.getSTBYMonitor(qName);
+						
+						boolean monitorStarted = false;
+						boolean exchange = false;
+						boolean scalingProcess = false;
+						// Send a request to the monitor to ask for its startup
+						if (monitorAddress != null) {
+							String[] splitAddress = monitorAddress.split(":");
+							String frontPort = splitAddress[splitAddress.length - 1];
+							// We create a port only for that request toward the monitor
+							ZMQ.Socket monitorREQ = context.socket(ZMQ.REQ);
+							monitorREQ.connect("tcp://"+RoQUtils.getInstance().getLocalIP()+":"+(Integer.parseInt(frontPort) + 1));
+							monitorREQ.setReceiveTimeOut(5000);
+							monitorREQ.send((RoQConstant.EVENT_MONITOR_FAILOVER + ", ").getBytes(), 0);
+							byte[] result = monitorREQ.recv(0);
+							//Check the result
+							if (result != null && new Integer(new String(result).split(",")[0]) == RoQConstant.EVENT_MONITOR_ACTIVATED) {
+								// switch the monitor from standby to active in HCM state
+								hbMonitor.switchMonitorToMaster(frontPort);
+								serverState.switchToMaster(qName);
+								monitorStarted = true;
+							} else {
+								logger.info("Stby monitor has not answered");
+							}
+							monitorREQ.setLinger(0);
+							monitorREQ.close(); // We close the socket							
+						} else if (serverState.getMonitor(qName) != null) { // check if it was not already created
+							monitorStarted = true;
+						}
+						if (serverState.scalingProcessExists(qName)) {
+							scalingProcess = true;
+						} else if (monitorStarted) {
+							scalingProcess = processFactory.startNewScalingProcess(qName);
+						}
+						// Run a new exchange in a indempotent way to avoid request duplication issues
+						if (serverState.ExchangeExists(qName, "INIT_EXCHANGE_11111")) {
+							exchange = true;
+						} else if (monitorStarted) {
+							exchange = processFactory.startNewExchangeProcess(qName, "INIT_EXCHANGE_11111", false);
+						}
+						// if OK send OK
+						if (monitorAddress != null && monitorStarted && exchange && scalingProcess) {
+							logger.info("Successfully started standby monitor for " + qName + "@" + monitorAddress);
+							this.clientReqSocket.send(
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_OK) + "," + monitorAddress + "," + serverState.getStat(qName))
+											.getBytes(), 0);
+						} else {
+							logger.error("The standby monitor has not been started");
+							this.clientReqSocket.send(
+									(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + ", ")
+											.getBytes(), 0);
+						}
+					} else {
+						logger.error("The STBY monitor startup request sent does not contain 2 part: ID, quName");
+						this.clientReqSocket.send(
+								(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + ", ").getBytes(), 0);
+					}
+					break;
+				case RoQConstant.CONFIG_REMOVE_QUEUE:
+					logger.debug("Recieveing remove Q request from a client ");
+					if (info.length == 2) {
+						String qName = info[1];
+						processFactory.removingQueue(qName);
+						// Removing Q information
+						serverState.removeExchange(qName);
+						serverState.removeMonitor(qName);
+						serverState.removeStat(qName);
+						serverState.removeScalingProcess(qName);
+						this.clientReqSocket.send((Integer.toString(RoQConstant.OK) + ", ").getBytes(), 0);
+					} else {
+						logger.error("The remove queue request sent does not contain 2 part: ID, quName");
+						this.clientReqSocket.send(
+								(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) + ", ").getBytes(), 0);
+					}
+					break;
 				case RoQConstant.CONFIG_CREATE_EXCHANGE:
 					logger.debug("Recieveing create XChange request from a client ");
 					if (info.length == 5) {
 						String qName = info[1];
 						String id = info[2];
 						// Qname, monitorhost, monitorstat host
-						if (startNewExchangeProcess(qName, info[3], info[4], id)) {
+						if (processFactory.startNewExchangeProcess(qName, id, false)) {
 							this.clientReqSocket.send((Integer.toString(RoQConstant.OK) ).getBytes(), 0);
 						} else {
 							this.clientReqSocket.send((Integer.toString(RoQConstant.FAIL) ).getBytes(), 0);
@@ -213,7 +360,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 					} else {
 						logger.error("The create new exchange does not contain 4 parts: ID, Qname, monitor, monitor host");
 						this.clientReqSocket.send(
-								(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL) ).getBytes(), 0);
+								(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL) ).getBytes(), 0);
 					}
 					break;
 				case RoQConstant.CONFIG_INFO_EXCHANGE:
@@ -233,83 +380,38 @@ public class HostConfigManager implements Runnable, IStoppable {
 			}
 		}
 		stopAllRunningQueueOnHost();
-		unregisterHostFromConfig();
+		// try {
+			/*
+			* we dont unregister the host in order to allow the GCM
+			* to relocate the processes from this host on the others
+			*/
+			// unregisterHostFromConfig();
+		// } catch (ConnectException | IllegalStateException e) {
+		// 	logger.warn("FAILED TO UNREGISTER HOST !");
+		// 	e.printStackTrace();
+		// }
 		logger.info("Closing the client & global config sockets.");
 		this.clientReqSocket.setLinger(0);
-		this.globalConfigSocket.setLinger(0);
 		this.clientReqSocket.close();
-		this.globalConfigSocket.close();
-	}
-
-	/**
-	 * @param qName the name of queue for which we need to create the scaling process
-	 * @param port the listener port on wich the sclaing process will scubscribe to configuration update
-	 * @return true if the creation was OK
-	 */
-	private boolean startNewScalingProcess(String qName) {
-		if(this.qMonitorStatMap.containsKey(qName)){
-			//1. Compute the stat monitor port+2
-			int basePort = RoQSerializationUtils.extractBasePort(this.qMonitorStatMap.get(qName));
-			basePort+=2;
-			
-			// Get the address and the ports used by the GCM
-			String gcm_address = this.properties.getGcmAddress();
-			int gcm_interfacePort = this.properties.ports.get("GlobalConfigurationManager.interface");
-			int gcm_adminPort    = this.properties.ports.get("MngtController.interface");
-			
-			//2. Check wether we need to launch it locally or in its own process
-			if(this.properties.isQueueInHcmVm()){
-				// Local startup in the same VM as the host config Monitor
-				logger.info("Starting the scaling process  for queue " + qName + ", using a listener port= " + basePort +", GCM ="+this.properties.getGcmAddress() );
-				
-				ScalingProcess scalingProcess = new ScalingProcess(gcm_address, gcm_interfacePort, gcm_adminPort, qName, basePort);
-				//Here is the problem we still do not have registred the queue at the GCM
-				scalingProcess.subscribe();
-				// Launch the thread
-				new Thread(scalingProcess).start();
-			}else{
-				//Start in its own VM
-				// 2. Launch script
-				try {
-					ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
-							+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),
-							ScalingProcessLauncher.class.getCanonicalName(),
-							gcm_address, Integer.toString(gcm_interfacePort), Integer.toString(gcm_adminPort),
-							qName, Integer.toString(basePort));
-					logger.debug("Starting: " + pb.command());
-					final Process process = pb.start();
-					pipe(process.getErrorStream(), System.err);
-					pipe(process.getInputStream(), System.out);
-				} catch (IOException e) {
-					logger.error("Error while executing script", e);
-					return false;
-				}	
-			}
-			//4. Add the configuration information
-			logger.debug("Storing scaling process information");
-			this.qScalingProcessAddr.put(qName, (basePort+1));
-		}else{
-			return false;
-		}
-		return true;
-	}
+		zkClient.close();
+	}	
 
 	/**
 	 * Remove all queues delcared on this host. This operation is part of the cleaning 
 	 * house before closing the host.
 	 */
 	private void stopAllRunningQueueOnHost() {
-		List<String> toRemove = new ArrayList<String>(this.qMonitorMap.keySet());
-		for (String qName : this.qMonitorMap.keySet()) {
+		Set<String> monitors = serverState.getAllMonitors();
+		for (String qName : monitors) {
 			logger.info("Cleaning host - removing  "+qName);
-			this.removingQueue(qName);
+			processFactory.removingQueue(qName);
 		}
-		for (String qName : toRemove) {
+		for (String qName : monitors) {
 			// Removing Q information
-			this.qExchangeMap.remove(qName);
-			this.qMonitorMap.remove(qName);
-			this.qMonitorStatMap.remove(qName);
-			this.qScalingProcessAddr.remove(qName);
+			serverState.removeExchange(qName);
+			serverState.removeMonitor(qName);
+			serverState.removeStat(qName);
+			serverState.removeScalingProcess(qName);
 		}
 		
 	}
@@ -319,22 +421,24 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 */
 	private int getExchangeNumber() {
 		int total =0;
-		for (String  queue : this.qExchangeMap.keySet()) {
-			total+=this.qExchangeMap.get(queue).size();
+		for (String  queue : serverState.getAllExchanges()) {
+			total+=serverState.getExchanges(queue).size();
 		}
 		return total;
 	}
 
 	/**
 	 * Unregister the host from the configuration management when shutdown.
+	 * @throws IllegalStateException 
+	 * @throws ConnectException 
 	 */
-	private void unregisterHostFromConfig() {
+	private void unregisterHostFromConfig() throws ConnectException, IllegalStateException {
 		logger.info("UN-Registration process started");
 		if(useNif)Assert.assertNotNull(this.properties.getNetworkInterface());
-		this.globalConfigSocket.send((new Integer(RoQConstant.CONFIG_REMOVE_HOST).toString()+"," +
-				(!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()))).getBytes(),0);
-		String   info[] = new String (this.globalConfigSocket.recv(0)).split(",");
-		int infoCode = Integer.parseInt(info[0]);
+		byte[] info = gcmConnection.sendRequest((new Integer(RoQConstant.CONFIG_REMOVE_HOST).toString()+"," +
+				(!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()))).getBytes(), 5000);
+		String result[] = (new String(info)).split(",");
+		int infoCode = Integer.parseInt(result[0]);
 		logger.debug("Start analysing info code = "+ infoCode);
 		if(infoCode != RoQConstant.OK){
 			throw new IllegalStateException("The global config manager cannot register us ..");
@@ -344,212 +448,37 @@ public class HostConfigManager implements Runnable, IStoppable {
 
 	/**
 	 * Register the host config manager to the global configration
+	 * @throws Exception 
 	 */
-	private void registerHost() throws IllegalStateException {
+	private void registerHost() throws Exception {
 		logger.info("Registration process started");
 		if(useNif)Assert.assertNotNull(this.properties.getNetworkInterface());
-		this.globalConfigSocket.send((new Integer(RoQConstant.CONFIG_ADD_HOST).toString()+"," +
-				(!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()))).getBytes(),0);
-		String   info[] = new String (this.globalConfigSocket.recv(0)).split(",");
-		int infoCode = Integer.parseInt(info[0]);
-		logger.debug("Start analysing info code = "+ infoCode);
-		if(infoCode != RoQConstant.OK){
-			throw new IllegalStateException("The global config manager cannot register us ..");
-		}
+		String hcmAddress = (!(useNif)?RoQUtils.getInstance().getLocalIP():RoQUtils.getInstance().getLocalIP(this.properties.getNetworkInterface()));
+		// Register the ephemeral node on ZK
+		zkClient.registerHCM(new Metadata.HCM(hcmAddress));
 		logger.info("Registration process sucessfull");
-		
 	}
 
 	/**
-	 * Remove a complete queue: 1. Sends a shut down request to the
-	 * corresponding monitor 2. The monitor will send a shut down request to all
-	 * exchanges that it knows
+	 * return the HCM State  
+	 * @return HcmState
 	 * 
-	 * @param qName
-	 *            the logical Q name to remove
 	 */
-	private void removingQueue(String qName) {
-		try {
-			this.lockRemoveQ.lock();
-			logger.debug("Removing Q  " + qName);
-			String monitorAddress = this.qMonitorMap.get(qName);
-			// The address is the address of the base monitor, we need to
-			// extract
-			// the port and make +5
-			// to get the shutdown monitor thread
-			int basePort = RoQSerializationUtils.extractBasePort(monitorAddress);
-			String portOff = monitorAddress.substring(0, monitorAddress.length() - "xxxx".length());
-			logger.info("Sending Remove Q request to " + portOff + (basePort + 5));
-			// 2. Send the remove message to the monitor
-			// The monitor will stop all the exchanges during its shut down
-			ShutDownSender shutDownSender = new ShutDownSender(portOff + (basePort + 5));
-			shutDownSender.shutdown();
-			//3. Stopping the scaling process
-			if(this.qScalingProcessAddr.containsKey(qName)){
-				shutDownSender.setAddress(portOff + this.qScalingProcessAddr.get(qName).toString());
-				shutDownSender.shutdown();
-			}
-			//The caller must remove the queue.
-		} finally {
-			this.lockRemoveQ.unlock();
-		}
+	public HcmState getServerState() {
+		return this.serverState;
 	}
-
-
-	/**
-	 * Start a new exchange process
-	 * <p>
-	 * 1. Check the number of local xChange present in the host 2. Start a new
-	 * xChange with port config + nchange
-	 * 
-	 * @param qName
-	 *            the name of the queue to create
-	 * @return true if the creation process worked well
-	 */
-	private boolean startNewExchangeProcess(String qName, String monitorAddress, String monitorStatAddress, String transID) {		
-		if (monitorAddress == null || monitorStatAddress == null) {
-			logger.error("The monitor or the monitor stat server is null", new IllegalStateException());
-			return false;
-		}
-		// Check if the Exchange already exists (idempotent exchange creation process)
-		if (this.qExchangeMap.containsKey(qName)) {
-			if (this.qExchangeMap.get(qName).containsKey(transID))
-				return true;
-		}
-		
-		// 1. Get the number of installed queues on this host
-		int number = 0;
-		for (String q_i : this.qExchangeMap.keySet()) {
-			number += this.qExchangeMap.get(q_i).size();
-		}
-		// 2. Assigns a front port and a back port
-		logger.debug(" This host contains already " + number + " Exchanges");
-		//x4 = Front, back, Shutdown, prod request
-		int frontPort = this.properties.getExchangeFrontEndPort() + number * 4;
-		// 3 because there is the front, back and the shut down
-		int backPort = frontPort + 1;
-		String ip = RoQUtils.getInstance().getLocalIP();
-
-		if (this.properties.isExchangeInHcmVm()) {
-			// We must start the thread in the same process
-			Exchange exchange = new Exchange(frontPort, backPort, monitorAddress, monitorStatAddress);
-			// Launch the thread
-			new Thread(exchange).start();
-		} else {
-			// We start the exchange in its own process
-			// Launch script
-			try {
-				ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
-						+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"), "-Xmx"+this.properties.getExchangeHeap()+"m","-XX:+UseConcMarkSweepGC",
-						ExchangeLauncher.class.getCanonicalName(), new Integer(frontPort).toString(), new Integer(
-								backPort).toString(), monitorAddress, monitorStatAddress);
-				logger.info("Starting: " + pb.command());
-				final Process process = pb.start();
-				pipe(process.getErrorStream(), System.err);
-				pipe(process.getInputStream(), System.out);
-			} catch (IOException e) {
-				logger.error("Error while executing script", e);
-				return false;
-			}
-		}
-
-		if (this.qExchangeMap.containsKey(qName)) {
-			this.qExchangeMap.get(qName).put(transID, "tcp://" + ip + ":" + frontPort);
-			logger.debug("Storing Xchange info: " + "tcp://" + ip + ":" + frontPort);
-		} else {
-			HashMap<String, String> xChange = new HashMap<String, String>();
-			xChange.put(transID, "tcp://" + ip + ":" + frontPort);
-			this.qExchangeMap.put(qName, xChange);
-			logger.debug("Storing Xchange info: " + "tcp://" + ip + ":" + frontPort);
-		}
-
-		return true;
-	}
-
-	/**
-	 * @return the monitor port
-	 */
-	private int getMonitorPort() {
-		return (this.properties.getMonitorBasePort() + this.qMonitorMap.size() * 6);
-	}
-
-	/**
-	 * @return the monitor stat port
-	 */
-	private int getStatMonitorPort() {
-		//By for because the stat monitor starts on port, its shutdown on port+1, the scaling process on 
-		//port+2 and its shuto down process on port +3.
-		return (this.properties.getStatMonitorBasePort() + this.qMonitorMap.size()*4);
-	}
-
-	/**
-	 * Start a new Monitor process
-	 * <p>
-	 * 1. Check the number of local monitor present in the host 2. Start a new
-	 * monitor with port config + nMonitor*4 because the monitor needs to book 4
-	 * ports + stat
-	 * 
-	 * @param qName
-	 *            the name of the queue to create
-	 * @return the monitor address as tcp://IP:port of the newly created monitor
-	 *         +"," tcp://IP: statport
-	 */
-	private String startNewMonitorProcess(String qName) {
-		// 1. Get the number of installed queues on this host
-		int frontPort = getMonitorPort();
-		int statPort = getStatMonitorPort();
-		logger.debug(" This host contains already " + this.qMonitorMap.size() + " Monitor");
-		String argument = frontPort + " " + statPort;
-		logger.debug("Starting monitor process by script launch on " + argument);
-		//Monitor configuration
-		String monitorAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + frontPort;
-		String statAddress = "tcp://" + RoQUtils.getInstance().getLocalIP() + ":" + statPort;
-		//Checking whether we must create the monitor, stat monitor and the scaling process in the same VM
-		if(this.properties.isQueueInHcmVm()){
-			logger.info("Creating the Monitor of the "+ qName +" on the same VM as the local HCM");
-			 Monitor monitor = new Monitor(frontPort, statPort,  qName, new Integer(this.properties.getStatPeriod()).toString());
-			new Thread(monitor).start();
-		} else {
-			// 2. Launch script in its onw VM
-			// ProcessBuilder pb = new ProcessBuilder(this.monitorScript,
-			// argument);
-			ProcessBuilder pb = new ProcessBuilder("java", "-Djava.library.path="
-					+ System.getProperty("java.library.path"), "-cp", System.getProperty("java.class.path"),	MonitorLauncher.class.getCanonicalName(), new Integer(frontPort).toString(),
-					new Integer(statPort).toString(), qName, new Integer(this.properties.getStatPeriod()).toString());
-			try {
-				logger.debug("Starting: " + pb.command());
-				final Process process = pb.start();
-				pipe(process.getErrorStream(), System.err);
-				pipe(process.getInputStream(), System.out);
-			} catch (IOException e) {
-				logger.error("Error while executing script", e);
-				return null;
-			}
-		}
-		//add the monitor configuration
-		this.qMonitorMap.put(qName, (monitorAddress));
-		this.qMonitorStatMap.put(qName, statAddress);
-		return monitorAddress + "," + statAddress;
-	}
-
-	private static void pipe(final InputStream src, final PrintStream dest) {
-		new Thread(new Runnable() {
-			public void run() {
-				try {
-					byte[] buffer = new byte[1024];
-					for (int n = 0; n != -1; n = src.read(buffer)) {
-						dest.write(buffer, 0, n);
-					}
-				} catch (IOException e) { // just exit
-				}
-			}
-		}).start();
-	}
-
+	
 	/**
 	 * 
 	 */
 	public void shutDown() {
+		gcmConnection.active = false;
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		hbMonitor.isRunning = false;
 		this.running = false;
 	}
 
@@ -559,22 +488,7 @@ public class HostConfigManager implements Runnable, IStoppable {
 	public String getName() {
 		return "Host config manager " + RoQUtils.getInstance().getLocalIP();
 	}
-
-	/**
-	 * @return the qMonitorMap
-	 */
-	public HashMap<String, String> getqMonitorMap() {
-		return qMonitorMap;
-	}
-
-	/**
-	 * @param qMonitorMap
-	 *            the qMonitorMap to set
-	 */
-	public void setqMonitorMap(HashMap<String, String> qMonitorMap) {
-		this.qMonitorMap = qMonitorMap;
-	}
-
+	
 	/**
 	 * Use the encapsulation to let the shutdown monitor manage all shutdown 
 	 * related actions.
@@ -582,6 +496,16 @@ public class HostConfigManager implements Runnable, IStoppable {
 	 */
 	public ShutDownMonitor getShutDownMonitor() {
 		return shutDownMonitor;
+	}
+	
+	/**
+	 * Allow to get kill a type of process,
+	 * SCALINGPROCESS, MONITOR, EXCHANGE
+	 * Useful for process recovery tests
+	 * @param the type of process to kill (RoQInternalConstant)
+	 */
+	public boolean killProcess(int type) {
+		return hbMonitor.killProcess(type);
 	}
 
 }

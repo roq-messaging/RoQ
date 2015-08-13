@@ -15,6 +15,7 @@
 package org.roq.simulation;
 
 import java.net.ConnectException;
+import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 import org.junit.After;
@@ -62,8 +63,9 @@ public class TestClientAPI {
 	@Test
 	public void test() {
 		try {
+			// TODO CANNOT WORK, NEED A ZK SERVER...
 			// 1. Create Q
-			 this.factory.createQueue("queue1", RoQUtils.getInstance().getLocalIP().toString(), false);
+			 this.factory.createQueue("queue1", RoQUtils.getInstance().getLocalIP().toString(), new ArrayList<String>(), false);
 			// 2. Create subscriber
 			IRoQConnectionFactory connectionFactory = new RoQConnectionFactory(RoQUtils.getInstance().getLocalIP()
 					.toString());

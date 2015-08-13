@@ -1,3 +1,11 @@
+- name: Set JAVA_HOME environment variable
+  lineinfile: dest='/etc/profile' regexp='^#?\s*export JAVA_HOME=(.*)$' line='export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64' state=present
+  when: ansible_architecture == "x86_64"
+
+- name: Set JAVA_HOME environment variable
+  lineinfile: dest='/etc/profile' regexp='^#?\s*export JAVA_HOME=(.*)$' line='export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-i386' state=present
+  when: ansible_architecture == "i386"
+
 - name: Add and Update ZMQ repository
   apt_repository: repo='ppa:chris-lea/zeromq' update_cache=yes state=present
   tags:
@@ -6,38 +14,5 @@
 - name: Install required packages
   apt: pkg="{{item}}" state=installed
   with_items: ['libzmq1', 'libzmq-dev', 'libzmq-dbg','openjdk-7-jdk', 'maven2', 'g++', 'libtool', 'autoconf', 'automake', 'git', 'make', 'pkg-config', 'wget', 'zookeeper', 'zookeeperd']
-  tags:
-    - full-install
-
-- name: Pull ZMQ GIT repository
-  git: repo=git://github.com/zeromq/jzmq
-       dest="{{jzmq_path}}"
-       version=v2.1.3
-       ssh_opts="-o StrictHostKeyChecking=no"
-  tags:
-    - full-install
-
-- name: Copy custom pom file
-  copy: src=pom.xml dest="{{jzmq_path}}/pom.xml" mode=554
-  tags:
-    - full-install
-
-- name: Configure and Install ZMQ V2.1.3
-  shell: "cd {{jzmq_path}}; {{item}}"
-  with_items: ['./autogen.sh', './configure', 'make', 'sudo make install', 'mvn install']
-  environment:
-       JAVA_HOME: /usr/lib/jvm/java-7-openjdk-i386
-  when: ansible_architecture == "i386"
-  tags:
-    - full-install
-
-# Maven installation duplicated because JAVA_HOME is specific for i386 & x86_64 archi
-
-- name: Configure and Install ZMQ V2.1.3
-  shell: "cd {{jzmq_path}}; {{item}}"
-  with_items: ['./autogen.sh', './configure', 'make', 'sudo make install', 'mvn install']
-  environment:
-       JAVA_HOME: /usr/lib/jvm/java-7-openjdk-amd64
-  when: ansible_architecture == "x86_64"
   tags:
     - full-install

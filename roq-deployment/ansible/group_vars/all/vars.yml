@@ -2,8 +2,6 @@ roq_playbook_version: "0.1b"
 jzmq_path: "/lib/jzmq"
 roq_path:  "/lib/RoQ"
 docker_version: "1.12"
-roq_local_path: "path/to/your/ROQ" # For Development purpose
-roq_git_branch: "develop"
 zk_version: 3.4.6
 zk_client_port: 2181
 zk_init_limit: 10
@@ -13,3 +11,20 @@ zk_myid: 1
 zk_data_dir: /var/lib/zookeeper
 zk_log_dir: /var/log/zookeeper
 servers: ""
+
+# For Development purpose
+roq_local_path: "path/to/your/ROQ" 
+
+# Variables for AMAZON deployment only
+roq_temp_path:  "/root/.roq/"
+roq_repo: "https://github.com/vanmellebenjamin/RoQ.git"
+roq_branch: "QueueClient"
+security_group: "launch-wizard-1"
+roq_ami: "ami-a6a496bb"
+# NB of instances of each type
+gcm_count: 1
+hcm_count: 1
+zk_count: 1
+key_path: "bvanmelle-roq"
+aws_region: "eu-central-1"
+aws_vpc_subnet_id: "subnet-842be7ed"

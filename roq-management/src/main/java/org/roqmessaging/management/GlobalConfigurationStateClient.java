@@ -36,7 +36,7 @@ public class GlobalConfigurationStateClient extends GlobalConfigurationState {
 	private String clientID = null;
 	//The global configuration server IP address
 	protected String configServer = null;
-	protected int hcmTIMEOUT = 3000;
+	protected int hcmTIMEOUT = 5000;
 	private Logger logger = Logger.getLogger(GlobalConfigurationStateClient.class);
 	
 	/**
@@ -47,7 +47,7 @@ public class GlobalConfigurationStateClient extends GlobalConfigurationState {
 		super();
 		this.configServer = configurationServer;
 		context = ZMQ.context(1);
-		this.hcmTIMEOUT = 2000;
+		this.hcmTIMEOUT = 5000;
 		globalConfigReq = context.socket(ZMQ.REQ);
 		globalConfigReq.connect("tcp://" + configurationServer + ":5000");
 		this.clientID =String.valueOf(System.currentTimeMillis()) + "globalconfigclientState";
@@ -94,6 +94,16 @@ public class GlobalConfigurationStateClient extends GlobalConfigurationState {
 			// The stat monitor for each logical queue is sent in the part 4
 			byte[] qConfiguration = globalConfigReq.recv(0);
 			queueMonitorStatMap = this.serializationUtils.deserializeObject(qConfiguration);
+		}
+		if (globalConfigReq.hasReceiveMore()) {
+			// The backup monitors for each logical queue is sent in the part 5
+			byte[] qConfiguration = globalConfigReq.recv(0);
+			queueBUMonitorMap = this.serializationUtils.deserializeObject(qConfiguration);
+		}
+		if (globalConfigReq.hasReceiveMore()) {
+			// The backup monitors hcm address for each logical queue is sent in the part 6
+			byte[] qConfiguration = globalConfigReq.recv(0);
+			queueBUMonitorHostMap = this.serializationUtils.deserializeObject(qConfiguration);
 		}
 		logger.info("Getting configuration with " + hostManagers.size() + " Host managers and "
 				+ queueMonitorMap.size() + " queues");

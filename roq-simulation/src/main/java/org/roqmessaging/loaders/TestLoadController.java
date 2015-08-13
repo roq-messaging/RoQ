@@ -195,7 +195,6 @@ public class TestLoadController implements IStoppable {
 				//Maintains an handle to all subscriber connection
 				this.subscriberConnections.add(subscriberConnection);
 			} catch (ConnectException | IllegalStateException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}

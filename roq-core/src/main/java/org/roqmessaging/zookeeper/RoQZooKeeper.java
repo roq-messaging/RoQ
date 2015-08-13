@@ -1,9 +1,11 @@
 package org.roqmessaging.zookeeper;
 
+
+
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.RetryOneTime;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.log4j.Logger;
 
 public class RoQZooKeeper {
@@ -17,7 +19,7 @@ public class RoQZooKeeper {
 		
 		// Start a Curator client, through which we can access ZooKeeper
 		// Note: retry policy should be made configurable
-		RetryPolicy retryPolicy = new RetryOneTime(1000);
+		RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
 				
 		client = CuratorFrameworkFactory.builder()
 				.connectString(zkAddresses)
@@ -29,7 +31,8 @@ public class RoQZooKeeper {
 	public RoQZooKeeper(RoQZKSimpleConfig config) {		
 		// Start a Curator client, through which we can access ZooKeeper
 		// Note: retry policy should be made configurable
-		RetryPolicy retryPolicy = new RetryOneTime(1000);
+		RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
+		RoQZKHelpers.ZK_BASE = config.namespace;
 		cfg = config;
 		client = CuratorFrameworkFactory.builder()
 					.connectString(config.servers)
@@ -56,4 +59,7 @@ public class RoQZooKeeper {
 		String gcm = RoQZKHelpers.getDataString(client, path);
 		return gcm;
 	}
+	
+	
+	
 }

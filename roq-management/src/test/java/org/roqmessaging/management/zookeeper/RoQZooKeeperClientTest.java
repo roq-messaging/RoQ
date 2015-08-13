@@ -1,5 +1,7 @@
 package org.roqmessaging.management.zookeeper;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.curator.test.TestingServer;
@@ -8,12 +10,11 @@ import org.roqmessaging.core.utils.RoQSerializationUtils;
 import org.roqmessaging.management.config.internal.CloudConfig;
 import org.roqmessaging.management.config.scaling.AutoScalingConfig;
 import org.roqmessaging.management.config.scaling.HostScalingRule;
+import org.roqmessaging.management.config.scaling.LogicalQScalingRule;
 import org.roqmessaging.management.config.scaling.XchangeScalingRule;
+import org.roqmessaging.zookeeper.Metadata;
 
-import junit.extensions.TestSetup;
-import junit.framework.Test;
 import junit.framework.TestCase;
-import junit.framework.TestSuite;
 
 /**
  * Unit test for simple App.
@@ -34,74 +35,33 @@ public class RoQZooKeeperClientTest extends TestCase {
 	public RoQZooKeeperClientTest(String testName) {
 		super(testName);
 	}
-
-	/**
-	 * @return the suite of tests being tested
-	 */
-	public static Test suite() {
-		return new TestSetup(new TestSuite(RoQZooKeeperClientTest.class)) {
-	        protected void setUp() throws Exception {
-	            log.info("Setting up test suite");
-	            
-	            log.info("Starting ZooKeeper server");
-	            zkServer = new TestingServer();
-	            
-	            RoQZooKeeperConfig cfg = new RoQZooKeeperConfig();
-	    		cfg.servers = zkServer.getConnectString();
-
-	    		log.info("Starting ZooKeeper client");
-	    		client = new RoQZooKeeperClient(cfg);
-	    		client.start();
-	        }
-	        protected void tearDown() throws Exception {
-	        	log.info("Tearing down test suite");
-	            client.close();
-	            zkServer.close();
-	        }
-		};
-	}
 	
 	public void setUp() {
-		log.info("test setUp()");
-		
-		// Make sure ZooKeeper is clean within the namespace we have
-		// defined.
-		client.clear();
+		log.info("test setUp()");        
+        log.info("Starting ZooKeeper server");
+        try {
+			zkServer = new TestingServer();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+        
+        RoQZooKeeperConfig cfg = new RoQZooKeeperConfig();
+		cfg.servers = zkServer.getConnectString();
+
+		log.info("Starting ZooKeeper client");
+		client = new RoQZooKeeperClient(cfg);
+		client.start();
 		client.initZkClusterNodes();
 	}
 	
 	public void tearDown() {
-		log.info("test tearDown()");
-	}
-	
-	/**
-	 * Actual tests
-	 */
-	public void testAddRemoveHCM() {
-		log.info("");
-
-		List<Metadata.HCM> hcms;
-		
-		// First, make sure we start with a clean state.
-		hcms = client.getHCMList();
-		assertEquals(hcms.size(), 0);
-		
-		// Now try to add a host and check the result.
-		Metadata.HCM hcm = new Metadata.HCM("192.168.0.1");
-		client.addHCM(hcm);
-		hcms = client.getHCMList();
-		assertEquals(hcms.size(), 1);
-		assertTrue(hcm.equals(hcms.get(0)));
-		
-		// Make sure the same host cannot be added twice.
-		client.addHCM(hcm);
-		hcms = client.getHCMList();
-		assertEquals(hcms.size(), 1);
-		
-		// Remove the host and check the result.
-		client.removeHCM(hcm);
-		hcms = client.getHCMList();
-		assertEquals(hcms.size(), 0);
+		log.info("test tearDown()");       
+        try {
+        	client.closeGCM();
+			zkServer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public void testCreateRemoveQueue() {
@@ -111,20 +71,43 @@ public class RoQZooKeeperClientTest extends TestCase {
 		Metadata.HCM   hcm   = new Metadata.HCM("192.168.0.1");
 		Metadata.Monitor monitor = new Metadata.Monitor("tcp://192.168.0.1:1234");
 		Metadata.StatMonitor statMonitor = new Metadata.StatMonitor("tcp://192.168.0.1:9876");
+		Metadata.Monitor monitor2 = new Metadata.Monitor("tcp://192.128.0.1:956");
+		ArrayList<Metadata.BackupMonitor> monitorsList = new ArrayList<Metadata.BackupMonitor>();
+		ArrayList<Metadata.HCM> monitorsHostList = new ArrayList<Metadata.HCM>();
 		
+		client.addHCMState(hcm);
+		monitorsList.add(new Metadata.BackupMonitor(hcm.address + "," + monitor2.address + "," + statMonitor.address));
+		monitorsHostList.add(hcm);
 		// First, make sure we start with a clean state.
 		assertFalse(client.queueExists(queue));
 		
 		// Now try to add a queue and check the result.
-		client.createQueue(queue, hcm, monitor, statMonitor);
+		client.createQueue(queue, hcm, monitor, statMonitor, monitorsList);
 		assertTrue(client.queueExists(queue));
 		assertTrue(hcm.equals(client.getHCM(queue)));
 		assertTrue(monitor.equals(client.getMonitor(queue)));
 		assertTrue(statMonitor.equals(client.getStatMonitor(queue)));
-		
+		ArrayList<Metadata.BackupMonitor> testList = client.getBackUpMonitors(queue);
+		assertTrue(testList.contains(new Metadata.BackupMonitor(hcm.address + "," + monitor2.address + "," + statMonitor.address)));
 		// Remove the host and check the result.
 		client.removeQueue(queue);
 		assertFalse(client.queueExists(queue));
+	}
+	
+	public void testHCMState() {
+		log.info("");
+		Metadata.HCM   hcm   = new Metadata.HCM("192.168.0.1");
+		
+		client.addHCMState(hcm);
+		client.addHCMBUMonitor(hcm, "queue1");
+		client.addHCMBUMonitor(hcm, "queue2");
+		client.addHCMMonitor(hcm, "queue3");
+		
+		assertTrue(client.getHCMBUMonitors(hcm).contains("queue1"));
+		assertTrue(client.getHCMBUMonitors(hcm).contains("queue2"));
+		assertTrue(client.getHCMMonitors(hcm).contains("queue3"));
+		
+		client.removeHCMState(hcm);
 	}
 	
 	public void testCreateRemoveExchangeTransaction() {
@@ -140,12 +123,12 @@ public class RoQZooKeeperClientTest extends TestCase {
 		assertEquals(null, client.exchangeTransactionExists("Test"));
 		
 	}
-	
+		
 	public void testCreateRemoveQueueTransaction() {
 		log.info("");
 		String host = "192.168.0.1";
 		
-		client.createQTransaction("TestQ", host);
+		client.createQTransaction("TestQ", host, new ArrayList<String>());
 		
 		assertEquals(host, client.qTransactionExists("TestQ"));
 		
@@ -155,44 +138,68 @@ public class RoQZooKeeperClientTest extends TestCase {
 		
 	}
 	
+	
+	public void testRemoveHCMTransaction() {
+		log.info("");
+		String host = "tcp://192.168.0.1:8000";
+		
+		client.createHcmRemoveTransaction(new Metadata.HCM(host));
+		
+		assertEquals(host, client.hcmRemoveTransactionExists(new Metadata.HCM(host)));
+		
+		try {
+			client.removeHcmRemoveTransaction(new Metadata.HCM(host));
+		} catch (Exception e) {
+			assertEquals(false, true);
+			e.printStackTrace();
+		}
+		
+		assertEquals(null, client.hcmRemoveTransactionExists(new Metadata.HCM(host)));
+		
+	}
+	
 	public void testGetQueueList() {
 		log.info("");
-		
-		// Define the queue names.
-		Metadata.Queue queue1 = new Metadata.Queue("wallace");
-		Metadata.Queue queue2 = new Metadata.Queue("gromit");
-		
-		// For this test, we use the same data for both queues.
-		// This should never happen in a real situation.
-		Metadata.HCM   hcm   = new Metadata.HCM("192.168.0.1");
-		Metadata.Monitor monitor = new Metadata.Monitor("tcp://192.168.0.1:1234");
-		Metadata.StatMonitor statMonitor = new Metadata.StatMonitor("tcp://192.168.0.1:9876");
-		
-		// First, make sure we start with a clean state.
-		assertFalse(client.queueExists(queue1));
-		assertFalse(client.queueExists(queue2));
-		
-		// Now add the queues to ZooKeeper.
-		client.createQueue(queue1, hcm, monitor, statMonitor);
-		client.createQueue(queue2, hcm, monitor, statMonitor);
-		
-		// Get the list of queues from ZooKeeper.
-		List<Metadata.Queue> queues = client.getQueueList();
-		assertEquals(2, queues.size());
-		
-		// Check that both queues are received with the call.
-		boolean queue1Found = false;
-		boolean queue2Found = false;
-		for (Metadata.Queue queue : queues) {
-			if (queue.equals(queue1)) {
-				queue1Found = true;
+		try {		
+			// Define the queue names.
+			Metadata.Queue queue1 = new Metadata.Queue("wallace");
+			Metadata.Queue queue2 = new Metadata.Queue("gromit");
+			
+			// For this test, we use the same data for both queues.
+			// This should never happen in a real situation.
+			Metadata.HCM   hcm   = new Metadata.HCM("192.168.0.1");
+			Metadata.Monitor monitor = new Metadata.Monitor("tcp://192.168.0.1:1234");
+			Metadata.StatMonitor statMonitor = new Metadata.StatMonitor("tcp://192.168.0.1:9876");
+			
+			// First, make sure we start with a clean state.
+			assertFalse(client.queueExists(queue1));
+			assertFalse(client.queueExists(queue2));
+			
+			client.addHCMState(hcm);
+			// Now add the queues to ZooKeeper.
+			client.createQueue(queue1, hcm, monitor, statMonitor, new ArrayList<Metadata.BackupMonitor>());
+			client.createQueue(queue2, hcm, monitor, statMonitor, new ArrayList<Metadata.BackupMonitor>());
+			
+			// Get the list of queues from ZooKeeper.
+			List<Metadata.Queue> queues = client.getQueueList();
+			assertEquals(2, queues.size());
+			
+			// Check that both queues are received with the call.
+			boolean queue1Found = false;
+			boolean queue2Found = false;
+			for (Metadata.Queue queue : queues) {
+				if (queue.equals(queue1)) {
+					queue1Found = true;
+				}
+				if (queue.equals(queue2)) {
+					queue2Found = true;
+				}
 			}
-			if (queue.equals(queue2)) {
-				queue2Found = true;
-			}
+			assertTrue(queue1Found);
+			assertTrue(queue2Found);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		assertTrue(queue1Found);
-		assertTrue(queue2Found);
 	}
 	
 	public void testQueueRunning() {
@@ -202,9 +209,8 @@ public class RoQZooKeeperClientTest extends TestCase {
 		Metadata.HCM   hcm   = new Metadata.HCM("192.168.0.1");
 		Metadata.Monitor monitor = new Metadata.Monitor("tcp://192.168.0.1:1234");
 		Metadata.StatMonitor statMonitor = new Metadata.StatMonitor("tcp://192.168.0.1:9876");
-		
-		// Now try to add a queue and check the result.
-		client.createQueue(queue, hcm, monitor, statMonitor);
+		client.addHCMState(hcm);
+		client.createQueue(queue, hcm, monitor, statMonitor, new ArrayList<Metadata.BackupMonitor>());
 		
 		client.setRunning(queue, true);
 		assertTrue(client.isRunning(queue));
@@ -250,8 +256,8 @@ public class RoQZooKeeperClientTest extends TestCase {
 		Metadata.HCM   hcm   = new Metadata.HCM("192.168.0.1");
 		Metadata.Monitor monitor = new Metadata.Monitor("tcp://192.168.0.1:1234");
 		Metadata.StatMonitor statMonitor = new Metadata.StatMonitor("tcp://192.168.0.1:9876");
-		
-		client.createQueue(queue, hcm, monitor, statMonitor);
+		client.addHCMState(hcm);
+		client.createQueue(queue, hcm, monitor, statMonitor, new ArrayList<Metadata.BackupMonitor>());
 		
 		// Create its scaling config
 		// Note: queue config is left null on purpose
@@ -259,12 +265,12 @@ public class RoQZooKeeperClientTest extends TestCase {
 		AutoScalingConfig sc1 = new AutoScalingConfig();
 		sc1.hostRule = new HostScalingRule(1, 2);
 		sc1.xgRule   = new XchangeScalingRule(3, 4f);
-		// sc1.qRule    = new LogicalQScalingRule(5, 6);
+		sc1.qRule    = new LogicalQScalingRule(5, 6);
 		
 		// add the config to zookeeper
 		client.setHostScalingConfig(utils.serialiseObject(sc1.hostRule), queue);
 		client.setExchangeScalingConfig(utils.serialiseObject(sc1.xgRule), queue);
-		// client.setQueueScalingConfig(utils.serialiseObject(sc1.qRule), queue);
+		client.setQueueScalingConfig(utils.serialiseObject(sc1.qRule), queue);
 		
 		// modify configuration to test whether it can be overwritten
 		sc1.xgRule.Throughput_Limit = 8;
@@ -280,5 +286,43 @@ public class RoQZooKeeperClientTest extends TestCase {
 		sc2.qRule    = utils.deserializeObject(client.getQueueScalingConfig(queue));
 		
 		assertTrue(sc2.equals(sc1));
+	}
+	
+	public void testAddRemoveHCM() {
+		log.info("");
+		try {
+			client.startServiceDiscovery();
+			List<Metadata.HCM> hcms;
+			
+			// First, make sure we start with a clean state.
+			hcms = client.getHCMList();
+			assertEquals(hcms.size(), 0);
+			
+			// Now try to add a host and check the result.
+			Metadata.HCM hcm = new Metadata.HCM("192.168.0.1");
+			Metadata.HCM hcm2 = new Metadata.HCM("192.168.0.3");
+			client.registerHCM(hcm);
+			Thread.sleep(6000); // wait for the cache updates
+			hcms = client.getHCMList();
+			assertEquals(1, hcms.size());
+			assertTrue(hcm.equals(hcms.get(0)));
+			
+			// Make sure the same host cannot be added twice.
+			client.registerHCM(hcm2);
+			Thread.sleep(6000);
+			hcms = client.getHCMList();
+			assertEquals(2, hcms.size());
+			
+			client.registerHCM(hcm2);
+			assertEquals(2, hcms.size());
+			
+			// Remove the host and check the result.
+			client.removeHCM(hcm2);
+			Thread.sleep(3000);
+			hcms = client.getHCMList();
+			assertEquals(1, hcms.size());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }

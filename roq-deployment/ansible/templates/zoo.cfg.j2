@@ -1,0 +1,24 @@
+tickTime={{zk_tick_time}}
+dataDir={{zk_data_dir}}
+dataLogDir={{zk_log_dir}}
+clientPort={{zk_client_port}}
+initLimit={{zk_init_limit}}
+syncLimit={{zk_sync_limit}}
+
+{% if servers %}
+
+{% for server in servers %}
+server.{{server.id}}={{server.host}}:2888:3888
+{% endfor %}
+
+{% elif 'zookeepers' in groups %}
+
+{% for host in groups.test %}
+server.{{hostvars[host].zookeeper_id }}={{hostvars[host].ipv4_address|default(hostvars[host]['ansible_default_ipv4']['address']) }}:2888:3888
+{% endfor %}
+
+{% else %}
+
+server.1=localhost:2888:3888
+
+{% endif %}

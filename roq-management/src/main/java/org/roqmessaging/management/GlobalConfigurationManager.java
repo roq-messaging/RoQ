@@ -15,6 +15,7 @@
 package org.roqmessaging.management;
 
 import java.io.EOFException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,8 +37,9 @@ import org.roqmessaging.management.config.internal.GCMPropertyDAO;
 import org.roqmessaging.management.serializer.IRoQSerializer;
 import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.server.MngtController;
-import org.roqmessaging.management.zookeeper.Metadata;
 import org.roqmessaging.management.zookeeper.RoQZooKeeperClient;
+import org.roqmessaging.zookeeper.Metadata;
+import org.roqmessaging.zookeeper.Metadata.BackupMonitor;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Poller;
 
@@ -48,7 +50,7 @@ import org.zeromq.ZMQ.Poller;
  * Notice that the configuration is maintain through a state DAO, this object is ready to be shared on data grid. 
  * This state is persisted at the configuration manager level.
  * 
- * @author sskhiri
+ * @author sskhiri, bvanmelle
  */
 public class GlobalConfigurationManager implements Runnable, IStoppable {
 	private volatile boolean running;
@@ -132,12 +134,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		if (properties.isFormatDB()) {
 			zk.clear();
 		}
-		
-		// Set cloudConfig if the configuration is available
-		if (properties.hasCloudConfiguration()) {
-			logger.info("Writing cloud configuration to zookeeper");
-			this.zk.setCloudConfig(serializationUtils.serialiseObject(cloudConfig));
-		}
+
+		logger.info("Writing cloud configuration to zookeeper");
+		this.zk.setCloudConfig(serializationUtils.serialiseObject(cloudConfig));
 		
 		// Start the shutdown thread
 		int shutDownPort = properties.ports.get("GlobalConfigurationManager.shutDown");
@@ -155,6 +154,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			logger.info("Leadership acquired");
 			// Set leader address in ZK
 			zk.setGCMLeader();		
+			// Start service discovery
+			zk.startServiceDiscovery();
 			// Set that the process got the lead
 			hasLead = true;
 			// The Management controller - the start is in the run to take the
@@ -165,6 +166,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			logger.info("The leader election has failed, stopping the " +
 					"GCM");
 			this.mngtController.getShutDownMonitor().shutDown();
+			e.printStackTrace();
+		} catch (Exception e) {
+			logger.info("An error occured with the curator service discovery");
 			e.printStackTrace();
 		}
 	}
@@ -206,7 +210,12 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				
 				//check if the string contains a "," if not that means that it is a BSON encoded request
 				if(content.contains(",")) {
-					processStandardRequest(content);
+					try {
+						processStandardRequest(content);
+					} catch (Exception e) {
+						logger.warn("A failure has occured, cause ZK discovery service" + e);
+						e.printStackTrace();
+					}
 				}else{
 					processBSONRequest(encoded);
 				}
@@ -300,8 +309,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	/**
 	 * This method processes the string we got.
 	 * @param request the string request we received.
+	 * @throws Exception 
 	 */
-	private void processStandardRequest(String request) {
+	private void processStandardRequest(String request) throws Exception {
 		String  info[] = request.split(",");
 		int infoCode = Integer.parseInt(info[0]);
 		logger.debug("Start analysing info code = "+ infoCode);
@@ -317,6 +327,8 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			Map<String, String> queueMonitorMap = new HashMap<String, String>();
 			Map<String, String> queueStatMonitorMap = new HashMap<String, String>();
 			Map<String, String> queueHCMMap = new HashMap<String, String>();
+			Map<String, List<String>> queueBUMonitorMap = new HashMap<String, List<String>>();
+			Map<String, List<String>> queueBUMonitorHCMMap = new HashMap<String, List<String>>();
 
 			// This is very ugly because for the moment the client does not cache anything,
 			// meaning that each call represents a ZooKeeper transaction.
@@ -333,7 +345,16 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 				Metadata.Monitor m = zk.getMonitor(queue);
 				Metadata.StatMonitor sm = zk.getStatMonitor(queue);
 				Metadata.HCM hcm = zk.getHCM(queue);
-
+				
+				ArrayList<Metadata.BackupMonitor> buList = zk.getBackUpMonitors(queue);
+				List<String> monitorsSTBY = new ArrayList<String>();
+				List<String> monitorsHostSTBY = new ArrayList<String>();
+				for (Metadata.BackupMonitor backup : buList) {
+					monitorsSTBY.add(backup.monitorAddress);
+					monitorsHostSTBY.add(backup.hcmAddress);
+				}
+				queueBUMonitorHCMMap.put(queue.name, monitorsHostSTBY);
+				queueBUMonitorMap.put(queue.name, monitorsSTBY);
 				queueMonitorMap.put(queue.name, m.address);
 				queueStatMonitorMap.put(queue.name, sm.address);
 				queueHCMMap.put(queue.name, hcm.address);
@@ -342,7 +363,10 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			this.clientReqSocket.send(this.serializationUtils.serialiseObject(hcmStringList),       ZMQ.SNDMORE);
 			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueMonitorMap),     ZMQ.SNDMORE);
 			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueHCMMap),         ZMQ.SNDMORE);
-			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueStatMonitorMap), 0);
+			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueStatMonitorMap), ZMQ.SNDMORE);
+			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueBUMonitorMap), 	ZMQ.SNDMORE);
+			this.clientReqSocket.send(this.serializationUtils.serialiseObject(queueBUMonitorHCMMap), 	0);
+			
 			
 			logger.debug("Sending back the topology - list of local host");
 			break;
@@ -376,13 +400,82 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			}
 			break;
 		
+		case RoQConstant.CONFIG_REPLACE_QUEUE_BACKUP_MONITOR:
+			logger.debug("Recieveing replace STBY MONITOR request from a client");
+			if (info.length == 6) {
+				logger.info("The request format is valid we 2 part:  "+ info[1] + " "+ info[2] + " "+ info[3]+ " "+ info[4]);
+				String queueName = info[1];
+				String hcmAddress = info[2];
+				String monitorAddress = info[3];
+				String monitorStatAddress = info[4];
+				String hcmToRemoveAddress = info[5];
+				
+				
+				Metadata.Queue queue = new Metadata.Queue(queueName);
+				Metadata.HCM hcmToRemove = new Metadata.HCM(hcmToRemoveAddress);
+				Metadata.BackupMonitor newBUMonitor = new Metadata.BackupMonitor(hcmAddress + "," + monitorAddress + "," + monitorStatAddress);
+				
+				zk.replaceBackupMonitor(queue, hcmToRemove, newBUMonitor);
+				
+				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+			}else{
+					logger.error("The  request sent does not contain 5 part: ID, " +
+							"quName, hcmAddress, monitorAddress, oldBuHcmAddress");
+					this.clientReqSocket.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
+				}
+			break;
+			
+		case RoQConstant.CONFIG_ADD_QUEUE_BACKUP_MONITOR:
+			logger.debug("Recieveing Add STBY Monitor request from a client");
+			if (info.length == 5) {
+				logger.info("The request format is valid we 2 part:  "+ info[1] + " "+ info[2]+ " "+ info[3] + " " + info[4]);
+				String queueName = info[1];
+				String hcmAddress = info[2];
+				String monitorAddress = info[3];
+				String monitorStatAddress = info[4];
+				
+				Metadata.Queue queue = new Metadata.Queue(queueName);
+				Metadata.HCM hcm = new Metadata.HCM(hcmAddress);
+				Metadata.BackupMonitor newBUMonitor = new Metadata.BackupMonitor(hcmAddress + "," + monitorAddress + "," + monitorStatAddress);
+				
+				zk.addBackupMonitor(queue, hcm, newBUMonitor);
+				
+				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+			}else{
+					logger.error("The request sent does not contain 4 part: ID, quName, hcmAddress, monitorAddress");
+					this.clientReqSocket.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
+				}
+			break;
+		
+		case RoQConstant.CONFIG_REPLACE_QUEUE_MONITOR:
+			logger.info("Recieveing replace MONITOR request from a client");
+			if (info.length == 5) {
+				logger.info("The request format is valid we 2 part:  "+ info[1]+ " "+ info[2]+ " "+ info[3] + " " + info[4]);
+				String queueName = info[1];
+				String hcmAddress = info[2];
+				String monitorAddress = info[3];
+				String statMonitorAddress = info[4];
+				
+				Metadata.Queue queue = new Metadata.Queue(queueName);
+				Metadata.Monitor monitor = new Metadata.Monitor(monitorAddress);
+				Metadata.StatMonitor statMonitor = new Metadata.StatMonitor(statMonitorAddress);
+				Metadata.HCM hcm = new Metadata.HCM(hcmAddress);
+				
+				zk.replaceMonitor(queue, hcm, monitor, statMonitor);
+				
+				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
+			}else{
+					logger.error("The request sent does not contain 5 part: ID, quName, hcm address," +
+							" monitorAddress, statMonitor adress");
+					this.clientReqSocket.send(Integer.toString(RoQConstant.FAIL).getBytes(), 0);
+				}
+			break;
+		
 		case RoQConstant.CONFIG_REMOVE_QUEUE:
 			logger.debug("Recieveing remove Q request from a client ");
 			if (info.length == 2) {
-				logger.debug("The request format is valid we 2 part:  "+ info[1]);
-
-				String queueName = info[1];
-				removeQueue(queueName);
+				zk.removeQueue(new Metadata.Queue(info[1]));
+				zk.removeQueueExchanges(new Metadata.Queue(info[1]));
 				this.clientReqSocket.send(Integer.toString(RoQConstant.OK).getBytes(), 0);
 			}else{
 					logger.error("The remove queue request sent does not contain 2 part: ID, quName");
@@ -393,18 +486,27 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		case RoQConstant.CONFIG_CREATE_QUEUE:
 			logger.debug("Recieveing create Q request from a client ");
 			if (info.length >3) {
-				logger.debug("The request format is valid we 4 part:  "+ info[1] +" "+ info[2]+ " "+ info[3]+ " "+ info[4]);
+				logger.info("The request format is valid we 4 part:  "+ info[1] +" "+ info[2]+ " "+ info[3]+ " "+ info[4]);
 				
 				String queueName = info[1];
 				String monitorAddress = info[2];
 				String statMonitorAddress = info[3];
 				String hcmAddress = info[4];
+				ArrayList<String> monitorsBU = new ArrayList<String>();
+				ArrayList<String> monitorsBUHost = new ArrayList<String>();
+				ArrayList<String> monitorsBUStat = new ArrayList<String>();
+				
+				for (int i = 5; i < info.length; i+=3) {
+					monitorsBUHost.add(info[i]);
+					monitorsBU.add(info[i+1]);
+					monitorsBUStat.add(info[i+2]);
+				}
 				// register the queue
-				addQueue(queueName, monitorAddress, statMonitorAddress, hcmAddress);
-				this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_OK).getBytes(), 0);
+				addQueue(queueName, monitorAddress, statMonitorAddress, hcmAddress, monitorsBU, monitorsBUHost, monitorsBUStat);
+				this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_REQUEST_OK).getBytes(), 0);
 			}else{
 					logger.error("The create queue request sent does not contain 3 part: ID, quName, Monitor host");
-					this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_CREATE_QUEUE_FAIL).getBytes(), 0);
+					this.clientReqSocket.send(Integer.toString(RoQConstant.CONFIG_REQUEST_FAIL).getBytes(), 0);
 				}
 			break;
 			
@@ -457,6 +559,32 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 			}
 			break;
 			
+		case RoQConstant.CONFIG_GET_HOSTS_LIST_BY_QNAME:
+			logger.debug("Recieveing GET HOST request from a client ");
+			if (info.length == 2) {
+				String queueName = info[1];
+				
+				logger.debug("The request format is valid - Asking for translating  "+ queueName);
+				
+				ArrayList<String> fields = getHostsListByQueueName(queueName);
+				if (fields == null) {
+					logger.warn(" No logical queue as:"+queueName);
+					clientReqSocket.send("".getBytes(), 0);
+				} else {
+					String monitor = fields.get(0);
+					String statMonitor = fields.get(1);
+					
+					String reply =  properties.getReplicationFactor() + "," + monitor + "," + statMonitor;
+					for (int i = 2; i < fields.size(); i+=2) {
+						reply += "," + fields.get(i) + "," + fields.get(i+1);
+					}
+					
+					logger.debug("Answering back:" + reply);
+					this.clientReqSocket.send(reply.getBytes(), 0);
+				}
+			}
+			break;
+			
 			//Get the monitor and the statistic monitor forwarder  by the QName BUT In BSON for non java processes
 		case RoQConstant.BSON_CONFIG_GET_HOST_BY_QNAME:
 			logger.debug("Recieveing GET HOST by QNAME in BSON request from a client ");
@@ -491,13 +619,19 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * @param statMonitorAddress address of the queue's StatisticMonitor in the format "tcp://x.y.z:port"
 	 * @param hcmAddress ip address of the host that handles the queue 
 	 */
-	public void addQueue(String queueName, String monitorAddress, String statMonitorAddress, String hcmAddress) {
+	public void addQueue(String queueName, String monitorAddress, String statMonitorAddress, 
+			String hcmAddress, List<String> monitorsBU,  List<String> monitorsBUHost, List<String> monitorsBUStat) {
 		Metadata.Queue queue = new Metadata.Queue(queueName);
 		Metadata.Monitor monitor = new Metadata.Monitor(monitorAddress);
 		Metadata.StatMonitor statMonitor = new Metadata.StatMonitor(statMonitorAddress);
 		Metadata.HCM hcm = new Metadata.HCM(hcmAddress);
-
-		zk.createQueue(queue, hcm, monitor, statMonitor);
+		ArrayList<Metadata.BackupMonitor> monitorsBUMeta = new ArrayList<Metadata.BackupMonitor>();
+		
+		for (int i =0; i < monitorsBU.size(); i++) {
+			monitorsBUMeta.add(new Metadata.BackupMonitor(monitorsBUHost.get(i) + "," + monitorsBU.get(i) + "," + monitorsBUStat.get(i)));
+		}
+		
+		zk.createQueue(queue, hcm, monitor, statMonitor, monitorsBUMeta);
 		setQueueStarted(queueName);
 	}
 
@@ -505,7 +639,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * Removes all reference of the this queue
 	 * @param queueName the logical queue name
 	 */
-	public void removeQueue(String queueName) {
+	public void removeQueue(String queueName) {		
 		zk.removeQueue(new Metadata.Queue(queueName));
 	}
 	
@@ -529,9 +663,12 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 
 	/**
 	 * @param host the ip address of the host to remove.
+	 * @throws Exception 
 	 */
-	public void removeHostManager(String host) {
-		zk.removeHCM(new Metadata.HCM(host));
+	public void removeHostManager(String host) throws Exception {
+		Metadata.HCM hcm = new Metadata.HCM(host);
+		zk.createHcmRemoveTransaction(hcm);
+		zk.removeHCM(hcm);
 	}
 
 
@@ -546,7 +683,11 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		//deactivate the timer
 		configTimerTask.shutDown();
 		this.mngtController.getShutDownMonitor().shutDown();
-		zk.close();
+		try {
+			zk.closeGCM();
+		} catch (IOException e) {
+			logger.warn("FAILED to close ZK at GCM");
+		}
 		this.logger.info("Shutting down config server");
 	}
 	
@@ -554,9 +695,10 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * Add a host manager address to the array.
 	 * @param host the host to add (ip address), the port is defined by default as there is only 1 Host 
 	 * manager per host machine.
+	 * @throws Exception 
 	 */
-	public void addHostManager(String host){
-		zk.addHCM(new Metadata.HCM(host));
+	public void addHostManager(String host) throws Exception{
+		// zk.registerHCM(new Metadata.HCM(host));
 	}
 	
 
@@ -609,8 +751,9 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 
 	/**
 	 * @return the list of host manager addresses
+	 * @throws Exception 
 	 */
-	public List<String> getHostManagerAddresses() {
+	public List<String> getHostManagerAddresses() throws Exception {
 		List<Metadata.HCM> hcmList = zk.getHCMList();
 		List<String> returnValue = new ArrayList<String>();
 		
@@ -656,7 +799,7 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 	 * does not return a host, but rather monitor and stat monitor addresses.
 	 * 
 	 * @param queueName name of the logical queue
-	 * @return monitor address (base port) and stat monitor address (base port),
+	 * @return active monitor address (base port) and stat monitor address (base port),
 	 * 		or null of they don't exist.
 	 */
 	private String[] getHostByQueueName(String queueName) {
@@ -670,9 +813,41 @@ public class GlobalConfigurationManager implements Runnable, IStoppable {
 		String[] returnValue = {monitor.address, statMonitor.address};
 		return returnValue;
 	}
+	
+	/**
+	 * The same as the previous, but include the Standby monitors
+	 * @param queueName
+	 * @return list of monitors (active + standby)
+	 */
+	private ArrayList<String> getHostsListByQueueName(String queueName) {
+		Metadata.Queue queue = new Metadata.Queue(queueName);
+		Metadata.Monitor monitor = zk.getMonitor(queue);
+		Metadata.StatMonitor statMonitor = zk.getStatMonitor(queue);
+		
+		ArrayList<String> returnValue = new ArrayList<String>();
+		if (monitor == null || statMonitor == null) {
+			return null;
+		}
+		
+		returnValue.add(monitor.address);
+		returnValue.add(statMonitor.address);
+		
+		ArrayList<BackupMonitor> buMonitors = zk.getBackUpMonitors(queue);
+		
+		for (BackupMonitor backup : buMonitors) {
+			returnValue.add(backup.monitorAddress);
+			returnValue.add(backup.statMonitorAddress);
+		}
+		
+		return returnValue;
+	}
 
 	public int getInterfacePort() {
 		return properties.ports.get("GlobalConfigurationManager.interface");
 	}
-
+	
+	public String getZkAddress() {
+		return this.properties.zkConfig.servers;
+	}
+	
 }

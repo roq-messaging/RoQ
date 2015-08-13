@@ -1,7 +1,7 @@
 #Host configuration management properties
 
-#SECTION 1 The global configuration manager server
-gcm.address={{hostvars['GCM.roq.org']['ansible_ssh_host']}}
+#SECTION 1 ZK SERVERS
+zk.address={{hostvars['ZK.roq.org']['ansible_ssh_host']}}:2181
 gcm.ports.base=5000
 
 #SECTION 2 IP address registration
@@ -30,3 +30,17 @@ exchange.vm.heap= 512
 
 #SECTION 4 Statistic for monitor
 monitor.stat.period =60000
+#SECTION 5 Heartbeat system, time in seconds
+localstate.path = /tmp/hcmlocaldb
+monitor.timeout = 20
+monitor.maxtimetostart = 40 
+#time in millis
+monitor.HBPeriod = 5000
+exchange.timeout = 20
+exchange.maxtimetostart = 40
+#time in millis
+exchange.HBPeriod = 5000
+scalingProcess.timeout = 20
+scalingProcess.maxtimetostart = 40
+#time in millis
+scalingProcess.HBPeriod = 5000

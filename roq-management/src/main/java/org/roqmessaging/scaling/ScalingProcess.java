@@ -14,6 +14,8 @@
  */
 package org.roqmessaging.scaling;
 
+import java.io.IOException;
+import java.net.ConnectException;
 import java.util.HashMap;
 
 import org.apache.log4j.Logger;
@@ -22,6 +24,7 @@ import org.bson.BSONObject;
 import org.bson.BasicBSONObject;
 import org.roqmessaging.core.RoQConstant;
 import org.roqmessaging.core.RoQConstantInternal;
+import org.roqmessaging.core.RoQGCMConnection;
 import org.roqmessaging.core.ShutDownMonitor;
 import org.roqmessaging.core.utils.RoQUtils;
 import org.roqmessaging.management.config.internal.CloudConfig;
@@ -31,6 +34,8 @@ import org.roqmessaging.management.serializer.RoQBSONSerializer;
 import org.roqmessaging.management.stat.KPISubscriber;
 import org.roqmessaging.scaling.policy.IScalingPolicy;
 import org.roqmessaging.scaling.policy.NullScalingPolicy;
+import org.roqmessaging.utils.LocalState;
+import org.roqmessaging.utils.Time;
 import org.zeromq.ZMQ;
 
 /**
@@ -47,9 +52,6 @@ import org.zeromq.ZMQ;
 public class ScalingProcess extends KPISubscriber {
 	// ZMQ
 	private ZMQ.Context context = null;
-	// Management controller socket - enables to get the auto scaling
-	// configuration
-	private ZMQ.Socket requestSocket = null;
 	// Pull socket that will listen for configuration update
 	private ZMQ.Socket pullListnerConfigSocket = null;
 	// The queue name on which the scaling process is bound
@@ -69,13 +71,19 @@ public class ScalingProcess extends KPISubscriber {
 	private CloudConfig cloudProps = null;
 	// The port to listen
 	private int listnerPort = 0;
+	//Local State for heartbeats
+	private LocalState localState;
+	// Minimum time between two heartbeats (in millis)
+	private long hbPeriod;
+	
+	private RoQGCMConnection gcmGlobalConnection;
 
 	/**
 	 * Notice the scaling process starts a shutdown monitor on the listener port
 	 * +1. We advice to start it on port 5802.
 	 * 
-	 * @param gcm_address
-	 *            the GCM IP address
+	 * @param zk_address
+	 *            the zk connection string
 	 * @param gcm_interfacePort
 	 *            the port used by the GCM for the interface to the topology
 	 * @param qName
@@ -83,23 +91,35 @@ public class ScalingProcess extends KPISubscriber {
 	 * @param listnerPort
 	 *            is the port on which the scaling process will listen for push
 	 *            request when a new configuration will be published
+	 * @param localStatePath 
+	 * 				the folder path in which the processes states will be stored (heartbeats)
+	 * @param hbPeriod 
+	 * 				the number of seconds between each heatbeat
 	 */
-	public ScalingProcess(String gcm_address, int gcm_interfacePort, int gcm_adminPort, String qName, int listnerPort) {
-		super(gcm_address, gcm_interfacePort, qName);
-		this.qName = qName;
-		this.listnerPort = listnerPort;
-		this.serializer = new RoQBSONSerializer();
-		// ZMQ init
-		this.context = ZMQ.context(1);
-		// Prepare the request socket to the management controller
-		this.requestSocket = this.context.socket(ZMQ.REQ);
-		this.requestSocket.connect("tcp://" + gcm_address + ":" + gcm_adminPort);
+	public ScalingProcess(String zk_address, int gcm_interfacePort, int gcm_adminPort, String qName, int listnerPort, String localStatePath, long hbPeriod) {
+		super(zk_address, gcm_interfacePort, qName);
+		try {
+			Thread.sleep(6000); // wait for queue creation process termination
+			this.qName = qName;
+			this.listnerPort = listnerPort;
+			this.serializer = new RoQBSONSerializer();
+			localState = new LocalState(localStatePath + "/" + listnerPort);
+			this.hbPeriod = hbPeriod;
+			// ZMQ init
+			this.context = ZMQ.context(1);
+			gcmGlobalConnection = new RoQGCMConnection(zkClient, 50, 8000);
+		} catch (Exception e) {
+			logger.error("Error while creating Monitor, ABORDED", e);
+			return;
+		}
 	}
 
 	/**
 	 * Initializes the scaling process configuration.
+	 * @throws IllegalStateException 
+	 * @throws ConnectException 
 	 */
-	private void initialization() {
+	private void initialization() throws ConnectException, IllegalStateException {
 		logger.debug("Starting auto scaling process configuration init");
 		while (!super.subscribe()) {
 			try {
@@ -152,11 +172,8 @@ public class ScalingProcess extends KPISubscriber {
 			logger.info(bsonObject.toString());
 			byte[] encoded = BSON.encode(bsonObject);
 
-			// 2. Send the request
-			requestSocket.send(encoded, 0);
-
-			// 3. Check the result
-			byte[] bres = requestSocket.recv(0);
+			// 3. Request
+			byte[] bres = gcmGlobalConnection.sendRequest(encoded, 5003);
 
 			BSONObject result = BSON.decode(bres);
 			if ((Integer) result.get("RESULT") == RoQConstant.FAIL) {
@@ -181,11 +198,8 @@ public class ScalingProcess extends KPISubscriber {
 			logger.info(bsonObject.toString());
 			byte[] encoded = BSON.encode(bsonObject);
 
-			// 2. Send the request
-			requestSocket.send(encoded, 0);
-
-			// 3. Check the result
-			byte[] bres = requestSocket.recv(0);
+			// 3. Request
+			byte[] bres = gcmGlobalConnection.sendRequest(encoded, 5003);
 
 			return serializer.unserializeConfig(bres);
 		} catch (Exception e) {
@@ -206,12 +220,13 @@ public class ScalingProcess extends KPISubscriber {
 			logger.info(bsonObject.toString());
 			byte[] encoded = BSON.encode(bsonObject);
 
-			// 2. Send the request
-			requestSocket.send(encoded, 0);
+			// 3. Request
+			byte[] bres = gcmGlobalConnection.sendRequest(encoded, 5003);
 
 			// 3. Check the result
-			BSONObject props = BSON.decode(requestSocket.recv(0));
+			BSONObject props = BSON.decode(bres);
 			CloudConfig result = new CloudConfig();
+			
 			if ((Boolean) props.get("cloud.use")) {
 				logger.info("A cloud configuration has been provided");
 				result.inUse = true;
@@ -233,6 +248,8 @@ public class ScalingProcess extends KPISubscriber {
 	/**
 	 * Override the run in order to add a socket (for the update config
 	 * listener) to the poller.
+	 * @throws IllegalStateException 
+	 * @throws ConnectException 
 	 * 
 	 * @see org.roqmessaging.management.stat.KPISubscriber#run()
 	 */
@@ -240,11 +257,28 @@ public class ScalingProcess extends KPISubscriber {
 	public void run() {
 		// Wait before starting (in local VM model this enables the HCM to
 		// finish the queue registration).
-		initialization();
+		try {
+			initialization();
+		} catch (ConnectException | IllegalStateException e1) {
+			e1.printStackTrace();
+		}
 		ZMQ.Poller poller = new ZMQ.Poller(1);
 		poller.register(kpiSocket);
 		poller.register(pullListnerConfigSocket);
+		long current;
+		long lastHb = Time.currentTimeMillis() - hbPeriod;
 		while (active) {
+			// Write Heartbeat
+			if ((Time.currentTimeMillis() - lastHb) >= hbPeriod) {
+				try {
+					current = Time.currentTimeSecs();
+					logger.info("SP Writing hb " + listnerPort + " " + current);
+					localState.put("HB", current);
+					lastHb = Time.currentTimeMillis();
+				} catch (IOException e) {
+					logger.info("Failed to write in local db: " + e);
+				}
+			}
 			poller.poll(200);
 			if (active & poller.pollin(0)) {
 				do {
@@ -260,12 +294,18 @@ public class ScalingProcess extends KPISubscriber {
 				this.scalingConfig = serializer.unserializeConfig(pullListnerConfigSocket.recv(0));
 			}
 		}
+		try {
+			// 0 indicates that the process has been shutdown by the user & have not timed out
+			localState.put("HB", new Long(0));
+		} catch (IOException e) {
+			logger.error("Failed to stop properly the process, it will be restarted...");
+			e.printStackTrace();
+		}
 		// Closing sockets
 		this.kpiSocket.setLinger(0);
 		this.pullListnerConfigSocket.setLinger(0);
 		this.pullListnerConfigSocket.close();
 		this.kpiSocket.close();
-
 	}
 
 	/**
@@ -416,8 +456,7 @@ public class ScalingProcess extends KPISubscriber {
 	@Override
 	public void shutDown() {
 		logger.debug("Stopping the Scaling process for Q " + this.qName);
-		this.requestSocket.setLinger(0);
-		this.requestSocket.close();
+		gcmGlobalConnection.active = false;
 		super.shutDown();
 		logger.debug("Closing request socket");
 	}

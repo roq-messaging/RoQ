@@ -8,6 +8,9 @@ public class RoQZooKeeperConfig extends RoQZKSimpleConfig{
 	public String znode_gcm = "gcm";
 	// ZNode used to register HostConfigManager instances
 	public String znode_hcm = "hcm-list";
+	// Under this node we save the monitors
+	// handled by this node
+	public String znode_hcm_state = "hcm-state";
 	// Parent ZNode for all queues
 	public String znode_queues = "queues";
 	// ZNode used to store the cloud configuration
@@ -16,8 +19,10 @@ public class RoQZooKeeperConfig extends RoQZKSimpleConfig{
 	// Path is thus /"RoQ"/"queues"/queue/"scaling"
 	public String znode_scaling = "scaling";
 	// Path to transaction node for queues
-	public String znode_queueTransactions = "queueTransactions";
+	public String znode_queue_transactions = "queueTransactions";
+	// Path to the transactions to remove hcm properly
+	public String znode_hcm_remove_transactions = "hcmRMTransactions";
 	// Path to transaction node for exchanges
-	public String znode_exchangeTransactions = "xchangeTransactions";
+	public String znode_exchange_transactions = "xchangeTransactions";
 	
 }

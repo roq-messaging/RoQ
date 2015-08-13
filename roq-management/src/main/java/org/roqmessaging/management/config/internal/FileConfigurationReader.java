@@ -45,7 +45,7 @@ public class FileConfigurationReader {
 			configDao.setPeriod(config.getInt("period"));
 			configDao.sethcmTIMEOUT(config.getInt("hcmTIMEOUT"));
 			configDao.setFormatDB(config.getBoolean("formatDB"));
-			configDao.hasCloudConfiguration(config.getBoolean("hasCloudConfiguration"));
+			configDao.setReplicationFactor(config.getInt("monitor.replication.factor"));
 			// initialize the ports used by the GCM
 			configDao.ports.setBasePort(config.getInt("ports.base"));
 			// intialize the zookeeper configuration
@@ -97,7 +97,7 @@ public class FileConfigurationReader {
 			PropertiesConfiguration config = new PropertiesConfiguration();
 			config.load(file);
 			// 3. Set the properties
-			configDao.setGcmAddress(config.getString("gcm.address")!=null?config.getString("gcm.address"):configDao.getGcmAddress());
+			configDao.setZkAddress(config.getString("zk.address")!=null?config.getString("zk.address"):configDao.getZkAddress());
 			configDao.ports.setBasePort(config.getInt("gcm.ports.base"));
 			
 			configDao.setExchangeFrontEndPort(config.getInt("exchange.base.port"));
@@ -107,6 +107,16 @@ public class FileConfigurationReader {
 			configDao.setMaxNumberEchanges(config.getInt("exchange.max.perhost"));
 			configDao.setQueueInHcmVm(config.getBoolean("queue.hcm.vm"));
 			configDao.setExchangeInHcmVm(config.getBoolean("exchange.hcm.vm"));
+			configDao.setLocalStatePath(config.getString("localstate.path"));
+			configDao.setMonitorTimeOut(config.getInt("monitor.timeout"));
+			configDao.setMonitorMaxTimeToStart(config.getInt("monitor.maxtimetostart"));
+			configDao.setMonitorHbPeriod(config.getInt("monitor.HBPeriod"));
+			configDao.setExchangeTimeOut(config.getInt("exchange.timeout"));
+			configDao.setExchangeMaxTimeToStart(config.getInt("exchange.maxtimetostart"));
+			configDao.setExchangeHbPeriod(config.getInt("exchange.HBPeriod"));
+			configDao.setScalingProcessTimeOut(config.getInt("scalingProcess.timeout"));
+			configDao.setScalingProcessMaxTimeToStart(config.getInt("scalingProcess.maxtimetostart"));
+			configDao.setScalingProcessHbPeriod(config.getInt("scalingProcess.HBPeriod"));
 			configDao.setExchangeHeap(config.getInt("exchange.vm.heap")!=-1?config.getInt("exchange.vm.heap"):256);
 			if (config.containsKey("network.interface"))
 				configDao.setNetworkInterface(config.getString("network.interface"));
