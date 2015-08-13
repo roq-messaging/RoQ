@@ -63,18 +63,19 @@ public class RoQZKHelpers {
 	}
 	
 	/**
-	 * replace a monitor by a standby monitor inside a single
+	 * replace a dead monitor (pathQBUMonitorToRemove) by a standby monitor inside a single
 	 * transaction
 	 * @param client
 	 * @param hCMStateAdd
 	 * @param hCMStateRemove
-	 * @param pathQBUMonitorToRemove
+	 * @param pathQBUMonitorToRemove stand for BackUp Monitor
 	 * @param hcmPath
 	 * @param hcmAddress
 	 * @param statMonitorPath
 	 * @param statMonitor
 	 * @param monitorPath
 	 * @param monitor
+	 * @param scaling Path
 	 */
 	public static void replaceMonitorZNodes(CuratorFramework client,
 			String hCMStateAdd, String hCMStateRemove,

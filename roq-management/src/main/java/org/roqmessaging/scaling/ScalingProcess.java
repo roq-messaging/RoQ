@@ -91,6 +91,10 @@ public class ScalingProcess extends KPISubscriber {
 	 * @param listnerPort
 	 *            is the port on which the scaling process will listen for push
 	 *            request when a new configuration will be published
+	 * @param localStatePath 
+	 * 				the folder path in which the processes states will be stored (heartbeats)
+	 * @param hbPeriod 
+	 * 				the number of seconds between each heatbeat
 	 */
 	public ScalingProcess(String zk_address, int gcm_interfacePort, int gcm_adminPort, String qName, int listnerPort, String localStatePath, long hbPeriod) {
 		super(zk_address, gcm_interfacePort, qName);

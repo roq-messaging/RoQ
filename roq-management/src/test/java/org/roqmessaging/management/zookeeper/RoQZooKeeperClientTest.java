@@ -141,7 +141,7 @@ public class RoQZooKeeperClientTest extends TestCase {
 	
 	public void testRemoveHCMTransaction() {
 		log.info("");
-		String host = "lolo://192.168.0.1:8000";
+		String host = "tcp://192.168.0.1:8000";
 		
 		client.createHcmRemoveTransaction(new Metadata.HCM(host));
 		
@@ -288,9 +288,6 @@ public class RoQZooKeeperClientTest extends TestCase {
 		assertTrue(sc2.equals(sc1));
 	}
 	
-	/**
-	 * Actual tests
-	 */
 	public void testAddRemoveHCM() {
 		log.info("");
 		try {

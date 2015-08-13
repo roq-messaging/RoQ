@@ -28,14 +28,16 @@ public class MonitorLauncher {
 
 	/**
 	 * Example: 5571 5800 testQ period
-	 * @param args must be the base monitor port and the stat port, default value is 
+	 * @param args must be the base monitor port and the stat port, queue name, the seconds between each statistic publication,
+	 * localState path, heartbeat period, active or backup Master
+	 * default value is 
 	 * 5571 5800 qname period
 	 *
 	 */
 	public static void main(String[] args) {
 		System.out.println("Launching Monitor process with arg "+displayArg(args));
 		if(args.length != 8){
-			System.out.println("The argument should be <int: base port> <int: stat port> <qname> <localStateDbPath> <hbPeriod> <isMaster>");
+			System.out.println("The argument should be <int: base port> <int: stat port> <qname> <publicationPeriod> <localStateDbPath> <hbPeriod> <isMaster>");
 			return;
 		}
 		//TODO for future evolution: replacing the 3rd argument by the property file location directly

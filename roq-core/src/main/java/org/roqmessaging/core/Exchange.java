@@ -72,11 +72,13 @@ public class Exchange implements Runnable, IStoppable {
 	private long timeout=80;
 
 	/**
-	 * Notice that we start a shutdown request socket on frontEnd port +1
+	 * Notice that we start a shutdown request socket on frontEnd p)ort +1
 	 * @param frontend the front port
 	 * @param backend the back port
 	 * @param monitorHost the address of the monitor to bind  tcp:// monitor:monitorPort;
 	 * @param statHost tcp://monitor:statport
+	 * @param localStatePath the folder path in which the processes states will be stored (heartbeats)
+	 * @param hbPeriod the number of seconds between each heatbeat
 	 */
 	public Exchange(int frontend, int backend, String monitorHost, String statHost, String localStatePath, long hbPeriod) {
 		try {

@@ -123,8 +123,9 @@ public interface RoQConstant {
 	public static int EVENT_MONITOR_FAILOVER = 9;
 	
 	/**
-	 * Notifies the Monitor that it becomes
-	 * the new master
+	 * The response from the Monitor (backup) to the HCM
+	 * in order to communicate that it is now the master
+	 * (active Monitor)
 	 */
 	public static int EVENT_MONITOR_ACTIVATED = 10;
 	

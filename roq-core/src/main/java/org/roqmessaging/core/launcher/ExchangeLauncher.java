@@ -31,6 +31,8 @@ public class ExchangeLauncher {
 	 * 2. The back port <br>
 	 * 3. the address of the monitor to bind tcp:// monitor:monitorPort<br>
 	 * 4. The address of the stat monitor to bind tcp://monitor:statport<br>
+	 * 5. The path in which the heartbeats wil be stored <br>
+	 * 6. The number of seconds between each heartbeat <br>
 	 * 
 	 * example: 5559 5560 tcp://localhost:5571, tcp://localhost:5800
 	 * 
@@ -50,7 +52,8 @@ public class ExchangeLauncher {
 		System.out.println("Launching Exchange process with arg "+displayArg(args));
 		if (args.length != 6) {
 			System.out
-					.println("The argument should be <int front port> <int back port> < tcp:// monitor:monitorPort>  <tcp:// monitor:statport>");
+					.println("The argument should be <int front port> <int back port> < tcp:// monitor:monitorPort> " +
+							" <tcp:// monitor:statport> <localState path> <heartbeat Period>");
 			return;
 		}
 		System.out.println("Starting Exchange with monitor " + args[2] + ", stat= " + args[3]);

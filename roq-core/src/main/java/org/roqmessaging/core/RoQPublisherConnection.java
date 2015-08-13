@@ -33,7 +33,9 @@ public class RoQPublisherConnection implements IRoQConnection {
 	private PublisherConnectionManager connectionManager = null;
 	//Logger
 	private Logger logger = Logger.getLogger(RoQPublisherConnection.class);
-	//The monitor responsible for redirecting the client
+	// The monitors responsible for a particular queue
+	// The publisherConnection manager will automatically communicate
+	// with the active Monitor.e
 	private List<String> monitor = new ArrayList<String>();
 	private int monitorReplicationFactor = 3;
 

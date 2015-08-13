@@ -69,10 +69,10 @@ public class SubscriberConnectionManager implements Runnable {
 	private int replicationFactor;
 	
 	/**
-	 * @param monitor the monitor address to bind
-	 * @param monitorStat the monitor stat address to bind
+	 * @param replication factor the number of monitor replicas
+	 * @param monitors the monitors addresses to bind
+	 * @param monitorStat the monitors stat addresses to bind
 	 * @param subKey the subscriber must filter on that key
-	 * @param ID the subscriber ID
 	 * @param tstmp true if we use a timestamp server
 	 */
 	public SubscriberConnectionManager(int replicationFactor, List<String> monitors, List<String> monitorStat, String subKey,  boolean tstmp) {

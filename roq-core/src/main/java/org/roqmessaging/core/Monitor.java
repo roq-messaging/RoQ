@@ -84,10 +84,14 @@ public class Monitor implements Runnable, IStoppable {
 
 	
 	/**
+	 * @param zkAddress the ZooKeeper ip addresses separated by comates
 	 * @param basePort default value must be 5571
 	 * @param statPort default port for stat socket 5800
 	 * @param qname the logical queue from which the monitor belongs to
 	 * @param period the stat period for publication
+	 * @param localStatePath the folder path in which the processes states will be stored (heartbeats)
+	 * @param hbPeriod the number of seconds between each heatbeat
+	 * @param master start the monitor as active or backup
 	 */
 	public Monitor(String zkAddress, int basePort, int statPort, String qname, String period, String localStatePath, long hbPeriod, boolean master) {
 		try {

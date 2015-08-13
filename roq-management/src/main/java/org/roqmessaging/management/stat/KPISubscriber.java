@@ -60,7 +60,7 @@ public abstract class KPISubscriber implements Runnable, IStoppable{
 	private RoQGCMConnection gcmConnection;
 	
 	/**
-	 * @param gcm_address the IP address of the global configuration
+	 * @param zk_address the zookeeper connection string
 	 * @param gcm_interfacePort the port used by the GCM for the interface to the topology
 	 * @param qName the queue from which we want receive statistic. 
 	 */

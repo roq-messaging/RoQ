@@ -1,5 +1,5 @@
 - name: Creates .roq directory
-  file: path=~/.roq state=directory mode=777
+  file: path={{roq_temp_path}}/.roq state=directory mode=777
 
 - name: Overwrite GCM default config file
   template: src=GCM.properties.j2 dest='{{roq_temp_path}}/GCM.properties'

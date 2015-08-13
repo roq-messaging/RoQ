@@ -34,6 +34,8 @@ public class ScalingProcessLauncher {
 	 * 3. The GCM admin port (MngtController, port 5003 by default) <br>
 	 * 4. The qName <br>
 	 * 5. The port on which the process will subscribe to queue configuration update<br>
+	 * 6. localStatePath the folder path in which the processes states will be stored (heartbeats)<br>
+	 * 7. hbPeriod the number of seconds between each heatbeat<br>
 	 * 
 	 * example: "127.0.0.1 queueTest 5802 
 	 * 
@@ -52,7 +54,8 @@ public class ScalingProcessLauncher {
 	public static void main(String[] args) throws InterruptedException {
 		System.out.println("Launching Scaling process with arg "+displayArg(args));
 		if (args.length != 7) {
-			System.out.println("The arguments should be <zk IP address> <GCM interface port> <GCM admin port> <Queue Name> <Listener port>  ");
+			System.out.println("The arguments should be <zk IP address> <GCM interface port> <GCM admin port> <Queue Name> <Listener port> <localStatePath>" +
+					" <heartbeat period>");
 			return;
 		}
 		
